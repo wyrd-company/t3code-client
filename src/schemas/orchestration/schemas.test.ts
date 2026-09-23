@@ -7,7 +7,12 @@ import * as NodeFS from "node:fs";
 import { describe, expect, it } from "vite-plus/test";
 import { ServerConfig } from "../server.ts";
 import { ExecutionEnvironmentDescriptor } from "../environment.ts";
-import { ModelSelection, SnapShotAccessibility, ProjectMonogramText } from "./model.ts";
+import {
+  ModelSelection,
+  ProviderUserInputAnswers,
+  SnapShotAccessibility,
+  ProjectMonogramText,
+} from "./model.ts";
 import { ClientOrchestrationCommand, ThreadMetaUpdateCommand } from "./commands.ts";
 import { OrchestrationEvent } from "./events.ts";
 import { OrchestrationThreadActivity, OrchestrationThreadDetailSnapshot } from "./readModel.ts";
@@ -279,5 +284,21 @@ describe("nested contract validation", () => {
     expect(ProjectMonogramText.safeParse("AB").success).toBe(true);
     expect(ProjectMonogramText.safeParse("ABC").success).toBe(false);
     expect(ProjectMonogramText.safeParse("!").success).toBe(false);
+  });
+});
+
+describe("user-input answers", () => {
+  it("accepts any JSON value, as the contracts do", () => {
+    const answers = {
+      choice: "Blue",
+      many: ["a", "b"],
+      codex: { answers: ["c"] },
+      count: 3,
+      flag: true,
+    };
+    expect(ProviderUserInputAnswers.parse(answers)).toEqual(answers);
+  });
+  it("rejects values JSON cannot carry", () => {
+    expect(ProviderUserInputAnswers.safeParse({ when: new Date(0) }).success).toBe(false);
   });
 });

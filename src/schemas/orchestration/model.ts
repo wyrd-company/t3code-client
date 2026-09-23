@@ -51,15 +51,11 @@ export const ProviderRequestKind = forwardCompatibleLiteral([
 ]);
 export type ProviderRequestKind = z.infer<typeof ProviderRequestKind>;
 /**
- * One question's answer. The contracts leave the value open; the provider
- * adapters accept a single choice, several choices, or `{ answers }`, and
- * reject anything else.
+ * One question's answer: any JSON value, as the contracts allow. The provider
+ * adapters act on a single choice (a string), several choices (a string
+ * array), or Codex's `{ answers: string[] }`.
  */
-export const ProviderUserInputAnswer = z.union([
-  z.string(),
-  z.array(z.string()),
-  z.looseObject({ answers: z.array(z.string()) }),
-]);
+export const ProviderUserInputAnswer = z.json();
 export type ProviderUserInputAnswer = z.infer<typeof ProviderUserInputAnswer>;
 export const ProviderUserInputAnswers = stringRecord(ProviderUserInputAnswer);
 export type ProviderUserInputAnswers = z.infer<typeof ProviderUserInputAnswers>;

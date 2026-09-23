@@ -8,10 +8,13 @@ import {
   TrimmedNonEmptyString,
   forwardCompatibleArray,
   forwardCompatibleLiteral,
-  forwardCompatibleRecord,
 } from "../common.ts";
 import { UserInputAttachments } from "./commands/attachments.ts";
-import { ProviderApprovalDecision, ProviderRequestKind, ProviderUserInputAnswer } from "./model.ts";
+import {
+  ProviderApprovalDecision,
+  ProviderRequestKind,
+  ProviderUserInputAnswers,
+} from "./model.ts";
 import type { OrchestrationThreadActivity, ThreadActivityOfKind } from "./threadActivity.ts";
 
 export const UserInputQuestionOption = z.looseObject({
@@ -61,9 +64,7 @@ export const UserInputRequestedPayload = z.looseObject({
 export type UserInputRequestedPayload = z.infer<typeof UserInputRequestedPayload>;
 export const UserInputResolvedPayload = z.looseObject({
   requestId: ApprovalRequestId.optional(),
-  // Provider runtimes pass answers through; a value shape this client does not
-  // know is dropped rather than failing the activity.
-  answers: forwardCompatibleRecord(ProviderUserInputAnswer).optional(),
+  answers: ProviderUserInputAnswers.optional(),
   responseMode: forwardCompatibleLiteral(["message"]).optional(),
   attachmentsByQuestionId: UserInputAttachments.optional(),
   dismissed: z.boolean().optional(),

@@ -202,27 +202,6 @@ export function stringRecord<T extends z.ZodType>(value: T): z.ZodType<Record<st
   });
 }
 
-/**
- * Decode a string-keyed record entry by entry, dropping entries whose value
- * fails. A newer server may add value shapes this client does not know.
- */
-export function forwardCompatibleRecord<T extends z.ZodType>(
-  value: T,
-): z.ZodType<Record<string, z.infer<T>>> {
-  return z.unknown().transform((raw, ctx) => {
-    if (!isPlainRecord(raw)) {
-      ctx.addIssue({ code: "custom", message: "Expected a record" });
-      return z.NEVER;
-    }
-    const out: Record<string, z.infer<T>> = {};
-    for (const [key, entry] of Object.entries(raw)) {
-      const result = value.safeParse(entry);
-      if (result.success) setEntry(out, key, result.data as z.infer<T>);
-    }
-    return out;
-  });
-}
-
 /** `T | null`, decoding a missing key or unknown value as `null`. */
 export function forwardCompatibleNullable<T extends z.ZodType>(
   value: T,
