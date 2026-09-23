@@ -3,6 +3,8 @@ import { z } from "zod";
 import {
   forwardCompatibleArray,
   forwardCompatibleNullable,
+  forwardCompatibleRecord,
+  stringRecord,
   isUnknownVariant,
   taggedUnionWithUnknown,
 } from "./common.ts";
@@ -44,5 +46,19 @@ describe("forwardCompatibleNullable", () => {
     expect(Mode.parse(undefined)).toBeNull();
     expect(Mode.parse("warp")).toBeNull();
     expect(Mode.parse("fast")).toBe("fast");
+  });
+  it("keeps a __proto__ key in decoded records", () => {
+    const raw = JSON.parse('{"__proto__":"one","second":["two"]}');
+    const strict = stringRecord(z.union([z.string(), z.array(z.string())])).parse(raw);
+    expect(Object.keys(strict)).toEqual(["__proto__", "second"]);
+    expect(Object.getPrototypeOf(strict)).toBe(Object.prototype);
+    expect(JSON.stringify(strict)).toBe('{"__proto__":"one","second":["two"]}');
+    const lenient = forwardCompatibleRecord(z.string()).parse(raw);
+    expect(Object.keys(lenient)).toEqual(["__proto__"]);
+  });
+  it("reports the key of a strict record value that fails", () => {
+    const result = stringRecord(z.string()).safeParse({ first: "one", second: 2 });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual(["second"]);
   });
 });

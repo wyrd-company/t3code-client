@@ -10,6 +10,7 @@ import {
   ProviderInstanceId,
   TrimmedNonEmptyString,
   forwardCompatibleLiteral,
+  stringRecord,
   taggedUnionWithUnknown,
 } from "../common.ts";
 import { ProviderOptionSelections } from "../provider.ts";
@@ -60,7 +61,7 @@ export const ProviderUserInputAnswer = z.union([
   z.looseObject({ answers: z.array(z.string()) }),
 ]);
 export type ProviderUserInputAnswer = z.infer<typeof ProviderUserInputAnswer>;
-export const ProviderUserInputAnswers = z.record(z.string(), ProviderUserInputAnswer);
+export const ProviderUserInputAnswers = stringRecord(ProviderUserInputAnswer);
 export type ProviderUserInputAnswers = z.infer<typeof ProviderUserInputAnswers>;
 export const CHAT_ATTACHMENT_ID_MAX_CHARS = 128;
 export const ChatAttachmentId = TrimmedNonEmptyString.max(CHAT_ATTACHMENT_ID_MAX_CHARS).regex(

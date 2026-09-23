@@ -161,17 +161,63 @@ export function forwardCompatibleArray<T extends z.ZodType>(element: T): z.ZodTy
 }
 
 /**
+ * Copy one entry onto a decoded record. A plain assignment of the key
+ * `__proto__` would set the prototype instead of adding the entry.
+ */
+function setEntry<T>(record: Record<string, T>, key: string, value: T): void {
+  Object.defineProperty(record, key, {
+    value,
+    enumerable: true,
+    writable: true,
+    configurable: true,
+  });
+}
+
+function isPlainRecord(raw: unknown): raw is Record<string, unknown> {
+  return typeof raw === "object" && raw !== null && !Array.isArray(raw);
+}
+
+/**
+ * A string-keyed record whose every value must match. Unlike `z.record`, it
+ * keeps a key named `__proto__`, which the server treats as an ordinary key.
+ */
+export function stringRecord<T extends z.ZodType>(value: T): z.ZodType<Record<string, z.infer<T>>> {
+  return z.unknown().transform((raw, ctx) => {
+    if (!isPlainRecord(raw)) {
+      ctx.addIssue({ code: "custom", message: "Expected a record" });
+      return z.NEVER;
+    }
+    const out: Record<string, z.infer<T>> = {};
+    for (const [key, entry] of Object.entries(raw)) {
+      const result = value.safeParse(entry);
+      if (result.success) {
+        setEntry(out, key, result.data as z.infer<T>);
+      } else {
+        for (const issue of result.error.issues) {
+          ctx.addIssue({ ...issue, path: [key, ...issue.path] } as never);
+        }
+      }
+    }
+    return out;
+  });
+}
+
+/**
  * Decode a string-keyed record entry by entry, dropping entries whose value
  * fails. A newer server may add value shapes this client does not know.
  */
 export function forwardCompatibleRecord<T extends z.ZodType>(
   value: T,
 ): z.ZodType<Record<string, z.infer<T>>> {
-  return z.record(z.string(), z.unknown()).transform((entries) => {
+  return z.unknown().transform((raw, ctx) => {
+    if (!isPlainRecord(raw)) {
+      ctx.addIssue({ code: "custom", message: "Expected a record" });
+      return z.NEVER;
+    }
     const out: Record<string, z.infer<T>> = {};
-    for (const [key, raw] of Object.entries(entries)) {
-      const result = value.safeParse(raw);
-      if (result.success) out[key] = result.data as z.infer<T>;
+    for (const [key, entry] of Object.entries(raw)) {
+      const result = value.safeParse(entry);
+      if (result.success) setEntry(out, key, result.data as z.infer<T>);
     }
     return out;
   });

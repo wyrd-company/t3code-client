@@ -12,6 +12,7 @@ import {
   ProviderInstanceId,
   TrimmedNonEmptyString,
   forwardCompatibleLiteral,
+  stringRecord,
 } from "../../common.ts";
 import { WorktreeSetupSnapshot } from "../../worktreeSetup.ts";
 import { UserInputAttachments } from "../commands/attachments.ts";
@@ -84,7 +85,7 @@ export type ProviderTurnStartFailedActivityPayload = z.infer<
  */
 export const UserInputAnswerSubmittedActivityPayload = z.looseObject({
   requestId: ApprovalRequestId,
-  questionTextById: z.record(z.string(), z.string()).optional(),
+  questionTextById: stringRecord(z.string()).optional(),
   answers: ProviderUserInputAnswers,
   attachmentsByQuestionId: UserInputAttachments,
   detail: z.string().optional(),
