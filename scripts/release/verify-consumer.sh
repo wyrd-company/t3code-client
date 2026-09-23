@@ -16,7 +16,9 @@ npm install --silent --no-audit --no-fund "$tarball" "$typescript" "@types/node@
 cat > index.ts <<'TS'
 import {
   T3Client,
+  T3RpcError,
   memoryCredentialStore,
+  type OrchestrationThreadActivity,
   type T3ClientOptions,
 } from "@wyrd-company/t3code-client";
 
@@ -25,6 +27,16 @@ const options: T3ClientOptions = {
   credentials: memoryCredentialStore(),
 };
 export const client = T3Client.create(options);
+
+// Activities and RPC errors narrow to typed payloads and records.
+export function tokens(activity: OrchestrationThreadActivity): number | undefined {
+  if (activity.unknown) return undefined;
+  if (activity.kind !== "context-window.updated") return undefined;
+  return activity.payload.totalProcessedTokens ?? activity.payload.usedTokens;
+}
+export function dispatchMessage(error: T3RpcError): string | undefined {
+  return error.is("OrchestrationDispatchCommandError") ? error.record.message : undefined;
+}
 TS
 
 for resolution in "NodeNext NodeNext" "ESNext Bundler"; do
