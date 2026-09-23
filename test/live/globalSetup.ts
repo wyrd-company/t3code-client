@@ -36,10 +36,17 @@ function freePort(): Promise<number> {
   });
 }
 
+/** Whether the process has ended, by exit code or by signal. */
+function hasExited(child: NodeChildProcess.ChildProcess): boolean {
+  return child.exitCode !== null || child.signalCode !== null;
+}
+
 async function waitForReady(baseUrl: string, server: NodeChildProcess.ChildProcess) {
   const deadline = Date.now() + READY_TIMEOUT_MS;
   while (Date.now() < deadline) {
-    if (server.exitCode !== null) throw new Error(`t3 exited with code ${server.exitCode}.`);
+    if (hasExited(server)) {
+      throw new Error(`t3 exited (${server.exitCode ?? server.signalCode}).`);
+    }
     try {
       // The server accepts connections before it can answer them, so each probe
       // gets its own deadline.
@@ -106,7 +113,7 @@ export default async function setup(): Promise<(() => Promise<void>) | undefined
   );
 
   const stop = async () => {
-    if (server.exitCode === null) {
+    if (!hasExited(server)) {
       const exited = new Promise((resolve) => server.once("exit", resolve));
       server.kill("SIGTERM");
       await exited;
