@@ -134,7 +134,28 @@ export type {
   ChatAttachment,
 } from "./schemas/orchestration/model.ts";
 export type {
+  KnownThreadActivity,
+  UnknownThreadActivity,
+  ThreadActivityKind,
+  ThreadActivityOfKind,
+  ThreadActivityPayload,
+} from "./schemas/orchestration/threadActivity.ts";
+export { isThreadActivityOfKind } from "./schemas/orchestration/threadActivity.ts";
+export type { ContextWindowUpdatedActivityPayload } from "./schemas/orchestration/activityPayloads/runtime.ts";
+export type {
   ApprovalRequestedPayload,
   UserInputRequestedPayload,
   UserInputQuestion,
 } from "./schemas/orchestration/activities.ts";
+export type {
+  ProviderUserInputAnswer,
+  ProviderUserInputAnswers,
+} from "./schemas/orchestration/model.ts";
+export type {
+  RpcErrorRecord,
+  KnownRpcErrorRecord,
+  UnknownRpcErrorRecord,
+  RpcErrorTag,
+  RpcErrorOfTag,
+} from "./schemas/rpcErrors.ts";
+export { isRpcErrorOfTag } from "./schemas/rpcErrors.ts";

@@ -119,6 +119,25 @@ Every failure is a `T3Error` with a stable `code`:
 | `T3PreconditionError` | `precondition`                       | invalid input caught before sending                |
 | `T3InterruptedError`  | `interrupted`                        | a call or stream was cancelled                     |
 
+## Typed activities and errors
+
+Thread activities are typed by `kind`, including `context-window.updated`
+(the thread's token usage) and the tool, task, and checkpoint kinds. An
+activity this client does not recognise, or whose payload has changed shape,
+arrives with `unknown: true` and its payload as sent:
+
+```ts
+for (const activity of detail.thread.activities) {
+  if (activity.unknown) continue;
+  if (activity.kind === "context-window.updated") {
+    console.log(activity.payload.totalProcessedTokens ?? activity.payload.usedTokens);
+  }
+}
+```
+
+`T3RpcError.record` is the server's error, typed by its `_tag`;
+`error.is("OrchestrationDispatchCommandError")` narrows it.
+
 ## Watching threads
 
 `client.threads.watch(threadId)` yields the server's stream items

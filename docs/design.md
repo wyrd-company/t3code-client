@@ -177,6 +177,8 @@ src/
     auth.ts                 scopes, descriptors, session state, tokens, pairing links, clients
     environment.ts          ExecutionEnvironmentDescriptor
     httpErrors.ts           Environment*Error records
+    rpcErrors.ts            RpcErrorRecord: every tagged error the registered RPC methods declare
+    rpcErrors/              vcs and terminal error records, shared tagged-error helpers
     orchestration/
       model.ts              ModelSelection, RuntimeMode, InteractionMode, attachments
       readModel.ts          OrchestrationProject, OrchestrationThread, ReadModel, ThreadDetailSnapshot
@@ -184,7 +186,9 @@ src/
       commands.ts           ClientOrchestrationCommand union and each command
       events.ts             OrchestrationEvent union, payloads, unknown-event variant
       stream.ts             thread stream items, DispatchResult, rpc inputs/outputs
-      activities.ts         typed activity payloads for approval/user-input requests
+      threadActivity.ts     OrchestrationThreadActivity: typed by kind, with an unknown member
+      activities.ts         approval/user-input request payloads and the open-request rule
+      activityPayloads/     payloads of runtime, task, tool, checkpoint, provider, setup activities
     server.ts               ServerConfig (providers typed, settings loose), config/lifecycle stream events
     provider.ts             provider snapshot, models, auth status
     vcs.ts                  refs, status, worktree inputs/results
@@ -244,7 +248,7 @@ export abstract class T3Error extends Error { readonly code: string; readonly ca
 export class T3HttpError extends T3Error        // code: "http"; status, body (secrets redacted), tag?, reason?, traceId?
 export class T3AuthError extends T3HttpError    // code: "auth_invalid" | "insufficient_scope"; requiredScope?
 export class T3NotFoundError extends T3HttpError // code: "not_found"; reason
-export class T3RpcError extends T3Error         // code: "rpc_failed"; tag (server error _tag), detail (decoded error record)
+export class T3RpcError extends T3Error         // code: "rpc_failed"; tag, record: RpcErrorRecord (typed by _tag), is(tag) narrows record
 export class T3RpcDefectError extends T3Error   // code: "rpc_defect"; defect (string or unknown)
 export class T3ConnectionError extends T3Error  // code: "connection"; reason: "closed" | "open_failed" | "ping_timeout" | "protocol"
 export class T3DecodeError extends T3Error      // code: "decode"; path, issues (zod issues), raw (secrets redacted)
@@ -269,10 +273,20 @@ Conventions:
   brand a trusted string without validation cost.
 - Growing literal sets use `forwardCompatibleLiteral([...])`, which yields the
   known union plus a `string` fallback typed as `(typeof known)[number] | (string & {})`.
-- Discriminated unions that grow (`OrchestrationEvent`, stream items,
-  activities) decode through `taggedUnionWithUnknown("type", members)`: an
-  unrecognised member decodes as `{ type: string, ...raw, unknown: true }`
-  rather than failing.
+- Discriminated unions that grow (`OrchestrationEvent`, stream items, RPC
+  error records) decode through `taggedUnionWithUnknown("type", members)`: an
+  unrecognised member decodes as `{ unknown: true, raw }` rather than failing.
+- Thread activities are typed by `kind`. The server declares the payload as
+  unknown and builds each kind's payload in its own code, so
+  `activityPayloads/` mirrors that code, after the server's
+  `projectActivityPayload`. An activity of an unlisted kind, or whose payload
+  does not match its kind, decodes with its envelope typed, its payload as
+  received, and `unknown: true`; one unfamiliar activity never fails the
+  thread that holds it. Check `activity.unknown` first, then switch on
+  `kind`, or use `isThreadActivityOfKind`.
+- `unknown` appears only where the server itself leaves a value opaque (raw
+  provider data, `Schema.Defect()` causes, resume cursors) or at the raw
+  transport boundary before a method's schema applies. `any` is a lint error.
 - Each schema file exports the zod schema and `type X = z.infer<typeof X>`
   with the same name, mirroring the contracts package naming so a reader can
   diff against `packages/contracts/src`.
