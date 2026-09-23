@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Intentional reads release authority from the annotated tags.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@3754dd7dbdb32bd8f6d28b6043de13ad3a75f21f # v1.21.1
+        with:
+          node-version: "24"
+          cache: true
+          run-install: true
+
+      - name: Check release intents
+        uses: wyrd-company/intentional@25b97b64a994f6e3fb88d0e136ecb9f2589c384f # 0.1.6
+        with:
+          command: check
+          intentional-version: "0.1.6"
+
+      - name: Check
+        run: pnpm run check
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Test
+        run: pnpm run test
+
+      # The live suite starts the pinned `t3` devDependency, so a server
+      # release that breaks the wire contract fails here.
+      - name: Test against the pinned T3 Code server
+        run: pnpm run test:live
+
+      - name: Check the package as a consumer sees it
+        run: |
+          tarball="$(scripts/release/verify-package.sh "$RUNNER_TEMP/package")"
+          scripts/release/verify-consumer.sh "$tarball"
