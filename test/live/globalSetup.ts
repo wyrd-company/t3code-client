@@ -13,6 +13,7 @@ import * as NodePath from "node:path";
 
 const READY_TIMEOUT_MS = 60_000;
 const PROBE_TIMEOUT_MS = 2_000;
+const LOG_TAIL_LINES = 40;
 
 function serverBin(): string {
   const require = NodeModule.createRequire(import.meta.url);
@@ -104,13 +105,17 @@ export default async function setup(): Promise<(() => Promise<void>) | undefined
     { stdio: ["ignore", log.fd, log.fd] },
   );
 
-  const teardown = async () => {
+  const stop = async () => {
     if (server.exitCode === null) {
       const exited = new Promise((resolve) => server.once("exit", resolve));
       server.kill("SIGTERM");
       await exited;
     }
     await log.close();
+  };
+
+  const teardown = async () => {
+    await stop();
     if (process.env["T3_LIVE_KEEP"] !== "1") {
       await NodeFSP.rm(root, { recursive: true, force: true });
     }
@@ -123,10 +128,14 @@ export default async function setup(): Promise<(() => Promise<void>) | undefined
     process.env["T3_LIVE_HOME"] = baseDir;
     process.env["T3_LIVE_WORKSPACE"] = workspace;
   } catch (error) {
-    await teardown();
-    throw new Error(`Could not start the live T3 Code server; see ${root}/server.log.`, {
-      cause: error,
-    });
+    // Keep the data directory so the log named below still exists.
+    await stop();
+    const output = await NodeFSP.readFile(NodePath.join(root, "server.log"), "utf8");
+    const tail = output.split("\n").slice(-LOG_TAIL_LINES).join("\n");
+    throw new Error(
+      `Could not start the live T3 Code server; see ${root}/server.log. Last output:\n${tail}`,
+      { cause: error },
+    );
   }
   return teardown;
 }
