@@ -1,0 +1,45 @@
+version: "3"
+
+tasks:
+  install:
+    desc: Install dependencies
+    cmds: [pnpm install]
+
+  build:
+    desc: Compile the library to dist/
+    cmds: [pnpm run build]
+
+  fmt:
+    desc: Format every file
+    cmds: [pnpm run fmt]
+
+  lint:
+    desc: Check formatting and lint rules
+    cmds: [pnpm run check]
+
+  typecheck:
+    desc: Type-check sources, tests, and configuration
+    cmds: [pnpm run typecheck]
+
+  test:
+    desc: Run unit tests (no server needed)
+    cmds: [pnpm run test]
+
+  test:live:
+    desc: Run live tests against the pinned T3 Code server (see docs/testing.md)
+    cmds: [pnpm run test:live]
+
+  package:
+    desc: Pack the package and check it as a consumer sees it
+    cmds:
+      - scripts/release/verify-consumer.sh "$(scripts/release/verify-package.sh)"
+
+  check:
+    desc: Everything a change must pass before handoff
+    cmds:
+      - intentional check
+      - task: lint
+      - task: typecheck
+      - task: test
+      - task: test:live
+      - task: package

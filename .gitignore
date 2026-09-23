@@ -141,3 +141,9 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# T3 Code live-test server state
+.t3-live/
+
+# Intentional release plans are CI build material
+release-plan.json

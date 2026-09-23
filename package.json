@@ -1,0 +1,62 @@
+{
+  "name": "@wyrd-company/t3code-client",
+  "version": "0.0.0",
+  "description": "TypeScript client for the T3 Code server: HTTP API, WebSocket RPC, and the auth control plane.",
+  "keywords": [
+    "client",
+    "rpc",
+    "t3",
+    "t3code",
+    "websocket"
+  ],
+  "homepage": "https://github.com/wyrd-company/t3code-client#readme",
+  "bugs": {
+    "url": "https://github.com/wyrd-company/t3code-client/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wyrd-company/t3code-client.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "check": "vp check",
+    "lint": "vp lint --report-unused-disable-directives",
+    "fmt": "vp fmt",
+    "fmt:check": "vp fmt --check",
+    "test": "vp test run",
+    "test:live": "vp test run --config vitest.live.config.ts",
+    "prepack": "pnpm build"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "24.12.4",
+    "@types/ws": "^8.18.1",
+    "t3": "0.0.42",
+    "typescript": "7.0.2",
+    "vite-plus": "0.3.3",
+    "ws": "^8.21.3"
+  },
+  "engines": {
+    "node": ">=22.16"
+  },
+  "packageManager": "pnpm@11.10.0"
+}
