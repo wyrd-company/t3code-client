@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Verify that a tag is the Intentional release record for the checked-out
 # package: annotated, written by Intentional for this release unit, pointing
-# at HEAD, and naming the version package.json declares.
+# at HEAD on main, and naming the version package.json declares.
 set -euo pipefail
 
 tag="${1:?tag is required}"
@@ -12,8 +12,8 @@ if [[ ! "$tag" =~ ^t3code-client@([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
 fi
 version="${BASH_REMATCH[1]}"
 
-# A shallow tag checkout can leave the annotated tag object behind.
-git fetch --quiet --no-tags origin "+refs/tags/$tag:refs/tags/$tag"
+# A shallow tag checkout can leave the annotated tag object and main behind.
+git fetch --quiet --no-tags origin "+refs/tags/$tag:refs/tags/$tag" "+refs/heads/main:refs/remotes/origin/main"
 
 if [[ "$(git cat-file -t "refs/tags/$tag")" != "tag" ]]; then
   echo "Tag $tag is not annotated, so it is not an Intentional release record." >&2
@@ -33,6 +33,13 @@ fi
 
 if [[ "$(git rev-parse "refs/tags/$tag^{commit}")" != "$(git rev-parse HEAD)" ]]; then
   echo "Tag $tag does not point at the checked-out commit." >&2
+  exit 1
+fi
+
+# The Release workflow commits every release to main; a record anywhere else
+# did not come from it.
+if ! git merge-base --is-ancestor "refs/tags/$tag^{commit}" refs/remotes/origin/main; then
+  echo "Tag $tag points at a commit that is not on main." >&2
   exit 1
 fi
 

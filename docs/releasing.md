@@ -64,6 +64,10 @@ The App needs Contents write on this repository. Pushes made with the workflow
 token start no workflows, which is why the release record is pushed with the
 App.
 
+Publish accepts only an Intentional release record whose commit is on `main`.
+A tag ruleset that lets only the App create `t3code-client@*` tags closes the
+remaining gap: anyone who can push tags can otherwise push a record by hand.
+
 The first release needs the baseline record `t3code-client@0.0.0` on `main`,
 created once with `intentional tag --baseline` after the Intentional
 configuration is merged.
