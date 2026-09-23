@@ -5,6 +5,13 @@
  */
 import type { ZodError } from "zod";
 import { redactSecrets } from "./internal/redact.ts";
+import {
+  decodeRpcErrorRecord,
+  isRpcErrorOfTag,
+  type RpcErrorOfTag,
+  type RpcErrorRecord,
+  type RpcErrorTag,
+} from "./schemas/rpcErrors.ts";
 
 export type T3ErrorCode =
   | "http"
@@ -106,16 +113,38 @@ export class T3RpcError extends T3Error {
   readonly method: string;
   /** The server error's `_tag`, for example `OrchestrationDispatchCommandError`. */
   readonly tag: string;
-  /** The whole decoded error record. */
+  /** The whole error record as received. */
   readonly detail: Readonly<Record<string, unknown>>;
+  /**
+   * The error record decoded against the method's declared error schemas.
+   * `{ unknown: true, raw }` when the tag is not recognised or its fields do
+   * not match. Narrow it with `is`.
+   */
+  readonly record: RpcErrorRecord;
 
   constructor(method: string, error: { readonly _tag: string } & Record<string, unknown>) {
-    const text = typeof error["message"] === "string" ? error["message"] : error._tag;
-    super(`${method} failed: ${text}`);
+    super(`${method} failed: ${failureText(error)}`);
     this.method = method;
     this.tag = error._tag;
     this.detail = error;
+    this.record = decodeRpcErrorRecord(error);
   }
+
+  /** `true` when the failure is a recognised `tag` whose fields matched its schema. */
+  is<const Tag extends RpcErrorTag>(
+    tag: Tag,
+  ): this is T3RpcError & { readonly record: RpcErrorOfTag<Tag> } {
+    return isRpcErrorOfTag(this.record, tag);
+  }
+}
+
+/** Errors whose class derives `message` from other fields send `detail` instead. */
+function failureText(error: { readonly _tag: string } & Record<string, unknown>): string {
+  const message = error["message"];
+  if (typeof message === "string" && message.length > 0) return message;
+  const detail = error["detail"];
+  if (typeof detail === "string" && detail.length > 0) return detail;
+  return error._tag;
 }
 
 /** The server died while handling an RPC (`Exit` → `Die`), often a payload decode failure. */

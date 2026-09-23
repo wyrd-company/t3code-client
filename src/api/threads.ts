@@ -303,8 +303,8 @@ export class ThreadsApi {
         pattern === undefined
           ? isMissingResourceError(error)
           : error instanceof T3RpcError &&
-            error.tag === "OrchestrationDispatchCommandError" &&
-            pattern.test(error.message);
+            error.is("OrchestrationDispatchCommandError") &&
+            pattern.test(error.record.message);
       if (!tolerated) throw error;
     }
   }

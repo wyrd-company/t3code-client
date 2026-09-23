@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
-import { T3AuthError, T3DecodeError, T3HttpError } from "./errors.ts";
+import { T3AuthError, T3DecodeError, T3HttpError, T3RpcError } from "./errors.ts";
 
 describe("error payload redaction", () => {
   it("T3DecodeError.raw does not carry credentials from a badly shaped token response", () => {
@@ -33,5 +33,51 @@ describe("error payload redaction", () => {
       subject_token: "[redacted]",
     });
     expect(new T3HttpError("failed", { ...details, body: "plain text" }).body).toBe("plain text");
+  });
+});
+
+describe("T3RpcError", () => {
+  it("decodes a known tagged failure into a typed record", () => {
+    const error = new T3RpcError("terminal.write", {
+      _tag: "TerminalNotRunningError",
+      threadId: "thread-1",
+      terminalId: "terminal-1",
+    });
+    expect(error.tag).toBe("TerminalNotRunningError");
+    expect(error.is("TerminalNotRunningError")).toBe(true);
+    expect(error.is("TerminalWriteError")).toBe(false);
+    if (!error.is("TerminalNotRunningError")) throw new Error("expected a known record");
+    expect(error.record.terminalId).toBe("terminal-1");
+    expect(error.message).toBe("terminal.write failed: TerminalNotRunningError");
+  });
+
+  it("uses detail for the message when the record has no message field", () => {
+    const error = new T3RpcError("vcs.listRefs", {
+      _tag: "GitCommandError",
+      operation: "listRefs",
+      command: "git branch",
+      cwd: "/work/sample",
+      detail: "not a repository",
+    });
+    expect(error.is("GitCommandError")).toBe(true);
+    expect(error.message).toBe("vcs.listRefs failed: not a repository");
+  });
+
+  it("keeps an unknown tag as the unknown variant", () => {
+    const raw = { _tag: "SomeFutureError", message: "later" };
+    const error = new T3RpcError("server.probe", raw);
+    expect(error.record).toEqual({ unknown: true, raw });
+    expect(error.tag).toBe("SomeFutureError");
+    expect(error.detail).toBe(raw);
+    expect(error.message).toBe("server.probe failed: later");
+  });
+
+  it("keeps a known tag with a mismatched shape as raw without throwing", () => {
+    const raw = { _tag: "EnvironmentAuthorizationError", message: 42 };
+    const error = new T3RpcError("server.probe", raw);
+    expect(error.record).toEqual({ unknown: true, raw });
+    expect(error.is("EnvironmentAuthorizationError")).toBe(false);
+    expect(error.tag).toBe("EnvironmentAuthorizationError");
+    expect(error.message).toBe("server.probe failed: EnvironmentAuthorizationError");
   });
 });

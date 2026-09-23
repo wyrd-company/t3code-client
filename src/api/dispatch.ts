@@ -100,7 +100,7 @@ export class CommandDispatcher {
 export function isMissingResourceError(error: unknown): boolean {
   return (
     error instanceof T3RpcError &&
-    error.tag === "OrchestrationDispatchCommandError" &&
-    /\bdoes not exist\b/.test(error.message)
+    error.is("OrchestrationDispatchCommandError") &&
+    /\bdoes not exist\b/.test(error.record.message)
   );
 }

@@ -52,6 +52,15 @@ describe("exitToError", () => {
     expect(fail).toBeInstanceOf(T3RpcError);
     expect((fail as T3RpcError).tag).toBe("OrchestrationDispatchCommandError");
     expect(fail.message).toContain("bad");
+    expect((fail as T3RpcError).is("OrchestrationDispatchCommandError")).toBe(true);
+    const unknownFail = exitToError(
+      { kind: "fail", error: { _tag: "UnknownError", value: "plain" } },
+      "m",
+    ) as T3RpcError;
+    expect(unknownFail.record).toEqual({
+      unknown: true,
+      raw: { _tag: "UnknownError", value: "plain" },
+    });
     const die = exitToError({ kind: "die", defect: "Missing key" }, "m");
     expect(die).toBeInstanceOf(T3RpcDefectError);
     expect((die as T3RpcDefectError).defect).toBe("Missing key");
