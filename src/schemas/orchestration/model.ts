@@ -49,7 +49,18 @@ export const ProviderRequestKind = forwardCompatibleLiteral([
   "mcp-elicitation",
 ]);
 export type ProviderRequestKind = z.infer<typeof ProviderRequestKind>;
-export const ProviderUserInputAnswers = z.record(z.string(), z.unknown());
+/**
+ * One question's answer. The contracts leave the value open; the provider
+ * adapters accept a single choice, several choices, or `{ answers }`, and
+ * reject anything else.
+ */
+export const ProviderUserInputAnswer = z.union([
+  z.string(),
+  z.array(z.string()),
+  z.looseObject({ answers: z.array(z.string()) }),
+]);
+export type ProviderUserInputAnswer = z.infer<typeof ProviderUserInputAnswer>;
+export const ProviderUserInputAnswers = z.record(z.string(), ProviderUserInputAnswer);
 export type ProviderUserInputAnswers = z.infer<typeof ProviderUserInputAnswers>;
 export const CHAT_ATTACHMENT_ID_MAX_CHARS = 128;
 export const ChatAttachmentId = TrimmedNonEmptyString.max(CHAT_ATTACHMENT_ID_MAX_CHARS).regex(

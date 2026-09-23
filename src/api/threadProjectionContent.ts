@@ -177,15 +177,12 @@ export function retainActivities(
   if (recentStart <= 0) return [...activities];
   const pending = new Map<string, OrchestrationThreadActivity>();
   for (const activity of activities) {
-    const payload = activity.payload;
-    if (!payload || typeof payload !== "object") continue;
-    const record = payload as Record<string, unknown>;
-    const requestId = record["requestId"];
-    if (typeof requestId !== "string") continue;
-    if (activity.kind === "user-input.requested" && record["responseMode"] === "message") {
-      pending.set(requestId, activity);
+    if (activity.unknown) continue;
+    if (activity.kind === "user-input.requested") {
+      const { requestId, responseMode } = activity.payload;
+      if (requestId !== undefined && responseMode === "message") pending.set(requestId, activity);
     } else if (activity.kind === "user-input.resolved") {
-      pending.delete(requestId);
+      if (activity.payload.requestId !== undefined) pending.delete(activity.payload.requestId);
     }
   }
   const kept = new Set(pending.values());

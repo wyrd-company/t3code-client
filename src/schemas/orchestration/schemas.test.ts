@@ -60,7 +60,19 @@ describe("forward compatibility", () => {
       turnId: null,
       createdAt: "2026-01-01T00:00:00Z",
     };
-    expect(OrchestrationThreadActivity.parse(activity)).toEqual(activity);
+    expect(OrchestrationThreadActivity.parse(activity)).toEqual({ ...activity, unknown: true });
+  });
+  it("keeps a known activity whose payload does not match as unknown", () => {
+    const activity = {
+      id: "activity-2",
+      kind: "approval.requested",
+      tone: "approval",
+      summary: "Example",
+      payload: { requestId: 42 },
+      turnId: null,
+      createdAt: "2026-01-01T00:00:00Z",
+    };
+    expect(OrchestrationThreadActivity.parse(activity)).toEqual({ ...activity, unknown: true });
   });
   it("promotes legacy model routing and retains future fields", () => {
     expect(
@@ -115,10 +127,23 @@ describe("command validation", () => {
 });
 
 describe("pending requests", () => {
-  const request = (kind: string, requestId: string, extra = {}) => ({
-    kind,
-    payload: { requestId, ...extra },
-  });
+  const activity = (kind: string, payload: unknown) =>
+    OrchestrationThreadActivity.parse({
+      id: `activity-${kind}`,
+      tone: "approval",
+      kind,
+      summary: "Example",
+      payload,
+      turnId: null,
+      createdAt: "2026-01-01T00:00:00Z",
+    });
+  const request = (kind: string, requestId: string, extra = {}) =>
+    activity(kind, {
+      requestId,
+      ...(kind.startsWith("user-input.requested") ? { questions: [] } : {}),
+      ...(kind.startsWith("provider.") ? { detail: "Example" } : {}),
+      ...extra,
+    });
   it.each(["approval", "user-input"])("clears %s on resolution", (kind) => {
     const first = request(`${kind}.requested`, "request-1");
     const second = request(`${kind}.requested`, "request-2");
@@ -150,8 +175,8 @@ describe("pending requests", () => {
       request("provider.approval.respond.failed", "request-1", {
         detail: "Connection unavailable",
       }),
-      { kind: "approval.resolved", payload: null },
-      { kind: "approval.resolved", payload: { requestId: 3 } },
+      activity("approval.resolved", null),
+      activity("approval.resolved", { requestId: 3 }),
     ]);
     expect([...pending.values()]).toEqual([first]);
   });

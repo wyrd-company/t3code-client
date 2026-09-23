@@ -160,6 +160,23 @@ export function forwardCompatibleArray<T extends z.ZodType>(element: T): z.ZodTy
   });
 }
 
+/**
+ * Decode a string-keyed record entry by entry, dropping entries whose value
+ * fails. A newer server may add value shapes this client does not know.
+ */
+export function forwardCompatibleRecord<T extends z.ZodType>(
+  value: T,
+): z.ZodType<Record<string, z.infer<T>>> {
+  return z.record(z.string(), z.unknown()).transform((entries) => {
+    const out: Record<string, z.infer<T>> = {};
+    for (const [key, raw] of Object.entries(entries)) {
+      const result = value.safeParse(raw);
+      if (result.success) out[key] = result.data as z.infer<T>;
+    }
+    return out;
+  });
+}
+
 /** `T | null`, decoding a missing key or unknown value as `null`. */
 export function forwardCompatibleNullable<T extends z.ZodType>(
   value: T,

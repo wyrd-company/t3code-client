@@ -6,14 +6,13 @@ import { z } from "zod";
 import {
   ApprovalRequestId,
   TrimmedNonEmptyString,
+  forwardCompatibleArray,
   forwardCompatibleLiteral,
-  taggedUnionWithUnknown,
+  forwardCompatibleRecord,
 } from "../common.ts";
-import {
-  ProviderApprovalDecision,
-  ProviderRequestKind,
-  ProviderUserInputAnswers,
-} from "./model.ts";
+import { UserInputAttachments } from "./commands/attachments.ts";
+import { ProviderApprovalDecision, ProviderRequestKind, ProviderUserInputAnswer } from "./model.ts";
+import type { OrchestrationThreadActivity, ThreadActivityOfKind } from "./threadActivity.ts";
 
 export const UserInputQuestionOption = z.looseObject({
   label: TrimmedNonEmptyString,
@@ -36,8 +35,9 @@ export const ProviderApprovalOption = z.looseObject({
   warning: TrimmedNonEmptyString.optional(),
 });
 export type ProviderApprovalOption = z.infer<typeof ProviderApprovalOption>;
+// Runtime ingestion copies the provider event's request id, which may be absent.
 export const ApprovalRequestedPayload = z.looseObject({
-  requestId: ApprovalRequestId,
+  requestId: ApprovalRequestId.optional(),
   requestKind: ProviderRequestKind.optional(),
   requestType: z.string().optional(),
   detail: z.string().optional(),
@@ -55,13 +55,17 @@ export type ApprovalResolvedPayload = z.infer<typeof ApprovalResolvedPayload>;
 // Runtime ingestion can publish questions without a correlated request id.
 export const UserInputRequestedPayload = z.looseObject({
   requestId: ApprovalRequestId.optional(),
-  questions: z.array(UserInputQuestion),
+  questions: forwardCompatibleArray(UserInputQuestion),
   responseMode: forwardCompatibleLiteral(["message"]).optional(),
 });
 export type UserInputRequestedPayload = z.infer<typeof UserInputRequestedPayload>;
 export const UserInputResolvedPayload = z.looseObject({
   requestId: ApprovalRequestId.optional(),
-  answers: ProviderUserInputAnswers.optional(),
+  // Provider runtimes pass answers through; a value shape this client does not
+  // know is dropped rather than failing the activity.
+  answers: forwardCompatibleRecord(ProviderUserInputAnswer).optional(),
+  responseMode: forwardCompatibleLiteral(["message"]).optional(),
+  attachmentsByQuestionId: UserInputAttachments.optional(),
   dismissed: z.boolean().optional(),
 });
 export type UserInputResolvedPayload = z.infer<typeof UserInputResolvedPayload>;
@@ -77,21 +81,10 @@ export type ProviderUserInputRespondFailedPayload = z.infer<
   typeof ProviderUserInputRespondFailedPayload
 >;
 
-export const RequestActivity = taggedUnionWithUnknown("kind", [
-  z.looseObject({ kind: z.literal("approval.requested"), payload: ApprovalRequestedPayload }),
-  z.looseObject({ kind: z.literal("approval.resolved"), payload: ApprovalResolvedPayload }),
-  z.looseObject({ kind: z.literal("user-input.requested"), payload: UserInputRequestedPayload }),
-  z.looseObject({ kind: z.literal("user-input.resolved"), payload: UserInputResolvedPayload }),
-  z.looseObject({
-    kind: z.literal("provider.approval.respond.failed"),
-    payload: ProviderApprovalRespondFailedPayload,
-  }),
-  z.looseObject({
-    kind: z.literal("provider.user-input.respond.failed"),
-    payload: ProviderUserInputRespondFailedPayload,
-  }),
-]);
-export type RequestActivity = z.infer<typeof RequestActivity>;
+/** An activity that opens an approval or user-input request. */
+export type RequestOpeningActivity =
+  | ThreadActivityOfKind<"approval.requested">
+  | ThreadActivityOfKind<"user-input.requested">;
 
 const stalePhrases = [
   "stale pending approval request",
@@ -104,30 +97,31 @@ const stalePhrases = [
 ];
 
 /** Mirror the decider: activity order matters; transient failures keep requests open. */
-export function openRequests<T extends { readonly kind: string; readonly payload: unknown }>(
-  activities: readonly T[],
-): Map<string, T> {
-  const requests = new Map<string, T>();
+export function openRequests(
+  activities: readonly OrchestrationThreadActivity[],
+): Map<ApprovalRequestId, RequestOpeningActivity> {
+  const requests = new Map<ApprovalRequestId, RequestOpeningActivity>();
   for (const activity of activities) {
-    const payload = activity.payload;
-    if (!payload || typeof payload !== "object") continue;
-    const record = payload as Record<string, unknown>;
-    const requestId = record["requestId"];
-    if (typeof requestId !== "string") continue;
-    if (activity.kind === "approval.requested" || activity.kind === "user-input.requested") {
-      requests.set(requestId, activity);
-    } else if (activity.kind === "approval.resolved" || activity.kind === "user-input.resolved") {
-      requests.delete(requestId);
-    } else if (
-      activity.kind === "provider.approval.respond.failed" ||
-      activity.kind === "provider.user-input.respond.failed"
-    ) {
-      const detail = record["detail"];
-      if (
-        typeof detail === "string" &&
-        stalePhrases.some((phrase) => detail.toLowerCase().includes(phrase))
-      )
-        requests.delete(requestId);
+    if (activity.unknown) continue;
+    switch (activity.kind) {
+      case "approval.requested":
+      case "user-input.requested":
+        if (activity.payload.requestId !== undefined) {
+          requests.set(activity.payload.requestId, activity);
+        }
+        break;
+      case "approval.resolved":
+      case "user-input.resolved":
+        if (activity.payload.requestId !== undefined) requests.delete(activity.payload.requestId);
+        break;
+      case "provider.approval.respond.failed":
+      case "provider.user-input.respond.failed": {
+        const detail = activity.payload.detail.toLowerCase();
+        if (stalePhrases.some((phrase) => detail.includes(phrase))) {
+          requests.delete(activity.payload.requestId);
+        }
+        break;
+      }
     }
   }
   return requests;

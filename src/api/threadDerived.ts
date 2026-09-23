@@ -4,9 +4,9 @@
  */
 import { approvalRequestId, type ApprovalRequestId, type TurnId } from "../schemas/common.ts";
 import {
-  ApprovalRequestedPayload,
-  UserInputRequestedPayload,
   openRequests,
+  type ApprovalRequestedPayload,
+  type UserInputRequestedPayload,
 } from "../schemas/orchestration/activities.ts";
 import type {
   OrchestrationLatestTurnState,
@@ -65,17 +65,12 @@ export function toPendingRequest(
   activity: OrchestrationThreadActivity,
 ): PendingRequest | undefined {
   const requestId = approvalRequestId(id);
+  if (activity.unknown) return undefined;
   if (activity.kind === "approval.requested") {
-    const payload = ApprovalRequestedPayload.safeParse(activity.payload);
-    return payload.success
-      ? { kind: "approval", requestId, activity, payload: payload.data }
-      : undefined;
+    return { kind: "approval", requestId, activity, payload: activity.payload };
   }
   if (activity.kind === "user-input.requested") {
-    const payload = UserInputRequestedPayload.safeParse(activity.payload);
-    return payload.success
-      ? { kind: "user-input", requestId, activity, payload: payload.data }
-      : undefined;
+    return { kind: "user-input", requestId, activity, payload: activity.payload };
   }
   return undefined;
 }

@@ -7,7 +7,6 @@ import { z } from "zod";
 import {
   CheckpointRef,
   CommandId,
-  EventId,
   IsoDateTime,
   MessageId,
   NonNegativeInt,
@@ -20,6 +19,7 @@ import {
   forwardCompatibleLiteral,
 } from "../common.ts";
 import { ThreadPullRequestLink } from "./commands/pullRequestModel.ts";
+import { OrchestrationThreadActivity } from "./threadActivity.ts";
 import {
   ChatAttachment,
   ModelSelection,
@@ -160,31 +160,6 @@ export const OrchestrationSession = z.looseObject({
   updatedAt: IsoDateTime,
 });
 export type OrchestrationSession = z.infer<typeof OrchestrationSession>;
-export const OrchestrationThreadActivityTone = forwardCompatibleLiteral([
-  "info",
-  "tool",
-  "approval",
-  "error",
-]);
-export type OrchestrationThreadActivityTone = z.infer<typeof OrchestrationThreadActivityTone>;
-export const OrchestrationThreadActivity = z.looseObject({
-  id: EventId,
-  tone: OrchestrationThreadActivityTone,
-  kind: forwardCompatibleLiteral([
-    "approval.requested",
-    "approval.resolved",
-    "user-input.requested",
-    "user-input.resolved",
-    "provider.approval.respond.failed",
-    "provider.user-input.respond.failed",
-  ]),
-  summary: TrimmedNonEmptyString,
-  payload: z.unknown(),
-  turnId: TurnId.nullable(),
-  sequence: NonNegativeInt.optional(),
-  createdAt: IsoDateTime,
-});
-export type OrchestrationThreadActivity = z.infer<typeof OrchestrationThreadActivity>;
 export const ThreadLinkedPullRequest = z.looseObject({
   projectId: ProjectId,
   repository: TrimmedNonEmptyString,
@@ -266,3 +241,10 @@ export const OrchestrationThreadDetailWindow = z.looseObject({
   beforeCursor: TrimmedNonEmptyString.optional(),
 });
 export type OrchestrationThreadDetailWindow = z.infer<typeof OrchestrationThreadDetailWindow>;
+
+export {
+  OrchestrationThreadActivity,
+  OrchestrationThreadActivityTone,
+  type KnownThreadActivity,
+  type UnknownThreadActivity,
+} from "./threadActivity.ts";
