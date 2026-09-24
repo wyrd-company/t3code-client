@@ -298,7 +298,17 @@ describe("user-input answers", () => {
     };
     expect(ProviderUserInputAnswers.parse(answers)).toEqual(answers);
   });
+  it("keeps __proto__ keys nested inside an answer", () => {
+    const raw = JSON.parse(
+      '{"choice":{"__proto__":{"__proto__":"deep"},"list":[{"__proto__":1}]}}',
+    );
+    const decoded = ProviderUserInputAnswers.parse(raw);
+    expect(JSON.stringify(decoded)).toBe(JSON.stringify(raw));
+    expect(Object.getPrototypeOf(decoded["choice"])).toBe(Object.prototype);
+  });
   it("rejects values JSON cannot carry", () => {
     expect(ProviderUserInputAnswers.safeParse({ when: new Date(0) }).success).toBe(false);
+    const result = ProviderUserInputAnswers.safeParse({ choice: { count: Number.NaN } });
+    expect(result.error?.issues[0]?.path).toEqual(["choice", "count"]);
   });
 });

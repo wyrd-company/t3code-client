@@ -177,6 +177,57 @@ function isPlainRecord(raw: unknown): raw is Record<string, unknown> {
   return typeof raw === "object" && raw !== null && !Array.isArray(raw);
 }
 
+/** A value JSON can carry. */
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+/**
+ * Copy a JSON value, reporting the path of the first part JSON cannot carry.
+ * Unlike `z.json()`, it keeps object keys named `__proto__` at any depth.
+ */
+function copyJson(
+  raw: unknown,
+  path: PropertyKey[],
+): { value: JsonValue } | { path: PropertyKey[] } {
+  if (raw === null || typeof raw === "string" || typeof raw === "boolean") return { value: raw };
+  if (typeof raw === "number") return Number.isFinite(raw) ? { value: raw } : { path };
+  if (Array.isArray(raw)) {
+    const out: JsonValue[] = [];
+    for (const [index, entry] of raw.entries()) {
+      const copied = copyJson(entry, [...path, index]);
+      if ("path" in copied) return copied;
+      out.push(copied.value);
+    }
+    return { value: out };
+  }
+  const prototype: unknown = isPlainRecord(raw) ? Object.getPrototypeOf(raw) : undefined;
+  if (isPlainRecord(raw) && (prototype === Object.prototype || prototype === null)) {
+    const out: { [key: string]: JsonValue } = {};
+    for (const [key, entry] of Object.entries(raw)) {
+      const copied = copyJson(entry, [...path, key]);
+      if ("path" in copied) return copied;
+      setEntry(out, key, copied.value);
+    }
+    return { value: out };
+  }
+  return { path };
+}
+
+/** Any value JSON can carry, decoded to a copy that keeps every key. */
+export const JsonValue: z.ZodType<JsonValue> = z.unknown().transform((raw, ctx) => {
+  const copied = copyJson(raw, []);
+  if ("path" in copied) {
+    ctx.addIssue({ code: "custom", message: "Expected a JSON value", path: copied.path });
+    return z.NEVER;
+  }
+  return copied.value;
+});
+
 /**
  * A string-keyed record whose every value must match. Unlike `z.record`, it
  * keeps a key named `__proto__`, which the server treats as an ordinary key.

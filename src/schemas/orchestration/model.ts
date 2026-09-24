@@ -9,6 +9,7 @@ import {
   NonNegativeInt,
   ProviderInstanceId,
   TrimmedNonEmptyString,
+  JsonValue,
   forwardCompatibleLiteral,
   stringRecord,
   taggedUnionWithUnknown,
@@ -55,7 +56,7 @@ export type ProviderRequestKind = z.infer<typeof ProviderRequestKind>;
  * adapters act on a single choice (a string), several choices (a string
  * array), or Codex's `{ answers: string[] }`.
  */
-export const ProviderUserInputAnswer = z.json();
+export const ProviderUserInputAnswer = JsonValue;
 export type ProviderUserInputAnswer = z.infer<typeof ProviderUserInputAnswer>;
 export const ProviderUserInputAnswers = stringRecord(ProviderUserInputAnswer);
 export type ProviderUserInputAnswers = z.infer<typeof ProviderUserInputAnswers>;
