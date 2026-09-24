@@ -1,6 +1,6 @@
 {
   "name": "@wyrd-company/t3code-client",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "TypeScript client for the T3 Code server: HTTP API, WebSocket RPC, and the auth control plane.",
   "keywords": [
     "client",
