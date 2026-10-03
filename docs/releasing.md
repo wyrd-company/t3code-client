@@ -36,13 +36,18 @@ tarball and the changelog section as notes.
 
 ## Tracking T3 Code
 
-Each release targets the latest T3 Code release. To move to a new one:
+Each upstream T3 Code release gets its own client release. The client steps
+one upstream version at a time, so every release targets exactly one T3 Code
+release. To step to the next one:
 
-1. Set the `t3` devDependency to the new version and install.
-2. Run `pnpm run test:live` and compare the upstream contracts
-   (`packages/contracts/src`) between the two releases. Update the schemas in
-   `src/schemas/` and the RPC registry in `src/rpc/` to match.
-3. Update the version named in `docs/design.md` and add an intent.
+1. Set the `t3` devDependency to the next version and install.
+2. Compare the upstream contracts (`packages/contracts/src`), the server's
+   RPC handlers and scopes, and its HTTP routes between the two releases.
+   Update the schemas in `src/schemas/` to match. Type a new RPC method in
+   `src/rpc/methods/` when it belongs to a family the registry already covers;
+   other new methods stay reachable through `rpc.callRaw` and `rpc.streamRaw`.
+3. Run `pnpm run test:live` against the new server.
+4. Update the version named in `docs/design.md` and add an intent.
 
 ## Recovery
 
