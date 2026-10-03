@@ -280,9 +280,9 @@ describe("nested contract validation", () => {
       SnapShotAccessibility.safeParse({ format: "flat-text", text: "", truncated: false }).success,
     ).toBe(false);
   });
-  it("bounds monograms by graphemes", () => {
+  it("leaves the monogram grapheme count to the server", () => {
     expect(ProjectMonogramText.safeParse("AB").success).toBe(true);
-    expect(ProjectMonogramText.safeParse("ABC").success).toBe(false);
+    expect(ProjectMonogramText.safeParse("ABC").success).toBe(true);
     expect(ProjectMonogramText.safeParse("!").success).toBe(false);
   });
 });

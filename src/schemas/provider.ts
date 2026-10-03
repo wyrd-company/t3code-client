@@ -111,6 +111,8 @@ export const ServerProviderAuth = z.looseObject({
   type: TrimmedNonEmptyString.optional(),
   label: TrimmedNonEmptyString.optional(),
   email: TrimmedNonEmptyString.optional(),
+  subscriptionSharing: z.boolean().optional(),
+  profileId: TrimmedNonEmptyString.optional(),
 });
 export type ServerProviderAuth = z.infer<typeof ServerProviderAuth>;
 export const ServerProviderAvailability = forwardCompatibleLiteral(["available", "unavailable"]);
@@ -193,6 +195,10 @@ export const ServerProviderUsageLimits = z.looseObject({
   checkedAt: IsoDateTime,
   windows: forwardCompatibleArray(ServerProviderUsageWindow),
   resetCredits: ServerProviderResetCredits.optional(),
+  /** Provider-owned usage settings when quota windows are not available to the client. */
+  externalUsage: z
+    .looseObject({ label: TrimmedNonEmptyString, url: TrimmedNonEmptyString })
+    .optional(),
   unavailable: z
     .looseObject({
       reason: forwardCompatibleLiteral(["unsupported", "probeFailed"]),
@@ -201,6 +207,24 @@ export const ServerProviderUsageLimits = z.looseObject({
     .optional(),
 });
 export type ServerProviderUsageLimits = z.infer<typeof ServerProviderUsageLimits>;
+export const ServerProviderCompatibilityStatus = forwardCompatibleLiteral([
+  "unknown",
+  "supported",
+  "graceful",
+  "unsupported",
+  "broken",
+]);
+export type ServerProviderCompatibilityStatus = z.infer<typeof ServerProviderCompatibilityStatus>;
+export const ServerProviderCompatibilityAdvisory = z.looseObject({
+  status: ServerProviderCompatibilityStatus,
+  latestVersionStatus: ServerProviderCompatibilityStatus.optional(),
+  message: TrimmedNonEmptyString.nullable(),
+  recommendedVersion: TrimmedNonEmptyString.nullable(),
+  recommendedRange: TrimmedNonEmptyString.nullable(),
+});
+export type ServerProviderCompatibilityAdvisory = z.infer<
+  typeof ServerProviderCompatibilityAdvisory
+>;
 export const ServerProviderVersionAdvisoryStatus = forwardCompatibleLiteral([
   "unknown",
   "current",
@@ -215,6 +239,7 @@ export const ServerProviderVersionAdvisory = z.looseObject({
   latestVersion: TrimmedNonEmptyString.nullable(),
   updateCommand: TrimmedNonEmptyString.nullable(),
   canUpdate: z.boolean().default(false),
+  canInstallVersion: z.boolean().optional(),
   checkedAt: IsoDateTime.nullable(),
   message: TrimmedNonEmptyString.nullable(),
 });
@@ -239,6 +264,12 @@ export const ServerProvider = z.looseObject({
   supportsConversationRollback: z.boolean().optional(),
   supportsTextGeneration: z.boolean().optional(),
   setup: z.looseObject({ canAuthenticate: z.boolean(), canInstall: z.boolean() }).optional(),
+  runtimePaths: z
+    .looseObject({
+      homePath: TrimmedNonEmptyString,
+      shadowHomePath: TrimmedNonEmptyString.nullable(),
+    })
+    .optional(),
   enabled: z.boolean(),
   installed: z.boolean(),
   version: TrimmedNonEmptyString.nullable(),
@@ -254,6 +285,7 @@ export const ServerProvider = z.looseObject({
   workspaceSnapshots: z.array(ServerProviderWorkspaceSnapshot).optional(),
   usageLimits: ServerProviderUsageLimits.optional(),
   versionAdvisory: ServerProviderVersionAdvisory.optional(),
+  compatibilityAdvisory: ServerProviderCompatibilityAdvisory.optional(),
   updateState: ServerProviderUpdateState.optional(),
 });
 export type ServerProvider = z.infer<typeof ServerProvider>;

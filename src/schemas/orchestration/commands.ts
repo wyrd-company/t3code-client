@@ -11,6 +11,7 @@ import {
 import {
   ThreadActiveReorderCommand,
   ThreadArchiveCommand,
+  ThreadAutoSettleSetCommand,
   ThreadCreateCommand,
   ThreadDeleteCommand,
   ThreadInteractionModeSetCommand,
@@ -53,6 +54,7 @@ export const ClientOrchestrationCommand = z.union([
   ThreadPinCommand,
   ThreadUnpinCommand,
   ThreadPinReorderCommand,
+  ThreadAutoSettleSetCommand,
   ThreadActiveReorderCommand,
   ThreadMetaUpdateCommand,
   ThreadPullRequestLinkCommand,

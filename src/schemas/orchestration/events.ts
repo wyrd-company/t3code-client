@@ -23,6 +23,7 @@ import {
   ThreadActivityAppendedPayload,
   ThreadApprovalResponseRequestedPayload,
   ThreadArchivedPayload,
+  ThreadAutoSettleSetPayload,
   ThreadCheckpointRevertRequestedPayload,
   ThreadCreatedPayload,
   ThreadDeletedPayload,
@@ -153,6 +154,11 @@ export const OrchestrationEvent = taggedUnionWithUnknown("type", [
   }),
   z.looseObject({
     ...EventBaseFields,
+    type: z.literal("thread.auto-settle-set"),
+    payload: ThreadAutoSettleSetPayload,
+  }),
+  z.looseObject({
+    ...EventBaseFields,
     type: z.literal("thread.meta-updated"),
     payload: ThreadMetaUpdatedPayload,
   }),
@@ -261,6 +267,7 @@ export const OrchestrationEventType = forwardCompatibleLiteral([
   "thread.pinned",
   "thread.unpinned",
   "thread.pin-reordered",
+  "thread.auto-settle-set",
   "thread.meta-updated",
   "thread.pull-request-linked",
   "thread.pull-request-unlinked",

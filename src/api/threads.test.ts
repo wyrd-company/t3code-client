@@ -157,12 +157,19 @@ describe("ThreadsApi", () => {
         },
       ],
     });
-    server.routes.route(`GET /api/orchestration/threads/${ids.threadId}`, (request) => ({
-      status: 200,
-      body: makeSnapshot(thread, request.query.get("turnLimit") === "3" ? 3 : 1),
-    }));
+    const detailQueries: URLSearchParams[] = [];
+    server.routes.route(`GET /api/orchestration/threads/${ids.threadId}`, (request) => {
+      detailQueries.push(request.query);
+      return {
+        status: 200,
+        body: makeSnapshot(thread, request.query.get("turnLimit") === "3" ? 3 : 1),
+      };
+    });
     const detail = await threads.detail(ids.threadId, { turnLimit: 3 });
     expect(detail.snapshotSequence).toBe(3);
+    expect(detailQueries.at(-1)?.has("reasoningMessages")).toBe(false);
+    await threads.detail(ids.threadId, { reasoningMessages: true });
+    expect(detailQueries.at(-1)?.get("reasoningMessages")).toBe("true");
     const pending = await threads.pendingRequests(ids.threadId);
     expect(pending).toEqual([expect.objectContaining({ kind: "approval", requestId: "r1" })]);
 

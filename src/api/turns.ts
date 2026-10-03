@@ -35,6 +35,8 @@ export interface StartTurnInput {
   readonly interactionMode?: ClientThreadTurnStartCommand["interactionMode"];
   readonly titleSeed?: string;
   readonly bootstrap?: ThreadTurnStartBootstrap;
+  /** `events()` carries reasoning messages with role `reasoning` instead of `system`. Off by default. */
+  readonly reasoningMessages?: boolean;
   readonly signal?: AbortSignal;
 }
 
@@ -68,6 +70,7 @@ export interface TurnIdentity {
   readonly commandId: CommandId;
   readonly createdAt: string;
   readonly sequence: number;
+  readonly reasoningMessages?: boolean;
   readonly signal?: AbortSignal;
 }
 
@@ -88,6 +91,7 @@ class Turn implements TurnHandle {
   readonly sequence: number;
   readonly #deps: TurnDependencies;
   readonly #signal: AbortSignal | undefined;
+  readonly #reasoningMessages: boolean;
   readonly #controller = new AbortController();
   readonly #subscribers = new Set<Channel<ThreadWatchItem>>();
   readonly #adoption: TurnAdoption;
@@ -103,6 +107,7 @@ class Turn implements TurnHandle {
     this.commandId = identity.commandId;
     this.sequence = identity.sequence;
     this.#signal = identity.signal;
+    this.#reasoningMessages = identity.reasoningMessages === true;
     this.#adoption = new TurnAdoption(identity.messageId, identity.createdAt);
   }
 
@@ -168,6 +173,7 @@ class Turn implements TurnHandle {
       // `sequence - 1` would also replay the user message we just sent.
       const watch = this.#deps.watch(this.threadId, {
         afterSequence: this.sequence,
+        ...(this.#reasoningMessages ? { reasoningMessages: true } : {}),
         signal: this.#controller.signal,
       });
       for await (const item of watch) {

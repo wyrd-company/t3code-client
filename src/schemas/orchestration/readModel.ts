@@ -114,7 +114,17 @@ export const OrchestrationLatestTurn = z.looseObject({
 });
 export type OrchestrationLatestTurn = z.infer<typeof OrchestrationLatestTurn>;
 
-export const OrchestrationMessageRole = forwardCompatibleLiteral(["user", "assistant", "system"]);
+/**
+ * `reasoning` carries a provider's thinking trace and precedes the assistant
+ * text it belongs to. The server sends it only to subscribers that opt in
+ * with `reasoningMessages`; everyone else receives those messages as `system`.
+ */
+export const OrchestrationMessageRole = forwardCompatibleLiteral([
+  "user",
+  "assistant",
+  "system",
+  "reasoning",
+]);
 export type OrchestrationMessageRole = z.infer<typeof OrchestrationMessageRole>;
 export const OrchestrationMessage = z.looseObject({
   id: MessageId,
@@ -203,6 +213,8 @@ export const OrchestrationThread = z.looseObject({
   pinnedAt: IsoDateTime.nullable().optional(),
   pinOrderKey: TrimmedNonEmptyString.nullable().optional(),
   activeOrderKey: TrimmedNonEmptyString.nullable().optional(),
+  /** Set while automatic settlement is off for this thread; only `thread.auto-settle.set` clears it. */
+  autoSettleDisabledAt: IsoDateTime.nullable().optional(),
   titleRegeneration: ThreadTitleRegeneration.nullable().optional(),
   titleState: ThreadTitleState.nullable().optional(),
   deletedAt: IsoDateTime.nullable(),
@@ -239,6 +251,8 @@ export { OrchestrationMessageContext } from "./commands/messageContext.ts";
 export const OrchestrationThreadDetailWindow = z.looseObject({
   turnLimit: PositiveInt.optional(),
   beforeCursor: TrimmedNonEmptyString.optional(),
+  /** Receive reasoning messages with role `reasoning` instead of `system`. Off by default. */
+  reasoningMessages: z.boolean().optional(),
 });
 export type OrchestrationThreadDetailWindow = z.infer<typeof OrchestrationThreadDetailWindow>;
 

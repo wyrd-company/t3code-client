@@ -88,6 +88,14 @@ export const ThreadPinReorderCommand = z.looseObject({
   orderKey: TrimmedNonEmptyString,
 });
 export type ThreadPinReorderCommand = z.infer<typeof ThreadPinReorderCommand>;
+export const ThreadAutoSettleSetCommand = z.looseObject({
+  type: z.literal("thread.auto-settle.set"),
+  commandId: CommandId,
+  threadId: ThreadId,
+  /** `false` turns automatic settlement off for this thread; `true` turns it back on. */
+  enabled: z.boolean(),
+});
+export type ThreadAutoSettleSetCommand = z.infer<typeof ThreadAutoSettleSetCommand>;
 export const ThreadPullRequestLinkCommand = z.looseObject({
   type: z.literal("thread.pull-request.link"),
   commandId: CommandId,

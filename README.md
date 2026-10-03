@@ -147,6 +147,11 @@ for (const activity of detail.thread.activities) {
 and the subscription resumed from the last sequence. Pass `afterSequence`
 to resume from a sequence you stored.
 
+A provider's thinking trace arrives as messages with role `system` unless
+you pass `reasoningMessages: true` to `watch`, `detail`, or `startTurn`; then
+those messages carry role `reasoning`. `assistant-delta` items and a turn's
+`assistantMessage` carry only assistant text either way.
+
 ## Development
 
 ```bash

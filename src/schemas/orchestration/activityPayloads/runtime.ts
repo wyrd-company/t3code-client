@@ -37,6 +37,8 @@ export {
 
 export const RuntimeErrorActivityPayload = z.looseObject({
   message: TrimmedNonEmptyString,
+  /** Provider error code, when the provider reports one. */
+  code: TrimmedNonEmptyString.optional(),
 });
 export type RuntimeErrorActivityPayload = z.infer<typeof RuntimeErrorActivityPayload>;
 

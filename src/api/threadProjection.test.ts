@@ -241,7 +241,7 @@ describe("threadPhase", () => {
 });
 
 describe("applyThreadEvent: metadata events", () => {
-  it("applies snooze, pin, and pull-request link events", () => {
+  it("applies snooze, pin, auto-settle, and pull-request link events", () => {
     let thread = makeThread();
     thread = applyThreadEvent(thread, parseEvent(events.snoozed(1, "2020-01-02T00:00:00.000Z")));
     expect(thread.snoozedUntil).toBe("2020-01-02T00:00:00.000Z");
@@ -251,6 +251,10 @@ describe("applyThreadEvent: metadata events", () => {
     expect(thread).toMatchObject({ pinnedAt: at, pinOrderKey: "k1" });
     thread = applyThreadEvent(thread, parseEvent(events.unpinned(4)));
     expect(thread).toMatchObject({ pinnedAt: null, pinOrderKey: null });
+    thread = applyThreadEvent(thread, parseEvent(events.autoSettleSet(4, at)));
+    expect(thread.autoSettleDisabledAt).toBe(at);
+    thread = applyThreadEvent(thread, parseEvent(events.autoSettleSet(4, null)));
+    expect(thread.autoSettleDisabledAt).toBeNull();
 
     thread = applyThreadEvent(thread, parseEvent(events.pullRequestLinked(5, 7)));
     thread = applyThreadEvent(thread, parseEvent(events.pullRequestLinked(6, 7)));

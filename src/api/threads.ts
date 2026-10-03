@@ -108,7 +108,11 @@ export class ThreadsApi {
     return this.http.request({
       method: "GET",
       path: `/api/orchestration/threads/${encodeURIComponent(threadId)}`,
-      query: { turnLimit: window.turnLimit, beforeCursor: window.beforeCursor },
+      query: {
+        turnLimit: window.turnLimit,
+        beforeCursor: window.beforeCursor,
+        reasoningMessages: window.reasoningMessages ? "true" : undefined,
+      },
       auth: "required",
       decode: OrchestrationThreadDetailSnapshot,
       ...(signal === undefined ? {} : { signal }),
@@ -244,6 +248,7 @@ export class ThreadsApi {
         commandId,
         createdAt,
         sequence: receipt.sequence,
+        reasoningMessages: input.reasoningMessages === true,
         ...(signal === undefined ? {} : { signal }),
       },
     );
@@ -278,7 +283,8 @@ export class ThreadsApi {
   watch(threadId: ThreadId, options: WatchOptions = {}): AsyncIterable<ThreadWatchItem> {
     return watchThread(this.rpc, threadId, {
       ...options,
-      snapshotLoader: (signal) => this.detail(threadId, {}, signal),
+      snapshotLoader: (signal) =>
+        this.detail(threadId, { reasoningMessages: options.reasoningMessages }, signal),
     });
   }
 
