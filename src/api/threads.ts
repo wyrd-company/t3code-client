@@ -35,7 +35,8 @@ import {
   type ThreadPhase,
 } from "./threadProjection.ts";
 import { watchThread, type ThreadWatchItem, type ThreadWatchOptions } from "./threadWatch.ts";
-import { createTurnHandle, type StartTurnInput, type TurnHandle } from "./turns.ts";
+import { startThreadTurn } from "./threadTurnStart.ts";
+import type { StartTurnInput, TurnHandle } from "./turns.ts";
 
 export interface ThreadCreateInput {
   readonly threadId?: ThreadId;
@@ -201,56 +202,17 @@ export class ThreadsApi {
    * Dispatches `thread.turn.start` and returns a handle that follows the turn.
    * Modes default to the thread's current modes (one shell read when omitted).
    */
-  async startTurn(input: StartTurnInput): Promise<TurnHandle> {
-    const { signal } = input;
-    let runtimeMode = input.runtimeMode;
-    let interactionMode = input.interactionMode;
-    if (runtimeMode === undefined || interactionMode === undefined) {
-      const thread = await this.get(input.threadId, signal);
-      if (!thread) throw new T3PreconditionError(`Thread ${input.threadId} does not exist.`);
-      runtimeMode ??= asRuntimeMode(thread.runtimeMode);
-      interactionMode ??= thread.interactionMode === "plan" ? "plan" : "default";
-    }
-    const commandId = this.dispatcher.newCommandId();
-    const messageId = this.dispatcher.newMessageId();
-    const createdAt = this.dispatcher.now();
-    const receipt = await this.dispatch(
+  startTurn(input: StartTurnInput): Promise<TurnHandle> {
+    return startThreadTurn(
       {
-        type: "thread.turn.start",
-        commandId,
-        threadId: input.threadId,
-        message: {
-          messageId,
-          role: "user",
-          text: input.text,
-          attachments: input.attachments ?? [],
-          ...(input.context === undefined ? {} : { context: input.context }),
-        },
-        ...(input.modelSelection === undefined ? {} : { modelSelection: input.modelSelection }),
-        ...(input.titleSeed === undefined ? {} : { titleSeed: input.titleSeed }),
-        runtimeMode,
-        interactionMode,
-        ...(input.bootstrap === undefined ? {} : { bootstrap: input.bootstrap }),
-        createdAt,
-      },
-      signal,
-    );
-    return createTurnHandle(
-      {
+        get: (threadId, s) => this.get(threadId, s),
         dispatch: (command, s) => this.dispatch(command, s),
         watch: (threadId, options) => this.watch(threadId, options),
         newCommandId: () => this.dispatcher.newCommandId(),
+        newMessageId: () => this.dispatcher.newMessageId(),
         now: () => this.dispatcher.now(),
       },
-      {
-        threadId: input.threadId,
-        messageId,
-        commandId,
-        createdAt,
-        sequence: receipt.sequence,
-        reasoningMessages: input.reasoningMessages === true,
-        ...(signal === undefined ? {} : { signal }),
-      },
+      input,
     );
   }
 
@@ -314,11 +276,4 @@ export class ThreadsApi {
       if (!tolerated) throw error;
     }
   }
-}
-
-const runtimeModes = ["approval-required", "auto-accept-edits", "auto", "full-access"] as const;
-
-function asRuntimeMode(mode: string): ThreadCreateCommand["runtimeMode"] {
-  const known = runtimeModes.find((candidate) => candidate === mode);
-  return known ?? "full-access";
 }
