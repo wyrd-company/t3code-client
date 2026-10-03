@@ -54,7 +54,26 @@ export function applyReverted(
 }
 
 /**
- * System and imported messages always survive; messages of retained turns
+ * Upstream ids reasoning messages with this prefix. A client that did not opt
+ * into reasoning messages sees them relabelled as role `system`.
+ */
+const REASONING_MESSAGE_ID_PREFIX = "reasoning:";
+
+/**
+ * Reasoning output belongs to its turn and goes with it, also when the server
+ * relabelled it as `system`; the server reverts its stored `reasoning` role.
+ */
+function isTurnScopedReasoning(message: OrchestrationMessage): boolean {
+  if (message.role === "reasoning") return true;
+  return (
+    message.role === "system" &&
+    message.turnId !== null &&
+    message.id.startsWith(REASONING_MESSAGE_ID_PREFIX)
+  );
+}
+
+/**
+ * System and imported messages always survive, except turn-scoped reasoning; messages of retained turns
  * survive; then unlinked messages fill in, oldest first, until each role has
  * one message per retained turn.
  */
@@ -65,7 +84,10 @@ function retainMessagesAfterRevert(
 ): OrchestrationMessage[] {
   const retained = new Set<string>();
   for (const message of messages) {
-    if (message.role === "system" || isImportedAgentSessionMessageId(message.id)) {
+    if (
+      (message.role === "system" && !isTurnScopedReasoning(message)) ||
+      isImportedAgentSessionMessageId(message.id)
+    ) {
       retained.add(message.id);
     } else if (message.turnId !== null && retainedTurnIds.has(message.turnId)) {
       retained.add(message.id);

@@ -255,7 +255,7 @@ export const events = {
 /** A message in the read-model shape. */
 export function makeMessage(input: {
   id: string;
-  role?: "user" | "assistant" | "system";
+  role?: "user" | "assistant" | "system" | "reasoning";
   text?: string;
   turnId?: string | null;
   createdAt?: string;
