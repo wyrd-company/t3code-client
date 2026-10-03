@@ -80,6 +80,14 @@ export const ServerConfig = z.looseObject({
   threadSnapshotPagination: z.boolean().optional(),
   /** Thread reads accept the `reasoningMessages` opt-in. */
   reasoningMessages: z.boolean().optional(),
+  /**
+   * Folder behind the environment's Scratch project. Present only when the
+   * server answers `projects.ensureScratch` and its data directory is outside
+   * a Git checkout.
+   */
+  scratchWorkspaceRoot: TrimmedNonEmptyString.optional(),
+  /** Folder that holds projects started from just a name (`projects.createNew`). */
+  newProjectsRoot: TrimmedNonEmptyString.optional(),
   environmentThemes: z.array(EnvironmentTheme).optional(),
   usageLimitSources: UsageLimitSourceSnapshots.optional(),
 });

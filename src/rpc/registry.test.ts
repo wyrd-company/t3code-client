@@ -38,6 +38,8 @@ const expected = {
   "projects.writeFile": [false, "orchestration:operate"],
   "projects.searchEntries": [false, "orchestration:read"],
   "projects.searchContents": [false, "orchestration:read"],
+  "projects.ensureScratch": [false, "orchestration:operate"],
+  "projects.createNew": [false, "orchestration:operate"],
   "terminal.open": [false, "terminal:operate"],
   "terminal.attach": [true, "terminal:operate"],
   "terminal.write": [false, "terminal:operate"],
@@ -74,9 +76,13 @@ describe("RPC contract registry", () => {
       rpcMethods["server.refreshProviders"].payload.safeParse({
         instanceId: "example",
         cwd: "/tmp/example",
+        fresh: true,
         refreshModels: true,
       }).success,
     ).toBe(true);
+    expect(rpcMethods["server.refreshProviders"].payload.safeParse({ fresh: "yes" }).success).toBe(
+      false,
+    );
   });
   it("models omitted unary success values as void", () => {
     for (const name of [

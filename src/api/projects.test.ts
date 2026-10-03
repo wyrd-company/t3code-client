@@ -117,6 +117,55 @@ describe("ProjectsApi", () => {
     });
   });
 
+  it("ensureScratch returns the server's Scratch project", async () => {
+    const payloads: unknown[] = [];
+    server.handle("projects.ensureScratch", (payload) => {
+      payloads.push(payload);
+      return { kind: "value", value: { projectId: "project-scratch" } };
+    });
+    await expect(projects.ensureScratch()).resolves.toEqual({ projectId: "project-scratch" });
+    expect(payloads).toEqual([{}]);
+    server.handle("projects.ensureScratch", () => ({
+      kind: "fail",
+      error: {
+        _tag: "OrchestrationDispatchCommandError",
+        message: "Threads without a project are not available on this environment.",
+      },
+    }));
+    await expect(projects.ensureScratch()).rejects.toMatchObject({
+      code: "rpc_failed",
+      tag: "OrchestrationDispatchCommandError",
+    });
+  });
+
+  it("createNew sends the name and keeps the commit error", async () => {
+    const payloads: unknown[] = [];
+    server.handle("projects.createNew", (payload) => {
+      payloads.push(payload);
+      return {
+        kind: "value",
+        value: {
+          projectId: "project-new",
+          workspaceRoot: "/srv/projects/sample",
+          commitError: "Git could not make the first commit.",
+        },
+      };
+    });
+    await expect(projects.createNew({ name: "Sample" })).resolves.toEqual({
+      projectId: "project-new",
+      workspaceRoot: "/srv/projects/sample",
+      commitError: "Git could not make the first commit.",
+    });
+    expect(payloads).toEqual([{ name: "Sample" }]);
+    await expect(projects.createNew({ name: " " })).rejects.toMatchObject({
+      code: "precondition",
+    });
+    await expect(projects.createNew({ name: "x".repeat(201) })).rejects.toMatchObject({
+      code: "precondition",
+    });
+    expect(payloads).toHaveLength(1);
+  });
+
   it("rejects an invalid command before sending", async () => {
     await expect(projects.create({ title: "", workspaceRoot: "/srv/new" })).rejects.toMatchObject({
       code: "precondition",

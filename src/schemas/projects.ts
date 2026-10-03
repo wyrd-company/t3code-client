@@ -7,6 +7,7 @@ import { TrimmedString } from "./common.ts";
 import {
   NonNegativeInt,
   PositiveInt,
+  ProjectId,
   TrimmedNonEmptyString,
   forwardCompatibleLiteral,
 } from "./common.ts";
@@ -93,3 +94,19 @@ export const ProjectWriteFileInput = z.looseObject({
 export type ProjectWriteFileInput = z.infer<typeof ProjectWriteFileInput>;
 export const ProjectWriteFileResult = z.looseObject({ relativePath: TrimmedNonEmptyString });
 export type ProjectWriteFileResult = z.infer<typeof ProjectWriteFileResult>;
+/** The environment's Scratch project, created on first request. */
+export const ProjectEnsureScratchResult = z.looseObject({ projectId: ProjectId });
+export type ProjectEnsureScratchResult = z.infer<typeof ProjectEnsureScratchResult>;
+export const PROJECT_CREATE_NEW_NAME_MAX_LENGTH = 200;
+/** A project started from just a name, in a new folder the server makes. */
+export const ProjectCreateNewInput = z.looseObject({
+  name: TrimmedNonEmptyString.max(PROJECT_CREATE_NEW_NAME_MAX_LENGTH),
+});
+export type ProjectCreateNewInput = z.infer<typeof ProjectCreateNewInput>;
+export const ProjectCreateNewResult = z.looseObject({
+  projectId: ProjectId,
+  workspaceRoot: TrimmedNonEmptyString,
+  /** Why the first commit failed. The project and its files exist either way. */
+  commitError: TrimmedNonEmptyString.optional(),
+});
+export type ProjectCreateNewResult = z.infer<typeof ProjectCreateNewResult>;

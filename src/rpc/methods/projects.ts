@@ -2,8 +2,12 @@
 // relationships:
 //   implements: design
 // ---
+import { z } from "zod";
 import { defineMethod } from "../spec.ts";
 import {
+  ProjectCreateNewInput,
+  ProjectCreateNewResult,
+  ProjectEnsureScratchResult,
   ProjectListEntriesInput,
   ProjectListEntriesResult,
   ProjectReadFileInput,
@@ -46,5 +50,17 @@ export const projectsMethods = {
     success: ProjectSearchContentsResult,
     stream: false,
     scope: "orchestration:read",
+  }),
+  "projects.ensureScratch": defineMethod({
+    payload: z.looseObject({}),
+    success: ProjectEnsureScratchResult,
+    stream: false,
+    scope: "orchestration:operate",
+  }),
+  "projects.createNew": defineMethod({
+    payload: ProjectCreateNewInput,
+    success: ProjectCreateNewResult,
+    stream: false,
+    scope: "orchestration:operate",
   }),
 } as const;

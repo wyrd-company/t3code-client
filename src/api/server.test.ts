@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { FakeT3Server } from "../../test/support/fakeServer.ts";
 import { RpcClient } from "../rpc/client.ts";
 import { rpcMethods } from "../rpc/registry.ts";
+import { ServerProviderUsageLimits } from "../schemas/provider.ts";
 import { HttpTransport } from "../transport/http.ts";
 import { RpcConnection } from "../transport/rpcConnection.ts";
 import { SocketTransport } from "../transport/socket.ts";
@@ -48,6 +49,26 @@ describe("ServerApi", () => {
     await expect(api.getConfig()).resolves.toMatchObject({ cwd: "/tmp/example" });
     await expect(api.environment()).resolves.toMatchObject({ label: "Example" });
     expect(server.routes.requests[0]?.headers["authorization"]).toBeUndefined();
+  });
+
+  it("decodes the Scratch and new-project roots and a usage credential fingerprint", async () => {
+    const config = fixture("server-config") as Record<string, unknown>;
+    server.respond("server.getConfig", {
+      ...config,
+      scratchWorkspaceRoot: "/tmp/example-home/scratch",
+      newProjectsRoot: "/tmp/example-home/projects",
+    });
+    await expect(api.getConfig()).resolves.toMatchObject({
+      scratchWorkspaceRoot: "/tmp/example-home/scratch",
+      newProjectsRoot: "/tmp/example-home/projects",
+    });
+    expect(
+      ServerProviderUsageLimits.parse({
+        checkedAt: "2026-01-01T00:00:00.000Z",
+        windows: [],
+        credentialFingerprint: "fingerprint-1",
+      }).credentialFingerprint,
+    ).toBe("fingerprint-1");
   });
 
   it("finds a provider model by slug or alias", async () => {

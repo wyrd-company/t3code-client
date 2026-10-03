@@ -21,6 +21,8 @@ const enabled = Boolean(baseUrl) && Boolean(token);
 const agent = process.env["T3_LIVE_AGENT"] === "1";
 /** Run the two-turn queued scenario instead of the single turn (two agent turns, not three). */
 const queued = process.env["T3_LIVE_QUEUED"] === "1";
+/** Set only when globalSetup started the server, so its data directory is a temp folder. */
+const liveHome = process.env["T3_LIVE_HOME"];
 
 const kindOf = (item: { kind: string; event?: unknown }): string =>
   item.kind === "event" ? `event:${String((item.event as { type?: string }).type)}` : item.kind;
@@ -103,6 +105,34 @@ describe.skipIf(!enabled)("live facades", () => {
       }
     }
     expect((await client.server.getConfig()).reasoningMessages).toBe(true);
+  });
+
+  // Both create folders in the server's data directory, so they run only
+  // against the server globalSetup started in a temp folder.
+  it.skipIf(!liveHome)("ensures the Scratch project idempotently", async () => {
+    const config = await client.server.getConfig();
+    expect(config.scratchWorkspaceRoot).toBe(NodePath.join(liveHome ?? "", "scratch"));
+    const first = await client.projects.ensureScratch();
+    const second = await client.projects.ensureScratch();
+    expect(second.projectId).toBe(first.projectId);
+    expect(await client.projects.get(first.projectId)).toMatchObject({
+      workspaceRoot: config.scratchWorkspaceRoot,
+    });
+  });
+
+  it.skipIf(!liveHome)("creates a project from a name", async () => {
+    const config = await client.server.getConfig();
+    expect(config.newProjectsRoot).toBe(NodePath.join(liveHome ?? "", "projects"));
+    const created = await client.projects.createNew({ name: "Live sample" });
+    try {
+      expect(NodePath.dirname(created.workspaceRoot)).toBe(config.newProjectsRoot);
+      expect(await client.projects.get(created.projectId)).toMatchObject({
+        title: "Live sample",
+        workspaceRoot: created.workspaceRoot,
+      });
+    } finally {
+      await client.projects.delete(created.projectId, { force: true });
+    }
   });
 
   it("sees the thread on the shell watch", async () => {
