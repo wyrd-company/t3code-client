@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 /**
  * RpcConnection: request/response correlation over a SocketTransport. One
  * `Request` per call; `Chunk`s feed an async iterable that acknowledges each

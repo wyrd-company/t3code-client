@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 /**
  * SocketTransport: one logical WebSocket connection to `/ws` that survives
  * drops. It opens lazily, keeps the link alive with Ping/Pong, reconnects with

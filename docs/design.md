@@ -1,3 +1,12 @@
+---
+relationships:
+  references:
+    - client
+    - shell
+    - socket
+    - threadWatch
+---
+
 # T3 Code client: technical design
 
 `@wyrd-company/t3code-client` is a TypeScript library that lets a Node program
@@ -653,8 +662,19 @@ turn id, and `assistantMessage` is the last assistant message of that turn.
 ```ts
 export class ShellApi {
   snapshot(): Promise<OrchestrationShellSnapshot>;
+  readModel(signal?: AbortSignal): Promise<OrchestrationReadModel>;
   watch(options?): AsyncIterable<ShellWatchItem>;
 } // resumable like threads
+```
+
+`client.shell.snapshot()` reads the lightweight shell at
+`GET /api/orchestration/shell`. `client.shell.readModel(signal?)` reads
+`GET /api/orchestration/snapshot` with the bearer credential and decodes it
+with `OrchestrationReadModel`. It returns the full project and thread state,
+including messages, activities, checkpoints, `snapshotSequence`, and
+`updatedAt`. The caller's signal is passed to the HTTP transport.
+
+```ts
 export class ServerApi {
   probe();
   getConfig();

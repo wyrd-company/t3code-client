@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 /**
  * watchThread: a resumable live view of one thread. It subscribes with
  * `orchestration.subscribeThread`, keeps a projected `OrchestrationThread`

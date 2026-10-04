@@ -1,6 +1,11 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 /**
  * ShellApi: the lightweight cross-thread view (projects and thread shells)
- * as a snapshot over HTTP or a resumable live stream over RPC.
+ * as a snapshot over HTTP or a resumable live stream over RPC, plus the full
+ * orchestration read model over HTTP.
  */
 import { T3ConnectionError, T3InterruptedError, type T3DecodeError } from "../errors.ts";
 import type { RpcClient } from "../rpc/client.ts";
@@ -9,6 +14,7 @@ import {
   OrchestrationShellSnapshot,
   type OrchestrationShellStreamItem,
 } from "../schemas/orchestration/shell.ts";
+import { OrchestrationReadModel } from "../schemas/orchestration/readModel.ts";
 import type { HttpTransport } from "../transport/http.ts";
 import { isKnownVariant } from "./threadProjection.ts";
 
@@ -42,6 +48,17 @@ export class ShellApi {
   constructor(http: HttpTransport, rpc: RpcClient<RpcMethods>) {
     this.http = http;
     this.rpc = rpc;
+  }
+
+  /** Reads the full orchestration state, including thread messages and activities. */
+  readModel(signal?: AbortSignal): Promise<OrchestrationReadModel> {
+    return this.http.request({
+      method: "GET",
+      path: "/api/orchestration/snapshot",
+      auth: "required",
+      decode: OrchestrationReadModel,
+      ...(signal === undefined ? {} : { signal }),
+    });
   }
 
   snapshot(signal?: AbortSignal): Promise<OrchestrationShellSnapshot> {

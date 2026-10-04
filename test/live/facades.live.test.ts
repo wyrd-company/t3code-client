@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   verifies: design
+// ---
 /**
  * Facade round trip against a real T3 Code server, reached through
  * T3_LIVE_URL and T3_LIVE_TOKEN (see globalSetup.ts). T3_LIVE_AGENT=1 also
@@ -83,6 +87,23 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(detail.thread.id).toBe(id);
     expect(client.threads.phase(thread)).toBe("idle");
     expect(await client.threads.pendingRequests(id)).toEqual([]);
+  });
+
+  it("reads the full read model with the created project and thread", async () => {
+    const controller = new AbortController();
+    const readModel = await client.shell.readModel(controller.signal);
+    expect(readModel.snapshotSequence).toBeGreaterThan(0);
+    expect(readModel.projects.find((project) => project.id === projectId)).toMatchObject({
+      workspaceRoot,
+    });
+    expect(readModel.threads.find((thread) => thread.id === id)).toMatchObject({
+      projectId,
+      title: "live sample thread",
+      messages: [],
+      activities: [],
+      checkpoints: [],
+    });
+    expect(Number.isNaN(Date.parse(readModel.updatedAt))).toBe(false);
   });
 
   it("turns automatic settlement off and accepts the reasoning opt-in", async () => {

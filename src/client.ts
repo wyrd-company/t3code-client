@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 /**
  * T3Client: the composition root. It wires the HTTP transport, the auth
  * client, the socket transport (ticket or bearer-header upgrade), the RPC

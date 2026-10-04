@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   references: design
+// ---
 /**
  * FakeT3Server: an in-process stand-in for the T3 Code server. It speaks the
  * RPC envelope protocol over `ws`, answers HTTP routes from a `FakeRouteTable`,

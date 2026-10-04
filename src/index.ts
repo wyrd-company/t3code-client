@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 /**
  * Public surface of @wyrd-company/t3code-client. Everything a consumer may
  * import comes from here; internal modules are not part of the contract.

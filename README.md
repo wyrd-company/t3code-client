@@ -1,3 +1,8 @@
+---
+relationships:
+  references: design
+---
+
 # @wyrd-company/t3code-client
 
 TypeScript client for the [T3 Code](https://github.com/pingdotgg/t3code) server:
@@ -89,7 +94,7 @@ await client.close();
 | `client.server`   | Environment descriptor, config and provider catalog, settings, config and lifecycle streams.         |
 | `client.projects` | List, get, ensure, update, delete projects; Scratch and named new projects; project files.           |
 | `client.threads`  | List, get, detail, ensure, update, archive, delete; turns, interrupts, approvals, user input; watch. |
-| `client.shell`    | The lightweight projects-and-threads snapshot and its live stream.                                   |
+| `client.shell`    | Lightweight snapshot and live stream; full orchestration read model.                                 |
 | `client.vcs`      | Refs, status, worktrees, branches.                                                                   |
 | `client.terminal` | Open, attach, write, resize, close terminals.                                                        |
 | `client.rpc`      | Typed `call` and `stream` for every registered method, plus `callRaw` and `streamRaw` for the rest.  |
@@ -149,6 +154,10 @@ for (const activity of detail.thread.activities) {
 open timeout unless supplied. `openTimeoutMs` bounds the WebSocket handshake
 after URL and header resolution; expiry abandons that socket and retries with
 backoff.
+
+`client.shell.readModel(signal?)` reads the full orchestration snapshot over
+authenticated HTTP, including projects, threads, messages, and activities.
+`client.shell.snapshot()` reads the lightweight shell snapshot.
 
 Thread and shell watches wait through transient connection failures, including
 an unavailable server at startup and repeated empty subscriptions. They resume
