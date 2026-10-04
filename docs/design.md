@@ -30,7 +30,7 @@ engine, and it does not spawn or install the server.
   its implementation. No file over roughly 300 lines. Callers compose the
   facade; tests cross the same seams callers do.
 
-## Wire facts (verified against T3 Code 0.0.43, upstream release)
+## Wire facts (verified against T3 Code 0.0.44, upstream release)
 
 HTTP, all under one base URL:
 
