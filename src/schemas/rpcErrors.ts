@@ -156,8 +156,11 @@ export const ProjectWriteFileError = taggedError("ProjectWriteFileError", projec
 
 export const OrchestrationDispatchCommandError = taggedError("OrchestrationDispatchCommandError", {
   ...messageAndCause,
-  /** `deleted` when a failed bootstrap turn start removed the thread it created. */
-  bootstrapThreadDisposition: forwardCompatibleLiteral(["deleted"]).optional(),
+  /**
+   * `deleted` when a failed bootstrap turn start removed the thread it created;
+   * `not-created` when a bootstrap that required a worktree failed before creating its thread.
+   */
+  bootstrapThreadDisposition: forwardCompatibleLiteral(["deleted", "not-created"]).optional(),
 });
 export const OrchestrationGetSnapshotError = taggedError(
   "OrchestrationGetSnapshotError",

@@ -147,6 +147,12 @@ export function applyThreadEvent(
       return { ...thread, pinnedAt: null, pinOrderKey: null, updatedAt: event.payload.updatedAt };
     case "thread.pin-reordered":
       return { ...thread, pinOrderKey: event.payload.orderKey, updatedAt: event.payload.updatedAt };
+    case "thread.auto-settle-set":
+      return {
+        ...thread,
+        autoSettleDisabledAt: event.payload.autoSettleDisabledAt,
+        updatedAt: event.payload.updatedAt,
+      };
     case "thread.deleted":
       return { ...thread, deletedAt: event.payload.deletedAt, updatedAt: event.payload.deletedAt };
     // Intents and creation: the projector records nothing for an existing thread.

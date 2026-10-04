@@ -30,27 +30,27 @@ engine, and it does not spawn or install the server.
   its implementation. No file over roughly 300 lines. Callers compose the
   facade; tests cross the same seams callers do.
 
-## Wire facts (verified against T3 Code 0.0.42, upstream release)
+## Wire facts (verified against T3 Code 0.0.43, upstream release)
 
 HTTP, all under one base URL:
 
-| Method and path                            | Auth                 | Notes                                                             |
-| ------------------------------------------ | -------------------- | ----------------------------------------------------------------- |
-| `GET /.well-known/t3/environment`          | none                 | `ExecutionEnvironmentDescriptor`                                  |
-| `GET /api/auth/session`                    | optional bearer      | `AuthSessionState`; `authenticated:false` without a credential    |
-| `POST /oauth/token`                        | none                 | form-encoded token exchange; pairing token is single use          |
-| `POST /api/auth/websocket-ticket`          | bearer               | `{ticket, expiresAt}`; ticket lives about five minutes            |
-| `POST /api/auth/pairing-token`             | bearer, access:write | body `{label?, scopes?}`; the credential is returned once         |
-| `GET /api/auth/pairing-links`              | bearer, access:read  |                                                                   |
-| `POST /api/auth/pairing-links/revoke`      | bearer, access:write | `{id}` → `{revoked}`                                              |
-| `GET /api/auth/clients`                    | bearer, access:read  | `AuthClientSession[]`                                             |
-| `POST /api/auth/clients/revoke`            | bearer, access:write | `{sessionId}` → `{revoked}`                                       |
-| `POST /api/auth/clients/revoke-others`     | bearer, access:write | `{revokedCount}`                                                  |
-| `GET /api/orchestration/snapshot`          | bearer, orch:read    | full `OrchestrationReadModel`                                     |
-| `GET /api/orchestration/shell`             | bearer, orch:read    | `OrchestrationShellSnapshot`                                      |
-| `GET /api/orchestration/threads/:threadId` | bearer, orch:read    | query `turnLimit`, `beforeCursor`; 404 `thread_not_found`         |
-| `POST /api/orchestration/dispatch`         | bearer, orch:operate | `ClientOrchestrationCommand` → `{sequence}`; invariant errors 500 |
-| `POST /api/pull-requests/diff`             | bearer               | out of scope for this version                                     |
+| Method and path                            | Auth                 | Notes                                                                               |
+| ------------------------------------------ | -------------------- | ----------------------------------------------------------------------------------- |
+| `GET /.well-known/t3/environment`          | none                 | `ExecutionEnvironmentDescriptor`                                                    |
+| `GET /api/auth/session`                    | optional bearer      | `AuthSessionState`; `authenticated:false` without a credential                      |
+| `POST /oauth/token`                        | none                 | form-encoded token exchange; pairing token is single use                            |
+| `POST /api/auth/websocket-ticket`          | bearer               | `{ticket, expiresAt}`; ticket lives about five minutes                              |
+| `POST /api/auth/pairing-token`             | bearer, access:write | body `{label?, scopes?}`; the credential is returned once                           |
+| `GET /api/auth/pairing-links`              | bearer, access:read  |                                                                                     |
+| `POST /api/auth/pairing-links/revoke`      | bearer, access:write | `{id}` → `{revoked}`                                                                |
+| `GET /api/auth/clients`                    | bearer, access:read  | `AuthClientSession[]`                                                               |
+| `POST /api/auth/clients/revoke`            | bearer, access:write | `{sessionId}` → `{revoked}`                                                         |
+| `POST /api/auth/clients/revoke-others`     | bearer, access:write | `{revokedCount}`                                                                    |
+| `GET /api/orchestration/snapshot`          | bearer, orch:read    | full `OrchestrationReadModel`                                                       |
+| `GET /api/orchestration/shell`             | bearer, orch:read    | `OrchestrationShellSnapshot`                                                        |
+| `GET /api/orchestration/threads/:threadId` | bearer, orch:read    | query `turnLimit`, `beforeCursor`, `reasoningMessages=true`; 404 `thread_not_found` |
+| `POST /api/orchestration/dispatch`         | bearer, orch:operate | `ClientOrchestrationCommand` → `{sequence}`; invariant errors 500                   |
+| `POST /api/pull-requests/diff`             | bearer               | out of scope for this version                                                       |
 
 HTTP errors are JSON tagged records: `EnvironmentRequestInvalidError` (400),
 `EnvironmentAuthInvalidError` (401), `EnvironmentScopeRequiredError` and
@@ -88,6 +88,12 @@ socket without a reason. A stream ends with an `Exit` (an `Interrupt` cause
 after the client cancels). A payload the server cannot decode surfaces as a
 `Die` with a string defect, so the client validates payloads before sending
 to give a better error.
+
+Reasoning messages are opt-in on thread reads. Without
+`reasoningMessages` on `orchestration.subscribeThread` or on the HTTP thread
+snapshot, the server rewrites role `reasoning` to `system` in snapshots and
+`thread.message-sent` events. `ServerConfig.reasoningMessages` says the server
+accepts the opt-in.
 
 The full method list is `WS_METHODS` plus `ORCHESTRATION_WS_METHODS` in the
 contracts package; the scope each method needs is in
@@ -545,7 +551,7 @@ export class ProjectsApi {
 export class ThreadsApi {
   list(options?: { projectId?: ProjectId; includeArchived?: boolean }): Promise<OrchestrationThreadShell[]>
   get(threadId): Promise<OrchestrationThreadShell | undefined>
-  detail(threadId, window?: { turnLimit?: number; beforeCursor?: string }): Promise<OrchestrationThreadDetailSnapshot>   // HTTP; T3NotFoundError
+  detail(threadId, window?: { turnLimit?: number; beforeCursor?: string; reasoningMessages?: boolean }): Promise<OrchestrationThreadDetailSnapshot>   // HTTP; T3NotFoundError
   create(input: ThreadCreateInput): Promise<OrchestrationThreadShell>          // caller may pass threadId; else generated
   ensure(input: ThreadCreateInput & { threadId: ThreadId }): Promise<OrchestrationThreadShell>   // exists → return as is
   update(threadId, patch: ThreadMetaUpdate): Promise<void>
@@ -564,7 +570,8 @@ export class ThreadsApi {
 }
 
 export interface StartTurnInput { threadId: ThreadId; text: string; attachments?: ChatAttachment[]; modelSelection?: ModelSelection;
-  runtimeMode?: RuntimeMode; interactionMode?: ProviderInteractionMode; titleSeed?: string; bootstrap?: ThreadTurnStartBootstrap; signal?: AbortSignal }
+  runtimeMode?: RuntimeMode; interactionMode?: ProviderInteractionMode; titleSeed?: string; bootstrap?: ThreadTurnStartBootstrap;
+  reasoningMessages?: boolean; signal?: AbortSignal }
 
 export interface TurnHandle {
   readonly threadId: ThreadId
@@ -590,7 +597,8 @@ export type ThreadWatchItem =
   | { kind: "reconnected"; afterSequence: number }
 ```
 
-`watch` subscribes with `orchestration.subscribeThread`; on socket loss it
+`watch` subscribes with `orchestration.subscribeThread`, sending
+`reasoningMessages` only when the caller opts in; on socket loss it
 resubscribes with `afterSequence` set to the last sequence seen and emits
 `reconnected`. The snapshot frame is used to seed the derived items
 (pending requests, current turn) so a consumer that joins late sees the

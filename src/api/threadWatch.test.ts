@@ -84,6 +84,37 @@ describe("watchThread", () => {
     expect(approval?.kind === "approval-requested" && approval.payload.requestKind).toBe("command");
   });
 
+  it("asks for reasoning messages only when opted in, and keeps them out of assistant text", async () => {
+    const payloads: Record<string, unknown>[] = [];
+    server.handle("orchestration.subscribeThread", (payload) => {
+      payloads.push(payload as Record<string, unknown>);
+      return {
+        kind: "stream",
+        chunks: [
+          [snapshotItem(10)],
+          [eventItem(events.sessionSet(11, { status: "running", activeTurnId: ids.turnId }))],
+          [eventItem(events.messageSent(12, { messageId: "r1", role: "reasoning", text: "hm" }))],
+          [eventItem(events.messageSent(13, { messageId: "a1", text: "done" }))],
+          [eventItem(events.sessionSet(14, { status: "ready" }))],
+        ],
+      };
+    });
+    for await (const _ of watchThread(rpc, ids.threadId)) void _;
+    const items: ThreadWatchItem[] = [];
+    for await (const item of watchThread(rpc, ids.threadId, { reasoningMessages: true })) {
+      items.push(item);
+    }
+    expect(payloads[0]).not.toHaveProperty("reasoningMessages");
+    expect(payloads[1]).toMatchObject({ reasoningMessages: true });
+    const deltas = items.filter((i) => i.kind === "assistant-delta");
+    expect(deltas.map((d) => d.kind === "assistant-delta" && d.text)).toEqual(["done"]);
+    const settled = items.at(-1);
+    expect(settled?.kind === "turn-settled" && settled.outcome.assistantMessage).toMatchObject({
+      id: "a1",
+      text: "done",
+    });
+  });
+
   it("announces requests that are already open in the snapshot", async () => {
     const thread = makeThread({
       activities: [

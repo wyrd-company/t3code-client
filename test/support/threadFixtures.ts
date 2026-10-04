@@ -142,7 +142,7 @@ export const events = {
     sequence: number,
     message: {
       messageId: string;
-      role?: "user" | "assistant";
+      role?: "user" | "assistant" | "system" | "reasoning";
       text: string;
       streaming?: boolean;
       turnId?: string | null;
@@ -210,6 +210,8 @@ export const events = {
       updatedAt: at,
     }),
   unpinned: (sequence: number) => rawEvent(sequence, "thread.unpinned", { updatedAt: at }),
+  autoSettleSet: (sequence: number, autoSettleDisabledAt: string | null) =>
+    rawEvent(sequence, "thread.auto-settle-set", { autoSettleDisabledAt, updatedAt: at }),
   pullRequestLinked: (sequence: number, number: number) =>
     rawEvent(sequence, "thread.pull-request-linked", {
       link: {
@@ -253,7 +255,7 @@ export const events = {
 /** A message in the read-model shape. */
 export function makeMessage(input: {
   id: string;
-  role?: "user" | "assistant" | "system";
+  role?: "user" | "assistant" | "system" | "reasoning";
   text?: string;
   turnId?: string | null;
   createdAt?: string;

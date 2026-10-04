@@ -115,6 +115,23 @@ describe("ThreadsApi.startTurn", () => {
     expect(items.at(-1)?.kind).toBe("turn-settled");
   });
 
+  it("passes the reasoning opt-in to the watch and its HTTP seed", async () => {
+    scriptTurn();
+    const handle = await threads.startTurn({
+      threadId: ids.threadId,
+      text: "Say pong.",
+      runtimeMode: "auto",
+      interactionMode: "default",
+      reasoningMessages: true,
+    });
+    await handle.completion;
+    expect(subscriptions[0]).toMatchObject({ reasoningMessages: true });
+    const seed = server.routes.requests.find((r) =>
+      r.path.startsWith("/api/orchestration/threads/"),
+    );
+    expect(seed?.query.get("reasoningMessages")).toBe("true");
+  });
+
   it("resolves completion without events() being consumed", async () => {
     scriptTurn();
     const handle = await threads.startTurn({

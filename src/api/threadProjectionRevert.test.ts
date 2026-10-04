@@ -81,3 +81,45 @@ describe("applyThreadEvent: reverted", () => {
     expect(empty.messages.map((m) => m.id)).toEqual(["import:old"]);
   });
 });
+
+describe("applyThreadEvent: reverted reasoning", () => {
+  const revertedThread = (reasoningRole: "reasoning" | "system") =>
+    makeThread({
+      checkpoints: [
+        makeCheckpoint({ turnId: "turn-1", checkpointTurnCount: 1, assistantMessageId: "a1" }),
+        makeCheckpoint({ turnId: "turn-2", checkpointTurnCount: 2, assistantMessageId: "a2" }),
+      ],
+      messages: [
+        makeMessage({ id: "u1", role: "user", turnId: "turn-1" }),
+        makeMessage({ id: "reasoning:r1", role: reasoningRole, turnId: "turn-1" }),
+        makeMessage({ id: "a1", turnId: "turn-1" }),
+        makeMessage({ id: "u2", role: "user", turnId: "turn-2" }),
+        makeMessage({ id: "reasoning:r2", role: reasoningRole, turnId: "turn-2" }),
+        makeMessage({ id: "a2", turnId: "turn-2" }),
+        makeMessage({ id: "notice", role: "system", turnId: "turn-2" }),
+        makeMessage({ id: "reasoning:unlinked", role: "system", turnId: null }),
+      ],
+    });
+
+  it("drops opted-in reasoning messages of reverted turns", () => {
+    const next = applyThreadEvent(revertedThread("reasoning"), parseEvent(events.reverted(5, 1)));
+    expect(next.messages.map((m) => m.id)).toEqual([
+      "u1",
+      "reasoning:r1",
+      "a1",
+      "notice",
+      "reasoning:unlinked",
+    ]);
+  });
+
+  it("drops reasoning relabelled as system with its reverted turn", () => {
+    const next = applyThreadEvent(revertedThread("system"), parseEvent(events.reverted(5, 1)));
+    expect(next.messages.map((m) => m.id)).toEqual([
+      "u1",
+      "reasoning:r1",
+      "a1",
+      "notice",
+      "reasoning:unlinked",
+    ]);
+  });
+});

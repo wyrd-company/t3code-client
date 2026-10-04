@@ -72,6 +72,7 @@ export const OrchestrationThreadShell = z.looseObject({
   pinnedAt: IsoDateTime.nullable().optional(),
   pinOrderKey: TrimmedNonEmptyString.nullable().optional(),
   activeOrderKey: TrimmedNonEmptyString.nullable().optional(),
+  autoSettleDisabledAt: IsoDateTime.nullable().optional(),
   titleRegeneration: ThreadTitleRegeneration.nullable().optional(),
   titleState: ThreadTitleState.nullable().optional(),
   session: OrchestrationSession.nullable(),
@@ -129,6 +130,8 @@ export const OrchestrationSubscribeShellInput = z.looseObject({
 export type OrchestrationSubscribeShellInput = z.infer<typeof OrchestrationSubscribeShellInput>;
 export const OrchestrationSubscribeThreadInput = z.looseObject({
   threadId: ThreadId,
+  /** Receive reasoning messages with role `reasoning` instead of `system`. Off by default. */
+  reasoningMessages: z.boolean().optional(),
   afterSequence: NonNegativeInt.optional(),
   requestCompletionMarker: z.boolean().optional(),
   turnLimit: PositiveInt.optional(),

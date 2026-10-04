@@ -140,7 +140,8 @@ export const ThreadMessageSentPayload = z.looseObject({
   text: z.string(),
   attachments: z.array(ChatAttachment).optional(),
   context: OrchestrationMessageContext.optional(),
-  turnId: TurnId.nullable(),
+  // Events persisted before the field existed carry no key at all.
+  turnId: TurnId.nullable().default(null),
   streaming: z.boolean(),
   createdAt: IsoDateTime,
   updatedAt: IsoDateTime,
@@ -162,6 +163,13 @@ export const ThreadMetaUpdatedPayload = z.looseObject({
   updatedAt: IsoDateTime,
 });
 export type ThreadMetaUpdatedPayload = z.infer<typeof ThreadMetaUpdatedPayload>;
+export const ThreadAutoSettleSetPayload = z.looseObject({
+  threadId: ThreadId,
+  /** `null` when automatic settlement is back on. */
+  autoSettleDisabledAt: IsoDateTime.nullable(),
+  updatedAt: IsoDateTime,
+});
+export type ThreadAutoSettleSetPayload = z.infer<typeof ThreadAutoSettleSetPayload>;
 export const ThreadPinReorderedPayload = z.looseObject({
   threadId: ThreadId,
   orderKey: TrimmedNonEmptyString,

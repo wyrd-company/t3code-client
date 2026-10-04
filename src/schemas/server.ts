@@ -78,6 +78,8 @@ export const ServerConfig = z.looseObject({
   shellRevealInFileManagerKind: FileManagerRevealKind.optional(),
   threadResumeCompletionMarker: z.boolean().optional(),
   threadSnapshotPagination: z.boolean().optional(),
+  /** Thread reads accept the `reasoningMessages` opt-in. */
+  reasoningMessages: z.boolean().optional(),
   environmentThemes: z.array(EnvironmentTheme).optional(),
   usageLimitSources: UsageLimitSourceSnapshots.optional(),
 });

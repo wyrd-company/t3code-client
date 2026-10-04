@@ -49,6 +49,7 @@ export const ProviderRequestKind = forwardCompatibleLiteral([
   "file-read",
   "file-change",
   "mcp-elicitation",
+  "permission",
 ]);
 export type ProviderRequestKind = z.infer<typeof ProviderRequestKind>;
 /**
@@ -238,20 +239,40 @@ export const ProjectLucideIconName = TrimmedNonEmptyString.max(64).regex(
   /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
 );
 export type ProjectLucideIconName = z.infer<typeof ProjectLucideIconName>;
-const monogramSegmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
-export const ProjectMonogramText = TrimmedNonEmptyString.max(32)
-  .regex(/^[\p{L}\p{N}][\p{L}\p{N}\p{M}\u200c\u200d]*$/u)
-  .refine((text) => Array.from(monogramSegmenter.segment(text)).length <= 2);
+/** Grapheme count is checked by the server when a command sets the icon, not when a snapshot decodes. */
+export const ProjectMonogramText = TrimmedNonEmptyString.max(32).regex(
+  /^[\p{L}\p{N}][\p{L}\p{N}\p{M}\u200c\u200d]*$/u,
+);
 export type ProjectMonogramText = z.infer<typeof ProjectMonogramText>;
+const ProjectLucideIconWire = z.looseObject({
+  kind: z.literal("lucide"),
+  name: ProjectLucideIconName,
+  color: ProjectIconColor,
+  monogramText: ProjectMonogramText.optional(),
+  monogram: ProjectMonogramText.optional(),
+});
+const ProjectMonogramIcon = z.looseObject({
+  kind: z.literal("monogram"),
+  text: ProjectMonogramText,
+  color: ProjectIconColor,
+});
+type ProjectMonogramIcon = z.infer<typeof ProjectMonogramIcon>;
+/**
+ * The server encodes a monogram as a Lucide icon carrying `monogramText`
+ * (older peers render the named icon); a Lucide icon with monogram text
+ * decodes as `kind: "monogram"`, as in the contracts.
+ */
 export const ProjectIconOverride = taggedUnionWithUnknown("kind", [
-  z.looseObject({
-    kind: z.literal("lucide"),
-    name: ProjectLucideIconName,
-    color: ProjectIconColor,
-    monogram: ProjectMonogramText.optional(),
-  }),
+  ProjectLucideIconWire,
   z.looseObject({ kind: z.literal("emoji"), emoji: ProjectEmoji }),
-]);
+  ProjectMonogramIcon,
+]).transform((icon) => {
+  if (!("kind" in icon) || icon.kind !== "lucide") return icon;
+  const text = icon.monogramText ?? icon.monogram;
+  if (text === undefined) return icon;
+  const monogram: ProjectMonogramIcon = { kind: "monogram", text, color: icon.color };
+  return monogram;
+});
 export type ProjectIconOverride = z.infer<typeof ProjectIconOverride>;
 export const ProjectFaviconPath = TrimmedNonEmptyString.max(1024).regex(
   /\.(?:avif|gif|ico|jpe?g|png|svg|webp)$/i,

@@ -29,6 +29,8 @@ export const ExecutionEnvironmentDescriptor = z.looseObject({
   label: TrimmedNonEmptyString,
   platform: ExecutionEnvironmentPlatform,
   serverVersion: TrimmedNonEmptyString,
+  /** Orchestration wire version; absent means 1. */
+  orchestrationProtocolVersion: z.number().int().optional(),
   capabilities: ExecutionEnvironmentCapabilities,
 });
 export type ExecutionEnvironmentDescriptor = z.infer<typeof ExecutionEnvironmentDescriptor>;

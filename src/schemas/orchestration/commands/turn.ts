@@ -41,6 +41,8 @@ export const ThreadTurnStartBootstrapPrepareWorktree = z.looseObject({
   baseBranch: TrimmedNonEmptyString,
   branch: TrimmedNonEmptyString.optional(),
   startFromOrigin: z.boolean().optional(),
+  /** Fail the turn start instead of running in the project checkout when no worktree can be made. */
+  requireWorktree: z.boolean().optional(),
 });
 export type ThreadTurnStartBootstrapPrepareWorktree = z.infer<
   typeof ThreadTurnStartBootstrapPrepareWorktree

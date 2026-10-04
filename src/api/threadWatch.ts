@@ -28,6 +28,8 @@ export interface ThreadWatchOptions {
   /** Resume after this sequence instead of asking for a snapshot. */
   readonly afterSequence?: number;
   readonly turnLimit?: number;
+  /** Receive reasoning messages with role `reasoning` instead of `system`. Off by default. */
+  readonly reasoningMessages?: boolean;
   readonly signal?: AbortSignal;
   /** Loads a detail snapshot when the server replays events without one (HTTP thread detail). */
   readonly snapshotLoader?: (signal?: AbortSignal) => Promise<OrchestrationThreadDetailSnapshot>;
@@ -65,6 +67,7 @@ async function* run(
         requestCompletionMarker: true,
         ...(afterSequence === undefined ? {} : { afterSequence }),
         ...(options.turnLimit === undefined ? {} : { turnLimit: options.turnLimit }),
+        ...(options.reasoningMessages === true ? { reasoningMessages: true } : {}),
       };
       const stream = rpc.stream(
         "orchestration.subscribeThread",

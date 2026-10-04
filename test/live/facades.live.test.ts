@@ -83,6 +83,28 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(await client.threads.pendingRequests(id)).toEqual([]);
   });
 
+  it("turns automatic settlement off and accepts the reasoning opt-in", async () => {
+    await client.threads.dispatch({
+      type: "thread.auto-settle.set",
+      commandId: client.threads.dispatcher.newCommandId(),
+      threadId: id,
+      enabled: false,
+    });
+    const detail = await client.threads.detail(id, { reasoningMessages: true });
+    expect(detail.thread.autoSettleDisabledAt).toEqual(expect.any(String));
+    const controller = new AbortController();
+    for await (const item of client.threads.watch(id, {
+      reasoningMessages: true,
+      signal: controller.signal,
+    })) {
+      if (item.kind === "snapshot") {
+        expect(item.snapshot.thread.autoSettleDisabledAt).toEqual(expect.any(String));
+        controller.abort();
+      }
+    }
+    expect((await client.server.getConfig()).reasoningMessages).toBe(true);
+  });
+
   it("sees the thread on the shell watch", async () => {
     const controller = new AbortController();
     const seen: ShellWatchItem[] = [];
