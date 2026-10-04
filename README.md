@@ -1,3 +1,8 @@
+---
+relationships:
+  references: design
+---
+
 # @wyrd-company/t3code-client
 
 TypeScript client for the [T3 Code](https://github.com/pingdotgg/t3code) server:
@@ -89,7 +94,7 @@ await client.close();
 | `client.server`   | Environment descriptor, config and provider catalog, settings, config and lifecycle streams.         |
 | `client.projects` | List, get, ensure, update, delete projects; Scratch and named new projects; project files.           |
 | `client.threads`  | List, get, detail, ensure, update, archive, delete; turns, interrupts, approvals, user input; watch. |
-| `client.shell`    | The lightweight projects-and-threads snapshot and its live stream.                                   |
+| `client.shell`    | Lightweight snapshot and live stream; full orchestration read model.                                 |
 | `client.vcs`      | Refs, status, worktrees, branches.                                                                   |
 | `client.terminal` | Open, attach, write, resize, close terminals.                                                        |
 | `client.rpc`      | Typed `call` and `stream` for every registered method, plus `callRaw` and `streamRaw` for the rest.  |
@@ -140,6 +145,25 @@ for (const activity of detail.thread.activities) {
 `error.is("OrchestrationDispatchCommandError")` narrows it.
 
 ## Watching threads
+
+`T3Client.create` accepts optional connection timing: `backoff` (the exported
+`BackoffPolicy`: `initialMs`, `factor`, `maxMs`, optional `jitter`),
+`pingIntervalMs`, `missedPongLimit`, and `openTimeoutMs`. Defaults remain a
+500 ms × 1.5 reconnect backoff capped at 5 s with jitter 0.2, a ping every
+5 s, and a drop after 3 unanswered pongs at the next interval. There is no
+open timeout unless supplied. `openTimeoutMs` bounds the WebSocket handshake
+after URL and header resolution; expiry abandons that socket and retries with
+backoff.
+
+`client.shell.readModel(signal?)` reads the full orchestration snapshot over
+authenticated HTTP, including projects, threads, messages, and activities.
+`client.shell.snapshot()` reads the lightweight shell snapshot.
+
+Thread and shell watches wait through transient connection failures, including
+an unavailable server at startup and repeated empty subscriptions. They resume
+from the last cursor and filter replay overlap. Credential rejection ends the
+watch with an error; abort ends it quietly, and closing the client ends it with
+a connection error.
 
 `client.threads.watch(threadId)` yields the server's stream items
 (`snapshot`, `synchronized`, `event`) plus derived items: `assistant-delta`,

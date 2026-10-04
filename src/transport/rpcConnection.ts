@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 /**
  * RpcConnection: request/response correlation over a SocketTransport. One
  * `Request` per call; `Chunk`s feed an async iterable that acknowledges each
@@ -16,7 +20,7 @@ import { newId } from "../internal/ids.ts";
 import { noopLogger, type Logger } from "../internal/logger.ts";
 import { requestEnvelope, type ServerEnvelope } from "../wire/envelope.ts";
 import { exitToError, normalizeExit } from "../wire/exit.ts";
-import type { SocketTransport } from "./socket.ts";
+import type { SocketState, SocketTransport } from "./socket.ts";
 
 export interface RpcStreamOptions {
   readonly signal?: AbortSignal;
@@ -66,6 +70,11 @@ export class RpcConnection {
         this.#failAll(error ?? new T3ConnectionError("closed", "The socket closed."));
       }),
     ];
+  }
+
+  /** Current transport state; only connecting means a retry is in progress. */
+  get state(): SocketState {
+    return this.#socket.state;
   }
 
   get inFlight(): number {

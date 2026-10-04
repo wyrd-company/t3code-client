@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 /**
  * T3Client: the composition root. It wires the HTTP transport, the auth
  * client, the socket transport (ticket or bearer-header upgrade), the RPC
@@ -15,6 +19,7 @@ import { CommandDispatcher } from "./api/dispatch.ts";
 import { AuthClient } from "./auth/authClient.ts";
 import { memoryCredentialStore, type CredentialStore } from "./auth/credentialStore.ts";
 import { T3AuthError, T3PreconditionError } from "./errors.ts";
+import type { BackoffPolicy } from "./internal/backoff.ts";
 import type { Logger } from "./internal/logger.ts";
 import type { WebSocketConstructor } from "./internal/websocket.ts";
 import { RpcClient } from "./rpc/client.ts";
@@ -35,6 +40,14 @@ export interface T3ClientOptions {
   readonly fetch?: typeof fetch;
   readonly webSocket?: WebSocketConstructor;
   readonly logger?: Logger;
+  /** Reconnect delays; defaults to 500 ms × 1.5, capped at 5 s, with jitter 0.2. */
+  readonly backoff?: BackoffPolicy;
+  /** Defaults to 5,000 ms. */
+  readonly pingIntervalMs?: number;
+  /** Defaults to 3 missed pongs. */
+  readonly missedPongLimit?: number;
+  /** Bounds the WebSocket handshake; absent means no open timeout. */
+  readonly openTimeoutMs?: number;
   /** "ticket" (default) works with every WebSocket implementation. */
   readonly socketAuth?: "ticket" | "bearer-header";
 }
@@ -80,6 +93,12 @@ export class T3Client {
         return url;
       },
       ...(socketAuth === "bearer-header" ? { headers: () => this.#bearerHeaders() } : {}),
+      ...(options.backoff === undefined ? {} : { backoff: options.backoff }),
+      ...(options.pingIntervalMs === undefined ? {} : { pingIntervalMs: options.pingIntervalMs }),
+      ...(options.missedPongLimit === undefined
+        ? {}
+        : { missedPongLimit: options.missedPongLimit }),
+      ...(options.openTimeoutMs === undefined ? {} : { openTimeoutMs: options.openTimeoutMs }),
       ...(options.webSocket === undefined ? {} : { webSocket: options.webSocket }),
       ...(options.logger === undefined ? {} : { logger: options.logger }),
     });

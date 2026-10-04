@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   references: design
+// ---
 /**
  * FakeT3Server: an in-process stand-in for the T3 Code server. It speaks the
  * RPC envelope protocol over `ws`, answers HTTP routes from a `FakeRouteTable`,
@@ -44,6 +48,8 @@ export interface FakeUpgrade {
 }
 
 export interface FakeServerOptions {
+  /** Reuse an endpoint after a server outage. Default: a free loopback port. */
+  readonly port?: number;
   /** Require an `Ack` before the next `Chunk` of a stream is sent. Default true, like the real server. */
   readonly requireAck?: boolean;
   /** Accept only this bearer token (or a ticket from `issueTicket`). Default: accept everything. */
@@ -97,7 +103,9 @@ export class FakeT3Server {
 
   static async start(options: FakeServerOptions = {}): Promise<FakeT3Server> {
     const server = new FakeT3Server(options);
-    await new Promise<void>((resolve) => server.#http.listen(0, "127.0.0.1", resolve));
+    await new Promise<void>((resolve) =>
+      server.#http.listen(options.port ?? 0, "127.0.0.1", resolve),
+    );
     const address = server.#http.address();
     server.#port = typeof address === "object" && address ? address.port : 0;
     return server;
