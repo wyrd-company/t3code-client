@@ -108,13 +108,22 @@ describe("public client connection timing", () => {
     const connected = make({ openTimeoutMs: 50, backoff: { ...backoff, jitter: 0 } }).connect();
     void connected.catch(() => {});
     await tick(0);
+    let opened = false;
+    void connected.then(
+      () => {
+        opened = true;
+      },
+      () => {},
+    );
     const first = socket();
     await tick(49);
     expect(first.readyState).toBe(0);
     await tick(1);
     expect(first.readyState).toBe(3);
     first.open();
+    first.close();
     await tick(39);
+    expect(opened).toBe(false);
     expect(FakeSocket.sockets).toHaveLength(1);
     await tick(1);
     expect(FakeSocket.sockets).toHaveLength(2);
