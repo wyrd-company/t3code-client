@@ -20,7 +20,7 @@ import { newId } from "../internal/ids.ts";
 import { noopLogger, type Logger } from "../internal/logger.ts";
 import { requestEnvelope, type ServerEnvelope } from "../wire/envelope.ts";
 import { exitToError, normalizeExit } from "../wire/exit.ts";
-import type { SocketTransport } from "./socket.ts";
+import type { SocketState, SocketTransport } from "./socket.ts";
 
 export interface RpcStreamOptions {
   readonly signal?: AbortSignal;
@@ -72,9 +72,9 @@ export class RpcConnection {
     ];
   }
 
-  /** Whether the transport has stopped permanently, including an explicit close. */
-  get closed(): boolean {
-    return this.#socket.state === "closed";
+  /** Current transport state; only connecting means a retry is in progress. */
+  get state(): SocketState {
+    return this.#socket.state;
   }
 
   get inFlight(): number {

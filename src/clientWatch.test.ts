@@ -24,7 +24,7 @@ const until = async (check: () => boolean) => {
   for (let i = 0; i < 500 && !check(); i++) await pause(5);
   expect(check()).toBe(true);
 };
-const make = (baseUrl: string) => {
+const make = (baseUrl: string, options: { fetch?: typeof fetch } = {}) => {
   client = T3Client.create({
     baseUrl,
     accessToken: "sample-token",
@@ -33,6 +33,7 @@ const make = (baseUrl: string) => {
       new Response(
         JSON.stringify({ ticket: "sample-ticket", expiresAt: "2020-01-01T00:00:00.000Z" }),
       ),
+    ...options,
     backoff: { initialMs: 10, factor: 2, maxMs: 40 },
     logger: {
       debug() {},
@@ -179,4 +180,64 @@ describe.each(["thread", "shell"] as const)("public %s watch", (kind) => {
       expect(delays).toEqual([]);
     },
   );
+});
+
+it("propagates a resume detail connection error while the socket remains open", async () => {
+  server = await FakeT3Server.start();
+  server.routes.route("POST /api/auth/websocket-ticket", () => ({
+    status: 200,
+    body: { ticket: server!.issueTicket(), expiresAt: "2020-01-01T00:00:00.000Z" },
+  }));
+  let subscriptions = 0;
+  server.handle("orchestration.subscribeThread", () => {
+    subscriptions += 1;
+    return {
+      kind: "stream",
+      chunks: [
+        [
+          {
+            kind: "event",
+            event: events.sessionSet(11, { status: "ready" }),
+          },
+        ],
+      ],
+    };
+  });
+  const detailFailure = new Error("Connection refused.");
+  let detailReads = 0;
+  const fakeFetch = server.fetch;
+  const c = make(server.httpUrl, {
+    fetch: async (input, init) => {
+      if (new URL(String(input)).pathname === `/api/orchestration/threads/${ids.threadId}`) {
+        detailReads += 1;
+        throw detailFailure;
+      }
+      return fakeFetch(input, init);
+    },
+  });
+  const controller = new AbortController();
+  const iterator = c.threads
+    .watch(ids.threadId, {
+      afterSequence: 10,
+      signal: controller.signal,
+    })
+    [Symbol.asyncIterator]();
+  try {
+    await expect(iterator.next()).rejects.toMatchObject({
+      code: "connection",
+      reason: "open_failed",
+      cause: detailFailure,
+    });
+    // A failed watch cannot emit a later reconnected item or resubscribe.
+    expect(await iterator.next()).toMatchObject({ done: true });
+    expect(subscriptions).toBe(1);
+    expect(detailReads).toBe(1);
+    expect(delays).toEqual([]);
+    expect(server.connections).toHaveLength(1);
+    await c.connect();
+    expect(server.connections).toHaveLength(1);
+  } finally {
+    controller.abort();
+    await iterator.return?.();
+  }
 });

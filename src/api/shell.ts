@@ -108,7 +108,8 @@ export class ShellApi {
             return;
           } catch (error) {
             if (signal?.aborted || error instanceof T3InterruptedError) return;
-            const transient = error instanceof T3ConnectionError && !rpc.connection.closed;
+            const transient =
+              error instanceof T3ConnectionError && rpc.connection.state === "connecting";
             if (transient) {
               resumed = true;
               continue;

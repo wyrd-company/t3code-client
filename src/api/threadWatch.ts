@@ -40,7 +40,7 @@ export interface ThreadWatchOptions {
 }
 
 export type ThreadWatchRpc = Pick<RpcClient<RpcMethods>, "stream"> & {
-  readonly connection: { readonly closed: boolean };
+  readonly connection: Pick<RpcClient<RpcMethods>["connection"], "state">;
 };
 
 export function watchThread(
@@ -119,7 +119,7 @@ async function* run(
       return;
     } catch (error) {
       if (signal?.aborted || error instanceof T3InterruptedError) return;
-      if (error instanceof T3ConnectionError && !rpc.connection.closed) {
+      if (error instanceof T3ConnectionError && rpc.connection.state === "connecting") {
         // The transport reconnects on its own; we only need to resubscribe.
         resumed = true;
         continue;

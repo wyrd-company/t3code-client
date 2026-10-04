@@ -452,6 +452,7 @@ export interface RpcStreamOptions {
   highWaterMark?: number;
 }
 export class RpcConnection {
+  readonly state: SocketState;
   constructor(socket: SocketTransport, options?: { idGenerator?: () => string; logger?: Logger });
   call(tag: string, payload: unknown, signal?: AbortSignal): Promise<unknown>;
   stream(tag: string, payload: unknown, options?: RpcStreamOptions): AsyncIterable<unknown>;
@@ -646,8 +647,10 @@ attempt limit. Each connection attempt uses the transport's backoff. A watch
 keeps its last cursor across the gap and filters replay overlap. Credential
 rejections end the watch with the connection error; caller abort ends it quietly,
 and `client.close()` ends it with a closed connection error. The transport's
-closed state determines whether a connection failure is terminal, rather than
-its reason or the number of empty subscriptions.
+connecting state determines whether a connection failure triggers a retry,
+rather than its reason or the number of empty subscriptions. A connection
+error raised while the socket is open, including an HTTP detail failure while
+seeding a resumed thread watch, ends the watch with that error.
 
 The server never links a user message to a turn; providers steer a message
 sent during an active turn into that turn, and the server's own queued-message
