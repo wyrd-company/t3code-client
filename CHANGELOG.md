@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+
+### Features
+
+- Expose reconnect backoff, heartbeat, and optional socket open timeout; keep thread and shell watches retrying transient connection failures; add shell.readModel() for the full orchestration snapshot.
+
 ## 0.4.0
 
 ### Features
