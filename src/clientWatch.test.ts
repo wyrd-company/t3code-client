@@ -216,12 +216,11 @@ it("propagates a resume detail connection error while the socket remains open", 
     },
   });
   const controller = new AbortController();
-  const iterator = c.threads
-    .watch(ids.threadId, {
-      afterSequence: 10,
-      signal: controller.signal,
-    })
-    [Symbol.asyncIterator]();
+  const watch = c.threads.watch(ids.threadId, {
+    afterSequence: 10,
+    signal: controller.signal,
+  });
+  const iterator = watch[Symbol.asyncIterator]();
   try {
     await expect(iterator.next()).rejects.toMatchObject({
       code: "connection",
