@@ -3,6 +3,7 @@
  * import comes from here; internal modules are not part of the contract.
  */
 export { T3Client, type T3ClientOptions } from "./client.ts";
+export type { BackoffPolicy } from "./internal/backoff.ts";
 
 export {
   T3Error,

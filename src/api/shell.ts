@@ -55,7 +55,6 @@ export class ShellApi {
       async *[Symbol.asyncIterator]() {
         const { signal } = options;
         let afterSequence = options.afterSequence;
-        let emptyAttempts = 0;
         let resumed = false;
         for (;;) {
           if (signal?.aborted) return;
@@ -92,9 +91,8 @@ export class ShellApi {
             return;
           } catch (error) {
             if (signal?.aborted || error instanceof T3InterruptedError) return;
-            emptyAttempts = received ? 0 : emptyAttempts + 1;
-            const transient = error instanceof T3ConnectionError && error.reason !== "open_failed";
-            if (transient && emptyAttempts < 2) {
+            const transient = error instanceof T3ConnectionError && !rpc.connection.closed;
+            if (transient) {
               resumed = true;
               continue;
             }

@@ -141,6 +141,21 @@ for (const activity of detail.thread.activities) {
 
 ## Watching threads
 
+`T3Client.create` accepts optional connection timing: `backoff` (the exported
+`BackoffPolicy`: `initialMs`, `factor`, `maxMs`, optional `jitter`),
+`pingIntervalMs`, `missedPongLimit`, and `openTimeoutMs`. Defaults remain a
+500 ms × 1.5 reconnect backoff capped at 5 s with jitter 0.2, a ping every
+5 s, and a drop after 3 unanswered pongs at the next interval. There is no
+open timeout unless supplied. `openTimeoutMs` bounds the WebSocket handshake
+after URL and header resolution; expiry abandons that socket and retries with
+backoff.
+
+Thread and shell watches wait through transient connection failures, including
+an unavailable server at startup and repeated empty subscriptions. They resume
+from the last cursor and filter replay overlap. Credential rejection ends the
+watch with an error; abort ends it quietly, and closing the client ends it with
+a connection error.
+
 `client.threads.watch(threadId)` yields the server's stream items
 (`snapshot`, `synchronized`, `event`) plus derived items: `assistant-delta`,
 `approval-requested`, `user-input-requested`, `request-resolved`,

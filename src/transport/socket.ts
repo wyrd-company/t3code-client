@@ -37,6 +37,8 @@ export interface SocketTransportOptions {
   readonly pingIntervalMs?: number;
   readonly missedPongLimit?: number;
   readonly backoff?: BackoffPolicy;
+  /** Bounds the WebSocket handshake only; absent means no open timeout. */
+  readonly openTimeoutMs?: number;
   readonly logger?: Logger;
 }
 
@@ -61,6 +63,7 @@ export class SocketTransport {
   #openWaiters: OpenWaiter[] = [];
   #reconnectTimer: ReturnType<typeof setTimeout> | undefined;
   #closing = false;
+  #openTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(options: SocketTransportOptions) {
     this.#options = options;
@@ -198,9 +201,17 @@ export class SocketTransport {
       onError: (message) => isCurrent() && this.#logger.debug("Socket error.", { message }),
       onClose: (info) => isCurrent() && this.#onClose(info),
     });
+    if (this.#options.openTimeoutMs !== undefined) {
+      this.#openTimer = setTimeout(() => {
+        if (isCurrent()) {
+          this.#dropSocket(new T3ConnectionError("open_failed", "The socket open timed out."));
+        }
+      }, this.#options.openTimeoutMs);
+    }
   }
 
   #onOpen(): void {
+    this.#clearOpenTimer();
     this.#backoff.reset();
     this.#setState("open");
     this.#keepalive.start();
@@ -235,6 +246,7 @@ export class SocketTransport {
   }
 
   #onClose(info: WebSocketCloseInfo): void {
+    this.#clearOpenTimer();
     this.#keepalive.stop();
     this.#socket = undefined;
     if (this.#closing) return;
@@ -285,7 +297,13 @@ export class SocketTransport {
     this.#reconnectTimer = undefined;
   }
 
+  #clearOpenTimer(): void {
+    if (this.#openTimer !== undefined) clearTimeout(this.#openTimer);
+    this.#openTimer = undefined;
+  }
+
   #detachSocket(): WebSocketLike | undefined {
+    this.#clearOpenTimer();
     this.#generation += 1;
     const socket = this.#socket;
     this.#socket = undefined;

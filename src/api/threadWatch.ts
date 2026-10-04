@@ -35,7 +35,9 @@ export interface ThreadWatchOptions {
   readonly snapshotLoader?: (signal?: AbortSignal) => Promise<OrchestrationThreadDetailSnapshot>;
 }
 
-export type ThreadWatchRpc = Pick<RpcClient<RpcMethods>, "stream">;
+export type ThreadWatchRpc = Pick<RpcClient<RpcMethods>, "stream"> & {
+  readonly connection: { readonly closed: boolean };
+};
 
 export function watchThread(
   rpc: ThreadWatchRpc,
@@ -54,9 +56,6 @@ async function* run(
   const tracker = new ThreadProjectionTracker();
   // The resume cursor: the last sequence the consumer has seen.
   let afterSequence = options.afterSequence;
-  // Subscriptions that fail before delivering anything: two in a row means the
-  // transport is closed for good, not merely reconnecting.
-  let emptyAttempts = 0;
   let resumed = false;
   for (;;) {
     if (signal?.aborted) return;
@@ -116,12 +115,7 @@ async function* run(
       return;
     } catch (error) {
       if (signal?.aborted || error instanceof T3InterruptedError) return;
-      emptyAttempts = received ? 0 : emptyAttempts + 1;
-      if (
-        error instanceof T3ConnectionError &&
-        error.reason !== "open_failed" &&
-        emptyAttempts < 2
-      ) {
+      if (error instanceof T3ConnectionError && !rpc.connection.closed) {
         // The transport reconnects on its own; we only need to resubscribe.
         resumed = true;
         continue;

@@ -68,6 +68,11 @@ export class RpcConnection {
     ];
   }
 
+  /** Whether the transport has stopped permanently, including an explicit close. */
+  get closed(): boolean {
+    return this.#socket.state === "closed";
+  }
+
   get inFlight(): number {
     return this.#entries.size;
   }

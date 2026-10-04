@@ -398,6 +398,7 @@ export interface SocketTransportOptions {
   pingIntervalMs?: number;
   missedPongLimit?: number; // 5000 / 3, matching the server's client
   backoff?: BackoffPolicy;
+  openTimeoutMs?: number; // absent: no open timeout
   logger?: Logger;
 }
 export class SocketTransport {
@@ -411,11 +412,24 @@ export class SocketTransport {
 }
 ```
 
-Ping every five seconds; three missed pongs closes and reconnects. Reconnect
-uses exponential backoff (500 ms, ×1.5, capped 5 s) until `close()`. A 401
-on the upgrade is reported through `onStateChange` with reason
-`"open_failed"` and stops reconnecting (the credential is wrong; retrying is
-noise). Only the `ws` package exposes the upgrade status; the global
+The default heartbeat sends a ping every five seconds and drops the socket
+when three pongs remain unanswered at the next interval. Default reconnect
+backoff is 500 ms × 1.5, capped at 5 s, with jitter 0.2. `T3ClientOptions`
+passes `backoff`, `pingIntervalMs`, and `missedPongLimit` to the transport.
+`BackoffPolicy` is exported and has `initialMs`, `factor`, `maxMs`, and an
+optional `jitter` fraction (default 0 for a supplied policy).
+
+`openTimeoutMs` optionally bounds each WebSocket handshake, starting after
+URL and header resolution. A stalled handshake is abandoned, its later events
+are ignored, and the transport retries after backoff with reason `open_failed`.
+An absent option means no open timeout. Each absent timing option retains the
+0.4.0 timing behaviour. The open timer is cleared on open, close, credential
+reconnect, or abandonment.
+
+Transient failures, including refused or reset connections and non-4xx
+upgrade failures, retry until `close()`. A 4xx upgrade, a 1008 close, or a
+`T3AuthError` resolving URL or headers reports `open_failed` and closes the
+transport permanently. Only the `ws` package exposes the upgrade status; the global
 `WebSocket` reports a rejected upgrade as an ordinary drop, so `T3Client`
 validates the token over HTTP inside `headers()` in bearer-header mode and
 throws `T3AuthError`, which the transport treats as fatal. Abort listeners
@@ -617,6 +631,15 @@ resubscribes with `afterSequence` set to the last sequence seen and emits
 (pending requests, current turn) so a consumer that joins late sees the
 current state first.
 
+Both thread and shell watches wait through transient first-connection failures
+and retry subscriptions that disconnect before delivering an item, without an
+attempt limit. Each connection attempt uses the transport's backoff. A watch
+keeps its last cursor across the gap and filters replay overlap. Credential
+rejections end the watch with the connection error; caller abort ends it quietly,
+and `client.close()` ends it with a closed connection error. The transport's
+closed state determines whether a connection failure is terminal, rather than
+its reason or the number of empty subscriptions.
+
 The server never links a user message to a turn; providers steer a message
 sent during an active turn into that turn, and the server's own queued-message
 rule treats a message as taken once any turn's requested, started, or completed
@@ -671,6 +694,10 @@ export interface T3ClientOptions {
   fetch?: typeof fetch;
   webSocket?: WebSocketConstructor;
   logger?: Logger;
+  backoff?: BackoffPolicy; // default 500 ms × 1.5, cap 5 s, jitter 0.2
+  pingIntervalMs?: number; // default 5000
+  missedPongLimit?: number; // default 3
+  openTimeoutMs?: number; // absent: no open timeout
   socketAuth?: "ticket" | "bearer-header"; // default "ticket" (works with every WebSocket implementation)
 }
 export class T3Client {
