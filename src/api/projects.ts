@@ -1,7 +1,8 @@
 /**
  * ProjectsApi: projects as the shell snapshot sees them, idempotent `ensure`
  * keyed by the normalised workspace root, and thin typed wrappers over the
- * `projects.*` file RPCs.
+ * `projects.*` file RPCs, plus the server-side Scratch and new-project
+ * creators.
  */
 import * as NodePath from "node:path";
 import type { RpcClient } from "../rpc/client.ts";
@@ -11,6 +12,9 @@ import type { ModelSelection } from "../schemas/orchestration/model.ts";
 import type { ProjectMetaUpdateCommand } from "../schemas/orchestration/commands/project.ts";
 import type { OrchestrationProjectShell } from "../schemas/orchestration/shell.ts";
 import type {
+  ProjectCreateNewInput,
+  ProjectCreateNewResult,
+  ProjectEnsureScratchResult,
   ProjectListEntriesInput,
   ProjectListEntriesResult,
   ProjectReadFileInput,
@@ -150,6 +154,24 @@ export class ProjectsApi {
     if (existing.title === input.title) return existing;
     await this.update(existing.id, { title: input.title }, signal);
     return { ...existing, title: input.title };
+  }
+
+  /**
+   * Finds or creates the environment's Scratch project, rooted at
+   * `ServerConfig.scratchWorkspaceRoot`. Fails with
+   * `OrchestrationDispatchCommandError` when the server offers no Scratch folder.
+   */
+  ensureScratch(signal?: AbortSignal): Promise<ProjectEnsureScratchResult> {
+    return this.rpc.call("projects.ensureScratch", {}, signal);
+  }
+
+  /**
+   * Creates a project from just a name: the server makes a folder under
+   * `ServerConfig.newProjectsRoot` with a first commit, then the project.
+   * `commitError` says why the commit failed; the project exists either way.
+   */
+  createNew(input: ProjectCreateNewInput, signal?: AbortSignal): Promise<ProjectCreateNewResult> {
+    return this.rpc.call("projects.createNew", input, signal);
   }
 
   async update(

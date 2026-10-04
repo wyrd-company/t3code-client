@@ -50,7 +50,7 @@
   "devDependencies": {
     "@types/node": "24.12.4",
     "@types/ws": "^8.18.1",
-    "t3": "0.0.44",
+    "t3": "0.0.45",
     "typescript": "7.0.2",
     "vite-plus": "0.3.3",
     "ws": "^8.21.3"

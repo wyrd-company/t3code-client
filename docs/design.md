@@ -30,7 +30,7 @@ engine, and it does not spawn or install the server.
   its implementation. No file over roughly 300 lines. Callers compose the
   facade; tests cross the same seams callers do.
 
-## Wire facts (verified against T3 Code 0.0.44, upstream release)
+## Wire facts (verified against T3 Code 0.0.45, upstream release)
 
 HTTP, all under one base URL:
 
@@ -94,6 +94,16 @@ Reasoning messages are opt-in on thread reads. Without
 snapshot, the server rewrites role `reasoning` to `system` in snapshots and
 `thread.message-sent` events. `ServerConfig.reasoningMessages` says the server
 accepts the opt-in.
+
+`projects.ensureScratch` finds or creates the environment's Scratch project,
+rooted at `ServerConfig.scratchWorkspaceRoot`; the server sends that field
+only when its data directory is outside a Git checkout, and fails the call
+otherwise. A thread created in the Scratch project without a `worktreePath`
+gets its own folder under the Scratch root, which the server writes into the
+command's `worktreePath` before dispatch. `projects.createNew` makes a folder
+under `ServerConfig.newProjectsRoot` with a README, an icon and a first
+commit, then creates the project; a failed commit is reported in
+`commitError` and keeps the project.
 
 The full method list is `WS_METHODS` plus `ORCHESTRATION_WS_METHODS` in the
 contracts package; the scope each method needs is in
@@ -219,7 +229,7 @@ src/
     scopes.ts               scope constants, hasScope, scopeForRpcMethod
   api/                      facades composed by T3Client
     server.ts               getConfig, probe, watchConfig, watchLifecycle
-    projects.ts             list, get, create, update, delete, ensure, files (read/write/search/list)
+    projects.ts             list, get, create, update, delete, ensure, ensureScratch, createNew, files
     threads.ts              list, get, create, ensure, update, archive, delete, startTurn, interrupt, stop, respond*, watch
     turns.ts                TurnHandle: events(), completion, derived from a thread watch
     shell.ts                snapshot, watch (resumable)
@@ -461,7 +471,8 @@ methods; `server.probe`, `server.getConfig`, `server.getSettings`,
 `vcs.createRef`, `vcs.switchRef`, `subscribeVcsStatus`,
 `subscribeWorktreeSetup`, `worktreeSetup.cancel`; `projects.listEntries`,
 `projects.readFile`, `projects.writeFile`, `projects.searchEntries`,
-`projects.searchContents`; `terminal.open`, `terminal.attach`,
+`projects.searchContents`, `projects.ensureScratch`, `projects.createNew`;
+`terminal.open`, `terminal.attach`,
 `terminal.write`, `terminal.resize`, `terminal.close`,
 `subscribeTerminalEvents`. Everything else goes through `callRaw` and
 `streamRaw` until it is added; adding a method is one entry in a family file.
@@ -545,6 +556,8 @@ export class ProjectsApi {
   ensure(input: { workspaceRoot: string; title: string; createWorkspaceRootIfMissing?: boolean }): Promise<OrchestrationProjectShell>
   update(projectId, patch: ProjectMetaUpdate): Promise<void>
   delete(projectId, options?: { force?: boolean }): Promise<void>  // idempotent: not found resolves
+  ensureScratch(): Promise<ProjectEnsureScratchResult>             // server finds or creates the Scratch project
+  createNew(input: { name: string }): Promise<ProjectCreateNewResult>  // server makes the folder, first commit, and project
   files: { list, read, write, searchEntries, searchContents }      // thin typed RPC wrappers
 }
 
@@ -677,12 +690,13 @@ export class T3Client {
 
 ## Idempotent ensure operations
 
-| Operation                           | Key                        | Behaviour                                                                                            |
-| ----------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `projects.ensure`                   | normalised `workspaceRoot` | find in shell snapshot; create with a fresh id when absent; update title only if given and different |
-| `threads.ensure`                    | caller-supplied `threadId` | return existing shell thread; create otherwise; never mutates an existing thread                     |
-| `auth.setAccessToken`               | token                      | validate then store; same token stored twice is a no-op                                              |
-| `projects.delete`, `threads.delete` | id                         | absent resource resolves without error                                                               |
+| Operation                           | Key                                 | Behaviour                                                                                            |
+| ----------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `projects.ensure`                   | normalised `workspaceRoot`          | find in shell snapshot; create with a fresh id when absent; update title only if given and different |
+| `projects.ensureScratch`            | `ServerConfig.scratchWorkspaceRoot` | the server finds the Scratch project or creates it; racing callers get the same project              |
+| `threads.ensure`                    | caller-supplied `threadId`          | return existing shell thread; create otherwise; never mutates an existing thread                     |
+| `auth.setAccessToken`               | token                               | validate then store; same token stored twice is a no-op                                              |
+| `projects.delete`, `threads.delete` | id                                  | absent resource resolves without error                                                               |
 
 Command ids are generated per dispatch, never reused, because the server
 treats a command id as an attempt id rather than an idempotency key.

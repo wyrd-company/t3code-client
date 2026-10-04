@@ -194,6 +194,8 @@ export type ServerProviderResetCredits = z.infer<typeof ServerProviderResetCredi
 export const ServerProviderUsageLimits = z.looseObject({
   checkedAt: IsoDateTime,
   windows: forwardCompatibleArray(ServerProviderUsageWindow),
+  /** Opaque credential identity when the provider does not report an account. */
+  credentialFingerprint: TrimmedNonEmptyString.optional(),
   resetCredits: ServerProviderResetCredits.optional(),
   /** Provider-owned usage settings when quota windows are not available to the client. */
   externalUsage: z

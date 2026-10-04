@@ -87,7 +87,7 @@ await client.close();
 | ----------------- | ---------------------------------------------------------------------------------------------------- |
 | `client.auth`     | Session state, pairing-token exchange, tickets, pairing links, connected clients, scopes.            |
 | `client.server`   | Environment descriptor, config and provider catalog, settings, config and lifecycle streams.         |
-| `client.projects` | List, get, ensure, update, delete projects; project file reads, writes, and searches.                |
+| `client.projects` | List, get, ensure, update, delete projects; Scratch and named new projects; project files.           |
 | `client.threads`  | List, get, detail, ensure, update, archive, delete; turns, interrupts, approvals, user input; watch. |
 | `client.shell`    | The lightweight projects-and-threads snapshot and its live stream.                                   |
 | `client.vcs`      | Refs, status, worktrees, branches.                                                                   |
@@ -96,12 +96,13 @@ await client.close();
 
 ## Idempotent operations
 
-| Operation             | Key                        | Behaviour                                                                     |
-| --------------------- | -------------------------- | ----------------------------------------------------------------------------- |
-| `projects.ensure`     | normalised `workspaceRoot` | returns the existing project, renames it when the title differs, else creates |
-| `threads.ensure`      | caller-supplied `threadId` | returns the existing thread (active or archived), else creates                |
-| `auth.setAccessToken` | token                      | validates, then stores                                                        |
-| `*.delete`            | id                         | an absent resource resolves without error                                     |
+| Operation                | Key                        | Behaviour                                                                     |
+| ------------------------ | -------------------------- | ----------------------------------------------------------------------------- |
+| `projects.ensure`        | normalised `workspaceRoot` | returns the existing project, renames it when the title differs, else creates |
+| `projects.ensureScratch` | the server's Scratch root  | the server returns its Scratch project, else creates it                       |
+| `threads.ensure`         | caller-supplied `threadId` | returns the existing thread (active or archived), else creates                |
+| `auth.setAccessToken`    | token                      | validates, then stores                                                        |
+| `*.delete`               | id                         | an absent resource resolves without error                                     |
 
 ## Errors
 

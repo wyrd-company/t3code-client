@@ -36,6 +36,8 @@ export const serverMethods = {
     payload: z.looseObject({
       instanceId: ProviderInstanceId.optional(),
       cwd: TrimmedNonEmptyString.optional(),
+      /** With `instanceId` and `cwd`: rescan the workspace's skills and slash commands. */
+      fresh: z.boolean().optional(),
       refreshModels: z.boolean().optional(),
     }),
     success: ServerProviderUpdatedPayload,
