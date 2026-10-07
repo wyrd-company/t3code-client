@@ -7,9 +7,19 @@ import {
   IsoDateTime,
   NonNegativeInt,
   PositiveInt,
+  ProjectId,
   TrimmedNonEmptyString,
   forwardCompatibleLiteral,
-} from "../../common.ts";
+} from "../common.ts";
+
+/** Mirrors `packages/contracts/src/threadPullRequest.ts` and the parts of `pullRequest.ts` it uses. */
+export const ThreadLinkedPullRequest = z.looseObject({
+  projectId: ProjectId,
+  repository: TrimmedNonEmptyString,
+  number: PositiveInt,
+  url: TrimmedNonEmptyString,
+});
+export type ThreadLinkedPullRequest = z.infer<typeof ThreadLinkedPullRequest>;
 
 export const ThreadPullRequestKey = z.looseObject({
   host: TrimmedNonEmptyString,
@@ -81,6 +91,19 @@ export const ThreadPullRequestStack = z.looseObject({
   layers: z.array(ThreadPullRequestStackLayer),
 });
 export type ThreadPullRequestStack = z.infer<typeof ThreadPullRequestStack>;
+/** Present while the server watches the pull request for its thread. */
+export const ThreadPullRequestWatch = z.looseObject({
+  startedAt: IsoDateTime,
+  headSha: TrimmedNonEmptyString.nullable(),
+  failedChecks: z.array(TrimmedNonEmptyString),
+  passed: z.boolean(),
+  passedChecks: z.array(TrimmedNonEmptyString).default([]),
+  remarksThrough: IsoDateTime,
+  remarkIds: z.array(TrimmedNonEmptyString),
+  conflicting: z.boolean(),
+  wakes: NonNegativeInt,
+});
+export type ThreadPullRequestWatch = z.infer<typeof ThreadPullRequestWatch>;
 export const ThreadPullRequestLink = z.looseObject({
   ...ThreadPullRequestKey.shape,
   url: TrimmedNonEmptyString,
@@ -88,5 +111,6 @@ export const ThreadPullRequestLink = z.looseObject({
   linkedAt: IsoDateTime,
   snapshot: ThreadPullRequestSnapshot.nullable(),
   stack: ThreadPullRequestStack.nullable(),
+  watch: ThreadPullRequestWatch.optional(),
 });
 export type ThreadPullRequestLink = z.infer<typeof ThreadPullRequestLink>;

@@ -2,20 +2,32 @@
 // relationships:
 //   implements: design
 // ---
+/**
+ * Mirrors `modelSelection.ts` and `providerPolicy.ts` in the contracts, plus
+ * the actor and creation-source vocabulary `orchestrationV2.ts` stamps on
+ * threads, messages, and commands.
+ */
 import { z } from "zod";
-import { TrimmedString } from "../common.ts";
 import {
-  IsoDateTime,
+  JsonValue,
   NonNegativeInt,
+  ProviderDriverKind,
   ProviderInstanceId,
   TrimmedNonEmptyString,
-  JsonValue,
   forwardCompatibleLiteral,
   stringRecord,
-  taggedUnionWithUnknown,
 } from "../common.ts";
 import { ProviderOptionSelections } from "../provider.ts";
+import {
+  ChatFileAttachment,
+  ChatImageAttachment,
+  PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
+} from "./attachments.ts";
 
+export { RuntimeMode } from "../provider.ts";
+export { ModelCapabilities, ProviderOptionSelections } from "../provider.ts";
+
+/** The historical `{ provider, model }` shape still decodes; `instanceId` is the routing key. */
 export const ModelSelection = z.preprocess(
   (raw) => {
     if (raw && typeof raw === "object" && !Array.isArray(raw)) {
@@ -34,16 +46,24 @@ export const ModelSelection = z.preprocess(
   }),
 );
 export type ModelSelection = z.infer<typeof ModelSelection>;
+
+export const ProviderApprovalPolicy = forwardCompatibleLiteral([
+  "untrusted",
+  "on-failure",
+  "on-request",
+  "never",
+]);
+export type ProviderApprovalPolicy = z.infer<typeof ProviderApprovalPolicy>;
+export const ProviderSandboxMode = forwardCompatibleLiteral([
+  "read-only",
+  "workspace-write",
+  "danger-full-access",
+]);
+export type ProviderSandboxMode = z.infer<typeof ProviderSandboxMode>;
+export const DEFAULT_RUNTIME_MODE = "full-access" as const;
 export const ProviderInteractionMode = forwardCompatibleLiteral(["default", "plan"]);
 export type ProviderInteractionMode = z.infer<typeof ProviderInteractionMode>;
-export const ProviderApprovalDecision = forwardCompatibleLiteral([
-  "accept",
-  "acceptForSession",
-  "acceptAlways",
-  "decline",
-  "cancel",
-]);
-export type ProviderApprovalDecision = z.infer<typeof ProviderApprovalDecision>;
+export const DEFAULT_PROVIDER_INTERACTION_MODE = "default" as const;
 export const ProviderRequestKind = forwardCompatibleLiteral([
   "command",
   "file-read",
@@ -52,6 +72,21 @@ export const ProviderRequestKind = forwardCompatibleLiteral([
   "permission",
 ]);
 export type ProviderRequestKind = z.infer<typeof ProviderRequestKind>;
+export const ProviderApprovalDecision = forwardCompatibleLiteral([
+  "accept",
+  "acceptForSession",
+  "acceptAlways",
+  "decline",
+  "cancel",
+]);
+export type ProviderApprovalDecision = z.infer<typeof ProviderApprovalDecision>;
+export const ProviderApprovalOption = z.looseObject({
+  decision: ProviderApprovalDecision,
+  label: TrimmedNonEmptyString,
+  warning: TrimmedNonEmptyString.optional(),
+});
+export type ProviderApprovalOption = z.infer<typeof ProviderApprovalOption>;
+
 /**
  * One question's answer: any JSON value, as the contracts allow. The provider
  * adapters act on a single choice (a string), several choices (a string
@@ -61,224 +96,50 @@ export const ProviderUserInputAnswer = JsonValue;
 export type ProviderUserInputAnswer = z.infer<typeof ProviderUserInputAnswer>;
 export const ProviderUserInputAnswers = stringRecord(ProviderUserInputAnswer);
 export type ProviderUserInputAnswers = z.infer<typeof ProviderUserInputAnswers>;
-export const CHAT_ATTACHMENT_ID_MAX_CHARS = 128;
-export const ChatAttachmentId = TrimmedNonEmptyString.max(CHAT_ATTACHMENT_ID_MAX_CHARS).regex(
-  /^[a-z0-9_-]+$/i,
+export const UserInputAttachments = stringRecord(
+  z
+    .array(z.union([ChatImageAttachment, ChatFileAttachment]))
+    .max(PROVIDER_SEND_TURN_MAX_ATTACHMENTS),
 );
-export type ChatAttachmentId = z.infer<typeof ChatAttachmentId>;
-export const PROVIDER_SEND_TURN_MAX_FILE_BYTES = 50 * 1024 * 1024;
-export const PastedTextAttachmentSource = z.looseObject({ _tag: z.literal("pasted-text") });
-export type PastedTextAttachmentSource = z.infer<typeof PastedTextAttachmentSource>;
-export const ChatFileAttachment = z.looseObject({
-  type: z.literal("file"),
-  id: ChatAttachmentId,
-  name: TrimmedNonEmptyString.max(255),
-  mimeType: TrimmedNonEmptyString.max(100),
-  sizeBytes: NonNegativeInt.min(1).max(PROVIDER_SEND_TURN_MAX_FILE_BYTES),
-  source: PastedTextAttachmentSource.optional(),
+export type UserInputAttachments = z.infer<typeof UserInputAttachments>;
+export const UserInputAttachmentAnswerPayload = z.looseObject({
+  requestId: TrimmedNonEmptyString,
+  questionTextById: stringRecord(z.string()).optional(),
+  answers: ProviderUserInputAnswers,
+  attachmentsByQuestionId: UserInputAttachments,
 });
-export type ChatFileAttachment = z.infer<typeof ChatFileAttachment>;
-export const PROVIDER_SEND_TURN_MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-export const SNAP_SHOT_ACCESSIBLE_TEXT_MAX_CHARS = 32_000;
-const SnapShotAccessibilityBounds = z.looseObject({
-  x: NonNegativeInt,
-  y: NonNegativeInt,
-  width: z.number().int().positive(),
-  height: z.number().int().positive(),
-});
-const SnapShotAccessibilityState = z.looseObject({
-  active: z.boolean().optional(),
-  busy: z.boolean().optional(),
-  checked: forwardCompatibleLiteral(["on", "off", "mixed"]).optional(),
-  editable: z.boolean().optional(),
-  enabled: z.boolean().optional(),
-  expanded: z.boolean().optional(),
-  focused: z.boolean().optional(),
-  selected: z.boolean().optional(),
-  visible: z.boolean().optional(),
-});
-export const SnapShotAccessibilityNode = z.looseObject({
-  role: TrimmedNonEmptyString.max(100),
-  name: TrimmedNonEmptyString.max(1000).optional(),
-  value: TrimmedNonEmptyString.max(8000).optional(),
-  description: TrimmedNonEmptyString.max(2000).optional(),
-  bounds: SnapShotAccessibilityBounds.nullable(),
-  state: SnapShotAccessibilityState.optional(),
-  actions: z.array(TrimmedNonEmptyString.max(100)).max(32).optional(),
-  get children(): z.ZodArray<typeof SnapShotAccessibilityNode> {
-    return z.array(SnapShotAccessibilityNode).max(10000);
-  },
-});
-export type SnapShotAccessibilityNode = z.infer<typeof SnapShotAccessibilityNode>;
-export const SnapShotAccessibility = taggedUnionWithUnknown("format", [
-  z.looseObject({
-    format: z.literal("flat-text"),
-    text: TrimmedNonEmptyString.max(32000),
-    truncated: z.boolean(),
-  }),
-  z.looseObject({
-    format: z.literal("element-tree"),
-    coordinateSpace: z.literal("captured-image"),
-    imageSize: z.looseObject({
-      width: z.number().int().positive(),
-      height: z.number().int().positive(),
-    }),
-    truncated: z.boolean(),
-    root: SnapShotAccessibilityNode,
-  }),
-]).refine((value) => {
-  if ("unknown" in value && value.unknown === true) return true;
-  if (!("format" in value) || value.format !== "element-tree" || !("root" in value)) return true;
-  const parsed = SnapShotAccessibilityNode.safeParse(value.root);
-  if (!parsed.success) return false;
-  const stack = [parsed.data];
-  let count = 0;
-  while (stack.length) {
-    const node = stack.pop();
-    if (!node) continue;
-    count += 1;
-    if (count > 10000) return false;
-    stack.push(...node.children);
-  }
-  return JSON.stringify(value).length <= 32000;
-});
-export type SnapShotAccessibility = z.infer<typeof SnapShotAccessibility>;
-export const SnapShotSource = z.looseObject({
-  kind: z.literal("snap-shot"),
-  capturedAt: IsoDateTime,
-  appName: TrimmedNonEmptyString.max(255),
-  windowTitle: TrimmedString.max(1_000),
-  accessibleText: TrimmedNonEmptyString.max(SNAP_SHOT_ACCESSIBLE_TEXT_MAX_CHARS).optional(),
-  accessibility: SnapShotAccessibility.optional(),
-  appIdentifier: TrimmedNonEmptyString.max(255).optional(),
-  appIconDataUrl: TrimmedNonEmptyString.max(100_000)
-    .regex(/^data:image\/png;base64,/i)
-    .optional(),
-});
-export type SnapShotSource = z.infer<typeof SnapShotSource>;
-export const ChatImageAttachment = z.looseObject({
-  type: z.literal("image"),
-  id: ChatAttachmentId,
-  name: TrimmedNonEmptyString.max(255),
-  mimeType: TrimmedNonEmptyString.max(100).regex(/^image\//i),
-  sizeBytes: NonNegativeInt.max(PROVIDER_SEND_TURN_MAX_IMAGE_BYTES),
-  source: SnapShotSource.optional(),
-});
-export type ChatImageAttachment = z.infer<typeof ChatImageAttachment>;
-export const ChatUnknownAttachment = z.looseObject({
-  type: TrimmedNonEmptyString.max(50).regex(/^(?!(?:image|file)$)/),
-  id: ChatAttachmentId,
-  name: TrimmedNonEmptyString.max(255),
-  mimeType: TrimmedNonEmptyString.max(100),
-  sizeBytes: NonNegativeInt,
-});
-export type ChatUnknownAttachment = z.infer<typeof ChatUnknownAttachment>;
-export const ChatAttachment = z.union([
-  ChatImageAttachment,
-  ChatFileAttachment,
-  ChatUnknownAttachment,
-]);
-export type ChatAttachment = z.infer<typeof ChatAttachment>;
-export const PROVIDER_SEND_TURN_MAX_IMAGE_DATA_URL_CHARS = 14_000_000;
-export const UploadChatImageAttachment = z.looseObject({
-  type: z.literal("image"),
-  id: ChatAttachmentId.optional(),
-  name: TrimmedNonEmptyString.max(255),
-  mimeType: TrimmedNonEmptyString.max(100).regex(/^image\//i),
-  sizeBytes: NonNegativeInt.max(PROVIDER_SEND_TURN_MAX_IMAGE_BYTES),
-  dataUrl: TrimmedNonEmptyString.max(PROVIDER_SEND_TURN_MAX_IMAGE_DATA_URL_CHARS),
-  source: SnapShotSource.optional(),
-});
-export type UploadChatImageAttachment = z.infer<typeof UploadChatImageAttachment>;
-export const UploadChatAttachment = UploadChatImageAttachment;
-export type UploadChatAttachment = z.infer<typeof UploadChatAttachment>;
-export const ProjectScriptIcon = forwardCompatibleLiteral([
-  "play",
-  "test",
-  "lint",
-  "configure",
-  "build",
-  "debug",
-]);
-export type ProjectScriptIcon = z.infer<typeof ProjectScriptIcon>;
-export const ProjectScript = z.looseObject({
-  id: TrimmedNonEmptyString,
-  name: TrimmedNonEmptyString,
-  command: TrimmedNonEmptyString,
-  icon: ProjectScriptIcon,
-  runOnWorktreeCreate: z.boolean(),
-  async: z.boolean().optional(),
-  previewUrl: TrimmedNonEmptyString.optional(),
-  autoOpenPreview: z.boolean().optional(),
-});
-export type ProjectScript = z.infer<typeof ProjectScript>;
-export const ProjectEmoji = TrimmedNonEmptyString.max(32);
-export type ProjectEmoji = z.infer<typeof ProjectEmoji>;
-export const ProjectIconColor = forwardCompatibleLiteral([
-  "gray",
-  "red",
-  "orange",
-  "amber",
-  "yellow",
-  "lime",
-  "green",
-  "emerald",
-  "teal",
-  "cyan",
-  "sky",
-  "blue",
-  "indigo",
-  "violet",
-  "purple",
-  "fuchsia",
-  "pink",
-  "rose",
-]);
-export type ProjectIconColor = z.infer<typeof ProjectIconColor>;
-export const ProjectLucideIconName = TrimmedNonEmptyString.max(64).regex(
-  /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
-);
-export type ProjectLucideIconName = z.infer<typeof ProjectLucideIconName>;
-/** Grapheme count is checked by the server when a command sets the icon, not when a snapshot decodes. */
-export const ProjectMonogramText = TrimmedNonEmptyString.max(32).regex(
-  /^[\p{L}\p{N}][\p{L}\p{N}\p{M}\u200c\u200d]*$/u,
-);
-export type ProjectMonogramText = z.infer<typeof ProjectMonogramText>;
-const ProjectLucideIconWire = z.looseObject({
-  kind: z.literal("lucide"),
-  name: ProjectLucideIconName,
-  color: ProjectIconColor,
-  monogramText: ProjectMonogramText.optional(),
-  monogram: ProjectMonogramText.optional(),
-});
-const ProjectMonogramIcon = z.looseObject({
-  kind: z.literal("monogram"),
-  text: ProjectMonogramText,
-  color: ProjectIconColor,
-});
-type ProjectMonogramIcon = z.infer<typeof ProjectMonogramIcon>;
-/**
- * The server encodes a monogram as a Lucide icon carrying `monogramText`
- * (older peers render the named icon); a Lucide icon with monogram text
- * decodes as `kind: "monogram"`, as in the contracts.
- */
-export const ProjectIconOverride = taggedUnionWithUnknown("kind", [
-  ProjectLucideIconWire,
-  z.looseObject({ kind: z.literal("emoji"), emoji: ProjectEmoji }),
-  ProjectMonogramIcon,
-]).transform((icon) => {
-  if (!("kind" in icon) || icon.kind !== "lucide") return icon;
-  const text = icon.monogramText ?? icon.monogram;
-  if (text === undefined) return icon;
-  const monogram: ProjectMonogramIcon = { kind: "monogram", text, color: icon.color };
-  return monogram;
-});
-export type ProjectIconOverride = z.infer<typeof ProjectIconOverride>;
-export const ProjectFaviconPath = TrimmedNonEmptyString.max(1024).regex(
-  /\.(?:avif|gif|ico|jpe?g|png|svg|webp)$/i,
-);
-export type ProjectFaviconPath = z.infer<typeof ProjectFaviconPath>;
+export type UserInputAttachmentAnswerPayload = z.infer<typeof UserInputAttachmentAnswerPayload>;
 
-export { RuntimeMode } from "../provider.ts";
+export const OrchestrationV2Actor = forwardCompatibleLiteral(["user", "agent", "system"]);
+export type OrchestrationV2Actor = z.infer<typeof OrchestrationV2Actor>;
+export const OrchestrationV2CreationSource = forwardCompatibleLiteral([
+  "web",
+  "mobile",
+  "mcp",
+  "provider",
+  "server",
+]);
+export type OrchestrationV2CreationSource = z.infer<typeof OrchestrationV2CreationSource>;
+/** Who created a thread or message and from which surface; stamped on every creation command. */
+export const OrchestrationV2CreationFields = {
+  createdBy: OrchestrationV2Actor,
+  creationSource: OrchestrationV2CreationSource,
+} as const;
+export const OrchestrationV2ThreadHistoryOrigin = forwardCompatibleLiteral(["native", "v1_import"]);
+export type OrchestrationV2ThreadHistoryOrigin = z.infer<typeof OrchestrationV2ThreadHistoryOrigin>;
 
-export { ModelCapabilities, ProviderOptionSelections } from "../provider.ts";
+export const OrchestrationV2NativeRefStrength = forwardCompatibleLiteral([
+  "strong",
+  "weak",
+  "none",
+]);
+export type OrchestrationV2NativeRefStrength = z.infer<typeof OrchestrationV2NativeRefStrength>;
+/** A provider-native identifier and how firmly it names the thing. */
+export const OrchestrationV2ProviderRef = z.looseObject({
+  driver: ProviderDriverKind,
+  nativeId: TrimmedNonEmptyString.nullable(),
+  strength: OrchestrationV2NativeRefStrength,
+  fingerprint: TrimmedNonEmptyString.optional(),
+  ordinal: NonNegativeInt.optional(),
+});
+export type OrchestrationV2ProviderRef = z.infer<typeof OrchestrationV2ProviderRef>;

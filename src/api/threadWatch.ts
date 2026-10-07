@@ -4,26 +4,30 @@
 // ---
 /**
  * watchThread: a resumable live view of one thread. It subscribes with
- * `orchestration.subscribeThread`, keeps a projected `OrchestrationThread`
- * (seeded from the snapshot frame, or from `snapshotLoader` when the server
- * replays events instead of sending a snapshot), derives domain items from
- * the projection, and resubscribes with `afterSequence` when the socket drops.
+ * `orchestration.subscribeThread`, keeps a projected thread (seeded from the
+ * snapshot frame, or from `snapshotLoader` when the server replays events
+ * instead of sending a snapshot), derives domain items from the projection,
+ * and resubscribes with `afterSequence` when the socket drops.
  */
 import { T3ConnectionError, T3InterruptedError, type T3DecodeError } from "../errors.ts";
 import type { RpcClient } from "../rpc/client.ts";
 import type { RpcMethods } from "../rpc/registry.ts";
 import type { ThreadId } from "../schemas/common.ts";
-import type { OrchestrationEvent } from "../schemas/orchestration/events.ts";
-import type { OrchestrationThreadDetailSnapshot } from "../schemas/orchestration/readModel.ts";
+import type { OrchestrationV2DomainEvent } from "../schemas/orchestration/events.ts";
+import type { OrchestrationV2ThreadDetailSnapshot } from "../schemas/orchestration/projection.ts";
 import { isKnownVariant } from "./threadProjection.ts";
 import { ThreadProjectionTracker, type ThreadDerivedItem } from "./threadTracker.ts";
 
 export type { ThreadDerivedItem } from "./threadTracker.ts";
 
 export type ThreadWatchItem =
-  | { readonly kind: "snapshot"; readonly snapshot: OrchestrationThreadDetailSnapshot }
+  | { readonly kind: "snapshot"; readonly snapshot: OrchestrationV2ThreadDetailSnapshot }
   | { readonly kind: "synchronized" }
-  | { readonly kind: "event"; readonly event: OrchestrationEvent }
+  | {
+      readonly kind: "event";
+      readonly sequence: number;
+      readonly event: OrchestrationV2DomainEvent;
+    }
   | ThreadDerivedItem
   | { readonly kind: "decode-error"; readonly error: T3DecodeError }
   | { readonly kind: "reconnected"; readonly afterSequence: number };
@@ -31,12 +35,11 @@ export type ThreadWatchItem =
 export interface ThreadWatchOptions {
   /** Resume after this sequence instead of asking for a snapshot. */
   readonly afterSequence?: number;
-  readonly turnLimit?: number;
-  /** Receive reasoning messages with role `reasoning` instead of `system`. Off by default. */
-  readonly reasoningMessages?: boolean;
+  /** Accept a bounded snapshot: full control-plane state with a recent window of timeline rows. */
+  readonly acceptBoundedSnapshot?: boolean;
   readonly signal?: AbortSignal;
   /** Loads a detail snapshot when the server replays events without one (HTTP thread detail). */
-  readonly snapshotLoader?: (signal?: AbortSignal) => Promise<OrchestrationThreadDetailSnapshot>;
+  readonly snapshotLoader?: (signal?: AbortSignal) => Promise<OrchestrationV2ThreadDetailSnapshot>;
 }
 
 export type ThreadWatchRpc = Pick<RpcClient<RpcMethods>, "stream"> & {
@@ -69,8 +72,7 @@ async function* run(
         threadId,
         requestCompletionMarker: true,
         ...(afterSequence === undefined ? {} : { afterSequence }),
-        ...(options.turnLimit === undefined ? {} : { turnLimit: options.turnLimit }),
-        ...(options.reasoningMessages === true ? { reasoningMessages: true } : {}),
+        ...(options.acceptBoundedSnapshot === true ? { acceptBoundedSnapshot: true } : {}),
       };
       const stream = rpc.stream(
         "orchestration.subscribeThread",
@@ -89,16 +91,17 @@ async function* run(
         const value = item.value;
         if (!isKnownVariant(value)) continue;
         if (value.kind === "snapshot") {
-          afterSequence = Math.max(afterSequence ?? 0, value.snapshot.snapshotSequence);
-          yield value;
-          yield* tracker.seed(value.snapshot);
+          const { kind: _kind, ...snapshot } = value;
+          afterSequence = Math.max(afterSequence ?? 0, snapshot.snapshotSequence);
+          yield { kind: "snapshot", snapshot };
+          yield* tracker.seed(snapshot);
           continue;
         }
         if (!tracker.seeded && options.snapshotLoader) {
           // Resuming: the server replays events after `afterSequence` without a
           // snapshot, so the projection is seeded from a detail snapshot. Replayed
           // events the snapshot already reflects are passed through but not
-          // re-applied, so streaming deltas are not appended twice.
+          // re-applied.
           const snapshot = await options.snapshotLoader(signal);
           yield { kind: "snapshot", snapshot };
           yield* tracker.seed(snapshot);
@@ -107,14 +110,10 @@ async function* run(
           yield value;
           continue;
         }
-        const event = value.event;
-        const sequence = eventSequence(event);
-        if (sequence !== undefined) {
-          if (afterSequence !== undefined && sequence <= afterSequence) continue; // replay overlap
-          afterSequence = sequence;
-        }
-        yield { kind: "event", event };
-        yield* tracker.apply(event);
+        if (afterSequence !== undefined && value.sequence <= afterSequence) continue; // replay overlap
+        afterSequence = value.sequence;
+        yield { kind: "event", sequence: value.sequence, event: value.event };
+        yield* tracker.apply(value.sequence, value.event);
       }
       return;
     } catch (error) {
@@ -127,10 +126,4 @@ async function* run(
       throw error;
     }
   }
-}
-
-function eventSequence(event: OrchestrationEvent): number | undefined {
-  if (isKnownVariant(event)) return event.sequence;
-  const raw = event.raw["sequence"];
-  return typeof raw === "number" ? raw : undefined;
 }

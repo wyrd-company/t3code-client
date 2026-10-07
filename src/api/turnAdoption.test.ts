@@ -4,134 +4,83 @@ import {
   events,
   ids,
   makeMessage,
-  makeSession,
-  makeThread,
+  makeProjection,
+  makeRun,
   parseEvent,
+  rawEvent,
 } from "../../test/support/threadFixtures.ts";
-import { messageId, turnId } from "../schemas/common.ts";
-import type { OrchestrationThread } from "../schemas/orchestration/readModel.ts";
-import { applyThreadEvent, turnOutcome } from "./threadProjection.ts";
+import { messageId, runId } from "../schemas/common.ts";
 import { TurnAdoption } from "./turnAdoption.ts";
 
-const turnA = ids.turnId;
-const turnB = turnId("turn-2");
-const ours = messageId("m-ours");
-const createdAt = "2020-01-01T00:00:10.000Z";
-const later = "2020-01-01T00:00:20.000Z";
+const ours = messageId("message-ours");
+const runB = runId("run-2");
+/** The domain event inside a wire-shaped stream item. */
+const ev = (item: Record<string, unknown>) => parseEvent(item["event"] as Record<string, unknown>);
 
-const runningTurn = (id: string, requestedAt: string) => ({
-  turnId: id,
-  state: "running",
-  requestedAt,
-  startedAt: requestedAt,
-  completedAt: null,
-  assistantMessageId: null,
+describe("TurnAdoption.seed", () => {
+  it("links the run whose userMessageId is ours and settles when it is terminal", () => {
+    const running = new TurnAdoption(ours);
+    expect(
+      running.seed(makeProjection({ runs: [makeRun({ userMessageId: ours })] })),
+    ).toBeUndefined();
+    expect(running.runId).toBe(ids.runId);
+
+    const finished = new TurnAdoption(ours);
+    const outcome = finished.seed(
+      makeProjection({
+        runs: [makeRun({ userMessageId: ours, status: "completed", completedAt: at })],
+        messages: [makeMessage({ id: "message-2", role: "assistant", text: "done" })],
+      }),
+    );
+    expect(outcome).toMatchObject({
+      state: "completed",
+      runId: ids.runId,
+      assistantMessage: { text: "done" },
+    });
+  });
+
+  it("links through the message record's runId", () => {
+    const adoption = new TurnAdoption(ours);
+    const projection = makeProjection({
+      runs: [makeRun({ id: runB, userMessageId: "message-0", status: "running" })],
+      messages: [makeMessage({ id: ours, runId: runB })],
+    });
+    expect(adoption.seed(projection)).toBeUndefined();
+    expect(adoption.runId).toBe(runB);
+  });
+
+  it("stays unlinked when nothing names our message", () => {
+    const adoption = new TurnAdoption(ours);
+    const projection = makeProjection({
+      runs: [makeRun({ userMessageId: "message-0", status: "completed" })],
+      messages: [makeMessage({ id: ours, runId: null })],
+    });
+    expect(adoption.seed(projection)).toBeUndefined();
+    expect(adoption.runId).toBeUndefined();
+    expect(adoption.isOurs(ids.runId)).toBe(false);
+  });
 });
 
-/** Turn A was already running when our message was sent. */
-function sentDuringA(): OrchestrationThread {
-  return makeThread({
-    messages: [
-      makeMessage({ id: "m-a", role: "user", turnId: null, createdAt: at }),
-      makeMessage({ id: ours, role: "user", turnId: null, createdAt }),
-    ],
-    session: makeSession({ status: "running", activeTurnId: turnA, updatedAt: at }),
-    latestTurn: runningTurn(turnA, at),
-  });
-}
-
-describe("TurnAdoption", () => {
-  it("follows the turn running at dispatch: it takes our message when it settles", () => {
-    const adoption = new TurnAdoption(ours, createdAt);
-    let thread = sentDuringA();
-    expect(adoption.seed(thread)).toBeUndefined();
-    expect(adoption.turnId).toBe(turnA);
-    const ready = parseEvent(events.sessionSet(21, { status: "ready", updatedAt: later }));
-    adoption.onEvent(ready);
-    thread = applyThreadEvent(thread, ready);
-    expect(thread.latestTurn?.state).toBe("completed");
-    expect(adoption.onSettled(turnOutcome(thread, thread.latestTurn as never))).toBe(true);
+describe("TurnAdoption.onEvent", () => {
+  it("links run.created and run.updated for our message and ignores other runs", () => {
+    const adoption = new TurnAdoption(ours);
+    adoption.onEvent(ev(events.runCreated(1, { id: "run-other", userMessageId: "m-x" })));
+    expect(adoption.runId).toBeUndefined();
+    adoption.onEvent(ev(events.runUpdated(2, { userMessageId: ours })));
+    expect(adoption.runId).toBe(ids.runId);
+    expect(adoption.isOurs(ids.runId)).toBe(true);
+    expect(adoption.isOurs(runB)).toBe(false);
   });
 
-  it("moves to a turn that starts while the followed one is still running", () => {
-    const adoption = new TurnAdoption(ours, createdAt);
-    adoption.seed(sentDuringA());
-    adoption.onEvent(
-      parseEvent(
-        events.sessionSet(21, { status: "running", activeTurnId: turnB, updatedAt: later }),
-      ),
-    );
-    expect(adoption.turnId).toBe(turnB);
-    const thread = sentDuringA();
-    expect(adoption.onSettled(turnOutcome(thread, { turnId: turnA, state: "completed" }))).toBe(
-      false,
-    );
-    expect(adoption.onSettled(turnOutcome(thread, { turnId: turnB, state: "completed" }))).toBe(
-      true,
-    );
-  });
-
-  it("takes a session error only when no turn was running", () => {
-    const fresh = new TurnAdoption(ours, createdAt);
-    fresh.seed(
-      makeThread({ messages: [makeMessage({ id: ours, role: "user", turnId: null, createdAt })] }),
-    );
-    fresh.onEvent(parseEvent(events.sessionSet(21, { status: "error", lastError: "boom" })));
-    expect(fresh.onSettled(turnOutcome(makeThread(), { turnId: null, state: "error" }))).toBe(true);
-
-    const during = new TurnAdoption(ours, createdAt);
-    during.seed(sentDuringA());
-    expect(during.onSettled(turnOutcome(makeThread(), { turnId: null, state: "error" }))).toBe(
-      false,
-    );
-    expect(during.onSettled(turnOutcome(makeThread(), { turnId: turnA, state: "error" }))).toBe(
-      true,
-    );
-  });
-
-  it("settles from the seed when our turn already finished, and ignores an older settled turn", () => {
-    const finished = makeThread({
-      messages: [
-        makeMessage({ id: ours, role: "user", turnId: null, createdAt }),
-        makeMessage({ id: "b1", turnId: turnB, text: "beta", createdAt: later }),
-      ],
-      latestTurn: { ...runningTurn(turnB, later), state: "completed", completedAt: later },
-    });
-    const outcome = new TurnAdoption(ours, createdAt).seed(finished);
-    expect(outcome).toMatchObject({ state: "completed", turnId: turnB });
-    expect(outcome?.assistantMessage?.text).toBe("beta");
-
-    // Started before us and completed before us: our start is still pending.
-    const stale = makeThread({
-      messages: [makeMessage({ id: ours, role: "user", turnId: null, createdAt })],
-      latestTurn: { ...runningTurn(turnA, at), state: "completed", completedAt: at },
-    });
-    const adoption = new TurnAdoption(ours, createdAt);
-    expect(adoption.seed(stale)).toBeUndefined();
-    expect(adoption.turnId).toBeUndefined();
-
-    // Started before us but completed after: it took our message.
-    const overlapping = makeThread({
-      messages: [makeMessage({ id: ours, role: "user", turnId: null, createdAt })],
-      latestTurn: { ...runningTurn(turnA, at), state: "completed", completedAt: later },
-    });
-    expect(new TurnAdoption(ours, createdAt).seed(overlapping)).toMatchObject({ turnId: turnA });
-  });
-
-  it("keeps a link the server states for our own message over anything else", () => {
-    const adoption = new TurnAdoption(ours, createdAt);
-    adoption.seed(sentDuringA());
-    adoption.onEvent(
-      parseEvent(
-        events.messageSent(21, { messageId: ours, role: "user", text: "hi", turnId: turnB }),
-      ),
-    );
-    expect(adoption.turnId).toBe(turnB);
-    adoption.onEvent(
-      parseEvent(
-        events.sessionSet(22, { status: "running", activeTurnId: turnA, updatedAt: later }),
-      ),
-    );
-    expect(adoption.turnId).toBe(turnB);
+  it("links message.updated with a run, ignores one without, and ignores unknown events", () => {
+    const adoption = new TurnAdoption(ours);
+    adoption.onEvent(ev(events.messageUpdated(1, { id: ours, runId: null })));
+    expect(adoption.runId).toBeUndefined();
+    adoption.onEvent(ev(events.messageUpdated(2, { id: "m-x", runId: runB })));
+    expect(adoption.runId).toBeUndefined();
+    adoption.onEvent(parseEvent(rawEvent(3, "something.new", { id: ours, runId: runB })));
+    expect(adoption.runId).toBeUndefined();
+    adoption.onEvent(ev(events.messageUpdated(4, { id: ours, runId: runB })));
+    expect(adoption.runId).toBe(runB);
   });
 });

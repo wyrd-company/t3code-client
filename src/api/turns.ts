@@ -1,19 +1,23 @@
 /**
- * startTurn and TurnHandle: dispatch `thread.turn.start`, then follow the
- * thread from the dispatch receipt until the turn that started for our
- * message settles. `events()` and `completion` share one background watch
- * that starts lazily when `completion` is first read or `events()` is first
- * iterated. Which turn is ours is decided by `TurnAdoption`.
+ * startTurn and TurnHandle: dispatch `message.dispatch`, then follow the
+ * thread from the dispatch receipt until the run that took our message
+ * settles. A turn in this library is one V2 run. `events()` and `completion`
+ * share one background watch that starts lazily when `completion` is first
+ * read or `events()` is first iterated. Which run is ours is decided by
+ * `TurnAdoption`.
  */
 import { T3ConnectionError, T3Error, T3InterruptedError } from "../errors.ts";
 import { createChannel, type Channel } from "../internal/asyncIterable.ts";
-import type { CommandId, MessageId, ThreadId } from "../schemas/common.ts";
+import type { CommandId, MessageId, RunId, ThreadId } from "../schemas/common.ts";
+import type { OrchestrationV2Command } from "../schemas/orchestration/commands.ts";
+import type { MessageDispatchCommand } from "../schemas/orchestration/commands/message.ts";
 import type {
-  ClientThreadTurnStartCommand,
-  ThreadTurnStartBootstrap,
-} from "../schemas/orchestration/commands/turn.ts";
-import type { ClientOrchestrationCommand } from "../schemas/orchestration/commands.ts";
-import type { ModelSelection } from "../schemas/orchestration/model.ts";
+  ModelSelection,
+  OrchestrationV2Actor,
+  OrchestrationV2CreationSource,
+  ProviderInteractionMode,
+  RuntimeMode,
+} from "../schemas/orchestration/model.ts";
 import type { DispatchResult } from "../schemas/orchestration/stream.ts";
 import type { TurnOutcome } from "./threadProjection.ts";
 import type { ThreadWatchItem, ThreadWatchOptions } from "./threadWatch.ts";
@@ -21,22 +25,35 @@ import { TurnAdoption } from "./turnAdoption.ts";
 
 export type { TurnOutcome } from "./threadProjection.ts";
 
-type TurnStartMessage = ClientThreadTurnStartCommand["message"];
+/** Who a thread or message is created by, and from which surface. Defaults: `user` from `web`. */
+export interface CreationOrigin {
+  readonly createdBy?: OrchestrationV2Actor;
+  readonly creationSource?: OrchestrationV2CreationSource;
+}
+
+/**
+ * How the message reaches a thread that is already busy. `auto` lets the
+ * server steer or queue by the provider's capabilities; `steer` and `restart`
+ * target the active run; `queue` waits behind it; `start` insists on a new
+ * run now.
+ */
+export type TurnDelivery = "auto" | "steer" | "restart" | "queue" | "start";
 
 export interface StartTurnInput {
   readonly threadId: ThreadId;
   readonly text: string;
-  readonly attachments?: TurnStartMessage["attachments"];
-  readonly context?: TurnStartMessage["context"];
+  readonly attachments?: MessageDispatchCommand["attachments"];
+  readonly context?: MessageDispatchCommand["context"];
+  /** Model for this run; the thread's model otherwise. */
   readonly modelSelection?: ModelSelection;
-  /** Defaults to the thread's current mode. */
-  readonly runtimeMode?: ClientThreadTurnStartCommand["runtimeMode"];
-  /** Defaults to the thread's current mode. */
-  readonly interactionMode?: ClientThreadTurnStartCommand["interactionMode"];
+  /** Sets the thread's mode before the message is sent. */
+  readonly runtimeMode?: RuntimeMode;
+  /** Sets the thread's mode before the message is sent. */
+  readonly interactionMode?: ProviderInteractionMode;
   readonly titleSeed?: string;
-  readonly bootstrap?: ThreadTurnStartBootstrap;
-  /** `events()` carries reasoning messages with role `reasoning` instead of `system`. Off by default. */
-  readonly reasoningMessages?: boolean;
+  /** Defaults to `auto`. */
+  readonly delivery?: TurnDelivery;
+  readonly origin?: CreationOrigin;
   readonly signal?: AbortSignal;
 }
 
@@ -44,33 +61,33 @@ export interface TurnHandle {
   readonly threadId: ThreadId;
   readonly messageId: MessageId;
   readonly commandId: CommandId;
-  /** The dispatch receipt: the sequence of the turn-start-requested event. */
+  /** The dispatch receipt: the sequence of the last event the command produced. */
   readonly sequence: number;
+  /** The run that took the message, once the server has linked them. */
+  readonly runId: RunId | undefined;
   /**
-   * Items from the dispatch receipt until this turn settles. Nothing is
+   * Items from the dispatch receipt until this run settles. Nothing is
    * buffered until the iterable is iterated; each iteration sees the items
    * that arrive from that point on.
    */
   events(): AsyncIterable<ThreadWatchItem>;
-  /** Resolves when the turn that started for `messageId` reaches a terminal state. */
+  /** Resolves when the run that took `messageId` reaches a terminal state. */
   readonly completion: Promise<TurnOutcome>;
   interrupt(): Promise<void>;
 }
 
 export interface TurnDependencies {
-  dispatch(command: ClientOrchestrationCommand, signal?: AbortSignal): Promise<DispatchResult>;
+  dispatch(command: OrchestrationV2Command, signal?: AbortSignal): Promise<DispatchResult>;
   watch(threadId: ThreadId, options: ThreadWatchOptions): AsyncIterable<ThreadWatchItem>;
+  interrupt(threadId: ThreadId, runId?: RunId, signal?: AbortSignal): Promise<void>;
   newCommandId(): CommandId;
-  now(): string;
 }
 
 export interface TurnIdentity {
   readonly threadId: ThreadId;
   readonly messageId: MessageId;
   readonly commandId: CommandId;
-  readonly createdAt: string;
   readonly sequence: number;
-  readonly reasoningMessages?: boolean;
   readonly signal?: AbortSignal;
 }
 
@@ -91,7 +108,6 @@ class Turn implements TurnHandle {
   readonly sequence: number;
   readonly #deps: TurnDependencies;
   readonly #signal: AbortSignal | undefined;
-  readonly #reasoningMessages: boolean;
   readonly #controller = new AbortController();
   readonly #subscribers = new Set<Channel<ThreadWatchItem>>();
   readonly #adoption: TurnAdoption;
@@ -107,8 +123,11 @@ class Turn implements TurnHandle {
     this.commandId = identity.commandId;
     this.sequence = identity.sequence;
     this.#signal = identity.signal;
-    this.#reasoningMessages = identity.reasoningMessages === true;
-    this.#adoption = new TurnAdoption(identity.messageId, identity.createdAt);
+    this.#adoption = new TurnAdoption(identity.messageId);
+  }
+
+  get runId(): RunId | undefined {
+    return this.#adoption.runId;
   }
 
   get completion(): Promise<TurnOutcome> {
@@ -125,15 +144,9 @@ class Turn implements TurnHandle {
     return { subscribers: this.#subscribers.size, buffered };
   }
 
-  async interrupt(): Promise<void> {
-    const turnId = this.#adoption.turnId;
-    await this.#deps.dispatch({
-      type: "thread.turn.interrupt",
-      commandId: this.#deps.newCommandId(),
-      threadId: this.threadId,
-      ...(turnId === undefined ? {} : { turnId }),
-      createdAt: this.#deps.now(),
-    });
+  /** Interrupts the followed run, or the thread's active run while ours is not yet known. */
+  interrupt(): Promise<void> {
+    return this.#deps.interrupt(this.threadId, this.#adoption.runId);
   }
 
   /** Registers a consumer channel and starts the watch if it is not running yet. */
@@ -166,14 +179,12 @@ class Turn implements TurnHandle {
 
   async #run(): Promise<void> {
     try {
-      // `afterSequence` is exclusive on the server (it replays events with a
-      // greater sequence). The receipt is the sequence of our own
-      // turn-start-requested event, so resuming after it replays exactly what
-      // the turn produced: session-set running, deltas, settlement. Passing
-      // `sequence - 1` would also replay the user message we just sent.
+      // `afterSequence` is exclusive on the server. The receipt is the sequence
+      // of the last event our command produced, so resuming after it replays
+      // exactly what the run produces; the snapshot the server sends instead
+      // when nothing is newer already links our message to its run.
       const watch = this.#deps.watch(this.threadId, {
         afterSequence: this.sequence,
-        ...(this.#reasoningMessages ? { reasoningMessages: true } : {}),
         signal: this.#controller.signal,
       });
       for await (const item of watch) {
@@ -200,7 +211,7 @@ class Turn implements TurnHandle {
   #track(item: ThreadWatchItem): void {
     switch (item.kind) {
       case "snapshot": {
-        const outcome = this.#adoption.seed(item.snapshot.thread);
+        const outcome = this.#adoption.seed(item.snapshot.projection);
         if (outcome) this.#settle(outcome);
         return;
       }
@@ -208,7 +219,7 @@ class Turn implements TurnHandle {
         this.#adoption.onEvent(item.event);
         return;
       case "turn-settled":
-        if (this.#adoption.onSettled(item.outcome)) this.#settle(item.outcome);
+        if (this.#adoption.isOurs(item.outcome.runId)) this.#settle(item.outcome);
         return;
       default:
         return;

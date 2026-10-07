@@ -1,271 +1,219 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
-  approvalRequested,
-  approvalResolved,
   at,
   events,
   ids,
-  makeSession,
-  makeShellThread,
-  makeThread,
+  items,
+  makeAppThread,
+  makeMessage,
+  makeProjection,
+  makeRun,
+  makeRuntimeRequest,
   parseEvent,
-  userInputRequested,
+  rawEvent,
 } from "../../test/support/threadFixtures.ts";
-import {
-  applyThreadEvent,
-  pendingRequests,
-  settledTurnStateForSessionStatus,
-  threadPhase,
-  turnOutcome,
-} from "./threadProjection.ts";
+import { applyThreadEvent, isKnownVariant, upsertById } from "./threadProjection.ts";
 
-const runningTurn = {
-  turnId: ids.turnId,
-  state: "running",
-  requestedAt: "2020-01-01T00:00:00.000Z",
-  startedAt: "2020-01-01T00:00:00.000Z",
-  completedAt: null,
-  assistantMessageId: null,
-};
+const later = "2020-01-01T00:00:05.000Z";
+/** The domain event inside a wire-shaped stream item, stamped at `later`. */
+const ev = (item: Record<string, unknown>) =>
+  parseEvent({ ...(item["event"] as Record<string, unknown>), occurredAt: later });
 
-describe("applyThreadEvent: message-sent", () => {
-  it("appends a new message, appends streaming deltas, and replaces on final", () => {
-    let thread = makeThread();
-    thread = applyThreadEvent(
-      thread,
-      parseEvent(events.messageSent(1, { messageId: "m1", text: "po" })),
+describe("upsertById", () => {
+  it("appends a new entry and replaces an existing one in place", () => {
+    const entries = [
+      { id: "a", n: 1 },
+      { id: "b", n: 1 },
+    ];
+    expect(upsertById(entries, { id: "c", n: 1 })).toEqual([...entries, { id: "c", n: 1 }]);
+    expect(upsertById(entries, { id: "a", n: 2 })).toEqual([
+      { id: "a", n: 2 },
+      { id: "b", n: 1 },
+    ]);
+  });
+});
+
+describe("applyThreadEvent", () => {
+  it("replaces the thread record on thread.* events and stamps updatedAt", () => {
+    let projection = makeProjection();
+    projection = applyThreadEvent(
+      projection,
+      ev(events.threadState(1, "thread.metadata-updated", { title: "Renamed" })),
     );
-    expect(thread.messages.map((m) => m.text)).toEqual(["po"]);
-    thread = applyThreadEvent(
-      thread,
-      parseEvent(events.messageSent(2, { messageId: "m1", text: "ng" })),
+    expect(projection.thread.title).toBe("Renamed");
+    expect(projection.updatedAt).toBe(later);
+    projection = applyThreadEvent(
+      projection,
+      ev(events.threadState(2, "thread.archived", { title: "Renamed", archivedAt: later })),
     );
-    expect(thread.messages[0]?.text).toBe("pong");
-    expect(thread.messages[0]?.streaming).toBe(true);
-    thread = applyThreadEvent(
-      thread,
-      parseEvent(events.messageSent(3, { messageId: "m1", text: "final", streaming: false })),
+    expect(projection.thread.archivedAt).toBe(later);
+    projection = applyThreadEvent(
+      projection,
+      ev(events.threadState(3, "thread.created", { title: "Fresh" })),
     );
-    expect(thread.messages[0]?.text).toBe("final");
-    expect(thread.messages[0]?.streaming).toBe(false);
-    thread = applyThreadEvent(
-      thread,
-      parseEvent(events.messageSent(4, { messageId: "m1", text: "", streaming: false })),
-    );
-    expect(thread.messages[0]?.text).toBe("final");
+    expect(projection.thread.title).toBe("Fresh");
   });
 
-  it("ignores events for other threads and unknown events", () => {
-    const thread = makeThread();
-    const other = {
-      ...events.messageSent(1, { messageId: "m1", text: "x" }),
-      aggregateId: "thread-2",
+  it("upserts runs by id and keeps their order", () => {
+    let projection = makeProjection();
+    projection = applyThreadEvent(projection, ev(events.runCreated(1)));
+    projection = applyThreadEvent(
+      projection,
+      ev(events.runCreated(2, { id: "run-2", ordinal: 2 })),
+    );
+    projection = applyThreadEvent(
+      projection,
+      ev(events.runUpdated(3, { status: "completed", completedAt: at })),
+    );
+    expect(projection.runs.map((run) => [run.id, run.status])).toEqual([
+      ["run-1", "completed"],
+      ["run-2", "running"],
+    ]);
+  });
+
+  it("patches cancelled background work onto a known run only", () => {
+    const projection = makeProjection({ runs: [makeRun()] });
+    const payload = {
+      runId: ids.runId,
+      restartCancelledBackgroundWork: [{ kind: "shell", label: "sample job" }],
     };
-    expect(applyThreadEvent(thread, parseEvent(other))).toBe(thread);
-    const unknown = parseEvent({ ...events.archived(2), type: "thread.something-new" });
-    expect(applyThreadEvent(thread, unknown)).toBe(thread);
-  });
-});
-
-describe("applyThreadEvent: session-set", () => {
-  it("starts a running latest turn and settles it when the session leaves running", () => {
-    let thread = makeThread();
-    thread = applyThreadEvent(
-      thread,
-      parseEvent(events.sessionSet(1, { status: "running", activeTurnId: ids.turnId })),
+    const patched = applyThreadEvent(
+      projection,
+      parseEvent(rawEvent(1, "run.background-work-cancelled", payload)),
     );
-    expect(thread.latestTurn).toMatchObject({ turnId: ids.turnId, state: "running" });
-    thread = applyThreadEvent(
-      thread,
-      parseEvent(events.sessionSet(2, { status: "ready", updatedAt: "2020-01-01T00:00:05.000Z" })),
+    expect(patched.runs[0]?.restartCancelledBackgroundWork).toEqual([
+      { kind: "shell", label: "sample job" },
+    ]);
+    const unknownRun = parseEvent(
+      rawEvent(2, "run.background-work-cancelled", { ...payload, runId: "run-9" }),
     );
-    expect(thread.latestTurn).toMatchObject({
-      state: "completed",
-      completedAt: "2020-01-01T00:00:05.000Z",
-    });
+    expect(applyThreadEvent(projection, unknownRun)).toBe(projection);
   });
 
-  it.each([
-    ["idle", "completed"],
-    ["ready", "completed"],
-    ["error", "error"],
-    ["interrupted", "interrupted"],
-    ["stopped", "interrupted"],
-    ["starting", null],
-    ["running", null],
-  ] as const)("settledTurnStateForSessionStatus(%s) = %s", (status, expected) => {
-    expect(settledTurnStateForSessionStatus(status)).toBe(expected);
+  it("upserts attempts and nodes", () => {
+    const attempt = {
+      id: "attempt-1",
+      runId: ids.runId,
+      attemptOrdinal: 1,
+      rootNodeId: ids.nodeId,
+      providerInstanceId: "sample-provider",
+      providerThreadId: "provider-thread-1",
+      providerTurnId: null,
+      reason: "initial",
+      status: "running",
+      startedAt: at,
+      completedAt: null,
+    };
+    const node = {
+      id: ids.nodeId,
+      threadId: ids.threadId,
+      runId: ids.runId,
+      parentNodeId: null,
+      rootNodeId: ids.nodeId,
+      kind: "root_turn",
+      status: "running",
+      countsForRun: true,
+      providerThreadId: null,
+      providerTurnId: null,
+      nativeItemRef: null,
+      runtimeRequestId: null,
+      checkpointScopeId: null,
+      startedAt: at,
+      completedAt: null,
+    };
+    let projection = makeProjection();
+    projection = applyThreadEvent(
+      projection,
+      parseEvent(rawEvent(1, "run-attempt.created", attempt)),
+    );
+    projection = applyThreadEvent(
+      projection,
+      parseEvent(rawEvent(2, "run-attempt.updated", { ...attempt, status: "completed" })),
+    );
+    projection = applyThreadEvent(projection, parseEvent(rawEvent(3, "node.updated", node)));
+    expect(projection.attempts).toMatchObject([{ id: "attempt-1", status: "completed" }]);
+    expect(projection.nodes).toMatchObject([{ id: ids.nodeId, kind: "root_turn" }]);
   });
 
-  it("does not settle a turn that is not running", () => {
-    const thread = makeThread({ latestTurn: { ...runningTurn, state: "completed" } });
-    const next = applyThreadEvent(thread, parseEvent(events.sessionSet(1, { status: "error" })));
-    expect(next.latestTurn?.state).toBe("completed");
-    expect(next.session?.status).toBe("error");
-  });
-});
-
-describe("applyThreadEvent: turn-diff-completed", () => {
-  it("settles the turn when its session is not running it", () => {
-    const thread = makeThread({
-      latestTurn: runningTurn,
-      session: makeSession({ status: "ready" }),
-    });
-    const next = applyThreadEvent(
-      thread,
-      parseEvent(events.turnDiffCompleted(1, { assistantMessageId: "m1" })),
+  it("upserts messages, turn items, runtime requests, and plans", () => {
+    let projection = makeProjection();
+    projection = applyThreadEvent(projection, ev(events.messageUpdated(1, { text: "hi" })));
+    projection = applyThreadEvent(projection, ev(events.messageUpdated(2, { text: "hi there" })));
+    projection = applyThreadEvent(
+      projection,
+      ev(events.turnItemUpdated(3, items.assistantMessage("po"))),
     );
-    expect(next.latestTurn).toMatchObject({
-      turnId: ids.turnId,
-      state: "completed",
-      assistantMessageId: "m1",
-    });
-    expect(next.checkpoints).toHaveLength(1);
-  });
-
-  it("keeps the turn running while the session runs it, keeps interrupted, maps error", () => {
-    const running = makeThread({
-      latestTurn: runningTurn,
-      session: makeSession({ status: "running", activeTurnId: ids.turnId }),
-    });
-    expect(
-      applyThreadEvent(running, parseEvent(events.turnDiffCompleted(1, {}))).latestTurn?.state,
-    ).toBe("running");
-    const interrupted = makeThread({ latestTurn: { ...runningTurn, state: "interrupted" } });
-    expect(
-      applyThreadEvent(interrupted, parseEvent(events.turnDiffCompleted(2, {}))).latestTurn?.state,
-    ).toBe("interrupted");
-    const failed = applyThreadEvent(
-      makeThread(),
-      parseEvent(events.turnDiffCompleted(3, { status: "error" })),
+    projection = applyThreadEvent(
+      projection,
+      ev(events.turnItemUpdated(4, items.assistantMessage("pong", false))),
     );
-    expect(failed.latestTurn?.state).toBe("error");
+    projection = applyThreadEvent(projection, ev(events.runtimeRequestUpdated(5, "r1")));
+    projection = applyThreadEvent(
+      projection,
+      ev(events.runtimeRequestUpdated(6, "r1", { status: "resolved", resolvedAt: later })),
+    );
+    const plan = {
+      id: "plan-1",
+      threadId: ids.threadId,
+      runId: ids.runId,
+      nodeId: ids.nodeId,
+      status: "active",
+      kind: "todo_list",
+      steps: [{ id: "s1", text: "Do it", status: "pending" }],
+    };
+    projection = applyThreadEvent(projection, parseEvent(rawEvent(7, "plan.updated", plan)));
+    expect(projection.messages).toMatchObject([{ id: ids.messageId, text: "hi there" }]);
+    expect(projection.turnItems).toMatchObject([
+      { id: ids.itemId, text: "pong", streaming: false },
+    ]);
+    expect(projection.runtimeRequests).toMatchObject([{ id: "r1", status: "resolved" }]);
+    expect(projection.plans).toMatchObject([{ id: "plan-1", kind: "todo_list" }]);
+    expect(projection.visibleTurnItems).toEqual([]);
   });
 
-  it("does not let a placeholder overwrite a captured checkpoint", () => {
-    const thread = applyThreadEvent(makeThread(), parseEvent(events.turnDiffCompleted(1, {})));
-    const next = applyThreadEvent(
-      thread,
-      parseEvent(events.turnDiffCompleted(2, { status: "missing" })),
+  it("leaves the projection alone for unknown item types, plans, and rollback requests", () => {
+    const projection = makeProjection();
+    const unknownItem = ev(
+      events.turnItemUpdated(1, { ...items.assistantMessage("x"), type: "something_new" }),
     );
-    expect(next).toBe(thread);
+    expect(applyThreadEvent(projection, unknownItem)).toBe(projection);
+    const unknownPlan = parseEvent(
+      rawEvent(2, "plan.updated", {
+        id: "plan-1",
+        threadId: ids.threadId,
+        runId: null,
+        nodeId: ids.nodeId,
+        status: "draft",
+        kind: "something_new",
+      }),
+    );
+    expect(applyThreadEvent(projection, unknownPlan)).toBe(projection);
+    const rollback = parseEvent(
+      rawEvent(3, "checkpoint.rollback-requested", {
+        scopeId: "scope-1",
+        checkpointId: "checkpoint-1",
+        requestedAt: at,
+      }),
+    );
+    expect(applyThreadEvent(projection, rollback)).toBe(projection);
   });
-});
 
-describe("applyThreadEvent: lifecycle events", () => {
-  it("applies meta, archive, activity, and mode changes", () => {
-    let thread = makeThread();
-    thread = applyThreadEvent(thread, parseEvent(events.metaUpdated(1, { title: "Renamed" })));
-    expect(thread.title).toBe("Renamed");
-    thread = applyThreadEvent(thread, parseEvent(events.archived(2)));
-    expect(thread.archivedAt).not.toBeNull();
-    thread = applyThreadEvent(
-      thread,
-      parseEvent(events.activityAppended(3, approvalRequested("r1"))),
-    );
-    expect(thread.activities).toHaveLength(1);
-    thread = applyThreadEvent(
-      thread,
-      parseEvent(events.activityAppended(3, approvalRequested("r1"))),
-    );
-    expect(thread.activities).toHaveLength(1);
+  it("ignores events for other threads and events of unknown types", () => {
+    const projection = makeProjection();
+    const other = parseEvent({ ...rawEvent(1, "run.created", makeRun()), threadId: "thread-2" });
+    expect(applyThreadEvent(projection, other)).toBe(projection);
+    const unknown = parseEvent(rawEvent(2, "thread.something-new", makeAppThread()));
+    expect(isKnownVariant(unknown)).toBe(false);
+    expect(applyThreadEvent(projection, unknown)).toBe(projection);
+    expect(projection.updatedAt).toBe(at);
   });
-});
 
-describe("pendingRequests", () => {
-  it("derives open requests from activities in order", () => {
-    let thread = makeThread();
-    thread = applyThreadEvent(
-      thread,
-      parseEvent(events.activityAppended(1, approvalRequested("r1"))),
-    );
-    thread = applyThreadEvent(
-      thread,
-      parseEvent(events.activityAppended(2, userInputRequested("r2"))),
-    );
-    thread = applyThreadEvent(
-      thread,
-      parseEvent(events.activityAppended(3, approvalResolved("r1"))),
-    );
-    const pending = pendingRequests(thread);
-    expect(pending).toHaveLength(1);
-    expect(pending[0]).toMatchObject({ kind: "user-input", requestId: "r2" });
-    expect(pending[0]?.kind === "user-input" && pending[0].payload.questions[0]?.id).toBe("q1");
-  });
-});
-
-describe("turnOutcome", () => {
-  it("picks the assistant message linked to the turn and the session error", () => {
-    let thread = makeThread({ session: makeSession({ status: "error", lastError: "boom" }) });
-    thread = applyThreadEvent(
-      thread,
-      parseEvent(events.messageSent(1, { messageId: "a1", text: "hi" })),
-    );
-    const outcome = turnOutcome(thread, { turnId: ids.turnId, state: "error" });
-    expect(outcome.assistantMessage?.id).toBe("a1");
-    expect(outcome.error).toBe("boom");
-  });
-});
-
-describe("threadPhase", () => {
-  it.each([
-    [{ hasPendingApprovals: true }, "waiting_for_approval"],
-    [{ hasPendingUserInput: true }, "waiting_for_input"],
-    [{ session: makeSession({ status: "error" }) }, "failed"],
-    [{ latestTurn: { ...runningTurn, state: "error" } }, "failed"],
-    [{ session: makeSession({ status: "starting" }) }, "starting"],
-    [{ session: makeSession({ status: "running", activeTurnId: ids.turnId }) }, "running"],
-    [{ latestTurn: runningTurn }, "running"],
-    [
-      {
-        latestTurn: { ...runningTurn, state: "completed", completedAt: "2020-01-01T00:00:01.000Z" },
-      },
-      "completed",
-    ],
-    [
-      {
-        latestTurn: {
-          ...runningTurn,
-          state: "interrupted",
-          completedAt: "2020-01-01T00:00:01.000Z",
-        },
-      },
-      "completed",
-    ],
-    [{ session: makeSession({ status: "ready" }) }, "completed"],
-    [{}, "idle"],
-    [{ session: makeSession({ status: "stopped" }) }, "idle"],
-  ])("%j -> %s", (overrides, expected) => {
-    expect(threadPhase(makeShellThread(overrides))).toBe(expected);
-  });
-});
-
-describe("applyThreadEvent: metadata events", () => {
-  it("applies snooze, pin, auto-settle, and pull-request link events", () => {
-    let thread = makeThread();
-    thread = applyThreadEvent(thread, parseEvent(events.snoozed(1, "2020-01-02T00:00:00.000Z")));
-    expect(thread.snoozedUntil).toBe("2020-01-02T00:00:00.000Z");
-    thread = applyThreadEvent(thread, parseEvent(events.unsnoozed(2)));
-    expect(thread.snoozedUntil).toBeNull();
-    thread = applyThreadEvent(thread, parseEvent(events.pinned(3, "k1")));
-    expect(thread).toMatchObject({ pinnedAt: at, pinOrderKey: "k1" });
-    thread = applyThreadEvent(thread, parseEvent(events.unpinned(4)));
-    expect(thread).toMatchObject({ pinnedAt: null, pinOrderKey: null });
-    thread = applyThreadEvent(thread, parseEvent(events.autoSettleSet(4, at)));
-    expect(thread.autoSettleDisabledAt).toBe(at);
-    thread = applyThreadEvent(thread, parseEvent(events.autoSettleSet(4, null)));
-    expect(thread.autoSettleDisabledAt).toBeNull();
-
-    thread = applyThreadEvent(thread, parseEvent(events.pullRequestLinked(5, 7)));
-    thread = applyThreadEvent(thread, parseEvent(events.pullRequestLinked(6, 7)));
-    expect(thread.pullRequests).toHaveLength(1);
-    thread = applyThreadEvent(thread, parseEvent(events.pullRequestSynced(7, 7, "merged")));
-    expect(thread.pullRequests[0]?.snapshot?.state).toBe("merged");
-    thread = applyThreadEvent(thread, parseEvent(events.pullRequestUnlinked(8, 7)));
-    expect(thread.pullRequests).toEqual([]);
-    // A sync for a removed link is stale.
-    expect(applyThreadEvent(thread, parseEvent(events.pullRequestSynced(9, 7, "open")))).toBe(
-      thread,
-    );
+  it("a message that reuses an id replaces the record", () => {
+    const projection = makeProjection({ messages: [makeMessage({ text: "first" })] });
+    const next = applyThreadEvent(projection, ev(events.messageUpdated(1, { text: "second" })));
+    expect(next.messages).toHaveLength(1);
+    expect(next.messages[0]?.text).toBe("second");
+    expect(next.runtimeRequests).toBe(projection.runtimeRequests);
+    expect(makeRuntimeRequest("r1")["status"]).toBe("pending");
   });
 });

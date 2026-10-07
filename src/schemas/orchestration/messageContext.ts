@@ -4,12 +4,14 @@
 // ---
 import { z } from "zod";
 import {
+  EnvironmentId,
   NonNegativeInt,
   PositiveInt,
+  ThreadId,
   TrimmedNonEmptyString,
   forwardCompatibleArray,
   forwardCompatibleLiteral,
-} from "../../common.ts";
+} from "../common.ts";
 
 export const ComposerContextId = TrimmedNonEmptyString.max(128)
   .regex(/^[a-z0-9_-]+$/i)
@@ -144,6 +146,15 @@ export const SkillContextRecord = z.looseObject({
   name: TrimmedNonEmptyString.max(255),
 });
 export type SkillContextRecord = z.infer<typeof SkillContextRecord>;
+/** Another thread on the same server, attached so the agent can read its history. */
+export const ThreadContextRecord = z.looseObject({
+  ...recordBase,
+  kind: z.literal("thread"),
+  environmentId: EnvironmentId,
+  threadId: ThreadId,
+  title: z.string().max(200),
+});
+export type ThreadContextRecord = z.infer<typeof ThreadContextRecord>;
 
 const knownKinds = new Set([
   "image",
@@ -154,6 +165,7 @@ const knownKinds = new Set([
   "review-comment",
   "mention",
   "skill",
+  "thread",
 ]);
 function fitsJson(value: unknown, maximum: number): boolean {
   try {
@@ -181,6 +193,7 @@ export const ComposerContextRecord = z.union([
   ReviewCommentContextRecord,
   MentionContextRecord,
   SkillContextRecord,
+  ThreadContextRecord,
   UnknownContextRecord,
 ]);
 export type ComposerContextRecord = z.infer<typeof ComposerContextRecord>;

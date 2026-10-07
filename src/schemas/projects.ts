@@ -5,12 +5,18 @@
 import { z } from "zod";
 import { TrimmedString } from "./common.ts";
 import {
+  CommandId,
+  IsoDateTime,
   NonNegativeInt,
   PositiveInt,
   ProjectId,
   TrimmedNonEmptyString,
   forwardCompatibleLiteral,
+  isUnknownVariant,
+  taggedUnionWithUnknown,
 } from "./common.ts";
+import { RepositoryIdentity, ThreadEnvMode } from "./environment.ts";
+import { ModelSelection } from "./orchestration/model.ts";
 
 export const PROJECT_SEARCH_ENTRIES_MAX_LIMIT = 200;
 export const ProjectEntryKind = forwardCompatibleLiteral(["file", "directory"]);
@@ -110,3 +116,172 @@ export const ProjectCreateNewResult = z.looseObject({
   commitError: TrimmedNonEmptyString.optional(),
 });
 export type ProjectCreateNewResult = z.infer<typeof ProjectCreateNewResult>;
+
+// project.ts: project records, icons, and mutations
+
+export const ProjectScriptIcon = forwardCompatibleLiteral([
+  "play",
+  "test",
+  "lint",
+  "configure",
+  "build",
+  "debug",
+]);
+export type ProjectScriptIcon = z.infer<typeof ProjectScriptIcon>;
+export const ProjectScript = z.looseObject({
+  id: TrimmedNonEmptyString,
+  name: TrimmedNonEmptyString,
+  command: TrimmedNonEmptyString,
+  icon: ProjectScriptIcon,
+  runOnWorktreeCreate: z.boolean(),
+  /** Run in the thread's worktree each time the thread settles. */
+  runOnSettle: z.boolean().optional(),
+  /** Start the agent while setup runs unless explicitly disabled. */
+  async: z.boolean().optional(),
+  previewUrl: TrimmedNonEmptyString.optional(),
+  autoOpenPreview: z.boolean().optional(),
+});
+export type ProjectScript = z.infer<typeof ProjectScript>;
+
+export const ProjectIconColor = forwardCompatibleLiteral([
+  "gray",
+  "red",
+  "orange",
+  "amber",
+  "yellow",
+  "lime",
+  "green",
+  "emerald",
+  "teal",
+  "cyan",
+  "sky",
+  "blue",
+  "indigo",
+  "violet",
+  "purple",
+  "fuchsia",
+  "pink",
+  "rose",
+]);
+export type ProjectIconColor = z.infer<typeof ProjectIconColor>;
+export const ProjectLucideIconName = TrimmedNonEmptyString.max(64).regex(
+  /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+);
+export const ProjectEmoji = TrimmedNonEmptyString.max(32);
+/** Grapheme count is checked by the server when a command sets the icon, not when a snapshot decodes. */
+export const ProjectMonogramText = TrimmedNonEmptyString.max(32).regex(
+  /^[\p{L}\p{N}][\p{L}\p{N}\p{M}\u200c\u200d]*$/u,
+);
+export type ProjectMonogramText = z.infer<typeof ProjectMonogramText>;
+export const ProjectFaviconPath = TrimmedNonEmptyString.max(1024).regex(
+  /\.(?:avif|gif|ico|jpe?g|png|svg|webp)$/i,
+);
+export type ProjectFaviconPath = z.infer<typeof ProjectFaviconPath>;
+
+const ProjectLucideIcon = z.looseObject({
+  kind: z.literal("lucide"),
+  name: ProjectLucideIconName,
+  color: ProjectIconColor,
+});
+const ProjectEmojiIcon = z.looseObject({ kind: z.literal("emoji"), emoji: ProjectEmoji });
+const ProjectMonogramIcon = z.looseObject({
+  kind: z.literal("monogram"),
+  text: ProjectMonogramText,
+  color: ProjectIconColor,
+});
+/** A project's chosen icon, as clients set it. */
+export const ProjectIconOverride = z.discriminatedUnion("kind", [
+  ProjectLucideIcon,
+  ProjectEmojiIcon,
+  ProjectMonogramIcon,
+]);
+export type ProjectIconOverride = z.infer<typeof ProjectIconOverride>;
+
+/**
+ * An icon as clients receive it. Servers once sent a monogram as a Lucide
+ * icon carrying its text; that shape still decodes as `kind: "monogram"`. A
+ * kind from a newer server decodes as `null`, no override.
+ */
+export const ReceivedProjectIcon: z.ZodType<ProjectIconOverride | null, unknown> =
+  taggedUnionWithUnknown("kind", [
+    z.looseObject({
+      ...ProjectLucideIcon.shape,
+      monogramText: ProjectMonogramText.optional(),
+      monogram: ProjectMonogramText.optional(),
+    }),
+    ProjectEmojiIcon,
+    ProjectMonogramIcon,
+  ]).transform((icon): ProjectIconOverride | null => {
+    if (isUnknownVariant<"kind">(icon)) return null;
+    if (icon.kind !== "lucide") return icon;
+    const text = icon.monogramText ?? icon.monogram;
+    return text === undefined
+      ? { kind: "lucide", name: icon.name, color: icon.color }
+      : { kind: "monogram", text, color: icon.color };
+  });
+
+export const Project = z.looseObject({
+  id: ProjectId,
+  title: TrimmedNonEmptyString,
+  workspaceRoot: TrimmedNonEmptyString,
+  repositoryIdentity: RepositoryIdentity.nullable().optional(),
+  faviconPath: TrimmedNonEmptyString.nullable().optional(),
+  projectIcon: ReceivedProjectIcon.nullable().optional(),
+  defaultModelSelection: ModelSelection.nullable(),
+  defaultThreadEnvMode: ThreadEnvMode.nullable().optional(),
+  autoPull: z.boolean().optional(),
+  scripts: z.array(ProjectScript),
+  createdAt: IsoDateTime,
+  updatedAt: IsoDateTime,
+  deletedAt: IsoDateTime.nullable(),
+});
+export type Project = z.infer<typeof Project>;
+
+export const ProjectSnapshot = z.looseObject({
+  projects: z.array(Project),
+  updatedAt: IsoDateTime,
+});
+export type ProjectSnapshot = z.infer<typeof ProjectSnapshot>;
+
+export const ProjectCreatePayload = z.looseObject({
+  title: TrimmedNonEmptyString,
+  workspaceRoot: TrimmedNonEmptyString,
+  createWorkspaceRootIfMissing: z.boolean().optional(),
+  defaultModelSelection: ModelSelection.nullable().optional(),
+  scripts: z.array(ProjectScript).optional(),
+});
+export type ProjectCreatePayload = z.infer<typeof ProjectCreatePayload>;
+export const ProjectUpdatePayload = z.looseObject({
+  title: TrimmedNonEmptyString.optional(),
+  workspaceRoot: TrimmedNonEmptyString.optional(),
+  defaultModelSelection: ModelSelection.nullable().optional(),
+  autoPull: z.boolean().optional(),
+  projectIcon: ProjectIconOverride.nullable().optional(),
+  faviconPath: TrimmedNonEmptyString.nullable().optional(),
+  defaultThreadEnvMode: ThreadEnvMode.nullable().optional(),
+  scripts: z.array(ProjectScript).optional(),
+});
+export type ProjectUpdatePayload = z.infer<typeof ProjectUpdatePayload>;
+
+/** What `projects.mutate` and `POST /api/projects/mutate` accept. */
+export const ProjectMutation = z.discriminatedUnion("type", [
+  z.looseObject({
+    type: z.literal("project.create"),
+    commandId: CommandId,
+    projectId: ProjectId,
+    ...ProjectCreatePayload.shape,
+  }),
+  z.looseObject({
+    type: z.literal("project.update"),
+    commandId: CommandId,
+    projectId: ProjectId,
+    ...ProjectUpdatePayload.shape,
+  }),
+  z.looseObject({
+    type: z.literal("project.delete"),
+    commandId: CommandId,
+    projectId: ProjectId,
+    force: z.boolean().optional(),
+  }),
+]);
+export type ProjectMutation = z.infer<typeof ProjectMutation>;

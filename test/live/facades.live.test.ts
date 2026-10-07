@@ -57,6 +57,14 @@ describe.skipIf(!enabled)("live facades", () => {
     }
   });
 
+  it("speaks orchestration protocol 2 and reads the granular permissions", async () => {
+    const environment = await client.auth.descriptor();
+    expect(environment.orchestrationProtocolVersion).toBe(2);
+    const session = await client.auth.sessionState();
+    expect(session.permissions).toContain("filesystem:read");
+    expect(session.auth.serverUpdateScope).toBe("environment:maintain");
+  });
+
   it("ensures a project idempotently", async () => {
     const project = await client.projects.ensure({ workspaceRoot, title: "live sample" });
     projectId = project.id;
@@ -68,9 +76,20 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(await client.projects.findByWorkspaceRoot(workspaceRoot)).toMatchObject({
       id: project.id,
     });
+    const snapshot = await client.projects.snapshot();
+    expect(snapshot.projects.find((candidate) => candidate.id === project.id)).toMatchObject({
+      workspaceRoot,
+      deletedAt: null,
+    });
   });
 
-  it("ensures a thread idempotently and reads its detail", async () => {
+  it("renames a project through projects.mutate", async () => {
+    const renamed = await client.projects.ensure({ workspaceRoot, title: "live sample renamed" });
+    expect(renamed.title).toBe("live sample renamed");
+    expect(await client.projects.get(projectId)).toMatchObject({ title: "live sample renamed" });
+  });
+
+  it("ensures a thread idempotently and reads its detail and projection", async () => {
     const input = {
       threadId: id,
       projectId,
@@ -81,51 +100,53 @@ describe.skipIf(!enabled)("live facades", () => {
     const thread = await client.threads.ensure(input);
     expect(thread.id).toBe(id);
     expect(thread.runtimeMode).toBe("auto");
+    expect(thread.createdBy).toBe("user");
+    expect(thread.status).toBe("idle");
     const again = await client.threads.ensure({ ...input, title: "ignored" });
     expect(again.title).toBe("live sample thread");
     const detail = await client.threads.detail(id);
-    expect(detail.thread.id).toBe(id);
+    expect(detail.projection.thread.id).toBe(id);
+    expect(detail.projection.runs).toEqual([]);
+    const projection = await client.threads.projection(id);
+    expect(projection.thread.title).toBe("live sample thread");
     expect(client.threads.phase(thread)).toBe("idle");
     expect(await client.threads.pendingRequests(id)).toEqual([]);
   });
 
-  it("reads the full read model with the created project and thread", async () => {
-    const controller = new AbortController();
-    const readModel = await client.shell.readModel(controller.signal);
-    expect(readModel.snapshotSequence).toBeGreaterThan(0);
-    expect(readModel.projects.find((project) => project.id === projectId)).toMatchObject({
-      workspaceRoot,
-    });
-    expect(readModel.threads.find((thread) => thread.id === id)).toMatchObject({
-      projectId,
-      title: "live sample thread",
-      messages: [],
-      activities: [],
-      checkpoints: [],
-    });
-    expect(Number.isNaN(Date.parse(readModel.updatedAt))).toBe(false);
-  });
-
-  it("turns automatic settlement off and accepts the reasoning opt-in", async () => {
+  it("updates thread settings through commands", async () => {
+    await client.threads.update(id, { title: "live sample thread (renamed)" });
+    await client.threads.setRuntimeMode(id, "full-access");
     await client.threads.dispatch({
       type: "thread.auto-settle.set",
       commandId: client.threads.dispatcher.newCommandId(),
       threadId: id,
       enabled: false,
     });
-    const detail = await client.threads.detail(id, { reasoningMessages: true });
-    expect(detail.thread.autoSettleDisabledAt).toEqual(expect.any(String));
+    const detail = await client.threads.detail(id);
+    expect(detail.projection.thread).toMatchObject({
+      title: "live sample thread (renamed)",
+      runtimeMode: "full-access",
+      autoSettleDisabledAt: expect.any(String),
+    });
     const controller = new AbortController();
-    for await (const item of client.threads.watch(id, {
-      reasoningMessages: true,
-      signal: controller.signal,
-    })) {
+    for await (const item of client.threads.watch(id, { signal: controller.signal })) {
       if (item.kind === "snapshot") {
-        expect(item.snapshot.thread.autoSettleDisabledAt).toEqual(expect.any(String));
+        expect(item.snapshot.projection.thread.runtimeMode).toBe("full-access");
         controller.abort();
       }
     }
-    expect((await client.server.getConfig()).reasoningMessages).toBe(true);
+  });
+
+  it("archives, lists, unarchives, and tolerates a missing thread", async () => {
+    await client.threads.archive(id);
+    expect((await client.threads.list({ projectId })).map((t) => t.id)).not.toContain(id);
+    expect(
+      (await client.threads.list({ projectId, includeArchived: true })).map((t) => t.id),
+    ).toContain(id);
+    expect((await client.shell.archivedSnapshot()).threads.map((t) => t.id)).toContain(id);
+    await client.threads.unarchive(id);
+    expect((await client.threads.get(id))?.archivedAt).toBeNull();
+    await client.threads.delete(threadId(NodeCrypto.randomUUID()));
   });
 
   // Both create folders in the server's data directory, so they run only
@@ -162,17 +183,20 @@ describe.skipIf(!enabled)("live facades", () => {
     const watching = (async () => {
       for await (const item of client.shell.watch({ signal: controller.signal })) {
         seen.push(item);
-        if (item.kind === "thread-upserted" && item.thread.id === id) controller.abort();
+        if (item.kind === "thread.updated" && item.thread.id === id) controller.abort();
       }
     })();
     // Wait for the snapshot before causing the event so it arrives live.
     while (!seen.some((item) => item.kind === "snapshot"))
       await new Promise((r) => setTimeout(r, 20));
-    await client.threads.update(id, { title: "live sample thread (renamed)" });
+    await client.threads.update(id, { title: "live sample thread (watched)" });
     await watching;
-    expect(seen.some((item) => item.kind === "thread-upserted" && item.thread.id === id)).toBe(
-      true,
-    );
+    expect(
+      seen.some(
+        (item) =>
+          item.kind === "thread.updated" && item.thread.id === id && item.location === "active",
+      ),
+    ).toBe(true);
   });
 
   it.skipIf(!agent || queued)(
@@ -191,15 +215,17 @@ describe.skipIf(!enabled)("live facades", () => {
       await consume;
       console.info(`turn settled in ${Date.now() - started} ms`, kinds);
       expect(outcome.state).toBe("completed");
-      expect(outcome.turnId).not.toBeNull();
+      expect(outcome.runId).toBe(turn.runId);
+      expect(outcome.run.userMessageId).toBe(turn.messageId);
       expect(outcome.assistantMessage?.text.toLowerCase()).toContain("pong");
+      expect(kinds).toContain("assistant-delta");
       expect(kinds.at(-1)).toBe("turn-settled");
     },
     180_000,
   );
 
   it.skipIf(!agent || !queued)(
-    "a turn started while another is starting is folded into that turn and both settle",
+    "a second message sent during a run is steered or queued by the server and both settle",
     async () => {
       const first = await client.threads.startTurn({
         threadId: id,
@@ -211,26 +237,17 @@ describe.skipIf(!enabled)("live facades", () => {
       });
       const seen: string[] = [];
       const consume = (async () => {
-        for await (const item of second.events()) {
-          const detail =
-            item.kind === "event"
-              ? JSON.stringify((item.event as { payload?: unknown }).payload).slice(0, 160)
-              : "";
-          seen.push(`${kindOf(item)} ${detail}`);
-        }
+        for await (const item of second.events()) seen.push(kindOf(item));
       })();
       const [one, two] = await Promise.all([first.completion, second.completion]);
       await consume;
       console.info("second turn saw", seen);
       console.info("outcomes", {
-        first: { turnId: one.turnId, text: one.assistantMessage?.text },
-        second: { turnId: two.turnId, text: two.assistantMessage?.text },
+        first: { runId: one.runId, text: one.assistantMessage?.text },
+        second: { runId: two.runId, text: two.assistantMessage?.text },
       });
       expect(one.state).toBe("completed");
       expect(two.state).toBe("completed");
-      expect(one.turnId).not.toBeNull();
-      // Providers steer a message sent during an active turn into that turn.
-      expect(two.turnId).toBe(one.turnId);
       expect(two.assistantMessage?.text.toLowerCase()).toContain("marmalade");
     },
     300_000,

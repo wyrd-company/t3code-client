@@ -11,8 +11,11 @@
 import { z } from "zod";
 import { AuthGrantedScope } from "./auth.ts";
 import {
+  CommandId,
   NonNegativeInt,
   PositiveInt,
+  ProjectId,
+  ThreadId,
   TrimmedNonEmptyString,
   forwardCompatibleLiteral,
   isUnknownVariant,
@@ -48,6 +51,7 @@ export * from "./rpcErrors/vcs.ts";
 export const EnvironmentAuthorizationError = taggedError("EnvironmentAuthorizationError", {
   message: z.string(),
   requiredScope: AuthGrantedScope,
+  requiredPermission: z.string().optional(),
 });
 export const AuthAccessStreamError = taggedError("AuthAccessStreamError", { message: z.string() });
 
@@ -152,20 +156,42 @@ export const ProjectSearchContentsError = taggedError(
 export const ProjectReadFileError = taggedError("ProjectReadFileError", projectFileFields);
 export const ProjectWriteFileError = taggedError("ProjectWriteFileError", projectFileFields);
 
-// orchestration.ts
+export const ProjectMutationError = taggedError("ProjectMutationError", {
+  commandId: CommandId,
+  ...messageAndCause,
+});
 
+// orchestrationDispatch.ts, orchestrationV2.ts, checkpointDiff.ts, threadSearch.ts
+
+/** Raised by `projects.ensureScratch` and `projects.createNew`. */
 export const OrchestrationDispatchCommandError = taggedError("OrchestrationDispatchCommandError", {
   ...messageAndCause,
-  /**
-   * `deleted` when a failed bootstrap turn start removed the thread it created;
-   * `not-created` when a bootstrap that required a worktree failed before creating its thread.
-   */
   bootstrapThreadDisposition: forwardCompatibleLiteral(["deleted", "not-created"]).optional(),
 });
-export const OrchestrationGetSnapshotError = taggedError(
-  "OrchestrationGetSnapshotError",
+/** Raised by `orchestration.dispatchCommand`; `detail` is the user-facing cause when known. */
+export const OrchestrationV2DispatchCommandError = taggedError(
+  "OrchestrationV2DispatchCommandError",
+  {
+    commandId: CommandId,
+    commandType: z.string(),
+    message: z.string(),
+    detail: z.string().optional(),
+    cause: Defect.optional(),
+  },
+);
+export const OrchestrationV2GetThreadProjectionError = taggedError(
+  "OrchestrationV2GetThreadProjectionError",
+  { threadId: ThreadId, ...messageAndCause },
+);
+export const OrchestrationV2GetShellSnapshotError = taggedError(
+  "OrchestrationV2GetShellSnapshotError",
   messageAndCause,
 );
+export const OrchestrationV2ThreadLaunchError = taggedError("OrchestrationV2ThreadLaunchError", {
+  commandId: CommandId,
+  projectId: ProjectId,
+  ...messageAndCause,
+});
 export const OrchestrationGetTurnDiffError = taggedError(
   "OrchestrationGetTurnDiffError",
   messageAndCause,
@@ -227,8 +253,12 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   ProjectSearchContentsError,
   ProjectReadFileError,
   ProjectWriteFileError,
+  ProjectMutationError,
   OrchestrationDispatchCommandError,
-  OrchestrationGetSnapshotError,
+  OrchestrationV2DispatchCommandError,
+  OrchestrationV2GetThreadProjectionError,
+  OrchestrationV2GetShellSnapshotError,
+  OrchestrationV2ThreadLaunchError,
   OrchestrationGetTurnDiffError,
   OrchestrationGetFullThreadDiffError,
   OrchestrationSearchThreadsError,

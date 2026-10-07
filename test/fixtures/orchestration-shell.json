@@ -1,26 +1,14 @@
 {
+  "schemaVersion": 2,
   "snapshotSequence": 2,
-  "projects": [
-    {
-      "id": "11111111-1111-4111-8111-111111111111",
-      "title": "Example project",
-      "workspaceRoot": "/tmp/example",
-      "repositoryIdentity": null,
-      "defaultModelSelection": null,
-      "defaultThreadEnvMode": null,
-      "autoPull": false,
-      "faviconPath": null,
-      "projectIcon": null,
-      "scripts": [],
-      "createdAt": "2026-09-16T13:16:09.837Z",
-      "updatedAt": "2026-09-16T13:16:09.837Z"
-    }
-  ],
   "threads": [
     {
-      "id": "22222222-2222-4222-8222-222222222222",
-      "projectId": "11111111-1111-4111-8111-111111111111",
+      "createdBy": "user",
+      "creationSource": "web",
+      "id": "11111111-2222-4333-8444-555555555555",
+      "projectId": "7b51ac4e-9969-429d-9fb1-50ca2a8ad98d",
       "title": "Example thread",
+      "providerInstanceId": "codex",
       "modelSelection": {
         "instanceId": "codex",
         "model": "gpt-5.6-luna"
@@ -30,29 +18,66 @@
       "branch": null,
       "worktreePath": null,
       "pullRequests": [],
-      "branchPullRequest": null,
-      "latestTurn": null,
-      "createdAt": "2026-09-16T13:16:09.847Z",
-      "updatedAt": "2026-09-16T13:16:09.847Z",
+      "lineage": {
+        "parentThreadId": null,
+        "relationshipToParent": null,
+        "rootThreadId": "11111111-2222-4333-8444-555555555555"
+      },
+      "forkedFrom": null,
+      "activeProviderThreadId": null,
+      "latestRunId": null,
+      "latestRunRequestedAt": null,
+      "latestRunStartedAt": null,
+      "latestRunCompletedAt": null,
+      "activeRunId": null,
+      "activityRunStartedAt": null,
+      "activityRunStatus": null,
+      "status": "idle",
+      "lastError": null,
+      "lastErrorClass": null,
+      "usageLimitResetAt": null,
+      "pendingRuntimeRequest": null,
+      "latestVisibleMessage": null,
+      "latestUserMessageAt": null,
+      "latestUserAuthoredMessageAt": null,
+      "hasActionableProposedPlan": false,
+      "pendingBackgroundTasks": [],
+      "providerInstanceHistory": [],
+      "goal": null,
+      "itemCount": 0,
+      "visibleItemCount": 0,
+      "createdAt": "2026-10-07T15:21:50.105Z",
+      "updatedAt": "2026-10-07T15:21:50.105Z",
       "archivedAt": null,
       "settledOverride": null,
       "settledAt": null,
       "unsettledAt": null,
       "snoozedUntil": null,
       "snoozedAt": null,
+      "limitRecovery": null,
       "pinnedAt": null,
+      "autoSettleDisabledAt": null,
       "pinOrderKey": null,
-      "activeOrderKey": null,
+      "lastVisitedAt": null,
       "titleRegeneration": null,
-      "titleState": null,
-      "session": null,
-      "latestUserMessageAt": null,
-      "hasPendingApprovals": false,
-      "hasPendingUserInput": false,
-      "hasActionableProposedPlan": false,
-      "backgroundLiveness": null,
-      "planProgress": null
+      "deletedAt": null
     }
   ],
-  "updatedAt": "2026-09-16T13:16:09.847Z"
+  "archivedThreads": [],
+  "projects": [
+    {
+      "id": "7b51ac4e-9969-429d-9fb1-50ca2a8ad98d",
+      "title": "Example project",
+      "workspaceRoot": "/srv/sample",
+      "repositoryIdentity": null,
+      "defaultModelSelection": null,
+      "defaultThreadEnvMode": null,
+      "autoPull": false,
+      "faviconPath": null,
+      "projectIcon": null,
+      "scripts": [],
+      "createdAt": "2026-10-07T15:21:50.084Z",
+      "updatedAt": "2026-10-07T15:21:50.084Z"
+    }
+  ]
 }

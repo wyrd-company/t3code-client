@@ -24,6 +24,10 @@ import type { Logger } from "./internal/logger.ts";
 import type { WebSocketConstructor } from "./internal/websocket.ts";
 import { RpcClient } from "./rpc/client.ts";
 import { rpcMethods, type RpcMethods } from "./rpc/registry.ts";
+import {
+  ORCHESTRATION_PROTOCOL_QUERY_PARAM,
+  ORCHESTRATION_PROTOCOL_VERSION_TEXT,
+} from "./schemas/environment.ts";
 import { HttpTransport } from "./transport/http.ts";
 import { RpcConnection } from "./transport/rpcConnection.ts";
 import { SocketTransport } from "./transport/socket.ts";
@@ -112,7 +116,7 @@ export class T3Client {
       ...(options.logger === undefined ? {} : { logger: options.logger }),
     });
 
-    const dispatcher = new CommandDispatcher(this.rpc, http);
+    const dispatcher = new CommandDispatcher(this.rpc);
     this.server = new ServerApi(this.rpc, http);
     this.projects = new ProjectsApi(http, this.rpc, dispatcher);
     this.threads = new ThreadsApi(http, this.rpc, dispatcher);
@@ -173,6 +177,8 @@ function socketUrl(options: T3ClientOptions): URL {
     throw new T3PreconditionError(`baseUrl is not a valid URL: ${options.baseUrl}`, { cause });
   }
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  // The server answers 426 to an upgrade that does not name the protocol it speaks.
+  url.searchParams.set(ORCHESTRATION_PROTOCOL_QUERY_PARAM, ORCHESTRATION_PROTOCOL_VERSION_TEXT);
   url.searchParams.set("clientSurface", "cli");
   if (options.clientAppVersion !== undefined) {
     url.searchParams.set("clientAppVersion", options.clientAppVersion);

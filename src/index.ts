@@ -47,12 +47,30 @@ export type {
 export { ThreadsApi } from "./api/threads.ts";
 export type {
   ThreadCreateInput,
+  ThreadLaunchInput,
   ThreadListOptions,
   ThreadMetaUpdate,
   WatchOptions,
 } from "./api/threads.ts";
-export type { StartTurnInput, TurnHandle, TurnOutcome } from "./api/turns.ts";
-export { ShellApi, type ShellWatchItem, type ShellWatchOptions } from "./api/shell.ts";
+export type {
+  ApprovalResponseInput,
+  InterruptOptions,
+  UserInputDismissInput,
+  UserInputResponseInput,
+} from "./api/threadCommands.ts";
+export type {
+  CreationOrigin,
+  StartTurnInput,
+  TurnDelivery,
+  TurnHandle,
+  TurnOutcome,
+} from "./api/turns.ts";
+export {
+  ShellApi,
+  type ArchivedShellWatchItem,
+  type ShellWatchItem,
+  type ShellWatchOptions,
+} from "./api/shell.ts";
 export { ServerApi } from "./api/server.ts";
 export type { WatchServerConfigOptions, WatchServerLifecycleOptions } from "./api/server.ts";
 export { VcsApi } from "./api/vcs.ts";
@@ -61,13 +79,14 @@ export type { DecodedStreamItem } from "./api/streamItems.ts";
 export { CommandDispatcher } from "./api/dispatch.ts";
 export {
   applyThreadEvent,
+  assistantMessageForRun,
   pendingRequests,
-  settledTurnStateForSessionStatus,
+  runOutcome,
   threadPhase,
   type PendingRequest,
   type ThreadPhase,
-  type SettledTurnState,
 } from "./api/threadProjection.ts";
+export { activeRun } from "./api/threadDerived.ts";
 export {
   watchThread,
   type ThreadWatchItem,
@@ -98,9 +117,11 @@ export type {
   ProjectId,
   CommandId,
   MessageId,
-  TurnId,
+  RunId,
+  NodeId,
+  TurnItemId,
+  RuntimeRequestId,
   EventId,
-  ApprovalRequestId,
   AuthSessionId,
   ProviderInstanceId,
 } from "./schemas/common.ts";
@@ -109,53 +130,71 @@ export {
   projectId,
   commandId,
   messageId,
-  turnId,
+  runId,
+  nodeId,
+  turnItemId,
+  runtimeRequestId,
   eventId,
-  approvalRequestId,
   authSessionId,
   providerInstanceId,
 } from "./schemas/common.ts";
+export {
+  ORCHESTRATION_PROTOCOL_HEADER,
+  ORCHESTRATION_PROTOCOL_QUERY_PARAM,
+  ORCHESTRATION_PROTOCOL_VERSION,
+} from "./schemas/environment.ts";
 export type {
-  OrchestrationThread,
-  OrchestrationMessage,
-  OrchestrationThreadDetailSnapshot,
-  OrchestrationThreadActivity,
-  OrchestrationLatestTurn,
-  OrchestrationSession,
-} from "./schemas/orchestration/readModel.ts";
+  OrchestrationV2ThreadProjection,
+  OrchestrationV2ThreadDetailSnapshot,
+  OrchestrationV2ThreadBoundedSnapshot,
+  OrchestrationV2ThreadHistoryPage,
+} from "./schemas/orchestration/projection.ts";
+export type { OrchestrationV2AppThread } from "./schemas/orchestration/thread.ts";
+export type {
+  OrchestrationV2Run,
+  OrchestrationV2RunStatus,
+  OrchestrationV2RunTerminalStatus,
+} from "./schemas/orchestration/runs.ts";
+export { isRunActiveStatus, isRunTerminalStatus } from "./schemas/orchestration/runs.ts";
+export type {
+  OrchestrationV2ConversationMessage,
+  OrchestrationV2UserInputQuestion,
+} from "./schemas/orchestration/messages.ts";
+export type { OrchestrationV2RuntimeRequest } from "./schemas/orchestration/providerState.ts";
+export type {
+  OrchestrationV2TurnItem,
+  KnownOrchestrationV2TurnItem,
+  OrchestrationV2TurnItemType,
+  OrchestrationV2TurnItemOfType,
+} from "./schemas/orchestration/turnItems.ts";
+export { isTurnItemOfType } from "./schemas/orchestration/turnItems.ts";
 export type {
   OrchestrationProjectShell,
-  OrchestrationThreadShell,
-  OrchestrationShellSnapshot,
+  OrchestrationV2ThreadShell,
+  OrchestrationV2ShellSnapshot,
 } from "./schemas/orchestration/shell.ts";
-export type { OrchestrationEvent } from "./schemas/orchestration/events.ts";
-export type { ClientOrchestrationCommand } from "./schemas/orchestration/commands.ts";
+export type {
+  OrchestrationV2DomainEvent,
+  KnownOrchestrationV2DomainEvent,
+} from "./schemas/orchestration/events.ts";
+export type {
+  OrchestrationV2Command,
+  OrchestrationV2CommandType,
+  OrchestrationV2CommandOfType,
+} from "./schemas/orchestration/commands.ts";
 export type { DispatchResult } from "./schemas/orchestration/stream.ts";
+export type { Project, ProjectMutation, ProjectUpdatePayload } from "./schemas/projects.ts";
 export type {
   ModelSelection,
   RuntimeMode,
   ProviderInteractionMode,
   ProviderApprovalDecision,
-  ChatAttachment,
-} from "./schemas/orchestration/model.ts";
-export type {
-  KnownThreadActivity,
-  UnknownThreadActivity,
-  ThreadActivityKind,
-  ThreadActivityOfKind,
-  ThreadActivityPayload,
-} from "./schemas/orchestration/threadActivity.ts";
-export { isThreadActivityOfKind } from "./schemas/orchestration/threadActivity.ts";
-export type { ContextWindowUpdatedActivityPayload } from "./schemas/orchestration/activityPayloads/runtime.ts";
-export type {
-  ApprovalRequestedPayload,
-  UserInputRequestedPayload,
-  UserInputQuestion,
-} from "./schemas/orchestration/activities.ts";
-export type {
   ProviderUserInputAnswer,
   ProviderUserInputAnswers,
+  OrchestrationV2Actor,
+  OrchestrationV2CreationSource,
 } from "./schemas/orchestration/model.ts";
+export type { ChatAttachment } from "./schemas/orchestration/attachments.ts";
 export type {
   RpcErrorRecord,
   KnownRpcErrorRecord,

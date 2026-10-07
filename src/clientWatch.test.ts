@@ -8,10 +8,9 @@ import { FakeT3Server } from "../test/support/fakeServer.ts";
 import {
   events,
   ids,
-  makeThread,
-  makeSnapshot,
   makeShellSnapshot,
   makeShellThread,
+  snapshotItem,
 } from "../test/support/threadFixtures.ts";
 import type { WebSocketConstructor } from "./internal/websocket.ts";
 import { T3Client, T3AuthError } from "./index.ts";
@@ -59,17 +58,14 @@ describe.each(["thread", "shell"] as const)("public %s watch", (kind) => {
       : c.shell.watch(signal ? { signal } : {});
   const method =
     kind === "thread" ? "orchestration.subscribeThread" : "orchestration.subscribeShell";
-  const snapshot = {
-    kind: "snapshot",
-    snapshot:
-      kind === "thread"
-        ? makeSnapshot(makeThread(), 10)
-        : makeShellSnapshot({ snapshotSequence: 10 }),
-  };
+  const snapshot =
+    kind === "thread"
+      ? snapshotItem(10)
+      : { kind: "snapshot", snapshot: makeShellSnapshot({ snapshotSequence: 10 }) };
   const event = (sequence: number) =>
     kind === "thread"
-      ? { kind: "event", event: events.sessionSet(sequence, { status: "ready" }) }
-      : { kind: "thread-upserted", sequence, thread: makeShellThread() };
+      ? events.runUpdated(sequence)
+      : { kind: "thread.updated", sequence, location: "active", thread: makeShellThread() };
 
   it("waits for a server that starts later and resumes its cursor across an outage", async () => {
     server = await FakeT3Server.start();
@@ -93,9 +89,7 @@ describe.each(["thread", "shell"] as const)("public %s watch", (kind) => {
       return { kind: "hang" };
     });
     expect((await first).value).toMatchObject({ kind: "snapshot" });
-    expect((await iterator.next()).value).toMatchObject(
-      kind === "thread" ? { kind: "event", event: { sequence: 11 } } : { sequence: 11 },
-    );
+    expect((await iterator.next()).value).toMatchObject({ sequence: 11 });
     const next = iterator.next();
     void next.catch(() => {});
     await server.close();
@@ -113,9 +107,7 @@ describe.each(["thread", "shell"] as const)("public %s watch", (kind) => {
       const result = await iterator.next();
       if (result.done) break;
       const value = result.value;
-      if (value.kind === "event" && "sequence" in value.event)
-        sequences.push(value.event.sequence as number);
-      if (value.kind === "thread-upserted") sequences.push(value.sequence);
+      if (value.kind === "event" || value.kind === "thread.updated") sequences.push(value.sequence);
     }
     expect(payload).toMatchObject({ afterSequence: 11 });
     expect(sequences).toEqual([12, 13]);
@@ -193,14 +185,7 @@ it("propagates a resume detail connection error while the socket remains open", 
     subscriptions += 1;
     return {
       kind: "stream",
-      chunks: [
-        [
-          {
-            kind: "event",
-            event: events.sessionSet(11, { status: "ready" }),
-          },
-        ],
-      ],
+      chunks: [[events.runUpdated(11)]],
     };
   });
   const detailFailure = new Error("Connection refused.");

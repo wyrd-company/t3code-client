@@ -211,9 +211,27 @@ export const ServerLifecycleStreamWelcomeEvent = z.looseObject({
   payload: ServerLifecycleWelcomePayload,
 });
 export type ServerLifecycleStreamWelcomeEvent = z.infer<typeof ServerLifecycleStreamWelcomeEvent>;
+export const ServerLifecycleLegacyThreadMigrationPayload = z.looseObject({
+  status: forwardCompatibleLiteral(["running", "complete"]),
+  totalThreadCount: NonNegativeInt,
+});
+export type ServerLifecycleLegacyThreadMigrationPayload = z.infer<
+  typeof ServerLifecycleLegacyThreadMigrationPayload
+>;
+/** Progress of importing threads recorded by a pre-V2 server. */
+export const ServerLifecycleStreamLegacyThreadMigrationEvent = z.looseObject({
+  version: z.literal(1),
+  sequence: NonNegativeInt,
+  type: z.literal("legacyThreadMigration"),
+  payload: ServerLifecycleLegacyThreadMigrationPayload,
+});
+export type ServerLifecycleStreamLegacyThreadMigrationEvent = z.infer<
+  typeof ServerLifecycleStreamLegacyThreadMigrationEvent
+>;
 export const ServerLifecycleStreamEvent = taggedUnionWithUnknown("type", [
   ServerLifecycleStreamWelcomeEvent,
   ServerLifecycleStreamReadyEvent,
+  ServerLifecycleStreamLegacyThreadMigrationEvent,
 ]);
 export type ServerLifecycleStreamEvent = z.infer<typeof ServerLifecycleStreamEvent>;
 export const ServerProviderUpdatedPayload = z.looseObject({ providers: ServerProviders });

@@ -1,30 +1,33 @@
 /**
  * ProjectsApi: projects as the shell snapshot sees them, idempotent `ensure`
- * keyed by the normalised workspace root, and thin typed wrappers over the
- * `projects.*` file RPCs, plus the server-side Scratch and new-project
- * creators.
+ * keyed by the normalised workspace root, mutations through
+ * `projects.mutate`, thin typed wrappers over the `projects.*` file RPCs,
+ * and the server-side Scratch and new-project creators.
  */
 import * as NodePath from "node:path";
 import type { RpcClient } from "../rpc/client.ts";
 import type { RpcMethods } from "../rpc/registry.ts";
 import type { ProjectId } from "../schemas/common.ts";
 import type { ModelSelection } from "../schemas/orchestration/model.ts";
-import type { ProjectMetaUpdateCommand } from "../schemas/orchestration/commands/project.ts";
 import type { OrchestrationProjectShell } from "../schemas/orchestration/shell.ts";
-import type {
-  ProjectCreateNewInput,
-  ProjectCreateNewResult,
-  ProjectEnsureScratchResult,
-  ProjectListEntriesInput,
-  ProjectListEntriesResult,
-  ProjectReadFileInput,
-  ProjectReadFileResult,
-  ProjectSearchContentsInput,
-  ProjectSearchContentsResult,
-  ProjectSearchEntriesInput,
-  ProjectSearchEntriesResult,
-  ProjectWriteFileInput,
-  ProjectWriteFileResult,
+import {
+  ProjectSnapshot,
+  type Project,
+  type ProjectCreateNewInput,
+  type ProjectCreateNewResult,
+  type ProjectEnsureScratchResult,
+  type ProjectListEntriesInput,
+  type ProjectListEntriesResult,
+  type ProjectReadFileInput,
+  type ProjectReadFileResult,
+  type ProjectScript,
+  type ProjectSearchContentsInput,
+  type ProjectSearchContentsResult,
+  type ProjectSearchEntriesInput,
+  type ProjectSearchEntriesResult,
+  type ProjectUpdatePayload,
+  type ProjectWriteFileInput,
+  type ProjectWriteFileResult,
 } from "../schemas/projects.ts";
 import type { HttpTransport } from "../transport/http.ts";
 import { isMissingResourceError, type CommandDispatcher } from "./dispatch.ts";
@@ -36,6 +39,7 @@ export interface ProjectCreateInput {
   readonly workspaceRoot: string;
   readonly createWorkspaceRootIfMissing?: boolean;
   readonly defaultModelSelection?: ModelSelection | null;
+  readonly scripts?: ProjectScript[];
 }
 
 export interface ProjectEnsureInput {
@@ -44,7 +48,7 @@ export interface ProjectEnsureInput {
   readonly createWorkspaceRootIfMissing?: boolean;
 }
 
-export type ProjectMetaUpdate = Omit<ProjectMetaUpdateCommand, "type" | "commandId" | "projectId">;
+export type ProjectMetaUpdate = ProjectUpdatePayload;
 
 export interface ProjectFilesApi {
   list(input: ProjectListEntriesInput, signal?: AbortSignal): Promise<ProjectListEntriesResult>;
@@ -90,6 +94,17 @@ export class ProjectsApi {
     return (await loadShellSnapshot(this.http, signal)).projects;
   }
 
+  /** The full project records over `GET /api/projects`. */
+  snapshot(signal?: AbortSignal): Promise<ProjectSnapshot> {
+    return this.http.request({
+      method: "GET",
+      path: "/api/projects",
+      auth: "required",
+      decode: ProjectSnapshot,
+      ...(signal === undefined ? {} : { signal }),
+    });
+  }
+
   async get(
     projectId: ProjectId,
     signal?: AbortSignal,
@@ -107,17 +122,13 @@ export class ProjectsApi {
     );
   }
 
-  async create(
-    input: ProjectCreateInput,
-    signal?: AbortSignal,
-  ): Promise<OrchestrationProjectShell> {
-    const projectId = input.projectId ?? this.dispatcher.newProjectId();
-    const createdAt = this.dispatcher.now();
-    await this.dispatcher.dispatch(
+  create(input: ProjectCreateInput, signal?: AbortSignal): Promise<Project> {
+    return this.rpc.call(
+      "projects.mutate",
       {
         type: "project.create",
         commandId: this.dispatcher.newCommandId(),
-        projectId,
+        projectId: input.projectId ?? this.dispatcher.newProjectId(),
         title: input.title,
         workspaceRoot: input.workspaceRoot,
         ...(input.createWorkspaceRootIfMissing === undefined
@@ -126,21 +137,9 @@ export class ProjectsApi {
         ...(input.defaultModelSelection === undefined
           ? {}
           : { defaultModelSelection: input.defaultModelSelection }),
-        createdAt,
+        ...(input.scripts === undefined ? {} : { scripts: input.scripts }),
       },
       signal,
-    );
-    // The projection is applied inside the dispatch transaction, so the shell already has it.
-    return (
-      (await this.get(projectId, signal)) ?? {
-        id: projectId,
-        title: input.title,
-        workspaceRoot: input.workspaceRoot,
-        defaultModelSelection: input.defaultModelSelection ?? null,
-        scripts: [],
-        createdAt,
-        updatedAt: createdAt,
-      }
     );
   }
 
@@ -152,8 +151,7 @@ export class ProjectsApi {
     const existing = await this.findByWorkspaceRoot(input.workspaceRoot, signal);
     if (!existing) return this.create(input, signal);
     if (existing.title === input.title) return existing;
-    await this.update(existing.id, { title: input.title }, signal);
-    return { ...existing, title: input.title };
+    return this.update(existing.id, { title: input.title }, signal);
   }
 
   /**
@@ -174,18 +172,10 @@ export class ProjectsApi {
     return this.rpc.call("projects.createNew", input, signal);
   }
 
-  async update(
-    projectId: ProjectId,
-    patch: ProjectMetaUpdate,
-    signal?: AbortSignal,
-  ): Promise<void> {
-    await this.dispatcher.dispatch(
-      {
-        ...patch,
-        type: "project.meta.update",
-        commandId: this.dispatcher.newCommandId(),
-        projectId,
-      },
+  update(projectId: ProjectId, patch: ProjectMetaUpdate, signal?: AbortSignal): Promise<Project> {
+    return this.rpc.call(
+      "projects.mutate",
+      { ...patch, type: "project.update", commandId: this.dispatcher.newCommandId(), projectId },
       signal,
     );
   }
@@ -197,7 +187,8 @@ export class ProjectsApi {
     signal?: AbortSignal,
   ): Promise<void> {
     try {
-      await this.dispatcher.dispatch(
+      await this.rpc.call(
+        "projects.mutate",
         {
           type: "project.delete",
           commandId: this.dispatcher.newCommandId(),

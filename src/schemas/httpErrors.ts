@@ -1,12 +1,17 @@
 import { z } from "zod";
 
 import { AuthGrantedScope } from "./auth.ts";
-import { TrimmedNonEmptyString } from "./common.ts";
+import { TrimmedNonEmptyString, forwardCompatibleLiteral } from "./common.ts";
 
 export const EnvironmentRequestInvalidError = z.looseObject({
   _tag: z.literal("EnvironmentRequestInvalidError"),
   code: z.literal("invalid_request"),
-  reason: z.enum(["invalid_scope", "scope_not_granted", "invalid_command"]),
+  reason: forwardCompatibleLiteral([
+    "invalid_scope",
+    "scope_not_granted",
+    "invalid_command",
+    "invalid_history_cursor",
+  ]),
   traceId: TrimmedNonEmptyString,
 });
 export type EnvironmentRequestInvalidError = z.infer<typeof EnvironmentRequestInvalidError>;
@@ -32,7 +37,10 @@ export type EnvironmentAuthInvalidError = z.infer<typeof EnvironmentAuthInvalidE
 export const EnvironmentScopeRequiredError = z.looseObject({
   _tag: z.literal("EnvironmentScopeRequiredError"),
   code: z.literal("insufficient_scope"),
+  /** The legacy parent of `requiredPermission`, so older clients can decode the denial. */
   requiredScope: AuthGrantedScope,
+  /** The scope the request actually needs. */
+  requiredPermission: z.string().optional(),
   traceId: TrimmedNonEmptyString,
 });
 export type EnvironmentScopeRequiredError = z.infer<typeof EnvironmentScopeRequiredError>;
@@ -56,7 +64,7 @@ export type EnvironmentResourceNotFoundError = z.infer<typeof EnvironmentResourc
 export const EnvironmentInternalError = z.looseObject({
   _tag: z.literal("EnvironmentInternalError"),
   code: z.literal("internal_error"),
-  reason: z.enum([
+  reason: forwardCompatibleLiteral([
     "bootstrap_validation_failed",
     "browser_session_issuance_failed",
     "browser_session_cookie_failed",
@@ -67,9 +75,12 @@ export const EnvironmentInternalError = z.looseObject({
     "pairing_link_revoke_failed",
     "client_sessions_load_failed",
     "client_session_revoke_failed",
+    "project_snapshot_failed",
+    "project_mutation_failed",
     "orchestration_snapshot_failed",
     "orchestration_thread_snapshot_failed",
-    "orchestration_dispatch_failed",
+    "orchestration_thread_bounded_snapshot_failed",
+    "orchestration_thread_history_failed",
     "internal_error",
   ]),
   traceId: TrimmedNonEmptyString,

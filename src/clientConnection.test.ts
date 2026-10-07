@@ -3,12 +3,7 @@
 //   verifies: design
 // ---
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import {
-  ids,
-  makeThread,
-  makeSnapshot,
-  makeShellSnapshot,
-} from "../test/support/threadFixtures.ts";
+import { ids, makeShellSnapshot, snapshotItem } from "../test/support/threadFixtures.ts";
 import type { WebSocketConstructor } from "./internal/websocket.ts";
 import { T3Client, type BackoffPolicy } from "./index.ts";
 
@@ -156,13 +151,9 @@ describe("public client connection timing", () => {
             _tag: "Chunk",
             requestId: request.id,
             values: [
-              {
-                kind: "snapshot",
-                snapshot:
-                  kind === "thread"
-                    ? makeSnapshot(makeThread(), 10)
-                    : makeShellSnapshot({ snapshotSequence: 10 }),
-              },
+              kind === "thread"
+                ? snapshotItem(10)
+                : { kind: "snapshot", snapshot: makeShellSnapshot({ snapshotSequence: 10 }) },
             ],
           });
       };

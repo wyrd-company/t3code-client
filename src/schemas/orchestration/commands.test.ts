@@ -1,72 +1,228 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 import { describe, expect, it } from "vite-plus/test";
+import { OrchestrationV2Command, MessageDispatchMode } from "./commands.ts";
 import {
-  ClientOrchestrationCommand,
-  PROVIDER_SEND_TURN_MAX_ATTACHMENTS,
-  ThreadTurnStartBootstrap,
-  UserInputAttachments,
-} from "./commands.ts";
-import { ProjectIconOverride } from "./model.ts";
+  OrchestrationGetTurnDiffInput,
+  OrchestrationSearchThreadsInput,
+  OrchestrationV2ThreadLaunchInput,
+} from "./stream.ts";
+import { OrchestrationV2ThreadLaunchWorkspaceStrategy } from "./runs.ts";
+import { at, ids, modelSelection } from "../../../test/support/threadFixtures.ts";
 
-const file = (index: number) => ({
-  type: "file",
-  id: `file-${index}`,
-  name: `notes-${index}.txt`,
-  mimeType: "text/plain",
-  sizeBytes: 10,
+const stamped = { commandId: "command-1", threadId: ids.threadId };
+const creation = { createdBy: "user", creationSource: "web" };
+
+const threadCreate = {
+  type: "thread.create",
+  ...creation,
+  ...stamped,
+  projectId: ids.projectId,
+  title: "Sample thread",
+  modelSelection,
+  runtimeMode: "auto",
+  interactionMode: "default",
+  branch: null,
+  worktreePath: null,
+};
+
+const messageDispatch = {
+  type: "message.dispatch",
+  ...creation,
+  ...stamped,
+  messageId: ids.messageId,
+  text: "Say pong.",
+  attachments: [],
+  dispatchMode: { type: "queue_after_active" },
+};
+
+describe("OrchestrationV2Command", () => {
+  it("accepts thread.create", () => {
+    expect(OrchestrationV2Command.parse(threadCreate)).toEqual(threadCreate);
+    expect(
+      OrchestrationV2Command.parse({
+        ...threadCreate,
+        importedNativeThread: {
+          ref: { driver: "sample-driver", nativeId: "native-1", strength: "strong" },
+        },
+      }),
+    ).toMatchObject({ importedNativeThread: { ref: { nativeId: "native-1" } } });
+  });
+  it("accepts message.dispatch with each dispatch mode", () => {
+    expect(OrchestrationV2Command.parse(messageDispatch)).toEqual(messageDispatch);
+    for (const dispatchMode of [
+      { type: "start_immediately" },
+      { type: "steer_active", targetRunId: ids.runId },
+      { type: "restart_active", targetRunId: ids.runId },
+      { type: "defer_start", workspaceStrategy: { type: "root" } },
+      { type: "defer_start" },
+    ]) {
+      expect(
+        OrchestrationV2Command.safeParse({ ...messageDispatch, dispatchMode }).success,
+        dispatchMode.type,
+      ).toBe(true);
+    }
+    expect(
+      OrchestrationV2Command.parse({
+        ...messageDispatch,
+        deliveryIntent: "steer",
+        titleSeed: "Pong",
+        modelSelection: { provider: "sample-provider", model: "sample-model" },
+      }),
+    ).toMatchObject({ deliveryIntent: "steer", modelSelection });
+  });
+  it("accepts run.interrupt and runtime-request.respond", () => {
+    const interrupt = { type: "run.interrupt", ...stamped, runId: ids.runId, holdQueue: true };
+    expect(OrchestrationV2Command.parse(interrupt)).toEqual(interrupt);
+    const approve = {
+      type: "runtime-request.respond",
+      ...stamped,
+      requestId: "request-1",
+      decision: "accept",
+    };
+    expect(OrchestrationV2Command.parse(approve)).toEqual(approve);
+    const answer = {
+      type: "runtime-request.respond",
+      ...stamped,
+      requestId: "request-2",
+      answers: { q1: "yes", q2: ["a", "b"] },
+    };
+    expect(OrchestrationV2Command.parse(answer)).toEqual(answer);
+  });
+  it("accepts the simple thread commands and a metadata update", () => {
+    for (const type of [
+      "thread.archive",
+      "thread.unarchive",
+      "thread.delete",
+      "thread.unpin",
+      "thread.mark-unread",
+    ]) {
+      expect(OrchestrationV2Command.safeParse({ type, ...stamped }).success, type).toBe(true);
+    }
+    expect(
+      OrchestrationV2Command.parse({ type: "thread.visit", ...stamped, visitedAt: at }),
+    ).toMatchObject({ visitedAt: at });
+    expect(
+      OrchestrationV2Command.parse({
+        type: "thread.metadata.update",
+        ...stamped,
+        title: "Renamed",
+        limitRecovery: { runId: ids.runId, resetAt: at, autoResume: true },
+      }),
+    ).toMatchObject({ title: "Renamed" });
+  });
+  it("rejects an unknown command type", () => {
+    expect(OrchestrationV2Command.safeParse({ type: "thread.future", ...stamped }).success).toBe(
+      false,
+    );
+  });
+  it("rejects a known command missing its stamp or with malformed fields", () => {
+    expect(
+      OrchestrationV2Command.safeParse({ type: "thread.delete", threadId: ids.threadId }).success,
+    ).toBe(false);
+    expect(
+      OrchestrationV2Command.safeParse({ ...messageDispatch, dispatchMode: { type: "future" } })
+        .success,
+    ).toBe(false);
+    expect(
+      OrchestrationV2Command.safeParse({ ...messageDispatch, dispatchMode: undefined }).success,
+    ).toBe(false);
+    expect(
+      OrchestrationV2Command.safeParse({
+        ...messageDispatch,
+        dispatchMode: { type: "steer_active" },
+      }).success,
+    ).toBe(false);
+    expect(OrchestrationV2Command.safeParse({ ...threadCreate, title: " " }).success).toBe(false);
+    expect(
+      OrchestrationV2Command.safeParse({
+        type: "thread.auto-settle.set",
+        ...stamped,
+        enabled: "no",
+      }).success,
+    ).toBe(false);
+    expect(
+      OrchestrationV2Command.safeParse({
+        type: "thread.metadata.update",
+        ...stamped,
+        limitRecovery: { runId: ids.runId, resetAt: at },
+      }).success,
+    ).toBe(false);
+  });
+  it("keeps MessageDispatchMode strict", () => {
+    expect(MessageDispatchMode.safeParse({ type: "queue_after_active" }).success).toBe(true);
+    expect(MessageDispatchMode.safeParse({ type: "later" }).success).toBe(false);
+  });
 });
 
-describe("orchestration commands", () => {
-  it("accepts up to 100 attachments per answered question", () => {
-    expect(PROVIDER_SEND_TURN_MAX_ATTACHMENTS).toBe(100);
-    const files = (count: number) => ({ q1: Array.from({ length: count }, (_, i) => file(i)) });
-    expect(UserInputAttachments.safeParse(files(100)).success).toBe(true);
-    expect(UserInputAttachments.safeParse(files(101)).success).toBe(false);
+describe("OrchestrationV2ThreadLaunchInput", () => {
+  const launch = {
+    commandId: "command-1",
+    projectId: ids.projectId,
+    title: "Sample thread",
+    modelSelection,
+    runtimeMode: "auto",
+    interactionMode: "default",
+    workspaceStrategy: { type: "root" },
+  };
+  it("accepts a launch with and without an initial message", () => {
+    expect(OrchestrationV2ThreadLaunchInput.parse(launch)).toEqual(launch);
+    expect(
+      OrchestrationV2ThreadLaunchInput.parse({
+        ...launch,
+        threadId: ids.threadId,
+        reuseExistingThread: true,
+        generateTitle: true,
+        workspaceStrategy: { type: "worktree", baseRef: "main", startFromOrigin: true },
+        initialMessage: { text: "Say pong.", attachments: [] },
+      }),
+    ).toMatchObject({ workspaceStrategy: { type: "worktree", baseRef: "main" } });
   });
-
-  it("validates thread.auto-settle.set", () => {
-    const command = {
-      type: "thread.auto-settle.set",
-      commandId: "command-1",
-      threadId: "thread-1",
-      enabled: false,
-    };
-    expect(ClientOrchestrationCommand.parse(command)).toEqual(command);
-    expect(ClientOrchestrationCommand.safeParse({ ...command, enabled: "no" }).success).toBe(false);
-  });
-
-  it("carries requireWorktree on a prepared worktree", () => {
-    const bootstrap = {
-      prepareWorktree: { projectCwd: "/work/sample", baseBranch: "main", requireWorktree: true },
-    };
-    expect(ThreadTurnStartBootstrap.parse(bootstrap)).toEqual(bootstrap);
+  it("rejects an unknown workspace strategy and a legacy-less model selection", () => {
+    expect(
+      OrchestrationV2ThreadLaunchInput.safeParse({
+        ...launch,
+        workspaceStrategy: { type: "future" },
+      }).success,
+    ).toBe(false);
+    expect(
+      OrchestrationV2ThreadLaunchWorkspaceStrategy.safeParse({ type: "worktree" }).success,
+    ).toBe(false);
+    expect(
+      OrchestrationV2ThreadLaunchInput.safeParse({
+        ...launch,
+        modelSelection: { model: "sample-model" },
+      }).success,
+    ).toBe(false);
+    expect(
+      OrchestrationV2ThreadLaunchInput.safeParse({ ...launch, initialMessage: { text: "Hi" } })
+        .success,
+    ).toBe(false);
   });
 });
 
-describe("project icons", () => {
-  it("decodes a Lucide icon with monogram text as a monogram", () => {
-    const wire = { kind: "lucide", name: "folder-code", color: "blue", monogramText: "AB" };
-    expect(ProjectIconOverride.parse(wire)).toEqual({
-      kind: "monogram",
-      text: "AB",
-      color: "blue",
-    });
-    expect(ProjectIconOverride.parse({ ...wire, monogramText: undefined, monogram: "C" })).toEqual({
-      kind: "monogram",
-      text: "C",
-      color: "blue",
-    });
-  });
-
-  it("keeps a plain Lucide icon and accepts a monogram icon", () => {
-    const lucide = { kind: "lucide", name: "folder-code", color: "blue" };
-    expect(ProjectIconOverride.parse(lucide)).toEqual(lucide);
-    const monogram = { kind: "monogram", text: "XY", color: "red" };
-    expect(ProjectIconOverride.parse(monogram)).toEqual(monogram);
-  });
-
-  it("decodes an unfamiliar icon kind as unknown", () => {
-    expect(ProjectIconOverride.parse({ kind: "glyph", glyph: "x" })).toMatchObject({
-      unknown: true,
-    });
+describe("read inputs", () => {
+  it("rejects reversed turn ranges and short searches", () => {
+    expect(
+      OrchestrationGetTurnDiffInput.safeParse({
+        threadId: ids.threadId,
+        fromTurnCount: 2,
+        toTurnCount: 1,
+      }).success,
+    ).toBe(false);
+    expect(
+      OrchestrationGetTurnDiffInput.safeParse({
+        threadId: ids.threadId,
+        fromTurnCount: 1,
+        toTurnCount: 1,
+      }).success,
+    ).toBe(true);
+    expect(OrchestrationSearchThreadsInput.safeParse({ query: "a" }).success).toBe(false);
+    expect(OrchestrationSearchThreadsInput.safeParse({ query: "pong", limit: 51 }).success).toBe(
+      false,
+    );
+    expect(OrchestrationSearchThreadsInput.parse({ query: " pong " })).toEqual({ query: "pong" });
   });
 });

@@ -1,150 +1,128 @@
 /**
  * ThreadProjectionTracker: the stateful half of watchThread. It owns the
  * projected thread and turns each applied event into derived items
- * (assistant deltas, request lifecycle, settled turns).
+ * (assistant text, request lifecycle, settled runs).
  */
-import type { ApprovalRequestId, MessageId, TurnId } from "../schemas/common.ts";
-import type { UserInputQuestion } from "../schemas/orchestration/activities.ts";
-import type { OrchestrationEvent } from "../schemas/orchestration/events.ts";
-import type {
-  OrchestrationLatestTurn,
-  OrchestrationThread,
-  OrchestrationThreadDetailSnapshot,
-} from "../schemas/orchestration/readModel.ts";
+import type { MessageId, RunId, RuntimeRequestId, TurnItemId } from "../schemas/common.ts";
+import type { OrchestrationV2DomainEvent } from "../schemas/orchestration/events.ts";
+import type { OrchestrationV2ThreadProjection } from "../schemas/orchestration/projection.ts";
+import { isRunTerminalStatus } from "../schemas/orchestration/runs.ts";
+import { isTurnItemOfType } from "../schemas/orchestration/turnItems.ts";
 import {
   applyThreadEvent,
   isKnownVariant,
-  isSettledTurnState,
   pendingRequests,
-  turnOutcome,
-  type KnownOrchestrationEvent,
+  runOutcome,
   type PendingRequest,
   type TurnOutcome,
 } from "./threadProjection.ts";
 
 export type ThreadDerivedItem =
   | {
+      /** The assistant's text so far; `delta` is what the last update appended when it only appended. */
       readonly kind: "assistant-delta";
-      readonly turnId: TurnId | null;
+      readonly runId: RunId | null;
+      readonly itemId: TurnItemId;
       readonly messageId: MessageId;
       readonly text: string;
+      readonly delta: string;
+      readonly streaming: boolean;
     }
-  | {
-      readonly kind: "approval-requested";
-      readonly requestId: ApprovalRequestId;
-      readonly activity: PendingRequest["activity"];
-      readonly payload: Extract<PendingRequest, { kind: "approval" }>["payload"];
-    }
-  | {
-      readonly kind: "user-input-requested";
-      readonly requestId: ApprovalRequestId;
-      readonly activity: PendingRequest["activity"];
-      readonly questions: UserInputQuestion[];
-      readonly payload: Extract<PendingRequest, { kind: "user-input" }>["payload"];
-    }
-  | { readonly kind: "request-resolved"; readonly requestId: ApprovalRequestId }
+  | ({ readonly kind: "approval-requested" } & Omit<
+      Extract<PendingRequest, { kind: "approval" }>,
+      "kind"
+    >)
+  | ({ readonly kind: "user-input-requested" } & Omit<
+      Extract<PendingRequest, { kind: "user-input" }>,
+      "kind"
+    >)
+  | { readonly kind: "request-resolved"; readonly requestId: RuntimeRequestId }
   | { readonly kind: "turn-settled"; readonly outcome: TurnOutcome };
 
 export class ThreadProjectionTracker {
-  #thread: OrchestrationThread | undefined;
+  #projection: OrchestrationV2ThreadProjection | undefined;
   /** Sequence the projection reflects; events at or below it are not re-applied. */
   #projectedSequence = 0;
-  readonly #announced = new Set<ApprovalRequestId>();
-  /** Turn ids whose settlement was announced. */
-  readonly #settled = new Set<string>();
+  readonly #announced = new Set<RuntimeRequestId>();
+  /** Run ids whose settlement was announced. */
+  readonly #settled = new Set<RunId>();
 
   get seeded(): boolean {
-    return this.#thread !== undefined;
+    return this.#projection !== undefined;
   }
 
-  get thread(): OrchestrationThread | undefined {
-    return this.#thread;
+  get projection(): OrchestrationV2ThreadProjection | undefined {
+    return this.#projection;
   }
 
   /** Replaces the projection with a snapshot and announces its open requests. */
-  *seed(snapshot: OrchestrationThreadDetailSnapshot): Generator<ThreadDerivedItem> {
-    this.#thread = snapshot.thread;
+  *seed(snapshot: {
+    readonly snapshotSequence: number;
+    readonly projection: OrchestrationV2ThreadProjection;
+  }): Generator<ThreadDerivedItem> {
+    this.#projection = snapshot.projection;
     this.#projectedSequence = Math.max(this.#projectedSequence, snapshot.snapshotSequence);
+    for (const run of snapshot.projection.runs) {
+      if (isRunTerminalStatus(run.status)) this.#settled.add(run.id);
+    }
     yield* this.#reconcileRequests();
   }
 
   /** Applies one event and yields what it changed. */
-  *apply(event: OrchestrationEvent): Generator<ThreadDerivedItem> {
+  *apply(sequence: number, event: OrchestrationV2DomainEvent): Generator<ThreadDerivedItem> {
     if (!isKnownVariant(event)) return;
-    const thread = this.#thread;
-    if (!thread) return;
-    if (event.sequence <= this.#projectedSequence) {
-      yield* this.#replayedEvent(thread, event);
-      return;
-    }
-    const next = applyThreadEvent(thread, event);
-    this.#projectedSequence = event.sequence;
-    this.#thread = next;
-    if (next === thread) return;
-    yield* deltaFor(event);
+    const projection = this.#projection;
+    if (!projection) return;
+    if (sequence <= this.#projectedSequence) return;
+    const next = applyThreadEvent(projection, event);
+    this.#projectedSequence = sequence;
+    this.#projection = next;
+    if (next === projection) return;
+    yield* this.#assistantText(projection, event);
     yield* this.#reconcileRequests();
-    yield* this.#settle(thread.latestTurn, next.latestTurn);
-    yield* this.#sessionFailure(event, next);
+    yield* this.#settle(event, next);
   }
 
-  /**
-   * A session error with no running turn (the provider failed before the
-   * turn started) settles nothing in the projection, so it is announced as a
-   * turn-settled with `turnId: null` for a consumer waiting on that start.
-   */
-  *#sessionFailure(
-    event: KnownOrchestrationEvent,
-    thread: OrchestrationThread,
+  *#assistantText(
+    before: OrchestrationV2ThreadProjection,
+    event: Exclude<OrchestrationV2DomainEvent, { unknown: true }>,
   ): Generator<ThreadDerivedItem> {
-    if (event.type !== "thread.session-set") return;
-    const session = event.payload.session;
-    if (session.status !== "error" || session.activeTurnId !== null) return;
-    if (thread.latestTurn?.state === "running") return;
-    const key = `session-error:${session.updatedAt}`;
-    if (this.#settled.has(key)) return;
-    this.#settled.add(key);
-    yield { kind: "turn-settled", outcome: turnOutcome(thread, { turnId: null, state: "error" }) };
-  }
-
-  /**
-   * An event the seed snapshot already reflects. It is not re-applied, but a
-   * turn it started or finished may have settled inside the seed; announce that
-   * once so a consumer waiting on the turn is not left hanging.
-   */
-  *#replayedEvent(
-    thread: OrchestrationThread,
-    event: KnownOrchestrationEvent,
-  ): Generator<ThreadDerivedItem> {
-    yield* deltaFor(event);
-    const turnId =
-      event.type === "thread.session-set"
-        ? event.payload.session.activeTurnId
-        : event.type === "thread.turn-diff-completed"
-          ? event.payload.turnId
-          : null;
-    const latest = thread.latestTurn;
-    if (turnId === null || latest?.turnId !== turnId || !isSettledTurnState(latest.state)) return;
-    if (this.#settled.has(turnId)) return;
-    this.#settled.add(turnId);
-    yield { kind: "turn-settled", outcome: turnOutcome(thread, latest) };
+    if (event.type !== "turn-item.updated") return;
+    const item = event.payload;
+    if (!isTurnItemOfType(item, "assistant_message")) return;
+    const previous = before.turnItems.find((candidate) => candidate.id === item.id);
+    const previousText =
+      previous && isTurnItemOfType(previous, "assistant_message") ? previous.text : "";
+    const delta = item.text.startsWith(previousText)
+      ? item.text.slice(previousText.length)
+      : item.text;
+    yield {
+      kind: "assistant-delta",
+      runId: item.runId,
+      itemId: item.id,
+      messageId: item.messageId,
+      text: item.text,
+      delta,
+      streaming: item.streaming,
+    };
   }
 
   *#settle(
-    before: OrchestrationLatestTurn | null,
-    after: OrchestrationLatestTurn | null,
+    event: Exclude<OrchestrationV2DomainEvent, { unknown: true }>,
+    projection: OrchestrationV2ThreadProjection,
   ): Generator<ThreadDerivedItem> {
-    if (!after || !isSettledTurnState(after.state)) return;
-    const changed = !before || before.turnId !== after.turnId || !isSettledTurnState(before.state);
-    if (!changed || this.#settled.has(after.turnId)) return;
-    this.#settled.add(after.turnId);
-    const thread = this.#thread;
-    if (thread) yield { kind: "turn-settled", outcome: turnOutcome(thread, after) };
+    if (event.type !== "run.updated" && event.type !== "run.created") return;
+    const run = projection.runs.find((candidate) => candidate.id === event.payload.id);
+    if (!run || !isRunTerminalStatus(run.status) || this.#settled.has(run.id)) return;
+    this.#settled.add(run.id);
+    const outcome = runOutcome(projection, run);
+    if (outcome) yield { kind: "turn-settled", outcome };
   }
 
   *#reconcileRequests(): Generator<ThreadDerivedItem> {
-    const thread = this.#thread;
-    if (!thread) return;
-    const open = pendingRequests(thread);
+    const projection = this.#projection;
+    if (!projection) return;
+    const open = pendingRequests(projection);
     const openIds = new Set(open.map((r) => r.requestId));
     for (const requestId of this.#announced) {
       if (openIds.has(requestId)) continue;
@@ -156,20 +134,13 @@ export class ThreadProjectionTracker {
       this.#announced.add(request.requestId);
       const { kind: _kind, ...rest } = request;
       yield request.kind === "approval"
-        ? { kind: "approval-requested", ...rest, payload: request.payload }
+        ? { kind: "approval-requested", ...rest, item: request.item }
         : {
             kind: "user-input-requested",
             ...rest,
-            payload: request.payload,
-            questions: request.payload.questions,
+            item: request.item,
+            questions: request.questions,
           };
     }
   }
-}
-
-function* deltaFor(event: KnownOrchestrationEvent): Generator<ThreadDerivedItem> {
-  if (event.type !== "thread.message-sent") return;
-  const p = event.payload;
-  if (p.role !== "assistant" || !p.streaming) return;
-  yield { kind: "assistant-delta", turnId: p.turnId, messageId: p.messageId, text: p.text };
 }

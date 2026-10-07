@@ -42,7 +42,7 @@ export const serverMethods = {
     }),
     success: ServerProviderUpdatedPayload,
     stream: false,
-    scope: "orchestration:operate",
+    scope: "orchestration:read",
   }),
   subscribeServerConfig: defineMethod({
     payload: z.looseObject({
