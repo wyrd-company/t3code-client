@@ -25,6 +25,10 @@ Upstream is `pingdotgg/t3code`; read the source at that release's tag
 `apps/server/src/ws.ts`. Scope per method:
 `apps/server/src/auth/RpcAuthorization.ts`.
 
+The library tracks upstream. A capability upstream removes is removed here;
+a capability upstream adds is added here. Following upstream does not need
+separate approval.
+
 ## Conventions
 
 The code follows upstream T3 Code's conventions so it reads like part of that
