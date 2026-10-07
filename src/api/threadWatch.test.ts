@@ -1,28 +1,25 @@
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { FakeT3Server } from "../../test/support/fakeServer.ts";
 import {
-  approvalRequested,
-  approvalResolved,
+  at,
+  completedRunItems,
   events,
   ids,
+  items,
+  makeProjection,
+  makeRun,
+  makeRuntimeRequest,
   makeSnapshot,
-  makeThread,
+  snapshotItem,
 } from "../../test/support/threadFixtures.ts";
 import { RpcClient } from "../rpc/client.ts";
 import { rpcMethods } from "../rpc/registry.ts";
 import { RpcConnection } from "../transport/rpcConnection.ts";
 import { SocketTransport } from "../transport/socket.ts";
-import { isKnownVariant } from "./threadProjection.ts";
 import { watchThread, type ThreadWatchItem } from "./threadWatch.ts";
 
 const sequenceOf = (item: ThreadWatchItem): number | undefined =>
-  item.kind === "event" && isKnownVariant(item.event) ? item.event.sequence : undefined;
-
-const snapshotItem = (sequence: number, thread = makeThread()) => ({
-  kind: "snapshot",
-  snapshot: makeSnapshot(thread, sequence),
-});
-const eventItem = (event: Record<string, unknown>) => ({ kind: "event", event });
+  item.kind === "event" ? item.sequence : undefined;
 
 describe("watchThread", () => {
   let server: FakeT3Server;
@@ -44,22 +41,22 @@ describe("watchThread", () => {
     await server.close();
   });
 
-  it("passes frames through and derives deltas, requests, and the settled turn", async () => {
+  it("passes frames through and derives deltas, requests, and the settled run", async () => {
     server.handle("orchestration.subscribeThread", () => ({
       kind: "stream",
       chunks: [
         [snapshotItem(10), { kind: "synchronized" }],
-        [eventItem(events.sessionSet(11, { status: "running", activeTurnId: ids.turnId }))],
-        [eventItem(events.messageSent(12, { messageId: "a1", text: "po" }))],
-        [eventItem(events.activityAppended(13, approvalRequested("r1")))],
-        [eventItem(events.activityAppended(14, approvalResolved("r1")))],
-        [eventItem(events.messageSent(15, { messageId: "a1", text: "ng" }))],
-        [eventItem(events.sessionSet(16, { status: "ready" }))],
+        [events.runCreated(11)],
+        [events.turnItemUpdated(12, items.assistantMessage("po"))],
+        [events.runtimeRequestUpdated(13, "r1")],
+        [events.runtimeRequestUpdated(14, "r1", { status: "resolved", resolvedAt: at })],
+        [events.turnItemUpdated(15, items.assistantMessage("pong", false))],
+        [events.runUpdated(16, { status: "completed", completedAt: at })],
       ],
     }));
-    const items: ThreadWatchItem[] = [];
-    for await (const item of watchThread(rpc, ids.threadId)) items.push(item);
-    expect(items.map((i) => i.kind)).toEqual([
+    const collected: ThreadWatchItem[] = [];
+    for await (const item of watchThread(rpc, ids.threadId)) collected.push(item);
+    expect(collected.map((i) => i.kind)).toEqual([
       "snapshot",
       "synchronized",
       "event",
@@ -74,67 +71,38 @@ describe("watchThread", () => {
       "event",
       "turn-settled",
     ]);
-    const settled = items.at(-1);
+    expect(collected[0]).toMatchObject({ kind: "snapshot", snapshot: { snapshotSequence: 10 } });
+    expect(collected[2]).toMatchObject({
+      kind: "event",
+      sequence: 11,
+      event: { type: "run.created" },
+    });
+    expect(collected[6]).toMatchObject({
+      kind: "approval-requested",
+      requestId: "r1",
+      item: undefined,
+    });
+    const settled = collected.at(-1);
     expect(settled?.kind === "turn-settled" && settled.outcome).toMatchObject({
       state: "completed",
-      turnId: ids.turnId,
-      assistantMessage: { id: "a1", text: "pong" },
-    });
-    const approval = items[6];
-    expect(approval?.kind === "approval-requested" && approval.payload.requestKind).toBe("command");
-  });
-
-  it("asks for reasoning messages only when opted in, and keeps them out of assistant text", async () => {
-    const payloads: Record<string, unknown>[] = [];
-    server.handle("orchestration.subscribeThread", (payload) => {
-      payloads.push(payload as Record<string, unknown>);
-      return {
-        kind: "stream",
-        chunks: [
-          [snapshotItem(10)],
-          [eventItem(events.sessionSet(11, { status: "running", activeTurnId: ids.turnId }))],
-          [eventItem(events.messageSent(12, { messageId: "r1", role: "reasoning", text: "hm" }))],
-          [eventItem(events.messageSent(13, { messageId: "a1", text: "done" }))],
-          [eventItem(events.sessionSet(14, { status: "ready" }))],
-        ],
-      };
-    });
-    for await (const _ of watchThread(rpc, ids.threadId)) void _;
-    const items: ThreadWatchItem[] = [];
-    for await (const item of watchThread(rpc, ids.threadId, { reasoningMessages: true })) {
-      items.push(item);
-    }
-    expect(payloads[0]).not.toHaveProperty("reasoningMessages");
-    expect(payloads[1]).toMatchObject({ reasoningMessages: true });
-    const deltas = items.filter((i) => i.kind === "assistant-delta");
-    expect(deltas.map((d) => d.kind === "assistant-delta" && d.text)).toEqual(["done"]);
-    const settled = items.at(-1);
-    expect(settled?.kind === "turn-settled" && settled.outcome.assistantMessage).toMatchObject({
-      id: "a1",
-      text: "done",
+      runId: ids.runId,
+      run: { status: "completed" },
     });
   });
 
   it("announces requests that are already open in the snapshot", async () => {
-    const thread = makeThread({
-      activities: [
-        {
-          id: "activity-1",
-          tone: "approval",
-          summary: "Sample",
-          turnId: null,
-          createdAt: "2020-01-01T00:00:00.000Z",
-          ...approvalRequested("r9"),
-        },
-      ],
+    const projection = makeProjection({
+      runtimeRequests: [makeRuntimeRequest("r9", { kind: "user_input" })],
+      turnItems: [items.userInputRequest("r9")],
     });
     server.handle("orchestration.subscribeThread", () => ({
       kind: "stream",
-      chunks: [[snapshotItem(3, thread)]],
+      chunks: [[snapshotItem(3, projection)]],
     }));
-    const kinds: string[] = [];
-    for await (const item of watchThread(rpc, ids.threadId)) kinds.push(item.kind);
-    expect(kinds).toEqual(["snapshot", "approval-requested"]);
+    const collected: ThreadWatchItem[] = [];
+    for await (const item of watchThread(rpc, ids.threadId)) collected.push(item);
+    expect(collected.map((i) => i.kind)).toEqual(["snapshot", "user-input-requested"]);
+    expect(collected[1]).toMatchObject({ requestId: "r9", questions: [{ id: "q1" }] });
   });
 
   it("resumes after a dropped socket with afterSequence and without duplicate events", async () => {
@@ -142,31 +110,34 @@ describe("watchThread", () => {
     server.handle("orchestration.subscribeThread", (payload, context) => {
       payloads.push(payload as Record<string, unknown>);
       if (payloads.length === 1) {
-        const send = (value: unknown) =>
-          context.connection.send({ _tag: "Chunk", requestId: context.requestId, values: [value] });
-        send(snapshotItem(10));
-        send(eventItem(events.sessionSet(11, { status: "running", activeTurnId: ids.turnId })));
+        context.connection.send({
+          _tag: "Chunk",
+          requestId: context.requestId,
+          values: [snapshotItem(10), events.runCreated(11)],
+        });
         return { kind: "hang" };
       }
       return {
         kind: "stream",
         chunks: [
-          [eventItem(events.sessionSet(11, { status: "running", activeTurnId: ids.turnId }))],
+          [events.runCreated(11)],
           [{ kind: "synchronized" }],
-          [eventItem(events.sessionSet(12, { status: "ready" }))],
+          [events.runUpdated(12, { status: "completed", completedAt: at })],
         ],
       };
     });
-    const items: ThreadWatchItem[] = [];
-    for await (const item of watchThread(rpc, ids.threadId)) {
-      items.push(item);
-      if (sequenceOf(item) === 11 && payloads.length === 1) {
-        server.connections[0]?.drop();
-      }
+    const collected: ThreadWatchItem[] = [];
+    for await (const item of watchThread(rpc, ids.threadId, { acceptBoundedSnapshot: true })) {
+      collected.push(item);
+      if (sequenceOf(item) === 11 && payloads.length === 1) server.connections[0]?.drop();
     }
-    expect(payloads[0]).not.toHaveProperty("afterSequence");
+    expect(payloads[0]).toEqual({
+      threadId: ids.threadId,
+      requestCompletionMarker: true,
+      acceptBoundedSnapshot: true,
+    });
     expect(payloads[1]).toMatchObject({ afterSequence: 11, threadId: ids.threadId });
-    expect(items.map((i) => i.kind)).toEqual([
+    expect(collected.map((i) => i.kind)).toEqual([
       "snapshot",
       "event",
       "reconnected",
@@ -174,44 +145,27 @@ describe("watchThread", () => {
       "event",
       "turn-settled",
     ]);
-    const sequences = items.map(sequenceOf).filter((s) => s !== undefined);
-    expect(sequences).toEqual([11, 12]);
-    expect(items[2]).toEqual({ kind: "reconnected", afterSequence: 11 });
+    expect(collected.map(sequenceOf).filter((s) => s !== undefined)).toEqual([11, 12]);
+    expect(collected[2]).toEqual({ kind: "reconnected", afterSequence: 11 });
   });
 
   it("seeds from the snapshot loader when resuming and does not re-apply replayed events", async () => {
-    const seeded = makeThread({
-      messages: [
-        {
-          id: "a1",
-          role: "assistant",
-          text: "pong",
-          turnId: ids.turnId,
-          streaming: false,
-          createdAt: "2020-01-01T00:00:00.000Z",
-          updatedAt: "2020-01-01T00:00:00.000Z",
-        },
-      ],
-      latestTurn: {
-        turnId: ids.turnId,
-        state: "completed",
-        requestedAt: "2020-01-01T00:00:00.000Z",
-        startedAt: "2020-01-01T00:00:00.000Z",
-        completedAt: "2020-01-01T00:00:01.000Z",
-        assistantMessageId: "a1",
-      },
+    const seeded = makeProjection({
+      runs: [makeRun({ status: "completed", completedAt: at })],
+      turnItems: [items.assistantMessage("pong", false)],
     });
     server.handle("orchestration.subscribeThread", () => ({
       kind: "stream",
       chunks: [
-        [eventItem(events.sessionSet(11, { status: "running", activeTurnId: ids.turnId }))],
-        [eventItem(events.messageSent(12, { messageId: "a1", text: "pong" }))],
-        [eventItem(events.sessionSet(13, { status: "ready" }))],
+        [events.runCreated(11)],
+        [events.turnItemUpdated(12, items.assistantMessage("pong", false))],
+        [events.runUpdated(13, { status: "completed", completedAt: at })],
         [{ kind: "synchronized" }],
+        [events.turnItemUpdated(14, items.assistantMessage("pong!", false))],
       ],
     }));
-    const items: ThreadWatchItem[] = [];
     let loads = 0;
+    const collected: ThreadWatchItem[] = [];
     const watch = watchThread(rpc, ids.threadId, {
       afterSequence: 10,
       snapshotLoader: async () => {
@@ -219,19 +173,35 @@ describe("watchThread", () => {
         return makeSnapshot(seeded, 13);
       },
     });
-    for await (const item of watch) items.push(item);
+    for await (const item of watch) collected.push(item);
     expect(loads).toBe(1);
-    expect(items.map((i) => i.kind)).toEqual([
+    expect(collected.map((i) => i.kind)).toEqual([
       "snapshot",
       "event",
-      "turn-settled",
       "event",
-      "assistant-delta",
       "event",
       "synchronized",
+      "event",
+      "assistant-delta",
     ]);
-    const settled = items[2];
-    expect(settled?.kind === "turn-settled" && settled.outcome.assistantMessage?.text).toBe("pong");
+    const delta = collected.at(-1);
+    expect(delta?.kind === "assistant-delta" && [delta.text, delta.delta]).toEqual(["pong!", "!"]);
+  });
+
+  it("passes an event of an unknown type through without changing the projection", async () => {
+    const unknown = {
+      ...events.runCreated(11),
+      event: { ...(events.runCreated(11)["event"] as object), type: "run.something-new" },
+    };
+    server.handle("orchestration.subscribeThread", () => ({
+      kind: "stream",
+      chunks: [[snapshotItem(10)], [unknown], ...completedRunItems(12).map((item) => [item])],
+    }));
+    const collected: ThreadWatchItem[] = [];
+    for await (const item of watchThread(rpc, ids.threadId)) collected.push(item);
+    expect(collected[1]).toMatchObject({ kind: "event", sequence: 11, event: { unknown: true } });
+    const settled = collected.at(-1);
+    expect(settled?.kind === "turn-settled" && settled.outcome.projection.runs).toHaveLength(1);
   });
 
   it("returns silently on abort and throws on a fatal connection error", async () => {

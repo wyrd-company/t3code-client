@@ -10,34 +10,39 @@ import { TerminalAttachStreamEvent } from "../schemas/terminal.ts";
 
 const expected = {
   "orchestration.dispatchCommand": [false, "orchestration:operate"],
+  "orchestration.launchThread": [false, "orchestration:operate"],
+  "orchestration.getThreadProjection": [false, "orchestration:read"],
+  "orchestration.getTurnItem": [false, "orchestration:read"],
   "orchestration.getWorkflowScript": [false, "orchestration:read"],
   "orchestration.getTurnDiff": [false, "orchestration:read"],
   "orchestration.getFullThreadDiff": [false, "orchestration:read"],
   "orchestration.searchThreads": [false, "orchestration:read"],
   "orchestration.getArchivedShellSnapshot": [false, "orchestration:read"],
+  "orchestration.subscribeArchivedShell": [true, "orchestration:read"],
   "orchestration.subscribeShell": [true, "orchestration:read"],
   "orchestration.subscribeThread": [true, "orchestration:read"],
   "server.probe": [false, "orchestration:read"],
   "server.getConfig": [false, "orchestration:read"],
   "server.getSettings": [false, "orchestration:read"],
-  "server.refreshProviders": [false, "orchestration:operate"],
+  "server.refreshProviders": [false, "orchestration:read"],
   subscribeServerConfig: [true, "orchestration:read"],
   subscribeServerLifecycle: [true, "orchestration:read"],
   subscribeAuthAccess: [true, "access:read"],
   "vcs.listRefs": [false, "orchestration:read"],
   "vcs.refreshStatus": [false, "orchestration:read"],
-  "vcs.createWorktree": [false, "orchestration:operate"],
-  "vcs.removeWorktree": [false, "orchestration:operate"],
-  "vcs.createRef": [false, "orchestration:operate"],
-  "vcs.switchRef": [false, "orchestration:operate"],
+  "vcs.createWorktree": [false, "source-control:write"],
+  "vcs.removeWorktree": [false, "source-control:write"],
+  "vcs.createRef": [false, "source-control:write"],
+  "vcs.switchRef": [false, "source-control:write"],
   subscribeVcsStatus: [true, "orchestration:read"],
   subscribeWorktreeSetup: [true, "orchestration:read"],
   "worktreeSetup.cancel": [false, "orchestration:operate"],
-  "projects.listEntries": [false, "orchestration:read"],
-  "projects.readFile": [false, "orchestration:read"],
-  "projects.writeFile": [false, "orchestration:operate"],
-  "projects.searchEntries": [false, "orchestration:read"],
-  "projects.searchContents": [false, "orchestration:read"],
+  "projects.mutate": [false, "orchestration:operate"],
+  "projects.listEntries": [false, "filesystem:read"],
+  "projects.readFile": [false, "filesystem:read"],
+  "projects.writeFile": [false, "filesystem:write"],
+  "projects.searchEntries": [false, "filesystem:read"],
+  "projects.searchContents": [false, "filesystem:read"],
   "projects.ensureScratch": [false, "orchestration:operate"],
   "projects.createNew": [false, "orchestration:operate"],
   "terminal.open": [false, "terminal:operate"],
@@ -45,7 +50,7 @@ const expected = {
   "terminal.write": [false, "terminal:operate"],
   "terminal.resize": [false, "terminal:operate"],
   "terminal.close": [false, "terminal:operate"],
-  subscribeTerminalEvents: [true, "terminal:operate"],
+  subscribeTerminalEvents: [true, "terminal:read"],
 } as const;
 
 describe("RPC contract registry", () => {
@@ -64,6 +69,34 @@ describe("RPC contract registry", () => {
     expectTypeOf<
       RpcSuccess<RpcMethods, "orchestration.dispatchCommand">["sequence"]
     >().toEqualTypeOf<number>();
+    expectTypeOf<
+      RpcSuccess<RpcMethods, "orchestration.launchThread">["resumed"]
+    >().toEqualTypeOf<boolean>();
+    expectTypeOf<"orchestration.subscribeArchivedShell">().toExtend<StreamMethodName<RpcMethods>>();
+  });
+  it("validates orchestration read inputs before sending", () => {
+    expect(
+      rpcMethods["orchestration.getTurnItem"].payload.parse({
+        threadId: "thread-1",
+        itemId: "item-1",
+        revision: "2020-01-01T00:00:00.000Z",
+      }),
+    ).toEqual({ threadId: "thread-1", itemId: "item-1", revision: "2020-01-01T00:00:00.000Z" });
+    expect(
+      rpcMethods["orchestration.getTurnItem"].payload.safeParse({ threadId: "thread-1" }).success,
+    ).toBe(false);
+    expect(
+      rpcMethods["orchestration.subscribeThread"].payload.parse({
+        threadId: "thread-1",
+        afterSequence: 3,
+        requestCompletionMarker: true,
+        acceptBoundedSnapshot: true,
+      }),
+    ).toMatchObject({ afterSequence: 3, acceptBoundedSnapshot: true });
+    expect(
+      rpcMethods["orchestration.subscribeShell"].payload.safeParse({ afterSequence: -1 }).success,
+    ).toBe(false);
+    expect(rpcMethods["orchestration.getArchivedShellSnapshot"].payload.parse({})).toEqual({});
   });
   it("validates optional server subscription and refresh flags", () => {
     const schema = rpcMethods.subscribeServerConfig.payload;

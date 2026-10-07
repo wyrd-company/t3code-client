@@ -1,198 +1,138 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 /**
- * Pure event-application rules for one thread, mirroring the server's
- * projector (`apps/server/src/orchestration/projector.ts`) closely enough
- * that a client-side projection seeded from a snapshot and fed the thread's
- * events stays in step with the server's read model. Every event type the
- * server knows has a branch here; unknown variants leave the thread as is.
- * No I/O.
+ * Pure event-application rules for one thread projection. Every V2 domain
+ * event carries the whole record it changed, so applying one is an upsert
+ * into the matching projection array; the server's own projection and the
+ * T3 web client fold events the same way. Unknown events leave the
+ * projection as is. No I/O.
  */
-import type { OrchestrationEvent } from "../schemas/orchestration/events.ts";
-import type { OrchestrationThread } from "../schemas/orchestration/readModel.ts";
+import { isUnknownVariant } from "../schemas/common.ts";
 import {
-  applySessionSet,
-  applyTurnDiffCompleted,
-  upsertActivity,
-  upsertMessage,
-  upsertProposedPlan,
-} from "./threadProjectionContent.ts";
-import {
-  applyPullRequestLinked,
-  applyPullRequestSynced,
-  applyPullRequestUnlinked,
-} from "./threadProjectionLinks.ts";
-import { applyReverted } from "./threadProjectionRevert.ts";
+  THREAD_STATE_EVENT_TYPES,
+  type KnownOrchestrationV2DomainEvent,
+  type OrchestrationV2DomainEvent,
+} from "../schemas/orchestration/events.ts";
+import type { OrchestrationV2ThreadProjection } from "../schemas/orchestration/projection.ts";
 
 export {
-  assistantMessageForTurn,
+  assistantMessageForRun,
   pendingRequests,
+  runOutcome,
   threadPhase,
-  toPendingRequest,
-  turnOutcome,
   type PendingRequest,
   type ThreadPhase,
   type TurnOutcome,
 } from "./threadDerived.ts";
-export {
-  isSettledTurnState,
-  settledTurnStateForSessionStatus,
-  type SettledTurnState,
-} from "./turnState.ts";
 
 /** Narrows a growing tagged union to its recognised members. */
 export function isKnownVariant<T extends object>(value: T): value is Exclude<T, { unknown: true }> {
   return (value as { unknown?: unknown }).unknown !== true;
 }
 
-export type KnownOrchestrationEvent = Exclude<OrchestrationEvent, { unknown: true }>;
+const threadStateTypes: ReadonlySet<string> = new Set(THREAD_STATE_EVENT_TYPES);
 
-/** Applies one event to the thread. Events for other threads and unknown events leave it unchanged. */
+type Projection = OrchestrationV2ThreadProjection;
+type ThreadRecordEvent = Extract<
+  KnownOrchestrationV2DomainEvent,
+  { type: "thread.created" | (typeof THREAD_STATE_EVENT_TYPES)[number] }
+>;
+
+/** Events whose payload is the whole thread record. */
+function isThreadRecordEvent(event: KnownOrchestrationV2DomainEvent): event is ThreadRecordEvent {
+  return event.type === "thread.created" || threadStateTypes.has(event.type);
+}
+
+/** Upsert by `id`, keeping the position of an existing entry. */
+export function upsertById<T extends { readonly id: string }>(
+  entries: readonly T[],
+  entry: T,
+): T[] {
+  const index = entries.findIndex((candidate) => candidate.id === entry.id);
+  if (index === -1) return [...entries, entry];
+  return entries.map((candidate, i) => (i === index ? entry : candidate));
+}
+
+/** Applies one event to the projection. Events for other threads and unknown events leave it unchanged. */
 export function applyThreadEvent(
-  thread: OrchestrationThread,
-  event: OrchestrationEvent,
-): OrchestrationThread {
-  if (!isKnownVariant(event)) return thread;
-  if (event.aggregateKind !== "thread" || event.aggregateId !== thread.id) return thread;
-  const at = event.occurredAt;
+  projection: Projection,
+  event: OrchestrationV2DomainEvent,
+): Projection {
+  if (!isKnownVariant(event)) return projection;
+  if (event.threadId !== projection.thread.id) return projection;
+  const next = applyKnownEvent(projection, event);
+  return next === projection ? projection : { ...next, updatedAt: event.occurredAt };
+}
+
+function applyKnownEvent(p: Projection, event: KnownOrchestrationV2DomainEvent): Projection {
+  if (isThreadRecordEvent(event)) return { ...p, thread: event.payload };
   switch (event.type) {
-    case "thread.message-sent":
-      return { ...thread, messages: upsertMessage(thread.messages, event.payload), updatedAt: at };
-    case "thread.session-set":
-      return applySessionSet(thread, event.payload.session, at);
-    case "thread.turn-diff-completed":
-      return applyTurnDiffCompleted(thread, event.payload, at);
-    case "thread.activity-appended":
+    case "run.created":
+    case "run.updated":
+      return { ...p, runs: upsertById(p.runs, event.payload) };
+    case "run.background-work-cancelled": {
+      const { runId, restartCancelledBackgroundWork } = event.payload;
+      if (!p.runs.some((run) => run.id === runId)) return p;
       return {
-        ...thread,
-        activities: upsertActivity(thread.activities, event.payload.activity),
-        updatedAt: at,
+        ...p,
+        runs: p.runs.map((run) =>
+          run.id === runId ? { ...run, restartCancelledBackgroundWork } : run,
+        ),
       };
-    case "thread.proposed-plan-upserted":
+    }
+    case "run-attempt.created":
+    case "run-attempt.updated":
+      return { ...p, attempts: upsertById(p.attempts, event.payload) };
+    case "node.updated":
+      return { ...p, nodes: upsertById(p.nodes, event.payload) };
+    case "subagent.updated":
+      return { ...p, subagents: upsertById(p.subagents, event.payload) };
+    case "provider-session.attached":
+    case "provider-session.updated":
+      return { ...p, providerSessions: upsertById(p.providerSessions, event.payload) };
+    case "provider-session.detached":
       return {
-        ...thread,
-        proposedPlans: upsertProposedPlan(thread.proposedPlans, event.payload.proposedPlan),
-        updatedAt: at,
+        ...p,
+        providerSessions: p.providerSessions.filter(
+          (session) => session.id !== event.payload.providerSessionId,
+        ),
       };
-    case "thread.reverted":
-      return applyReverted(thread, event.payload.turnCount, at);
-    case "thread.meta-updated":
-      return applyMetaUpdated(thread, event.payload);
-    case "thread.pull-request-linked":
-      return applyPullRequestLinked(thread, event.payload.link, event.payload.updatedAt);
-    case "thread.pull-request-unlinked":
-      return applyPullRequestUnlinked(thread, event.payload, event.payload.updatedAt);
-    case "thread.pull-request-synced":
-      return applyPullRequestSynced(thread, event.payload);
-    case "thread.runtime-mode-set":
-      return {
-        ...thread,
-        runtimeMode: event.payload.runtimeMode,
-        updatedAt: event.payload.updatedAt,
-      };
-    case "thread.interaction-mode-set":
-      return {
-        ...thread,
-        interactionMode: event.payload.interactionMode,
-        updatedAt: event.payload.updatedAt,
-      };
-    case "thread.archived":
-      return {
-        ...thread,
-        archivedAt: event.payload.archivedAt,
-        titleRegeneration: null,
-        updatedAt: event.payload.updatedAt,
-      };
-    case "thread.unarchived":
-      return { ...thread, archivedAt: null, updatedAt: event.payload.updatedAt };
-    case "thread.settled":
-      return {
-        ...thread,
-        settledOverride: "settled",
-        settledAt: event.payload.settledAt,
-        unsettledAt: null,
-        activeOrderKey: null,
-        updatedAt: event.payload.updatedAt,
-      };
-    case "thread.unsettled":
-      return {
-        ...thread,
-        settledOverride: event.payload.reason === "user" ? "active" : null,
-        settledAt: null,
-        // A thread already pinned active keeps its re-entry stamp.
-        unsettledAt:
-          thread.settledOverride === "active"
-            ? (thread.unsettledAt ?? null)
-            : event.payload.updatedAt,
-        updatedAt: event.payload.updatedAt,
-      };
-    case "thread.snoozed":
-      return {
-        ...thread,
-        snoozedUntil: event.payload.snoozedUntil,
-        snoozedAt: event.payload.snoozedAt,
-        updatedAt: event.payload.updatedAt,
-      };
-    case "thread.unsnoozed":
-      return { ...thread, snoozedUntil: null, snoozedAt: null, updatedAt: event.payload.updatedAt };
-    case "thread.pinned":
-      return {
-        ...thread,
-        pinnedAt: event.payload.pinnedAt,
-        ...(event.payload.pinOrderKey === undefined
-          ? {}
-          : { pinOrderKey: event.payload.pinOrderKey }),
-        updatedAt: event.payload.updatedAt,
-      };
-    case "thread.unpinned":
-      // Unpinning clears the slot: pinning again is "pin again", not "restore the old position".
-      return { ...thread, pinnedAt: null, pinOrderKey: null, updatedAt: event.payload.updatedAt };
-    case "thread.pin-reordered":
-      return { ...thread, pinOrderKey: event.payload.orderKey, updatedAt: event.payload.updatedAt };
-    case "thread.auto-settle-set":
-      return {
-        ...thread,
-        autoSettleDisabledAt: event.payload.autoSettleDisabledAt,
-        updatedAt: event.payload.updatedAt,
-      };
-    case "thread.deleted":
-      return { ...thread, deletedAt: event.payload.deletedAt, updatedAt: event.payload.deletedAt };
-    // Intents and creation: the projector records nothing for an existing thread.
-    case "thread.created":
-    case "thread.turn-start-requested":
-    case "thread.turn-interrupt-requested":
-    case "thread.approval-response-requested":
-    case "thread.user-input-response-requested":
-    case "thread.checkpoint-revert-requested":
-    case "thread.session-stop-requested":
-    // Project events never reach here (aggregate kind), listed so the switch stays exhaustive.
-    case "project.created":
-    case "project.meta-updated":
-    case "project.deleted":
-      return thread;
+    case "provider-thread.updated":
+      return { ...p, providerThreads: upsertById(p.providerThreads, event.payload) };
+    case "provider-turn.updated":
+      return { ...p, providerTurns: upsertById(p.providerTurns, event.payload) };
+    case "runtime-request.updated":
+      return { ...p, runtimeRequests: upsertById(p.runtimeRequests, event.payload) };
+    case "message.updated":
+      return { ...p, messages: upsertById(p.messages, event.payload) };
+    case "turn-item.updated":
+      // A turn item of a type this build does not know changes nothing it can show.
+      if (isUnknownVariant<"type">(event.payload)) return p;
+      return { ...p, turnItems: upsertById(p.turnItems, event.payload) };
+    case "plan.updated":
+      if (isUnknownVariant<"kind">(event.payload)) return p;
+      return { ...p, plans: upsertById(p.plans, event.payload) };
+    case "checkpoint-scope.created":
+      return { ...p, checkpointScopes: upsertById(p.checkpointScopes, event.payload) };
+    case "checkpoint.captured":
+      return { ...p, checkpoints: upsertById(p.checkpoints, event.payload) };
+    case "checkpoint.rollback-requested":
+      // The thread record carries the rollback request id; the rollback itself arrives as updates.
+      return p;
+    case "context-handoff.updated":
+      return { ...p, contextHandoffs: upsertById(p.contextHandoffs, event.payload) };
+    case "context-transfer.created":
+    case "context-transfer.updated":
+      return { ...p, contextTransfers: upsertById(p.contextTransfers, event.payload) };
     default:
-      return unreachableEvent(event, thread);
+      return unreachableEvent(event, p);
   }
 }
 
 /** Compile-time check that every known event type has a branch above. */
-function unreachableEvent(event: never, thread: OrchestrationThread): OrchestrationThread {
+function unreachableEvent(event: never, projection: Projection): Projection {
   void event;
-  return thread;
-}
-
-type MetaUpdated = Extract<OrchestrationEvent, { type: "thread.meta-updated" }>["payload"];
-
-function applyMetaUpdated(thread: OrchestrationThread, p: MetaUpdated): OrchestrationThread {
-  return {
-    ...thread,
-    ...(p.title === undefined ? {} : { title: p.title }),
-    ...(p.modelSelection === undefined ? {} : { modelSelection: p.modelSelection }),
-    ...(p.branch === undefined ? {} : { branch: p.branch }),
-    ...(p.worktreePath === undefined ? {} : { worktreePath: p.worktreePath }),
-    ...(p.linkedPullRequest === undefined ? {} : { linkedPullRequest: p.linkedPullRequest }),
-    ...(p.branchPullRequest === undefined ? {} : { branchPullRequest: p.branchPullRequest }),
-    ...(p.titleRegeneration === undefined ? {} : { titleRegeneration: p.titleRegeneration }),
-    ...(p.titleState === undefined ? {} : { titleState: p.titleState }),
-    ...(p.activeOrderKey === undefined ? {} : { activeOrderKey: p.activeOrderKey }),
-    updatedAt: p.updatedAt,
-  };
+  return projection;
 }

@@ -6,15 +6,8 @@
  */
 import type { z } from "zod";
 
-export type AuthEnvironmentScope =
-  | "orchestration:read"
-  | "orchestration:operate"
-  | "terminal:operate"
-  | "review:write"
-  | "access:read"
-  | "access:write"
-  | "relay:read"
-  | "relay:write";
+export type { AuthEnvironmentScope } from "../schemas/auth.ts";
+import type { AuthEnvironmentScope } from "../schemas/auth.ts";
 
 export interface RpcMethodSpec<Payload = unknown, Success = unknown> {
   /** Validates and normalises what the caller passes before it is sent. */

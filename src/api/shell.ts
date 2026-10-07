@@ -3,40 +3,55 @@
 //   implements: design
 // ---
 /**
- * ShellApi: the lightweight cross-thread view (projects and thread shells)
- * as a snapshot over HTTP or a resumable live stream over RPC, plus the full
- * orchestration read model over HTTP.
+ * ShellApi: the lightweight cross-thread view (projects and thread shells,
+ * active and archived) as a snapshot over HTTP or a resumable live stream
+ * over RPC.
  */
 import { T3ConnectionError, T3InterruptedError, type T3DecodeError } from "../errors.ts";
 import type { RpcClient } from "../rpc/client.ts";
 import type { RpcMethods } from "../rpc/registry.ts";
 import {
-  OrchestrationShellSnapshot,
-  type OrchestrationShellStreamItem,
+  ORCHESTRATION_PROTOCOL_HEADER,
+  ORCHESTRATION_PROTOCOL_VERSION_TEXT,
+} from "../schemas/environment.ts";
+import {
+  OrchestrationV2ShellSnapshot,
+  type OrchestrationV2ArchivedShellSnapshot,
+  type OrchestrationV2ArchivedShellStreamItem,
+  type OrchestrationV2ShellStreamItem,
 } from "../schemas/orchestration/shell.ts";
-import { OrchestrationReadModel } from "../schemas/orchestration/readModel.ts";
 import type { HttpTransport } from "../transport/http.ts";
 import { isKnownVariant } from "./threadProjection.ts";
 
 export type ShellWatchItem =
-  | Exclude<OrchestrationShellStreamItem, { unknown: true }>
+  | Exclude<OrchestrationV2ShellStreamItem, { unknown: true }>
   | { readonly kind: "decode-error"; readonly error: T3DecodeError }
   | { readonly kind: "reconnected"; readonly afterSequence: number };
+
+export type ArchivedShellWatchItem =
+  | Exclude<OrchestrationV2ArchivedShellStreamItem, { unknown: true }>
+  | { readonly kind: "decode-error"; readonly error: T3DecodeError };
 
 export interface ShellWatchOptions {
   readonly afterSequence?: number;
   readonly signal?: AbortSignal;
 }
 
+/** Orchestration HTTP routes answer only a client that names the protocol it speaks. */
+export const orchestrationHttpHeaders = {
+  [ORCHESTRATION_PROTOCOL_HEADER]: ORCHESTRATION_PROTOCOL_VERSION_TEXT,
+} as const;
+
 export function loadShellSnapshot(
   http: HttpTransport,
   signal?: AbortSignal,
-): Promise<OrchestrationShellSnapshot> {
+): Promise<OrchestrationV2ShellSnapshot> {
   return http.request({
     method: "GET",
     path: "/api/orchestration/shell",
     auth: "required",
-    decode: OrchestrationShellSnapshot,
+    headers: orchestrationHttpHeaders,
+    decode: OrchestrationV2ShellSnapshot,
     ...(signal === undefined ? {} : { signal }),
   });
 }
@@ -50,19 +65,14 @@ export class ShellApi {
     this.rpc = rpc;
   }
 
-  /** Reads the full orchestration state, including thread messages and activities. */
-  readModel(signal?: AbortSignal): Promise<OrchestrationReadModel> {
-    return this.http.request({
-      method: "GET",
-      path: "/api/orchestration/snapshot",
-      auth: "required",
-      decode: OrchestrationReadModel,
-      ...(signal === undefined ? {} : { signal }),
-    });
+  /** Projects plus active and archived thread shells, over HTTP. */
+  snapshot(signal?: AbortSignal): Promise<OrchestrationV2ShellSnapshot> {
+    return loadShellSnapshot(this.http, signal);
   }
 
-  snapshot(signal?: AbortSignal): Promise<OrchestrationShellSnapshot> {
-    return loadShellSnapshot(this.http, signal);
+  /** Archived thread shells and projects, over RPC. */
+  archivedSnapshot(signal?: AbortSignal): Promise<OrchestrationV2ArchivedShellSnapshot> {
+    return this.rpc.call("orchestration.getArchivedShellSnapshot", {}, signal);
   }
 
   /** Subscribes with `orchestration.subscribeShell`; resubscribes after a dropped socket. */
@@ -114,6 +124,41 @@ export class ShellApi {
               resumed = true;
               continue;
             }
+            throw error;
+          }
+        }
+      },
+    };
+  }
+
+  /** Archived threads as they change; a snapshot first, then updates. Not resumable: a drop restarts it. */
+  watchArchived(
+    options: { readonly signal?: AbortSignal } = {},
+  ): AsyncIterable<ArchivedShellWatchItem> {
+    const rpc = this.rpc;
+    return {
+      async *[Symbol.asyncIterator]() {
+        const { signal } = options;
+        for (;;) {
+          if (signal?.aborted) return;
+          try {
+            const stream = rpc.stream(
+              "orchestration.subscribeArchivedShell",
+              {},
+              signal === undefined ? {} : { signal },
+            );
+            for await (const item of stream) {
+              if (item.kind === "decode-error") {
+                yield item;
+                continue;
+              }
+              if (isKnownVariant(item.value)) yield item.value;
+            }
+            return;
+          } catch (error) {
+            if (signal?.aborted || error instanceof T3InterruptedError) return;
+            if (error instanceof T3ConnectionError && rpc.connection.state === "connecting")
+              continue;
             throw error;
           }
         }

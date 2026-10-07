@@ -24,6 +24,8 @@ export interface HttpRequest<T> {
   query?: Record<string, string | number | undefined>;
   body?: unknown | URLSearchParams;
   auth?: "required" | "optional" | "none";
+  /** Extra request headers, for example the orchestration protocol version. */
+  headers?: Record<string, string>;
   decode: z.ZodType<T> | "empty";
   signal?: AbortSignal;
 }
@@ -90,7 +92,7 @@ export class HttpTransport {
       });
     }
 
-    const headers = new Headers();
+    const headers = new Headers(request.headers);
     if (accessToken !== undefined && auth !== "none") {
       headers.set("authorization", `Bearer ${accessToken}`);
     }

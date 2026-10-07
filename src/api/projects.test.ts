@@ -1,8 +1,6 @@
-import { WebSocket as WsWebSocket } from "ws";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { FakeT3Server } from "../../test/support/fakeServer.ts";
-import { makeShellProject, makeShellSnapshot } from "../../test/support/threadFixtures.ts";
-import type { WebSocketConstructor } from "../internal/websocket.ts";
+import { at, makeShellProject, makeShellSnapshot } from "../../test/support/threadFixtures.ts";
 import { RpcClient } from "../rpc/client.ts";
 import { rpcMethods } from "../rpc/registry.ts";
 import { projectId } from "../schemas/common.ts";
@@ -13,17 +11,23 @@ import { SocketTransport } from "../transport/socket.ts";
 import { CommandDispatcher } from "./dispatch.ts";
 import { ProjectsApi, normalizeWorkspaceRoot } from "./projects.ts";
 
+/** A full project record, as `projects.mutate` and `GET /api/projects` return it. */
+const projectRecord = (overrides: Record<string, unknown> = {}) => ({
+  ...makeShellProject(overrides),
+  deletedAt: null,
+});
+
 describe("ProjectsApi", () => {
   let server: FakeT3Server;
   let connection: RpcConnection;
   let projects: ProjectsApi;
   let shellProjects: OrchestrationProjectShell[];
-  let dispatched: Record<string, unknown>[];
+  let mutations: Record<string, unknown>[];
 
   beforeEach(async () => {
     server = await FakeT3Server.start();
     shellProjects = [makeShellProject({ workspaceRoot: "/srv/sample/" })];
-    dispatched = [];
+    mutations = [];
     connection = new RpcConnection(new SocketTransport({ url: async () => server.wsUrl }));
     const rpc = new RpcClient(connection, rpcMethods);
     const http = new HttpTransport({
@@ -31,24 +35,30 @@ describe("ProjectsApi", () => {
       fetch: server.fetch,
       getAccessToken: async () => "token-1",
     });
-    projects = new ProjectsApi(http, rpc, new CommandDispatcher(rpc, http));
+    projects = new ProjectsApi(http, rpc, new CommandDispatcher(rpc));
     server.routes.route("GET /api/orchestration/shell", () => ({
       status: 200,
       body: makeShellSnapshot({ projects: shellProjects }),
     }));
-    server.handle("orchestration.dispatchCommand", (payload) => {
-      const command = payload as Record<string, unknown>;
-      dispatched.push(command);
-      if (command["type"] === "project.create") {
-        shellProjects.push(
-          makeShellProject({
-            id: command["projectId"],
-            title: command["title"],
-            workspaceRoot: command["workspaceRoot"],
-          }),
-        );
+    server.handle("projects.mutate", (payload) => {
+      const mutation = payload as Record<string, unknown>;
+      mutations.push(mutation);
+      if (mutation["type"] === "project.create") {
+        const created = makeShellProject({
+          id: mutation["projectId"],
+          title: mutation["title"],
+          workspaceRoot: mutation["workspaceRoot"],
+        });
+        shellProjects.push(created);
+        return { kind: "value", value: { ...created, deletedAt: null } };
       }
-      return { kind: "value", value: { sequence: dispatched.length } };
+      if (mutation["type"] === "project.update") {
+        return {
+          kind: "value",
+          value: projectRecord({ title: mutation["title"] ?? "Sample project" }),
+        };
+      }
+      return { kind: "value", value: projectRecord({ deletedAt: at }) };
     });
   });
   afterEach(async () => {
@@ -62,58 +72,121 @@ describe("ProjectsApi", () => {
     expect(normalizeWorkspaceRoot("/srv/./sample/../sample")).toBe("/srv/sample");
   });
 
-  it("ensure returns the existing project without dispatching", async () => {
+  it("reads the shell with the protocol header for list, get, and findByWorkspaceRoot", async () => {
+    expect((await projects.list()).map((p) => p.id)).toEqual(["project-1"]);
+    expect(await projects.get(projectId("project-1"))).toMatchObject({ id: "project-1" });
+    expect(await projects.get(projectId("missing"))).toBeUndefined();
+    expect(await projects.findByWorkspaceRoot("/srv/sample///")).toMatchObject({ id: "project-1" });
+    for (const request of server.routes.requests) {
+      expect(request).toMatchObject({
+        method: "GET",
+        path: "/api/orchestration/shell",
+        headers: { "x-t3-orchestration-protocol": "2", authorization: "Bearer token-1" },
+      });
+    }
+    expect(server.routes.requests).toHaveLength(4);
+  });
+
+  it("reads the full project records over GET /api/projects", async () => {
+    server.routes.route("GET /api/projects", () => ({
+      status: 200,
+      body: { projects: [projectRecord()], updatedAt: at, futureField: "kept" },
+    }));
+    const snapshot = await projects.snapshot();
+    expect(snapshot).toMatchObject({
+      projects: [{ id: "project-1", deletedAt: null }],
+      updatedAt: at,
+      futureField: "kept",
+    });
+  });
+
+  it("create sends project.create over projects.mutate and returns the project", async () => {
+    const created = await projects.create({
+      title: "Other",
+      workspaceRoot: "/srv/other",
+      createWorkspaceRootIfMissing: true,
+      defaultModelSelection: null,
+    });
+    expect(mutations).toHaveLength(1);
+    expect(mutations[0]).toMatchObject({
+      type: "project.create",
+      title: "Other",
+      workspaceRoot: "/srv/other",
+      createWorkspaceRootIfMissing: true,
+      defaultModelSelection: null,
+      projectId: created.id,
+    });
+    expect(mutations[0]).not.toHaveProperty("scripts");
+    expect(typeof mutations[0]?.["commandId"]).toBe("string");
+    expect(created).toMatchObject({ title: "Other", workspaceRoot: "/srv/other", deletedAt: null });
+
+    await projects.create({
+      projectId: projectId("project-9"),
+      title: "Named",
+      workspaceRoot: "/srv/n",
+    });
+    expect(mutations[1]).toMatchObject({ projectId: "project-9" });
+  });
+
+  it("ensure returns the existing project without mutating", async () => {
     const project = await projects.ensure({
       workspaceRoot: "/srv/sample",
       title: "Sample project",
     });
     expect(project.id).toBe("project-1");
-    expect(dispatched).toEqual([]);
-    expect(await projects.findByWorkspaceRoot("/srv/sample///")).toMatchObject({ id: "project-1" });
+    expect(mutations).toEqual([]);
   });
 
   it("ensure creates a missing project once and finds it on the second call", async () => {
     const first = await projects.ensure({ workspaceRoot: "/srv/other", title: "Other" });
     const second = await projects.ensure({ workspaceRoot: "/srv/other/", title: "Other" });
-    expect(dispatched).toHaveLength(1);
-    expect(dispatched[0]).toMatchObject({
-      type: "project.create",
-      title: "Other",
-      workspaceRoot: "/srv/other",
-      projectId: first.id,
-    });
+    expect(mutations).toHaveLength(1);
+    expect(mutations[0]).toMatchObject({ type: "project.create", projectId: first.id });
     expect(second.id).toBe(first.id);
   });
 
-  it("ensure renames an existing project when the title differs", async () => {
-    await projects.ensure({ workspaceRoot: "/srv/sample", title: "Renamed" });
-    expect(dispatched).toHaveLength(1);
-    expect(dispatched[0]).toMatchObject({
-      type: "project.meta.update",
-      projectId: "project-1",
-      title: "Renamed",
-    });
+  it("ensure renames an existing project through project.update when the title differs", async () => {
+    const renamed = await projects.ensure({ workspaceRoot: "/srv/sample", title: "Renamed" });
+    expect(mutations).toEqual([
+      expect.objectContaining({ type: "project.update", projectId: "project-1", title: "Renamed" }),
+    ]);
+    expect(renamed.title).toBe("Renamed");
+  });
+
+  it("update sends the patch and delete sends force", async () => {
+    await projects.update(projectId("project-1"), { autoPull: true, faviconPath: null });
+    await projects.delete(projectId("project-1"), { force: true });
+    await projects.delete(projectId("project-1"));
+    expect(mutations).toMatchObject([
+      { type: "project.update", projectId: "project-1", autoPull: true, faviconPath: null },
+      { type: "project.delete", projectId: "project-1", force: true },
+      { type: "project.delete", projectId: "project-1" },
+    ]);
+    expect(mutations[2]).not.toHaveProperty("force");
+    expect(new Set(mutations.map((m) => m["commandId"])).size).toBe(3);
   });
 
   it("delete resolves when the project does not exist and rethrows other failures", async () => {
-    server.handle("orchestration.dispatchCommand", () => ({
+    server.handle("projects.mutate", () => ({
       kind: "fail",
       error: {
-        _tag: "OrchestrationDispatchCommandError",
-        message:
-          "Orchestration command invariant failed (project.delete): Project 'missing' does not exist for command 'project.delete'.",
+        _tag: "ProjectMutationError",
+        commandId: "command-1",
+        message: "Project 'missing' does not exist for command 'project.delete'.",
       },
     }));
     await expect(projects.delete(projectId("missing"))).resolves.toBeUndefined();
-    server.handle("orchestration.dispatchCommand", () => ({
+    server.handle("projects.mutate", () => ({
       kind: "fail",
       error: {
-        _tag: "OrchestrationDispatchCommandError",
+        _tag: "ProjectMutationError",
+        commandId: "command-1",
         message: "Project 'project-1' is not empty and cannot be deleted without force=true.",
       },
     }));
     await expect(projects.delete(projectId("project-1"))).rejects.toMatchObject({
       code: "rpc_failed",
+      tag: "ProjectMutationError",
     });
   });
 
@@ -157,57 +230,14 @@ describe("ProjectsApi", () => {
       commitError: "Git could not make the first commit.",
     });
     expect(payloads).toEqual([{ name: "Sample" }]);
-    await expect(projects.createNew({ name: " " })).rejects.toMatchObject({
-      code: "precondition",
-    });
-    await expect(projects.createNew({ name: "x".repeat(201) })).rejects.toMatchObject({
-      code: "precondition",
-    });
+    await expect(projects.createNew({ name: " " })).rejects.toMatchObject({ code: "precondition" });
     expect(payloads).toHaveLength(1);
   });
 
-  it("rejects an invalid command before sending", async () => {
+  it("rejects an invalid mutation before sending", async () => {
     await expect(projects.create({ title: "", workspaceRoot: "/srv/new" })).rejects.toMatchObject({
       code: "precondition",
     });
-    expect(dispatched).toEqual([]);
-  });
-});
-
-describe("CommandDispatcher HTTP fallback", () => {
-  it("posts to /api/orchestration/dispatch when the socket is fatally unavailable", async () => {
-    const server = await FakeT3Server.start({ token: "secret" });
-    // No ticket and no bearer header: the upgrade is refused with 401 (fatal).
-    const connection = new RpcConnection(
-      new SocketTransport({
-        url: async () => server.wsUrl,
-        webSocket: WsWebSocket as unknown as WebSocketConstructor,
-      }),
-    );
-    try {
-      const rpc = new RpcClient(connection, rpcMethods);
-      const http = new HttpTransport({
-        baseUrl: server.httpUrl,
-        fetch: server.fetch,
-        getAccessToken: async () => "secret",
-      });
-      const posted: unknown[] = [];
-      server.routes.route("POST /api/orchestration/dispatch", (request) => {
-        posted.push(request.body);
-        return { status: 200, body: { sequence: 7 } };
-      });
-      const dispatcher = new CommandDispatcher(rpc, http);
-      const result = await dispatcher.dispatch({
-        type: "thread.archive",
-        commandId: dispatcher.newCommandId(),
-        threadId: "thread-1" as never,
-      });
-      expect(result).toEqual({ sequence: 7 });
-      expect(posted[0]).toMatchObject({ type: "thread.archive", threadId: "thread-1" });
-      expect(server.upgrades[0]?.accepted).toBe(false);
-    } finally {
-      await connection.close();
-      await server.close();
-    }
+    expect(mutations).toEqual([]);
   });
 });

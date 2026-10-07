@@ -5,6 +5,8 @@
 import { z } from "zod";
 import { defineMethod } from "../spec.ts";
 import {
+  Project,
+  ProjectMutation,
   ProjectCreateNewInput,
   ProjectCreateNewResult,
   ProjectEnsureScratchResult,
@@ -21,35 +23,41 @@ import {
 } from "../../schemas/projects.ts";
 
 export const projectsMethods = {
+  "projects.mutate": defineMethod({
+    payload: ProjectMutation,
+    success: Project,
+    stream: false,
+    scope: "orchestration:operate",
+  }),
   "projects.listEntries": defineMethod({
     payload: ProjectListEntriesInput,
     success: ProjectListEntriesResult,
     stream: false,
-    scope: "orchestration:read",
+    scope: "filesystem:read",
   }),
   "projects.readFile": defineMethod({
     payload: ProjectReadFileInput,
     success: ProjectReadFileResult,
     stream: false,
-    scope: "orchestration:read",
+    scope: "filesystem:read",
   }),
   "projects.writeFile": defineMethod({
     payload: ProjectWriteFileInput,
     success: ProjectWriteFileResult,
     stream: false,
-    scope: "orchestration:operate",
+    scope: "filesystem:write",
   }),
   "projects.searchEntries": defineMethod({
     payload: ProjectSearchEntriesInput,
     success: ProjectSearchEntriesResult,
     stream: false,
-    scope: "orchestration:read",
+    scope: "filesystem:read",
   }),
   "projects.searchContents": defineMethod({
     payload: ProjectSearchContentsInput,
     success: ProjectSearchContentsResult,
     stream: false,
-    scope: "orchestration:read",
+    scope: "filesystem:read",
   }),
   "projects.ensureScratch": defineMethod({
     payload: z.looseObject({}),

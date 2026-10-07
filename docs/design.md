@@ -11,11 +11,11 @@ relationships:
 
 `@wyrd-company/t3code-client` is a TypeScript library that lets a Node program
 drive a T3 Code server the way the T3 web and desktop clients do: create
-projects and threads, start turns, watch a thread live, answer approvals and
-questions, and manage the server's auth control plane. It is the foundation
-for software-delivery workflows
-that dispatch, manage, and monitor agent sessions while a person can still
-open the same session in a normal T3 client.
+projects and threads, launch threads into worktrees, start runs, watch a
+thread live, answer approvals and questions, and manage the server's auth
+control plane. It is the foundation for software-delivery workflows that
+dispatch, manage, and monitor agent sessions while a person can still open
+the same session in a normal T3 client.
 
 The library is a package that a larger program imports. It is not a workflow
 engine, and it does not spawn or install the server.
@@ -39,33 +39,67 @@ engine, and it does not spawn or install the server.
   its implementation. No file over roughly 300 lines. Callers compose the
   facade; tests cross the same seams callers do.
 
-## Wire facts (verified against T3 Code 0.0.45, upstream release)
+## Vocabulary
+
+The server's orchestration model is its protocol version 2 ("V2"). A
+**thread** holds **runs**; a run is one prompt's execution, from the user
+message that requested it to a terminal status. A run is made of **turn
+items**: the timeline rows of a thread (user and assistant messages,
+reasoning, tool calls, approvals, questions, errors), each typed by `type`.
+**Runtime requests** are the approvals and questions a provider raises and the
+answers it got. A **projection** is one thread's whole state: the thread
+record and every array of records that belongs to it. A **shell** is the
+lightweight cross-thread view: project and thread summaries.
+
+In this library a **turn** is one run. `threads.startTurn` sends a message
+and returns a handle that follows the run the server links to it.
+
+## Wire facts (verified against T3 Code 0.0.46-nightly.20261007.2774)
+
+The server speaks orchestration protocol 2 and refuses other clients. The
+`/ws` upgrade must carry `?orchestrationProtocol=2` (a 426 answers an upgrade
+without it), and the orchestration HTTP routes must carry the header
+`x-t3-orchestration-protocol: 2`. `ExecutionEnvironmentDescriptor.orchestrationProtocolVersion`
+says which protocol a server speaks.
 
 HTTP, all under one base URL:
 
-| Method and path                            | Auth                 | Notes                                                                               |
-| ------------------------------------------ | -------------------- | ----------------------------------------------------------------------------------- |
-| `GET /.well-known/t3/environment`          | none                 | `ExecutionEnvironmentDescriptor`                                                    |
-| `GET /api/auth/session`                    | optional bearer      | `AuthSessionState`; `authenticated:false` without a credential                      |
-| `POST /oauth/token`                        | none                 | form-encoded token exchange; pairing token is single use                            |
-| `POST /api/auth/websocket-ticket`          | bearer               | `{ticket, expiresAt}`; ticket lives about five minutes                              |
-| `POST /api/auth/pairing-token`             | bearer, access:write | body `{label?, scopes?}`; the credential is returned once                           |
-| `GET /api/auth/pairing-links`              | bearer, access:read  |                                                                                     |
-| `POST /api/auth/pairing-links/revoke`      | bearer, access:write | `{id}` → `{revoked}`                                                                |
-| `GET /api/auth/clients`                    | bearer, access:read  | `AuthClientSession[]`                                                               |
-| `POST /api/auth/clients/revoke`            | bearer, access:write | `{sessionId}` → `{revoked}`                                                         |
-| `POST /api/auth/clients/revoke-others`     | bearer, access:write | `{revokedCount}`                                                                    |
-| `GET /api/orchestration/snapshot`          | bearer, orch:read    | full `OrchestrationReadModel`                                                       |
-| `GET /api/orchestration/shell`             | bearer, orch:read    | `OrchestrationShellSnapshot`                                                        |
-| `GET /api/orchestration/threads/:threadId` | bearer, orch:read    | query `turnLimit`, `beforeCursor`, `reasoningMessages=true`; 404 `thread_not_found` |
-| `POST /api/orchestration/dispatch`         | bearer, orch:operate | `ClientOrchestrationCommand` → `{sequence}`; invariant errors 500                   |
-| `POST /api/pull-requests/diff`             | bearer               | out of scope for this version                                                       |
+| Method and path                                    | Auth                 | Notes                                                                              |
+| -------------------------------------------------- | -------------------- | ---------------------------------------------------------------------------------- |
+| `GET /.well-known/t3/environment`                  | none                 | `ExecutionEnvironmentDescriptor`                                                   |
+| `GET /api/auth/session`                            | optional bearer      | `AuthSessionState`; `authenticated:false` without a credential                     |
+| `POST /oauth/token`                                | none                 | form-encoded token exchange; pairing token is single use                           |
+| `POST /api/auth/websocket-ticket`                  | bearer               | `{ticket, expiresAt}`; ticket lives about five minutes                             |
+| `POST /api/auth/pairing-token`                     | bearer, access:write | body `{label?, scopes?}`; the credential is returned once                          |
+| `GET /api/auth/pairing-links`                      | bearer, access:read  |                                                                                    |
+| `POST /api/auth/pairing-links/revoke`              | bearer, access:write | `{id}` → `{revoked}`                                                               |
+| `GET /api/auth/clients`                            | bearer, access:read  | `AuthClientSession[]`                                                              |
+| `POST /api/auth/clients/revoke`                    | bearer, access:write | `{sessionId}` → `{revoked}`                                                        |
+| `POST /api/auth/clients/revoke-others`             | bearer, access:write | `{revokedCount}`                                                                   |
+| `GET /api/projects`                                | bearer, orch:read    | `ProjectSnapshot`: every project record                                            |
+| `POST /api/projects/mutate`                        | bearer, orch:operate | `ProjectMutation` → `Project`                                                      |
+| `GET /api/orchestration/shell`                     | bearer, orch:read    | `OrchestrationV2ShellSnapshot` (protocol header)                                   |
+| `GET /api/orchestration/threads/:threadId`         | bearer, orch:read    | `OrchestrationV2ThreadDetailSnapshot`, the full projection; 404 `thread_not_found` |
+| `GET /api/orchestration/threads/:threadId/bounded` | bearer, orch:read    | `OrchestrationV2ThreadBoundedSnapshot`: a recent window plus `historyCursor`       |
+| `GET /api/orchestration/threads/:threadId/history` | bearer, orch:read    | query `cursor`; `OrchestrationV2ThreadHistoryPage`; 400 `invalid_history_cursor`   |
+| `POST /api/pull-requests/diff`                     | bearer               | out of scope for this version                                                      |
 
 HTTP errors are JSON tagged records: `EnvironmentRequestInvalidError` (400),
 `EnvironmentAuthInvalidError` (401), `EnvironmentScopeRequiredError` and
 `EnvironmentOperationForbiddenError` (403), `EnvironmentResourceNotFoundError`
 (404), `EnvironmentInternalError` (500). Each carries `code`, `reason` and
-`traceId`.
+`traceId`. A scope error names the scope the request needs in
+`requiredPermission` and its legacy parent in `requiredScope`.
+
+Scopes are granular: `orchestration:read`, `orchestration:operate`,
+`settings:write`, `providers:manage`, `environment:maintain`,
+`preview:operate`, `diagnostics:read`, `terminal:read`, `terminal:operate`,
+`filesystem:read`, `filesystem:write`, `source-control:write`, `access:read`,
+`access:write`, `relay:read`, `relay:write`. `review:write` still decodes but
+grants nothing. Session state, pairing links, and client sessions report the
+whole grant in `permissions` and only the legacy vocabulary in `scopes`;
+`grantedScopes()` reads whichever is present. A pairing credential may ask for
+any grantable scope.
 
 WebSocket at `GET /ws`. Authentication on the upgrade is either
 `?wsTicket=<ticket>` or an `authorization: Bearer` header. Optional query
@@ -85,8 +119,8 @@ server → client
   {"_tag":"Chunk","requestId":"<id>","values":[...]}          one or more stream items
   {"_tag":"Exit","requestId":"<id>","exit":{"_tag":"Success","value":...}}
   {"_tag":"Exit","requestId":"<id>","exit":{"_tag":"Failure","cause":[
-        {"_tag":"Fail","error":{"_tag":"OrchestrationDispatchCommandError","message":"…"}}
-      | {"_tag":"Die","defect":"Missing key\n  at [\"fromTurnCount\"]"}
+        {"_tag":"Fail","error":{"_tag":"OrchestrationV2DispatchCommandError","message":"…"}}
+      | {"_tag":"Die","defect":"Missing key\n  at [\"runId\"]"}
       | {"_tag":"Interrupt","fiberId":797} ]}}
   {"_tag":"Defect","defect":...}             connection-level failure
   {"_tag":"Pong"}
@@ -98,25 +132,70 @@ after the client cancels). A payload the server cannot decode surfaces as a
 `Die` with a string defect, so the client validates payloads before sending
 to give a better error.
 
-Reasoning messages are opt-in on thread reads. Without
-`reasoningMessages` on `orchestration.subscribeThread` or on the HTTP thread
-snapshot, the server rewrites role `reasoning` to `system` in snapshots and
-`thread.message-sent` events. `ServerConfig.reasoningMessages` says the server
-accepts the opt-in.
+Orchestration RPC methods (`ORCHESTRATION_V2_WS_METHODS` in the contracts;
+scope in `apps/server/src/auth/RpcAuthorization.ts`):
+
+| Method                                   | Scope        | Payload → result                                                                                                             |
+| ---------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `orchestration.dispatchCommand`          | orch:operate | `OrchestrationV2Command` → `{sequence}`; fails `OrchestrationV2DispatchCommandError`                                         |
+| `orchestration.launchThread`             | orch:operate | `OrchestrationV2ThreadLaunchInput` → `{threadId, projection, resumed}`                                                       |
+| `orchestration.getThreadProjection`      | orch:read    | `{threadId}` → `OrchestrationV2ThreadProjection` with a bounded timeline window                                              |
+| `orchestration.getTurnItem`              | orch:read    | `{threadId, itemId}` → `{item}` with the full, size-bounded input and output                                                 |
+| `orchestration.getWorkflowScript`        | orch:read    | unchanged                                                                                                                    |
+| `orchestration.getTurnDiff`              | orch:read    | unchanged                                                                                                                    |
+| `orchestration.getFullThreadDiff`        | orch:read    | unchanged                                                                                                                    |
+| `orchestration.searchThreads`            | orch:read    | unchanged                                                                                                                    |
+| `orchestration.getArchivedShellSnapshot` | orch:read    | `{}` → `OrchestrationV2ArchivedShellSnapshot`                                                                                |
+| `orchestration.subscribeArchivedShell`   | orch:read    | stream of `OrchestrationV2ArchivedShellStreamItem`                                                                           |
+| `orchestration.subscribeShell`           | orch:read    | `{afterSequence?, requestCompletionMarker?}` → stream of `OrchestrationV2ShellStreamItem`                                    |
+| `orchestration.subscribeThread`          | orch:read    | `{threadId, afterSequence?, requestCompletionMarker?, acceptBoundedSnapshot?}` → stream of `OrchestrationV2ThreadStreamItem` |
+
+Projects are not orchestration commands: `projects.mutate` (orch:operate)
+takes a `ProjectMutation` (`project.create`, `project.update`,
+`project.delete`) and answers with the `Project`; it fails with
+`ProjectMutationError`, whose `cause` names a missing project. The shell
+stream reports projects as `project.updated` and `project.removed`.
+
+A thread stream starts with `{kind:"snapshot", snapshotSequence, projection}`
+unless `afterSequence` is given, in which case persisted events after it are
+replayed instead (the snapshot is still sent when the replay would be too
+large or when nothing is newer). `requestCompletionMarker` puts a
+`{kind:"synchronized"}` between catch-up and live delivery. Each event is
+`{kind:"event", sequence, event}` where the event is an
+`OrchestrationV2DomainEvent`: `id`, `threadId`, `occurredAt`, `type`, and a
+`payload` that is the whole record the event changed (`thread.*` carry the
+thread, `run.created`/`run.updated` a run, `turn-item.updated` a turn item,
+`runtime-request.updated` a runtime request, `message.updated` a message,
+and so on). Applying an event is an upsert by id; the T3 web client folds
+events the same way.
+
+`message.dispatch` carries `dispatchMode` and, optionally, `deliveryIntent`.
+With `deliveryIntent: "auto"` the server resolves the mode against its
+serialized thread state: a new run when nothing is active, otherwise steer
+or queue by the provider's capabilities. The server links the message to its
+run: the run's `userMessageId`, and the message record's `runId`. Run
+statuses are `preparing`, `queued`, `starting`, `running`, `waiting`, and
+the terminal `completed`, `interrupted`, `failed`, `cancelled`,
+`rolled_back`. `run.interrupt` needs a `runId`; with `holdQueue` it is the
+Stop button. Commands carry `createdBy` and `creationSource` where they
+create something; the server stamps `createdBy: "user"` on everything a
+client dispatches.
+
+The thread shell carries `status` (`idle` or the latest run's status),
+`activeRunId`, `pendingRuntimeRequest`, and `latestVisibleMessage`, so a
+list view needs no projection. The shell snapshot has `threads` and
+`archivedThreads`, but the server fills `archivedThreads` only on the socket
+snapshot; archived threads are read with
+`orchestration.getArchivedShellSnapshot`, and `thread.updated` items for
+them arrive on `orchestration.subscribeArchivedShell`.
 
 `projects.ensureScratch` finds or creates the environment's Scratch project,
 rooted at `ServerConfig.scratchWorkspaceRoot`; the server sends that field
 only when its data directory is outside a Git checkout, and fails the call
-otherwise. A thread created in the Scratch project without a `worktreePath`
-gets its own folder under the Scratch root, which the server writes into the
-command's `worktreePath` before dispatch. `projects.createNew` makes a folder
-under `ServerConfig.newProjectsRoot` with a README, an icon and a first
-commit, then creates the project; a failed commit is reported in
-`commitError` and keeps the project.
-
-The full method list is `WS_METHODS` plus `ORCHESTRATION_WS_METHODS` in the
-contracts package; the scope each method needs is in
-`apps/server/src/auth/RpcAuthorization.ts`.
+otherwise. `projects.createNew` makes a folder under
+`ServerConfig.newProjectsRoot` with a README, an icon and a first commit,
+then creates the project; a failed commit is reported in `commitError` and
+keeps the project.
 
 ## Caller's view
 
@@ -151,9 +230,19 @@ const thread = await client.threads.ensure({
   runtimeMode: "auto",
 });
 
+// Or launch a thread into its own worktree with a first message
+const launched = await client.threads.launch({
+  projectId: project.id,
+  title: "Fix the flaky test",
+  modelSelection: { instanceId: "codex", model: "gpt-5.6-luna" },
+  workspace: { type: "worktree", baseRef: "main" },
+  initialMessage: { text: "Find and fix the flaky test." },
+});
+
 // Run a turn and wait for it to settle
 const turn = await client.threads.startTurn({ threadId: thread.id, text: "Review the diff." });
 for await (const item of turn.events()) {
+  if (item.kind === "assistant-delta") process.stdout.write(item.delta);
   if (item.kind === "approval-requested")
     await client.threads.respondToApproval({
       threadId: thread.id,
@@ -167,11 +256,11 @@ for await (const item of turn.events()) {
       answers: { [item.questions[0].id]: "yes" },
     });
 }
-const outcome = await turn.completion; // { state: "completed" | "interrupted" | "error", assistantText, ... }
+const outcome = await turn.completion; // { state: "completed" | "interrupted" | "failed" | ..., assistantMessage, run, projection }
 
 // Watch everything
 for await (const item of client.shell.watch({ signal })) {
-  /* project-upserted, thread-upserted, ... */
+  /* snapshot, project.updated, thread.updated, thread.removed, ... */
 }
 
 // Escape hatch for any RPC method
@@ -200,30 +289,39 @@ src/
   schemas/                  zod schemas mirrored from packages/contracts
     common.ts               ids, IsoDateTime, looseObject helpers, forwardCompatible helpers
     auth.ts                 scopes, descriptors, session state, tokens, pairing links, clients
-    environment.ts          ExecutionEnvironmentDescriptor
+    environment.ts          ExecutionEnvironmentDescriptor, repository identity, protocol constants
     httpErrors.ts           Environment*Error records
     rpcErrors.ts            RpcErrorRecord: every tagged error the registered RPC methods declare
     rpcErrors/              vcs and terminal error records, shared tagged-error helpers
-    orchestration/
-      model.ts              ModelSelection, RuntimeMode, InteractionMode, attachments
-      readModel.ts          OrchestrationProject, OrchestrationThread, ReadModel, ThreadDetailSnapshot
-      shell.ts              shell snapshot, shell stream items, subscribe inputs
-      commands.ts           ClientOrchestrationCommand union and each command
-      events.ts             OrchestrationEvent union, payloads, unknown-event variant
-      stream.ts             thread stream items, DispatchResult, rpc inputs/outputs
-      threadActivity.ts     OrchestrationThreadActivity: typed by kind, with an unknown member
-      activities.ts         approval/user-input request payloads and the open-request rule
-      activityPayloads/     payloads of runtime, task, tool, checkpoint, provider, setup activities
+    projects.ts             Project, ProjectMutation, icons and scripts, file entries, read/write/search
+    orchestration/          mirrors orchestrationV2.ts and the files it imports
+      model.ts              ModelSelection, modes, decisions, answers, actor and creation source, ProviderRef
+      attachments.ts        ChatAttachment family
+      messageContext.ts     OrchestrationMessageContext and its records
+      pullRequest.ts        thread ↔ pull request links
+      thread.ts             OrchestrationV2AppThread
+      runs.ts               runs, attempts, execution nodes, subagents, checkpoints, workspace strategy
+      providerState.ts      provider sessions, threads, turns, runtime requests
+      providerCapabilities.ts
+      providerRuntime.ts    token usage, tool activity labels
+      messages.ts           conversation messages, notifications, plans, questions
+      context.ts            context handoffs and transfers
+      turnItemParts.ts      turn item base fields, failures, small records
+      turnItems.ts          OrchestrationV2TurnItem union, projected rows
+      events.ts             OrchestrationV2DomainEvent union
+      projection.ts         OrchestrationV2ThreadProjection, detail, bounded, history page
+      shell.ts              project and thread shells, shell snapshot and stream items
+      stream.ts             thread stream items, RPC inputs and outputs, launch
+      commands.ts           OrchestrationV2Command union (commands/*.ts by family)
     server.ts               ServerConfig (providers typed, settings loose), config/lifecycle stream events
     provider.ts             provider snapshot, models, auth status
     vcs.ts                  refs, status, worktree inputs/results
-    projects.ts             file entries, read/write/search
     terminal.ts             open/attach/write/events
   wire/
     envelope.ts             zod schemas + types for every envelope (Request, Ack, Chunk, Exit, ...)
     exit.ts                 ExitEncoded → { ok, value } | { ok:false, failure } normalisation
   transport/
-    http.ts                 HttpTransport: fetch wrapper, auth header, error mapping, JSON decode
+    http.ts                 HttpTransport: fetch wrapper, auth header, extra headers, error mapping, JSON decode
     socket.ts               SocketTransport: WebSocket lifecycle, reconnect, send/receive
     keepalive.ts            Ping/Pong liveness for one open socket
     socketClose.ts          classifies a close event: credential rejection (fatal) or drop (retry)
@@ -235,18 +333,26 @@ src/
   auth/
     credentialStore.ts      CredentialStore seam + memoryCredentialStore + fileCredentialStore
     authClient.ts           AuthClient: exchange, ticket, session state, pairing links, clients, scopes
-    scopes.ts               scope constants, hasScope, scopeForRpcMethod
+    scopes.ts               scope constants, hasScope, grantedScopes
   api/                      facades composed by T3Client
     server.ts               getConfig, probe, watchConfig, watchLifecycle
-    projects.ts             list, get, create, update, delete, ensure, ensureScratch, createNew, files
-    threads.ts              list, get, create, ensure, update, archive, delete, startTurn, interrupt, stop, respond*, watch
+    projects.ts             list, get, snapshot, create, update, delete, ensure, ensureScratch, createNew, files
+    threads.ts              list, get, detail, projection, historyPage, create, ensure, launch, update, archive, delete, startTurn, interrupt, stop, respond*, watch
+    threadCommands.ts       command builders
+    threadTurnStart.ts      startTurn: modes, message.dispatch, delivery
     turns.ts                TurnHandle: events(), completion, derived from a thread watch
-    shell.ts                snapshot, watch (resumable)
+    turnAdoption.ts         which run a message produced
+    threadWatch.ts          resumable live view
+    threadTracker.ts        projection state plus derived items
+    threadProjection.ts     applyThreadEvent (upsert rules)
+    threadDerived.ts        pendingRequests, runOutcome, activeRun, threadPhase
+    shell.ts                snapshot, archivedSnapshot, watch, watchArchived
     vcs.ts                  listRefs, status, createWorktree, removeWorktree, createRef, switchRef
     terminal.ts             open, attach, write, resize, close
+    dispatch.ts             CommandDispatcher: validate and send OrchestrationV2Command
   internal/
     asyncIterable.ts        channel/queue helpers, withAbort, merge
-    ids.ts                  newCommandId, newThreadId (uuid v4 via node:crypto)
+    ids.ts                  newId (uuid v4 via node:crypto)
     clock.ts                now() ISO, injectable for tests
     backoff.ts              exponential backoff policy
     logger.ts               optional logger seam (no-op default)
@@ -257,7 +363,8 @@ Test layout:
 
 ```text
 src/**/*.test.ts              unit tests next to the module (fake fetch, fake ws server)
-test/support/                 FakeT3Server: a `ws` server speaking the envelope protocol + fake HTTP routes
+test/support/                 FakeT3Server: a `ws` server speaking the envelope protocol + fake HTTP routes; V2 fixture builders
+test/fixtures/                payloads captured from the pinned server
 test/live/                    gated by T3_LIVE=1, T3_LIVE_URL, T3_LIVE_TOKEN; runs against a real server
 ```
 
@@ -292,29 +399,30 @@ carries a badly shaped `/oauth/token` response never carries the token.
 Conventions:
 
 - Every object is `z.looseObject({...})` so unknown keys pass through.
-- Branded ids: `ThreadId`, `ProjectId`, `CommandId`, `MessageId`, `TurnId`,
-  `EventId`, `ApprovalRequestId`, `AuthSessionId`, `ProviderInstanceId` are
-  `z.string().min(1).brand<"ThreadId">()` etc. Constructors `threadId(s)`
-  brand a trusted string without validation cost.
+- Branded ids: `ThreadId`, `ProjectId`, `CommandId`, `MessageId`, `RunId`,
+  `NodeId`, `TurnItemId`, `RuntimeRequestId`, `EventId`, `AuthSessionId`,
+  `ProviderInstanceId` and the rest are `z.string().min(1).brand<"ThreadId">()`
+  etc. Constructors `threadId(s)` brand a trusted string without validation
+  cost.
 - Growing literal sets use `forwardCompatibleLiteral([...])`, which yields the
   known union plus a `string` fallback typed as `(typeof known)[number] | (string & {})`.
-- Discriminated unions that grow (`OrchestrationEvent`, stream items, RPC
-  error records) decode through `taggedUnionWithUnknown("type", members)`: an
-  unrecognised member decodes as `{ unknown: true, raw }` rather than failing.
-- Thread activities are typed by `kind`. The server declares the payload as
-  unknown and builds each kind's payload in its own code, so
-  `activityPayloads/` mirrors that code, after the server's
-  `projectActivityPayload`. An activity of an unlisted kind, or whose payload
-  does not match its kind, decodes with its envelope typed, its payload as
-  received, and `unknown: true`; one unfamiliar activity never fails the
-  thread that holds it. Check `activity.unknown` first, then switch on
-  `kind`, or use `isThreadActivityOfKind`.
+- Discriminated unions that grow (`OrchestrationV2DomainEvent`,
+  `OrchestrationV2TurnItem`, stream items, RPC error records) decode through
+  `taggedUnionWithUnknown("type", members)`: an unrecognised member decodes as
+  `{ unknown: true, raw }` rather than failing; a recognised member whose
+  fields do not match still fails, so drift on a known member is visible.
+  Arrays of such unions in a projection (`turnItems`, `plans`,
+  `visibleTurnItems`) drop unknown members, as upstream does.
+- Unions a caller sends (`OrchestrationV2Command`, `ProjectMutation`,
+  workspace strategies, `ProjectIconOverride`) are strict discriminated
+  unions, so a bad command fails locally with a `T3PreconditionError`.
 - `unknown` appears only where the server itself leaves a value opaque (raw
-  provider data, `Schema.Defect()` causes, resume cursors) or at the raw
+  provider data, `Schema.Defect()` causes, dynamic tool input) or at the raw
   transport boundary before a method's schema applies. `any` is a lint error.
 - Each schema file exports the zod schema and `type X = z.infer<typeof X>`
-  with the same name, mirroring the contracts package naming so a reader can
-  diff against `packages/contracts/src`.
+  with the same name, mirroring the contracts package naming
+  (`OrchestrationV2AppThread`, `OrchestrationV2Run`, ...) so a reader can diff
+  against `packages/contracts/src`.
 - Input schemas are used by the library to validate what the caller passes
   before sending. Output schemas decode server responses; a decode failure
   raises `T3DecodeError` for unary calls and is delivered as an
@@ -383,6 +491,7 @@ export interface HttpRequest<T> {
   query?: Record<string, string | number | undefined>;
   body?: unknown | URLSearchParams;
   auth?: "required" | "optional" | "none";
+  headers?: Record<string, string>; // the orchestration routes add the protocol header
   decode: z.ZodType<T> | "empty";
   signal?: AbortSignal;
 }
@@ -431,9 +540,8 @@ optional `jitter` fraction (default 0 for a supplied policy).
 `openTimeoutMs` optionally bounds each WebSocket handshake, starting after
 URL and header resolution. A stalled handshake is abandoned, its later events
 are ignored, and the transport retries after backoff with reason `open_failed`.
-An absent option means no open timeout. Each absent timing option retains the
-0.4.0 timing behaviour. The open timer is cleared on open, close, credential
-reconnect, or abandonment.
+An absent option means no open timeout. The open timer is cleared on open,
+close, credential reconnect, or abandonment.
 
 Transient failures, including refused or reset connections and non-4xx
 upgrade failures, retry until `close()`. A 4xx upgrade, a 1008 close, or a
@@ -487,19 +595,21 @@ export class RpcClient {
 export type StreamItem<T> = { kind: "item"; value: T } | { kind: "decode-error"; error: T3DecodeError }
 ```
 
-Registry coverage for this version, all typed: the eight orchestration
-methods; `server.probe`, `server.getConfig`, `server.getSettings`,
-`server.refreshProviders`, `subscribeServerConfig`,
+Registry coverage for this version, all typed: the twelve orchestration
+methods; `projects.mutate`; `server.probe`, `server.getConfig`,
+`server.getSettings`, `server.refreshProviders`, `subscribeServerConfig`,
 `subscribeServerLifecycle`, `subscribeAuthAccess`; `vcs.listRefs`,
 `vcs.refreshStatus`, `vcs.createWorktree`, `vcs.removeWorktree`,
 `vcs.createRef`, `vcs.switchRef`, `subscribeVcsStatus`,
 `subscribeWorktreeSetup`, `worktreeSetup.cancel`; `projects.listEntries`,
 `projects.readFile`, `projects.writeFile`, `projects.searchEntries`,
 `projects.searchContents`, `projects.ensureScratch`, `projects.createNew`;
-`terminal.open`, `terminal.attach`,
-`terminal.write`, `terminal.resize`, `terminal.close`,
-`subscribeTerminalEvents`. Everything else goes through `callRaw` and
-`streamRaw` until it is added; adding a method is one entry in a family file.
+`terminal.open`, `terminal.attach`, `terminal.write`, `terminal.resize`,
+`terminal.close`, `subscribeTerminalEvents`. Everything else goes through
+`callRaw` and `streamRaw` until it is added; adding a method is one entry in
+a family file. Each entry carries the scope the server checks: file reads
+need `filesystem:read`, file writes `filesystem:write`, worktree and ref
+changes `source-control:write`, terminal event streams `terminal:read`.
 
 Before sending, `RpcClient` checks the credential's scopes when known and
 raises `T3AuthError("insufficient_scope")` locally so a workflow fails fast
@@ -559,7 +669,8 @@ The HTTP and socket transports ask it for the current token through a
 function, never the store directly. `AuthEnvironmentScope` stays a strict
 enum for what a caller asks for (pairing credential scopes, exchange scopes,
 `ensureScopes`); everything the server reports (session state, token
-exchange, pairing links, client sessions) decodes as `AuthGrantedScope`.
+exchange, pairing links, client sessions) decodes as `AuthGrantedScope`, read
+from `permissions` when the server sends it and from `scopes` otherwise.
 `RpcClient` reads `scopesSync()` for its local scope check, and `T3Client`
 calls `SocketTransport.reconnect()` on every credential change so the open
 socket authenticates as the new session.
@@ -568,17 +679,18 @@ socket authenticates as the new session.
 
 Facades hold no state beyond references to the transports. They validate
 inputs with the schemas, fill server-required bookkeeping fields
-(`commandId`, `createdAt`, `messageId`) so callers never hand-build a
-command, and translate stream items into domain items.
+(`commandId`, `messageId`, `createdBy`, `creationSource`) so callers never
+hand-build a command, and translate stream items into domain items.
 
 ```ts
 export class ProjectsApi {
   list(): Promise<OrchestrationProjectShell[]>                    // from the shell snapshot
+  snapshot(): Promise<ProjectSnapshot>                            // GET /api/projects: full records
   get(projectId): Promise<OrchestrationProjectShell | undefined>
   findByWorkspaceRoot(workspaceRoot: string): Promise<OrchestrationProjectShell | undefined>  // normalises trailing slashes
-  create(input: { projectId?: ProjectId; title: string; workspaceRoot: string; createWorkspaceRootIfMissing?: boolean }): Promise<OrchestrationProjectShell>
-  ensure(input: { workspaceRoot: string; title: string; createWorkspaceRootIfMissing?: boolean }): Promise<OrchestrationProjectShell>
-  update(projectId, patch: ProjectMetaUpdate): Promise<void>
+  create(input: { projectId?; title; workspaceRoot; createWorkspaceRootIfMissing?; defaultModelSelection?; scripts? }): Promise<Project>
+  ensure(input: { workspaceRoot; title; createWorkspaceRootIfMissing? }): Promise<OrchestrationProjectShell>
+  update(projectId, patch: ProjectUpdatePayload): Promise<Project>
   delete(projectId, options?: { force?: boolean }): Promise<void>  // idempotent: not found resolves
   ensureScratch(): Promise<ProjectEnsureScratchResult>             // server finds or creates the Scratch project
   createNew(input: { name: string }): Promise<ProjectCreateNewResult>  // server makes the folder, first commit, and project
@@ -586,60 +698,74 @@ export class ProjectsApi {
 }
 
 export class ThreadsApi {
-  list(options?: { projectId?: ProjectId; includeArchived?: boolean }): Promise<OrchestrationThreadShell[]>
-  get(threadId): Promise<OrchestrationThreadShell | undefined>
-  detail(threadId, window?: { turnLimit?: number; beforeCursor?: string; reasoningMessages?: boolean }): Promise<OrchestrationThreadDetailSnapshot>   // HTTP; T3NotFoundError
-  create(input: ThreadCreateInput): Promise<OrchestrationThreadShell>          // caller may pass threadId; else generated
-  ensure(input: ThreadCreateInput & { threadId: ThreadId }): Promise<OrchestrationThreadShell>   // exists → return as is
-  update(threadId, patch: ThreadMetaUpdate): Promise<void>
-  archive / unarchive / settle / delete (threadId): Promise<void>               // delete idempotent
-  setRuntimeMode(threadId, mode) / setInteractionMode(threadId, mode)
+  list(options?: { projectId?: ProjectId; includeArchived?: boolean }): Promise<OrchestrationV2ThreadShell[]>  // archived ones from the RPC archived shell
+  get(threadId): Promise<OrchestrationV2ThreadShell | undefined>  // active first, then the archived shell
+  detail(threadId): Promise<OrchestrationV2ThreadDetailSnapshot>  // HTTP, the full projection; T3NotFoundError
+  projection(threadId): Promise<OrchestrationV2ThreadProjection>  // RPC, bounded timeline window
+  historyPage(threadId, cursor): Promise<OrchestrationV2ThreadHistoryPage>
+  create(input: ThreadCreateInput): Promise<OrchestrationV2ThreadShell>   // caller may pass threadId; else generated
+  ensure(input: ThreadCreateInput & { threadId: ThreadId }): Promise<OrchestrationV2ThreadShell>   // exists → return as is
+  launch(input: ThreadLaunchInput): Promise<OrchestrationV2ThreadLaunchResult>  // thread + workspace + optional first message
+  update(threadId, patch: ThreadMetadataUpdatePayload): Promise<void>
+  archive / unarchive / settle / unsettle / delete (threadId): Promise<void>  // archive and delete idempotent
+  setRuntimeMode(threadId, mode) / setInteractionMode(threadId, mode) / setModelSelection(threadId, selection)
   startTurn(input: StartTurnInput): Promise<TurnHandle>
-  interrupt(threadId, turnId?): Promise<void>
-  stopSession(threadId): Promise<void>
+  interrupt(threadId, runId?, options?: { reason?; holdQueue? }): Promise<void>  // active run when runId omitted; no-op when idle
+  stop(threadId): Promise<void>                                                // interrupt + holdQueue
   respondToApproval(input: { threadId; requestId; decision: ProviderApprovalDecision }): Promise<void>
-  respondToUserInput(input: { threadId; requestId; answers: Record<string, unknown> }): Promise<void>
+  respondToUserInput(input: { threadId; requestId; answers: Record<string, unknown>; attachmentsByQuestionId? }): Promise<void>
   dismissUserInput(input: { threadId; requestId }): Promise<void>
-  pendingRequests(threadId): Promise<PendingRequest[]>                         // derived from detail activities (decider rule)
+  pendingRequests(threadId): Promise<PendingRequest[]>                         // pending runtime requests joined with their turn items
   watch(threadId, options?: WatchOptions): AsyncIterable<ThreadWatchItem>       // resumable live view
-  phase(thread: OrchestrationThreadShell): ThreadPhase                          // pure; "waiting_for_approval" | "waiting_for_input" | "failed" | "starting" | "running" | "completed" | "idle"
-  dispatch(command: ClientOrchestrationCommand): Promise<DispatchResult>       // RPC when connected, else HTTP
+  phase(thread: OrchestrationV2ThreadShell): ThreadPhase                        // pure; "waiting_for_approval" | "waiting_for_input" | "failed" | "starting" | "running" | "completed" | "idle"
+  dispatch(command: OrchestrationV2Command): Promise<DispatchResult>
 }
 
-export interface StartTurnInput { threadId: ThreadId; text: string; attachments?: ChatAttachment[]; modelSelection?: ModelSelection;
-  runtimeMode?: RuntimeMode; interactionMode?: ProviderInteractionMode; titleSeed?: string; bootstrap?: ThreadTurnStartBootstrap;
-  reasoningMessages?: boolean; signal?: AbortSignal }
+export interface StartTurnInput { threadId: ThreadId; text: string; attachments?: ChatAttachment[]; context?: OrchestrationMessageContext;
+  modelSelection?: ModelSelection; runtimeMode?: RuntimeMode; interactionMode?: ProviderInteractionMode; titleSeed?: string;
+  delivery?: "auto" | "steer" | "restart" | "queue" | "start"; origin?: CreationOrigin; signal?: AbortSignal }
 
 export interface TurnHandle {
   readonly threadId: ThreadId
   readonly messageId: MessageId
   readonly commandId: CommandId
   readonly sequence: number                          // dispatch receipt
-  events(): AsyncIterable<ThreadWatchItem>           // from first iteration until the turn settles; nothing is buffered before that
-  readonly completion: Promise<TurnOutcome>          // resolves when the turn that took this message reaches a terminal state
+  readonly runId: RunId | undefined                  // once the server has linked the message to its run
+  events(): AsyncIterable<ThreadWatchItem>           // from first iteration until the run settles; nothing is buffered before that
+  readonly completion: Promise<TurnOutcome>          // resolves when the run that took this message reaches a terminal state
   interrupt(): Promise<void>
 }
-export type TurnOutcome = { state: "completed" | "interrupted" | "error"; turnId: TurnId | null; assistantMessage?: OrchestrationMessage; error?: string; thread: OrchestrationThread }
+export type TurnOutcome = { state: "completed" | "interrupted" | "failed" | "cancelled" | "rolled_back"; runId: RunId; run: OrchestrationV2Run;
+  assistantMessage?: OrchestrationV2ConversationMessage; error?: string; projection: OrchestrationV2ThreadProjection }
 
 export type ThreadWatchItem =
-  | { kind: "snapshot"; snapshot: OrchestrationThreadDetailSnapshot }
+  | { kind: "snapshot"; snapshot: OrchestrationV2ThreadDetailSnapshot }
   | { kind: "synchronized" }
-  | { kind: "event"; event: OrchestrationEvent }
-  | { kind: "assistant-delta"; turnId; messageId; text }        // convenience projection of message deltas
-  | { kind: "approval-requested"; requestId; activity; payload: ApprovalRequestPayload }
-  | { kind: "user-input-requested"; requestId; activity; questions: UserInputQuestion[] }
+  | { kind: "event"; sequence: number; event: OrchestrationV2DomainEvent }
+  | { kind: "assistant-delta"; runId; itemId; messageId; text; delta; streaming }   // text so far; delta is what the update appended
+  | { kind: "approval-requested"; requestId; request: OrchestrationV2RuntimeRequest; item? }
+  | { kind: "user-input-requested"; requestId; request; item?; questions: OrchestrationV2UserInputQuestion[] }
   | { kind: "request-resolved"; requestId }
   | { kind: "turn-settled"; outcome: TurnOutcome }
   | { kind: "decode-error"; error: T3DecodeError }
   | { kind: "reconnected"; afterSequence: number }
 ```
 
-`watch` subscribes with `orchestration.subscribeThread`, sending
-`reasoningMessages` only when the caller opts in; on socket loss it
+`startTurn` sets the thread's runtime and interaction modes first when the
+caller names them, then dispatches `message.dispatch`. `delivery` chooses
+how a busy thread takes the message: `auto` (the default), `steer`, and
+`restart` ask for `start_immediately` with that `deliveryIntent`, so the
+server resolves the mode against its own state; `queue` asks for
+`queue_after_active`; `start` asks for `start_immediately` without an
+intent.
+
+`watch` subscribes with `orchestration.subscribeThread`; on socket loss it
 resubscribes with `afterSequence` set to the last sequence seen and emits
-`reconnected`. The snapshot frame is used to seed the derived items
-(pending requests, current turn) so a consumer that joins late sees the
-current state first.
+`reconnected`. The snapshot frame seeds the derived items (pending requests)
+so a consumer that joins late sees the current state first. Events whose
+sequence is at or below the cursor are replay overlap and are skipped. The
+tracker applies every known event to its projection and announces
+`turn-settled` once per run when the run reaches a terminal status.
 
 Both thread and shell watches wait through transient first-connection failures
 and retry subscriptions that disconnect before delivering an item, without an
@@ -652,32 +778,22 @@ rather than its reason or the number of empty subscriptions. A connection
 error raised while the socket is open, including an HTTP detail failure while
 seeding a resumed thread watch, ends the watch with that error.
 
-The server never links a user message to a turn; providers steer a message
-sent during an active turn into that turn, and the server's own queued-message
-rule treats a message as taken once any turn's requested, started, or completed
-stamp reaches the message's `createdAt`. A `TurnHandle` follows the same rule:
-a turn already running at dispatch is its turn and settles it; a turn that
-starts afterwards is its turn; a turn that starts while the followed one is
-still running supersedes it; a turn that settled before the command is not its
-turn. Two turns started back to back therefore settle together with the same
-turn id, and `assistantMessage` is the last assistant message of that turn.
+The server links a message to its run: a new run's `userMessageId` names the
+message that started it, and the message record's `runId` names the run that
+took it, also when the message was steered into a run that was already
+active. A `TurnHandle` follows the run either link names and settles when
+that run reaches a terminal status; `assistantMessage` is the last assistant
+message of that run, and `error` the failure recorded by the run's `error`
+turn item. A message steered into an active run therefore settles with that
+run's id, together with the message that started it.
 
 ```ts
 export class ShellApi {
-  snapshot(): Promise<OrchestrationShellSnapshot>;
-  readModel(signal?: AbortSignal): Promise<OrchestrationReadModel>;
-  watch(options?): AsyncIterable<ShellWatchItem>;
-} // resumable like threads
-```
-
-`client.shell.snapshot()` reads the lightweight shell at
-`GET /api/orchestration/shell`. `client.shell.readModel(signal?)` reads
-`GET /api/orchestration/snapshot` with the bearer credential and decodes it
-with `OrchestrationReadModel`. It returns the full project and thread state,
-including messages, activities, checkpoints, `snapshotSequence`, and
-`updatedAt`. The caller's signal is passed to the HTTP transport.
-
-```ts
+  snapshot(): Promise<OrchestrationV2ShellSnapshot>; // HTTP: projects, threads, archivedThreads
+  archivedSnapshot(): Promise<OrchestrationV2ArchivedShellSnapshot>; // RPC
+  watch(options?): AsyncIterable<ShellWatchItem>; // resumable like threads
+  watchArchived(options?): AsyncIterable<ArchivedShellWatchItem>;
+}
 export class ServerApi {
   probe();
   getConfig();
@@ -738,15 +854,18 @@ export class T3Client {
 }
 ```
 
+The socket URL carries `orchestrationProtocol=2` and `clientSurface=cli`.
+
 ## Idempotent ensure operations
 
-| Operation                           | Key                                 | Behaviour                                                                                            |
-| ----------------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `projects.ensure`                   | normalised `workspaceRoot`          | find in shell snapshot; create with a fresh id when absent; update title only if given and different |
-| `projects.ensureScratch`            | `ServerConfig.scratchWorkspaceRoot` | the server finds the Scratch project or creates it; racing callers get the same project              |
-| `threads.ensure`                    | caller-supplied `threadId`          | return existing shell thread; create otherwise; never mutates an existing thread                     |
-| `auth.setAccessToken`               | token                               | validate then store; same token stored twice is a no-op                                              |
-| `projects.delete`, `threads.delete` | id                                  | absent resource resolves without error                                                               |
+| Operation                           | Key                                 | Behaviour                                                                                             |
+| ----------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `projects.ensure`                   | normalised `workspaceRoot`          | find in shell snapshot; create with a fresh id when absent; update title only if given and different  |
+| `projects.ensureScratch`            | `ServerConfig.scratchWorkspaceRoot` | the server finds the Scratch project or creates it; racing callers get the same project               |
+| `threads.ensure`                    | caller-supplied `threadId`          | return existing shell thread (active or archived); create otherwise; never mutates an existing thread |
+| `threads.launch`                    | `threadId` + `reuseExistingThread`  | the server returns the existing thread's projection with `resumed: true`                              |
+| `auth.setAccessToken`               | token                               | validate then store; same token stored twice is a no-op                                               |
+| `projects.delete`, `threads.delete` | id                                  | absent resource resolves without error                                                                |
 
 Command ids are generated per dispatch, never reused, because the server
 treats a command id as an attempt id rather than an idempotency key.
@@ -762,15 +881,22 @@ treats a command id as an attempt id rather than an idempotency key.
    suite runs against the release.
 2. **zod 4 for schemas.** Loose objects and cheap brand types match the
    forward-compatibility rule; the consumer project is not on Effect.
-3. **RPC preferred over HTTP for dispatch.** The socket returns the typed
-   `OrchestrationDispatchCommandError`; the HTTP route collapses it to a 500.
-   HTTP remains the fallback when no socket is open and for snapshot reads.
+3. **Commands go over the socket only.** The server has no HTTP dispatch
+   route for protocol 2; the socket returns the typed
+   `OrchestrationV2DispatchCommandError`. HTTP serves snapshot reads and
+   project mutations.
 4. **Ticket auth by default on the socket.** Bearer headers on the upgrade
    need a non-standard WebSocket option; tickets work everywhere and cost one
    HTTP round trip per (re)connect.
+5. **A turn is a run.** The library keeps `startTurn` and `TurnHandle` as
+   its vocabulary for "send a message and follow its execution" and carries
+   the server's `runId`, so a workflow does not have to learn the server's
+   run and attempt model to wait for an answer.
 
 ## Out of scope for this version
 
 Pull requests, previews, devices, cloud relay, DPoP, desktop bootstrap,
-attachment upload signing, source-control clone flows, and settings
-mutation. They stay reachable through `rpc.callRaw` and `rpc.streamRaw`.
+attachment upload signing, source-control clone flows, scheduled tasks, MCP
+OAuth, forks and merge-backs, delegated tasks, and settings mutation. They
+stay reachable through `rpc.callRaw`, `rpc.streamRaw`, and
+`threads.dispatch` with the full `OrchestrationV2Command` union.

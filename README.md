@@ -17,6 +17,8 @@ normal T3 Code client.
   to decode.
 - One credential. A bearer access token, obtained by exchanging a pairing
   token or issued by `t3 auth session issue`.
+- Orchestration protocol 2. The socket upgrade and the orchestration HTTP
+  routes name the protocol the server requires.
 
 This is an independent project, not part of T3 Code. Each release targets the
 latest T3 Code release; the version it is tested against is the `t3` entry in
@@ -63,7 +65,7 @@ const turn = await client.threads.startTurn({ threadId: thread.id, text: "Summar
 for await (const item of turn.events()) {
   switch (item.kind) {
     case "assistant-delta":
-      process.stdout.write(item.text);
+      process.stdout.write(item.delta);
       break;
     case "approval-requested":
       await client.threads.respondToApproval({
@@ -81,33 +83,55 @@ for await (const item of turn.events()) {
       break;
   }
 }
-const outcome = await turn.completion; // { state: "completed" | "interrupted" | "error", assistantMessage, thread }
+const outcome = await turn.completion; // { state: "completed" | "interrupted" | "failed" | ..., assistantMessage, run, projection }
 
 await client.close();
 ```
 
+A thread can also be launched into its own worktree with a first message in
+one call:
+
+```ts
+const launched = await client.threads.launch({
+  projectId: project.id,
+  title: "Fix the flaky test",
+  modelSelection: { instanceId: "codex", model: "gpt-5.6-luna" },
+  workspace: { type: "worktree", baseRef: "main" },
+  initialMessage: { text: "Find and fix the flaky test." },
+});
+```
+
 ## What is where
 
-| Facade            | Purpose                                                                                              |
-| ----------------- | ---------------------------------------------------------------------------------------------------- |
-| `client.auth`     | Session state, pairing-token exchange, tickets, pairing links, connected clients, scopes.            |
-| `client.server`   | Environment descriptor, config and provider catalog, settings, config and lifecycle streams.         |
-| `client.projects` | List, get, ensure, update, delete projects; Scratch and named new projects; project files.           |
-| `client.threads`  | List, get, detail, ensure, update, archive, delete; turns, interrupts, approvals, user input; watch. |
-| `client.shell`    | Lightweight snapshot and live stream; full orchestration read model.                                 |
-| `client.vcs`      | Refs, status, worktrees, branches.                                                                   |
-| `client.terminal` | Open, attach, write, resize, close terminals.                                                        |
-| `client.rpc`      | Typed `call` and `stream` for every registered method, plus `callRaw` and `streamRaw` for the rest.  |
+| Facade            | Purpose                                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------------ |
+| `client.auth`     | Session state, pairing-token exchange, tickets, pairing links, connected clients, scopes.                    |
+| `client.server`   | Environment descriptor, config and provider catalog, settings, config and lifecycle streams.                 |
+| `client.projects` | List, get, snapshot, ensure, create, update, delete projects; Scratch and named new projects; project files. |
+| `client.threads`  | List, get, detail, projection, ensure, launch, update, archive, delete; turns, interrupts, approvals; watch. |
+| `client.shell`    | Lightweight snapshot (active and archived threads) and live streams.                                         |
+| `client.vcs`      | Refs, status, worktrees, branches.                                                                           |
+| `client.terminal` | Open, attach, write, resize, close terminals.                                                                |
+| `client.rpc`      | Typed `call` and `stream` for every registered method, plus `callRaw` and `streamRaw` for the rest.          |
+
+## Vocabulary
+
+T3 Code speaks orchestration protocol 2: a thread holds **runs**, a run is
+one prompt's execution made of **turn items** (messages, reasoning, tool
+calls, approvals, questions, errors), and a **projection** is a thread's whole
+state. In this library a **turn** is one run: `startTurn` sends a message and
+the handle follows the run the server links to it.
 
 ## Idempotent operations
 
-| Operation                | Key                        | Behaviour                                                                     |
-| ------------------------ | -------------------------- | ----------------------------------------------------------------------------- |
-| `projects.ensure`        | normalised `workspaceRoot` | returns the existing project, renames it when the title differs, else creates |
-| `projects.ensureScratch` | the server's Scratch root  | the server returns its Scratch project, else creates it                       |
-| `threads.ensure`         | caller-supplied `threadId` | returns the existing thread (active or archived), else creates                |
-| `auth.setAccessToken`    | token                      | validates, then stores                                                        |
-| `*.delete`               | id                         | an absent resource resolves without error                                     |
+| Operation                | Key                                | Behaviour                                                                     |
+| ------------------------ | ---------------------------------- | ----------------------------------------------------------------------------- |
+| `projects.ensure`        | normalised `workspaceRoot`         | returns the existing project, renames it when the title differs, else creates |
+| `projects.ensureScratch` | the server's Scratch root          | the server returns its Scratch project, else creates it                       |
+| `threads.ensure`         | caller-supplied `threadId`         | returns the existing thread (active or archived), else creates                |
+| `threads.launch`         | `threadId` + `reuseExistingThread` | the server returns the existing thread with `resumed: true`                   |
+| `auth.setAccessToken`    | token                              | validates, then stores                                                        |
+| `*.delete`               | id                                 | an absent resource resolves without error                                     |
 
 ## Errors
 
@@ -125,24 +149,32 @@ Every failure is a `T3Error` with a stable `code`:
 | `T3PreconditionError` | `precondition`                       | invalid input caught before sending                |
 | `T3InterruptedError`  | `interrupted`                        | a call or stream was cancelled                     |
 
-## Typed activities and errors
+## Typed turn items and errors
 
-Thread activities are typed by `kind`, including `context-window.updated`
-(the thread's token usage) and the tool, task, and checkpoint kinds. An
-activity this client does not recognise, or whose payload has changed shape,
-arrives with `unknown: true` and its payload as sent:
+Turn items are typed by `type`. An item of a type this client does not
+recognise arrives with `unknown: true` and its raw record; arrays in a
+projection drop such items, as the T3 clients do:
 
 ```ts
-for (const activity of detail.thread.activities) {
-  if (activity.unknown) continue;
-  if (activity.kind === "context-window.updated") {
-    console.log(activity.payload.totalProcessedTokens ?? activity.payload.usedTokens);
+for (const item of detail.projection.turnItems) {
+  if (isTurnItemOfType(item, "command_execution")) {
+    console.log(item.input, item.exitCode);
   }
 }
 ```
 
 `T3RpcError.record` is the server's error, typed by its `_tag`;
-`error.is("OrchestrationDispatchCommandError")` narrows it.
+`error.is("OrchestrationV2DispatchCommandError")` narrows it.
+
+## Scopes
+
+The server grants granular permissions (`orchestration:read`,
+`orchestration:operate`, `filesystem:read`, `filesystem:write`,
+`source-control:write`, `terminal:read`, `terminal:operate`, and more) and
+reports them in `permissions`; `scopes` carries only the vocabulary older
+clients knew. `grantedScopes(state)` reads the grant from whichever is present.
+Every registered RPC method knows the scope it needs, so a missing one fails
+locally with `insufficient_scope`.
 
 ## Watching threads
 
@@ -155,9 +187,10 @@ open timeout unless supplied. `openTimeoutMs` bounds the WebSocket handshake
 after URL and header resolution; expiry abandons that socket and retries with
 backoff.
 
-`client.shell.readModel(signal?)` reads the full orchestration snapshot over
-authenticated HTTP, including projects, threads, messages, and activities.
-`client.shell.snapshot()` reads the lightweight shell snapshot.
+`client.shell.snapshot()` reads the shell: projects, active threads, and
+archived threads. `client.threads.detail(threadId)` reads a thread's full
+projection over HTTP and `client.threads.projection(threadId)` a bounded one
+over RPC.
 
 Thread and shell watches wait through transient connection failures, including
 an unavailable server at startup and repeated empty subscriptions. They resume
@@ -166,16 +199,16 @@ watch with an error; abort ends it quietly, and closing the client ends it with
 a connection error.
 
 `client.threads.watch(threadId)` yields the server's stream items
-(`snapshot`, `synchronized`, `event`) plus derived items: `assistant-delta`,
+(`snapshot`, `synchronized`, `event`) plus derived items: `assistant-delta`
+(the assistant text so far and what the last update appended),
 `approval-requested`, `user-input-requested`, `request-resolved`,
 `turn-settled`, `decode-error`, and `reconnected` after the socket was lost
 and the subscription resumed from the last sequence. Pass `afterSequence`
 to resume from a sequence you stored.
 
-A provider's thinking trace arrives as messages with role `system` unless
-you pass `reasoningMessages: true` to `watch`, `detail`, or `startTurn`; then
-those messages carry role `reasoning`. `assistant-delta` items and a turn's
-`assistantMessage` carry only assistant text either way.
+`startTurn` takes `delivery`: `auto` (default) lets the server steer or queue
+the message when a run is active, `steer` and `restart` target the active
+run, `queue` waits behind it, and `start` insists on a new run.
 
 ## Development
 

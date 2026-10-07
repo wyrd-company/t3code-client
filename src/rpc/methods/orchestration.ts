@@ -4,15 +4,15 @@
 // ---
 import { z } from "zod";
 import { defineMethod } from "../spec.ts";
-import { ClientOrchestrationCommand } from "../../schemas/orchestration/commands.ts";
+import { OrchestrationV2Command } from "../../schemas/orchestration/commands.ts";
+import { OrchestrationV2ThreadProjection } from "../../schemas/orchestration/projection.ts";
 import {
-  OrchestrationShellSnapshot,
-  OrchestrationShellStreamItem,
-  OrchestrationSubscribeShellInput,
-  OrchestrationSubscribeThreadInput,
+  OrchestrationV2ArchivedShellSnapshot,
+  OrchestrationV2ArchivedShellStreamItem,
+  OrchestrationV2ShellStreamItem,
+  OrchestrationV2SubscribeShellInput,
 } from "../../schemas/orchestration/shell.ts";
 import {
-  DispatchResult,
   OrchestrationGetFullThreadDiffInput,
   OrchestrationGetFullThreadDiffResult,
   OrchestrationGetTurnDiffInput,
@@ -21,56 +21,90 @@ import {
   OrchestrationGetWorkflowScriptResult,
   OrchestrationSearchThreadsInput,
   OrchestrationSearchThreadsResult,
-  OrchestrationThreadStreamItem,
+  OrchestrationV2DispatchCommandResult,
+  OrchestrationV2GetThreadProjectionInput,
+  OrchestrationV2GetTurnItemInput,
+  OrchestrationV2GetTurnItemResult,
+  OrchestrationV2SubscribeThreadInput,
+  OrchestrationV2ThreadLaunchInput,
+  OrchestrationV2ThreadLaunchResult,
+  OrchestrationV2ThreadStreamItem,
 } from "../../schemas/orchestration/stream.ts";
+
+const read = "orchestration:read";
+const operate = "orchestration:operate";
 
 export const orchestrationMethods = {
   "orchestration.dispatchCommand": defineMethod({
-    payload: ClientOrchestrationCommand,
-    success: DispatchResult,
+    payload: OrchestrationV2Command,
+    success: OrchestrationV2DispatchCommandResult,
     stream: false,
-    scope: "orchestration:operate",
+    scope: operate,
+  }),
+  "orchestration.launchThread": defineMethod({
+    payload: OrchestrationV2ThreadLaunchInput,
+    success: OrchestrationV2ThreadLaunchResult,
+    stream: false,
+    scope: operate,
+  }),
+  "orchestration.getThreadProjection": defineMethod({
+    payload: OrchestrationV2GetThreadProjectionInput,
+    success: OrchestrationV2ThreadProjection,
+    stream: false,
+    scope: read,
+  }),
+  "orchestration.getTurnItem": defineMethod({
+    payload: OrchestrationV2GetTurnItemInput,
+    success: OrchestrationV2GetTurnItemResult,
+    stream: false,
+    scope: read,
   }),
   "orchestration.getWorkflowScript": defineMethod({
     payload: OrchestrationGetWorkflowScriptInput,
     success: OrchestrationGetWorkflowScriptResult,
     stream: false,
-    scope: "orchestration:read",
+    scope: read,
   }),
   "orchestration.getTurnDiff": defineMethod({
     payload: OrchestrationGetTurnDiffInput,
     success: OrchestrationGetTurnDiffResult,
     stream: false,
-    scope: "orchestration:read",
+    scope: read,
   }),
   "orchestration.getFullThreadDiff": defineMethod({
     payload: OrchestrationGetFullThreadDiffInput,
     success: OrchestrationGetFullThreadDiffResult,
     stream: false,
-    scope: "orchestration:read",
+    scope: read,
   }),
   "orchestration.searchThreads": defineMethod({
     payload: OrchestrationSearchThreadsInput,
     success: OrchestrationSearchThreadsResult,
     stream: false,
-    scope: "orchestration:read",
+    scope: read,
   }),
   "orchestration.getArchivedShellSnapshot": defineMethod({
     payload: z.looseObject({}),
-    success: OrchestrationShellSnapshot,
+    success: OrchestrationV2ArchivedShellSnapshot,
     stream: false,
-    scope: "orchestration:read",
+    scope: read,
+  }),
+  "orchestration.subscribeArchivedShell": defineMethod({
+    payload: z.looseObject({}),
+    success: OrchestrationV2ArchivedShellStreamItem,
+    stream: true,
+    scope: read,
   }),
   "orchestration.subscribeShell": defineMethod({
-    payload: OrchestrationSubscribeShellInput,
-    success: OrchestrationShellStreamItem,
+    payload: OrchestrationV2SubscribeShellInput,
+    success: OrchestrationV2ShellStreamItem,
     stream: true,
-    scope: "orchestration:read",
+    scope: read,
   }),
   "orchestration.subscribeThread": defineMethod({
-    payload: OrchestrationSubscribeThreadInput,
-    success: OrchestrationThreadStreamItem,
+    payload: OrchestrationV2SubscribeThreadInput,
+    success: OrchestrationV2ThreadStreamItem,
     stream: true,
-    scope: "orchestration:read",
+    scope: read,
   }),
 } as const;

@@ -19,8 +19,8 @@ importers:
         specifier: ^8.18.1
         version: 8.18.1
       t3:
-        specifier: 0.0.45
-        version: 0.0.45
+        specifier: 0.0.46-nightly.20261007.2774
+        version: 0.0.46-nightly.20261007.2774
       typescript:
         specifier: 7.0.2
         version: 7.0.2
@@ -342,78 +342,122 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@t3code/t3-darwin-arm64@0.0.45':
-    resolution: {integrity: sha512-Q7Y3dYLKygpuIQd+6uPM83+EzSBcHOFOLa/EcVkynVgdToklVsnjZbbctgtkiZHyV7zJ4jJ/RUQalZABivfQsA==}
+  '@t3code/t3-darwin-arm64@0.0.46-nightly.20261007.2774':
+    resolution: {integrity: sha512-VlbVEiDzXC58I02K/qKJfn+rdJCTA3ro1B+9CQrMm3IUvqiyBh9pMCil8SXZUpifU+/9tPF1tj11l2osEBIQfA==}
     cpu: [arm64]
     os: [darwin]
     bundledDependencies:
+      - '@bufbuild/protobuf'
+      - '@connectrpc/connect'
+      - '@connectrpc/connect-web'
+      - '@cursor/sdk'
+      - '@cursor/sdk-darwin-arm64'
       - '@ff-labs/fff-bin-darwin-arm64'
       - '@ff-labs/fff-node'
       - '@napi-rs/keyring'
       - '@napi-rs/keyring-darwin-arm64'
+      - '@statsig/client-core'
+      - '@statsig/js-client'
       - '@yuuang/ffi-rs-darwin-arm64'
       - ffi-rs
       - node-addon-api
       - node-pty
+      - playwright-core
+      - zod
 
-  '@t3code/t3-linux-arm64@0.0.45':
-    resolution: {integrity: sha512-/ZJpA+ZY2wi4INAy5G425lCrU3f7SWqtR1f4sNXtNiN61VHDERi3H1D67Xkk8mXdrqd5jFb1cSxjEtixVQWznw==}
+  '@t3code/t3-linux-arm64@0.0.46-nightly.20261007.2774':
+    resolution: {integrity: sha512-HnR+YE5M5Dx+WfThr2XghIkAgJh890v2ukwQCYkFUoIsb+sDfEi6kf29+TdH+0VMCLr/ZrUdPoBUNZmmj0DbhQ==}
     cpu: [arm64]
     os: [linux]
     bundledDependencies:
+      - '@bufbuild/protobuf'
+      - '@connectrpc/connect'
+      - '@connectrpc/connect-web'
+      - '@cursor/sdk'
+      - '@cursor/sdk-linux-arm64'
       - '@ff-labs/fff-bin-linux-arm64-gnu'
       - '@ff-labs/fff-bin-linux-arm64-musl'
       - '@ff-labs/fff-node'
       - '@napi-rs/keyring'
       - '@napi-rs/keyring-linux-arm64-gnu'
+      - '@statsig/client-core'
+      - '@statsig/js-client'
       - '@yuuang/ffi-rs-linux-arm64-gnu'
       - ffi-rs
       - node-addon-api
       - node-pty
+      - playwright-core
+      - zod
 
-  '@t3code/t3-linux-x64@0.0.45':
-    resolution: {integrity: sha512-9nXZm98W0uxNK1lAC1TG3LJDfWQMV5qTKcGgV4JtsK4wFjvjGIHLrdL8KDTbaFwvH6BKqw4+sDpeZD8x9rNNNQ==}
+  '@t3code/t3-linux-x64@0.0.46-nightly.20261007.2774':
+    resolution: {integrity: sha512-miDewfWR5tcUwcwbXXHvmgMjVGhMfka6svgX6znDDjeJV301zwQsMXRQVPfONLRfCRYGV6OV7CeQKIhtS2EjjQ==}
     cpu: [x64]
     os: [linux]
     bundledDependencies:
+      - '@bufbuild/protobuf'
+      - '@connectrpc/connect'
+      - '@connectrpc/connect-web'
+      - '@cursor/sdk'
+      - '@cursor/sdk-linux-x64'
       - '@ff-labs/fff-bin-linux-x64-gnu'
       - '@ff-labs/fff-bin-linux-x64-musl'
       - '@ff-labs/fff-node'
       - '@napi-rs/keyring'
       - '@napi-rs/keyring-linux-x64-gnu'
+      - '@statsig/client-core'
+      - '@statsig/js-client'
       - '@yuuang/ffi-rs-linux-x64-gnu'
       - ffi-rs
       - node-addon-api
       - node-pty
+      - playwright-core
+      - zod
 
-  '@t3code/t3-win32-arm64@0.0.45':
-    resolution: {integrity: sha512-gy3qipJWfSgECfzG1Km9z16ME4nn67N6CPlbuH8TpB9GH8gi4LymN0b6yyCgmgL0J3eaKm4SyKJl9rK6Z7O4jQ==}
+  '@t3code/t3-win32-arm64@0.0.46-nightly.20261007.2774':
+    resolution: {integrity: sha512-sbakuYV7ezHntRdzMTmx6zOibOwsKoqfvrutHhmD2rPVK1Uqa1mOf9Za5y+lTKguKpvjQRFvhKb3HPqf3N8OLg==}
     cpu: [arm64]
     os: [win32]
     bundledDependencies:
+      - '@bufbuild/protobuf'
+      - '@connectrpc/connect'
+      - '@connectrpc/connect-web'
+      - '@cursor/sdk'
       - '@ff-labs/fff-bin-win32-arm64'
       - '@ff-labs/fff-node'
       - '@napi-rs/keyring'
       - '@napi-rs/keyring-win32-arm64-msvc'
+      - '@statsig/client-core'
+      - '@statsig/js-client'
       - '@yuuang/ffi-rs-win32-arm64-msvc'
       - ffi-rs
       - node-addon-api
       - node-pty
+      - playwright-core
+      - zod
 
-  '@t3code/t3-win32-x64@0.0.45':
-    resolution: {integrity: sha512-voXiHGtb/L5sGiISLD8GSkfjJUUZgA74MlJs6hCviP2NGJ4REfRrc/G5mQ/022x8fLd5OubWfvfccg5danjmBA==}
+  '@t3code/t3-win32-x64@0.0.46-nightly.20261007.2774':
+    resolution: {integrity: sha512-DUxO07PXDGeip9EVGzNzM0+jT1KHbhKer2Ynwe+4a7zB/kzdiQcYeovp5lG1gFNjwEr+vTvXaLQhTF68fh9bZQ==}
     cpu: [x64]
     os: [win32]
     bundledDependencies:
+      - '@bufbuild/protobuf'
+      - '@connectrpc/connect'
+      - '@connectrpc/connect-web'
+      - '@cursor/sdk'
+      - '@cursor/sdk-win32-x64'
       - '@ff-labs/fff-bin-win32-x64'
       - '@ff-labs/fff-node'
       - '@napi-rs/keyring'
       - '@napi-rs/keyring-win32-x64-msvc'
+      - '@statsig/client-core'
+      - '@statsig/js-client'
       - '@yuuang/ffi-rs-win32-ia32-msvc'
       - '@yuuang/ffi-rs-win32-x64-msvc'
       - ffi-rs
       - node-addon-api
       - node-pty
+      - playwright-core
+      - zod
 
   '@testing-library/dom@10.4.2':
     resolution: {integrity: sha512-yzr2S9HyAIdhz2/6qHgbs665Q7PKVcDF05vsOlHPxG1mo36gKVesdYVeDLnXgfjJ03CrKRk08knc6+E/9m8v2Q==}
@@ -1096,8 +1140,8 @@ packages:
   std-env@4.2.0:
     resolution: {integrity: sha512-oCUKSupKTHX53EyjDtuZQ64pjLJ6yYCtpmEw0goYxtjG9KpbRe8KAsl2tBUGU9DyMcJ0RwJ8GqJAFzMXcXW1Rw==}
 
-  t3@0.0.45:
-    resolution: {integrity: sha512-K67qRNKWQHdIyoQ8oCP/cK7lG9y23a1bDNaSsdGkvWJTVRySVd9nvYZS49LW6Ap+RF1nR9QBg/i4s0ovDHi96A==}
+  t3@0.0.46-nightly.20261007.2774:
+    resolution: {integrity: sha512-/o5eG4JFd5QzcSLcY6tA42TjlkucF3LbRiljcO3AIvnQqvAeKLzhI+uzVrk84oGBItU9Aaa1cHu2O7RbJ3XfDA==}
     hasBin: true
 
   tinybench@2.9.0:
@@ -1372,19 +1416,19 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@t3code/t3-darwin-arm64@0.0.45':
+  '@t3code/t3-darwin-arm64@0.0.46-nightly.20261007.2774':
     optional: true
 
-  '@t3code/t3-linux-arm64@0.0.45':
+  '@t3code/t3-linux-arm64@0.0.46-nightly.20261007.2774':
     optional: true
 
-  '@t3code/t3-linux-x64@0.0.45':
+  '@t3code/t3-linux-x64@0.0.46-nightly.20261007.2774':
     optional: true
 
-  '@t3code/t3-win32-arm64@0.0.45':
+  '@t3code/t3-win32-arm64@0.0.46-nightly.20261007.2774':
     optional: true
 
-  '@t3code/t3-win32-x64@0.0.45':
+  '@t3code/t3-win32-x64@0.0.46-nightly.20261007.2774':
     optional: true
 
   '@testing-library/dom@10.4.2':
@@ -1862,13 +1906,13 @@ snapshots:
 
   std-env@4.2.0: {}
 
-  t3@0.0.45:
+  t3@0.0.46-nightly.20261007.2774:
     optionalDependencies:
-      '@t3code/t3-darwin-arm64': 0.0.45
-      '@t3code/t3-linux-arm64': 0.0.45
-      '@t3code/t3-linux-x64': 0.0.45
-      '@t3code/t3-win32-arm64': 0.0.45
-      '@t3code/t3-win32-x64': 0.0.45
+      '@t3code/t3-darwin-arm64': 0.0.46-nightly.20261007.2774
+      '@t3code/t3-linux-arm64': 0.0.46-nightly.20261007.2774
+      '@t3code/t3-linux-x64': 0.0.46-nightly.20261007.2774
+      '@t3code/t3-win32-arm64': 0.0.46-nightly.20261007.2774
+      '@t3code/t3-win32-x64': 0.0.46-nightly.20261007.2774
 
   tinybench@2.9.0: {}
 

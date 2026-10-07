@@ -50,6 +50,6 @@ export const terminalMethods = {
     payload: z.looseObject({}),
     success: TerminalEvent,
     stream: true,
-    scope: "terminal:operate",
+    scope: "terminal:read",
   }),
 } as const;

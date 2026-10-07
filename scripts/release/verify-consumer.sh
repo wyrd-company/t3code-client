@@ -17,8 +17,9 @@ cat > index.ts <<'TS'
 import {
   T3Client,
   T3RpcError,
+  isTurnItemOfType,
   memoryCredentialStore,
-  type OrchestrationThreadActivity,
+  type OrchestrationV2TurnItem,
   type T3ClientOptions,
 } from "@wyrd-company/t3code-client";
 
@@ -28,14 +29,12 @@ const options: T3ClientOptions = {
 };
 export const client = T3Client.create(options);
 
-// Activities and RPC errors narrow to typed payloads and records.
-export function tokens(activity: OrchestrationThreadActivity): number | undefined {
-  if (activity.unknown) return undefined;
-  if (activity.kind !== "context-window.updated") return undefined;
-  return activity.payload.totalProcessedTokens ?? activity.payload.usedTokens;
+// Turn items and RPC errors narrow to typed records.
+export function exitCode(item: OrchestrationV2TurnItem): number | undefined {
+  return isTurnItemOfType(item, "command_execution") ? item.exitCode : undefined;
 }
 export function dispatchMessage(error: T3RpcError): string | undefined {
-  return error.is("OrchestrationDispatchCommandError") ? error.record.message : undefined;
+  return error.is("OrchestrationV2DispatchCommandError") ? error.record.message : undefined;
 }
 TS
 

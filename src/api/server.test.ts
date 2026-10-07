@@ -46,8 +46,8 @@ describe("ServerApi", () => {
       body: environment,
     }));
 
-    await expect(api.getConfig()).resolves.toMatchObject({ cwd: "/tmp/example" });
-    await expect(api.environment()).resolves.toMatchObject({ label: "Example" });
+    await expect(api.getConfig()).resolves.toMatchObject({ cwd: "/srv/sample" });
+    await expect(api.environment()).resolves.toMatchObject({ label: "sample-environment" });
     expect(server.routes.requests[0]?.headers["authorization"]).toBeUndefined();
   });
 
@@ -73,20 +73,23 @@ describe("ServerApi", () => {
 
   it("finds a provider model by slug or alias", async () => {
     const config = fixture("server-config") as {
-      providers: Array<{ models: Array<{ aliases?: string[] }> }>;
+      providers: Array<{ instanceId: string; models: Array<{ slug: string; aliases?: string[] }> }>;
     };
-    config.providers[0]?.models[0]?.aliases?.push("sample-alias");
-    if (config.providers[0]?.models[0]?.aliases === undefined && config.providers[0]?.models[0]) {
-      config.providers[0].models[0].aliases = ["sample-alias"];
-    }
+    // The first provider in the fixture that offers a model.
+    const provider = config.providers.find((candidate) => candidate.models.length > 0);
+    const model = provider?.models[0];
+    if (!provider || !model) throw new Error("The fixture has no provider with a model.");
+    model.aliases = [...(model.aliases ?? []), "sample-alias"];
     server.respond("server.getConfig", config);
 
-    await expect(api.findModel("codex", "gpt-6-astra")).resolves.toMatchObject({
-      model: { slug: "gpt-6-astra" },
+    await expect(api.findModel(provider.instanceId, model.slug)).resolves.toMatchObject({
+      model: { slug: model.slug },
     });
-    await expect(api.findModel("codex", "sample-alias")).resolves.toMatchObject({
-      model: { slug: "gpt-6-astra" },
+    await expect(api.findModel(provider.instanceId, "sample-alias")).resolves.toMatchObject({
+      model: { slug: model.slug },
     });
+    await expect(api.findModel(provider.instanceId, "no-such-model")).resolves.toBeUndefined();
+    await expect(api.findModel("no-such-provider", model.slug)).resolves.toBeUndefined();
   });
 
   it("unwraps lifecycle events and preserves decode errors from separate chunks", async () => {

@@ -32,16 +32,43 @@ export const EventId = entityId("EventId");
 export type EventId = z.infer<typeof EventId>;
 export const MessageId = entityId("MessageId");
 export type MessageId = z.infer<typeof MessageId>;
+/** Provider-session turn id; the V2 orchestration model speaks of runs instead. */
 export const TurnId = entityId("TurnId");
 export type TurnId = z.infer<typeof TurnId>;
-export const AuthSessionId = entityId("AuthSessionId");
-export type AuthSessionId = z.infer<typeof AuthSessionId>;
-export const ApprovalRequestId = entityId("ApprovalRequestId");
-export type ApprovalRequestId = z.infer<typeof ApprovalRequestId>;
+export const RunId = entityId("RunId");
+export type RunId = z.infer<typeof RunId>;
+export const RunAttemptId = entityId("RunAttemptId");
+export type RunAttemptId = z.infer<typeof RunAttemptId>;
+export const NodeId = entityId("NodeId");
+export type NodeId = z.infer<typeof NodeId>;
+export const TurnItemId = entityId("TurnItemId");
+export type TurnItemId = z.infer<typeof TurnItemId>;
+export const RuntimeRequestId = entityId("RuntimeRequestId");
+export type RuntimeRequestId = z.infer<typeof RuntimeRequestId>;
+export const ProviderSessionId = entityId("ProviderSessionId");
+export type ProviderSessionId = z.infer<typeof ProviderSessionId>;
+export const ProviderThreadId = entityId("ProviderThreadId");
+export type ProviderThreadId = z.infer<typeof ProviderThreadId>;
+export const ProviderTurnId = entityId("ProviderTurnId");
+export type ProviderTurnId = z.infer<typeof ProviderTurnId>;
+export const CheckpointId = entityId("CheckpointId");
+export type CheckpointId = z.infer<typeof CheckpointId>;
+export const CheckpointScopeId = entityId("CheckpointScopeId");
+export type CheckpointScopeId = z.infer<typeof CheckpointScopeId>;
 export const CheckpointRef = entityId("CheckpointRef");
 export type CheckpointRef = z.infer<typeof CheckpointRef>;
-export const ProviderItemId = entityId("ProviderItemId");
-export type ProviderItemId = z.infer<typeof ProviderItemId>;
+export const ContextHandoffId = entityId("ContextHandoffId");
+export type ContextHandoffId = z.infer<typeof ContextHandoffId>;
+export const ContextTransferId = entityId("ContextTransferId");
+export type ContextTransferId = z.infer<typeof ContextTransferId>;
+export const RawEventId = entityId("RawEventId");
+export type RawEventId = z.infer<typeof RawEventId>;
+export const PlanId = entityId("PlanId");
+export type PlanId = z.infer<typeof PlanId>;
+export const ScheduledTaskId = entityId("ScheduledTaskId");
+export type ScheduledTaskId = z.infer<typeof ScheduledTaskId>;
+export const AuthSessionId = entityId("AuthSessionId");
+export type AuthSessionId = z.infer<typeof AuthSessionId>;
 /** Open slug: letters, digits, `-`, `_`; starts with a letter; at most 64 chars. */
 const providerSlug = TrimmedNonEmptyString.max(64).regex(/^[a-zA-Z][a-zA-Z0-9_-]*$/);
 export const ProviderInstanceId = providerSlug.brand<"ProviderInstanceId">();
@@ -54,9 +81,11 @@ export const threadId = (value: string): ThreadId => value as ThreadId;
 export const projectId = (value: string): ProjectId => value as ProjectId;
 export const commandId = (value: string): CommandId => value as CommandId;
 export const messageId = (value: string): MessageId => value as MessageId;
-export const turnId = (value: string): TurnId => value as TurnId;
+export const runId = (value: string): RunId => value as RunId;
+export const nodeId = (value: string): NodeId => value as NodeId;
+export const turnItemId = (value: string): TurnItemId => value as TurnItemId;
+export const runtimeRequestId = (value: string): RuntimeRequestId => value as RuntimeRequestId;
 export const eventId = (value: string): EventId => value as EventId;
-export const approvalRequestId = (value: string): ApprovalRequestId => value as ApprovalRequestId;
 export const authSessionId = (value: string): AuthSessionId => value as AuthSessionId;
 export const providerInstanceId = (value: string): ProviderInstanceId =>
   value as ProviderInstanceId;
@@ -267,3 +296,18 @@ export function forwardCompatibleNullable<T extends z.ZodType>(
 /** Trim surrounding whitespace while allowing an empty value. */
 export const TrimmedString = z.string().trim();
 export type TrimmedString = z.infer<typeof TrimmedString>;
+
+/**
+ * An array of a growing tagged union whose unrecognised members are dropped
+ * on decode, mirroring the contracts' `ForwardCompatibleUnionArray`. A
+ * recognised member that is malformed still fails, so drift stays visible.
+ */
+export function knownMembersArray<T extends object>(
+  union: z.ZodType<T>,
+): z.ZodType<Exclude<T, { unknown: true }>[], unknown> {
+  return z
+    .array(union)
+    .transform((values) =>
+      values.filter((value) => !isUnknownVariant(value)),
+    ) as unknown as z.ZodType<Exclude<T, { unknown: true }>[], unknown>;
+}

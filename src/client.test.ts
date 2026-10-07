@@ -6,11 +6,10 @@ import { WebSocket as WsWebSocket } from "ws";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { FakeT3Server } from "../test/support/fakeServer.ts";
 import {
-  at,
   ids,
-  makeThread,
   makeShellProject,
   makeShellSnapshot,
+  makeShellThread,
 } from "../test/support/threadFixtures.ts";
 import { memoryCredentialStore } from "./auth/credentialStore.ts";
 import { T3Client } from "./client.ts";
@@ -73,7 +72,11 @@ describe("T3Client", () => {
     expect(upgrade?.accepted).toBe(true);
     expect(upgrade?.url.pathname).toBe("/ws");
     expect(server.tickets.has(upgrade?.query["wsTicket"] ?? "")).toBe(true);
-    expect(upgrade?.query).toMatchObject({ clientSurface: "cli", clientAppVersion: "1.2.3" });
+    expect(upgrade?.query).toMatchObject({
+      orchestrationProtocol: "2",
+      clientSurface: "cli",
+      clientAppVersion: "1.2.3",
+    });
     expect(upgrade?.headers["authorization"]).toBeUndefined();
     expect(server.routes.requests.map((r) => r.path)).toContain("/api/auth/websocket-ticket");
     expect(server.routes.requests[0]?.headers["user-agent"]).toBe(
@@ -185,15 +188,15 @@ describe("T3Client", () => {
     });
   });
 
-  it("reads and decodes the full read model over authenticated HTTP", async () => {
-    const { interactionMode: _mode, ...thread } = makeThread();
-    server.routes.route("GET /api/orchestration/snapshot", () => ({
+  it("reads and decodes the shell over authenticated HTTP with the protocol header", async () => {
+    server.routes.route("GET /api/orchestration/shell", () => ({
       status: 200,
       body: {
-        snapshotSequence: 12,
-        updatedAt: at,
-        projects: [{ ...makeShellProject(), deletedAt: null }],
-        threads: [thread],
+        ...makeShellSnapshot({
+          projects: [makeShellProject()],
+          threads: [makeShellThread()],
+          snapshotSequence: 12,
+        }),
         futureField: "preserved",
       },
     }));
@@ -207,25 +210,24 @@ describe("T3Client", () => {
         return server.fetch(input, init);
       },
     });
-    const readModel = await client.shell.readModel(controller.signal);
-    expect(readModel).toMatchObject({
+    const snapshot = await client.shell.snapshot(controller.signal);
+    expect(snapshot).toMatchObject({
       snapshotSequence: 12,
-      updatedAt: at,
       futureField: "preserved",
       projects: [{ id: ids.projectId }],
-      threads: [{ id: ids.threadId, interactionMode: makeThread().interactionMode }],
+      threads: [{ id: ids.threadId, status: "idle" }],
     });
     expect(fetchSignal).toBe(controller.signal);
     expect(server.routes.requests.at(-1)).toMatchObject({
       method: "GET",
-      path: "/api/orchestration/snapshot",
-      headers: { authorization: "Bearer token-1" },
+      path: "/api/orchestration/shell",
+      headers: { authorization: "Bearer token-1", "x-t3-orchestration-protocol": "2" },
     });
     expect(server.upgrades).toEqual([]);
   });
 
-  it("rejects a malformed read model through the shared decoder", async () => {
-    server.routes.route("GET /api/orchestration/snapshot", () => ({
+  it("rejects a malformed shell through the shared decoder", async () => {
+    server.routes.route("GET /api/orchestration/shell", () => ({
       status: 200,
       body: { ...makeShellSnapshot({}), threads: [{}] },
     }));
@@ -234,9 +236,9 @@ describe("T3Client", () => {
       accessToken: "token-1",
       fetch: server.fetch,
     });
-    await expect(client.shell.readModel()).rejects.toMatchObject({
+    await expect(client.shell.snapshot()).rejects.toMatchObject({
       code: "decode",
-      source: "GET /api/orchestration/snapshot",
+      source: "GET /api/orchestration/shell",
     });
   });
 

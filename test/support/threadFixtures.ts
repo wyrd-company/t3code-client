@@ -1,63 +1,231 @@
 /**
- * Builders for orchestration read-model values and wire-shaped events, for
+ * Builders for V2 orchestration records and wire-shaped stream items, for
  * unit tests of the projection, the thread watch, and the facades. Values are
  * parsed through the schemas so defaults are filled the way the client sees
  * them. All ids are generic placeholders.
  */
-import { projectId, threadId, turnId, type MessageId } from "../../src/schemas/common.ts";
-import type { OrchestrationSession } from "../../src/schemas/orchestration/readModel.ts";
-import { OrchestrationEvent } from "../../src/schemas/orchestration/events.ts";
 import {
-  OrchestrationThread,
-  type OrchestrationThreadActivity,
-  type OrchestrationThreadDetailSnapshot,
-} from "../../src/schemas/orchestration/readModel.ts";
+  messageId,
+  nodeId,
+  projectId,
+  runId,
+  runtimeRequestId,
+  threadId,
+  turnItemId,
+} from "../../src/schemas/common.ts";
+import { OrchestrationV2DomainEvent } from "../../src/schemas/orchestration/events.ts";
+import {
+  OrchestrationV2ThreadProjection,
+  type OrchestrationV2ThreadDetailSnapshot,
+} from "../../src/schemas/orchestration/projection.ts";
 import {
   OrchestrationProjectShell,
-  OrchestrationShellSnapshot,
-  OrchestrationThreadShell,
+  OrchestrationV2ShellSnapshot,
+  OrchestrationV2ThreadShell,
 } from "../../src/schemas/orchestration/shell.ts";
 
 export const ids = {
   threadId: threadId("thread-1"),
   projectId: projectId("project-1"),
-  turnId: turnId("turn-1"),
+  runId: runId("run-1"),
+  messageId: messageId("message-1"),
+  nodeId: nodeId("node-1"),
+  itemId: turnItemId("item-1"),
+  requestId: runtimeRequestId("request-1"),
 };
 
 export const at = "2020-01-01T00:00:00.000Z";
+export const modelSelection = { instanceId: "sample-provider", model: "sample-model" };
 
-const threadBase = {
-  id: ids.threadId,
-  projectId: ids.projectId,
-  title: "Sample thread",
-  modelSelection: { instanceId: "sample-provider", model: "sample-model" },
-  runtimeMode: "auto",
-  branch: null,
-  worktreePath: null,
-  latestTurn: null,
-  createdAt: at,
+/** The app thread record as the server stores it. */
+export function makeAppThread(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    createdBy: "user",
+    creationSource: "web",
+    id: ids.threadId,
+    projectId: ids.projectId,
+    title: "Sample thread",
+    providerInstanceId: "sample-provider",
+    modelSelection,
+    runtimeMode: "auto",
+    interactionMode: "default",
+    branch: null,
+    worktreePath: null,
+    activeProviderThreadId: null,
+    lineage: { parentThreadId: null, relationshipToParent: null, rootThreadId: ids.threadId },
+    forkedFrom: null,
+    createdAt: at,
+    updatedAt: at,
+    archivedAt: null,
+    settledOverride: null,
+    settledAt: null,
+    lastVisitedAt: null,
+    deletedAt: null,
+    ...overrides,
+  };
+}
+
+export function makeRun(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    id: ids.runId,
+    threadId: ids.threadId,
+    ordinal: 1,
+    providerInstanceId: "sample-provider",
+    modelSelection,
+    providerThreadId: null,
+    userMessageId: ids.messageId,
+    rootNodeId: null,
+    activeAttemptId: null,
+    status: "running",
+    requestedAt: at,
+    startedAt: at,
+    completedAt: null,
+    checkpointId: null,
+    contextHandoffId: null,
+    ...overrides,
+  };
+}
+
+export function makeMessage(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    createdBy: "user",
+    creationSource: "web",
+    id: ids.messageId,
+    threadId: ids.threadId,
+    runId: ids.runId,
+    nodeId: null,
+    role: "user",
+    text: "Say pong.",
+    attachments: [],
+    streaming: false,
+    createdAt: at,
+    updatedAt: at,
+    ...overrides,
+  };
+}
+
+const turnItemBase = {
+  threadId: ids.threadId,
+  runId: ids.runId,
+  nodeId: null,
+  providerThreadId: null,
+  providerTurnId: null,
+  nativeItemRef: null,
+  parentItemId: null,
+  ordinal: 1,
+  status: "running",
+  title: null,
+  startedAt: at,
+  completedAt: null,
   updatedAt: at,
-  deletedAt: null,
-  session: null,
 };
 
-export function makeThread(overrides: Record<string, unknown> = {}): OrchestrationThread {
-  return OrchestrationThread.parse({
-    ...threadBase,
+export function makeTurnItem(
+  type: string,
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  return { ...turnItemBase, id: ids.itemId, type, ...overrides };
+}
+
+export const items = {
+  assistantMessage: (text: string, streaming = true, extra: Record<string, unknown> = {}) =>
+    makeTurnItem("assistant_message", { messageId: "message-2", text, streaming, ...extra }),
+  approvalRequest: (requestId: string, extra: Record<string, unknown> = {}) =>
+    makeTurnItem("approval_request", {
+      id: `item-${requestId}`,
+      requestId,
+      requestKind: "command",
+      prompt: "run sample",
+      ...extra,
+    }),
+  userInputRequest: (requestId: string, extra: Record<string, unknown> = {}) =>
+    makeTurnItem("user_input_request", {
+      id: `item-${requestId}`,
+      requestId,
+      questions: [
+        {
+          id: "q1",
+          header: "Proceed",
+          question: "Proceed?",
+          options: [{ label: "yes", description: "Go ahead" }],
+        },
+      ],
+      ...extra,
+    }),
+  error: (message: string, extra: Record<string, unknown> = {}) =>
+    makeTurnItem("error", {
+      id: "item-error",
+      status: "failed",
+      failure: { class: "provider_error", message, code: null, retryable: null },
+      ...extra,
+    }),
+};
+
+export function makeRuntimeRequest(
+  requestId: string,
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  return {
+    id: requestId,
+    nodeId: ids.nodeId,
+    providerTurnId: null,
+    nativeRequestRef: null,
+    kind: "command",
+    status: "pending",
+    responseCapability: { type: "message" },
+    createdAt: at,
+    resolvedAt: null,
+    ...overrides,
+  };
+}
+
+export function makeProjection(
+  overrides: Record<string, unknown> = {},
+): OrchestrationV2ThreadProjection {
+  return OrchestrationV2ThreadProjection.parse({
+    thread: makeAppThread(),
+    runs: [],
+    attempts: [],
+    nodes: [],
+    subagents: [],
+    providerSessions: [],
+    providerThreads: [],
+    providerTurns: [],
+    runtimeRequests: [],
     messages: [],
-    activities: [],
+    plans: [],
+    turnItems: [],
+    checkpointScopes: [],
     checkpoints: [],
+    contextHandoffs: [],
+    contextTransfers: [],
+    visibleTurnItems: [],
+    updatedAt: at,
     ...overrides,
   });
 }
 
-export function makeShellThread(overrides: Record<string, unknown> = {}): OrchestrationThreadShell {
-  return OrchestrationThreadShell.parse({
-    ...threadBase,
+export function makeSnapshot(
+  projection: OrchestrationV2ThreadProjection,
+  snapshotSequence: number,
+): OrchestrationV2ThreadDetailSnapshot {
+  return { snapshotSequence, projection };
+}
+
+export function makeShellThread(
+  overrides: Record<string, unknown> = {},
+): OrchestrationV2ThreadShell {
+  return OrchestrationV2ThreadShell.parse({
+    ...makeAppThread(),
+    latestRunId: null,
+    activeRunId: null,
+    status: "idle",
+    pendingRuntimeRequest: null,
+    latestVisibleMessage: null,
     latestUserMessageAt: null,
-    hasPendingApprovals: false,
-    hasPendingUserInput: false,
     hasActionableProposedPlan: false,
+    itemCount: 0,
+    visibleItemCount: 0,
     ...overrides,
   });
 }
@@ -79,232 +247,82 @@ export function makeShellProject(
 
 export function makeShellSnapshot(input: {
   projects?: OrchestrationProjectShell[];
-  threads?: OrchestrationThreadShell[];
+  threads?: OrchestrationV2ThreadShell[];
+  archivedThreads?: OrchestrationV2ThreadShell[];
   snapshotSequence?: number;
-}): OrchestrationShellSnapshot {
-  return OrchestrationShellSnapshot.parse({
+}): OrchestrationV2ShellSnapshot {
+  return OrchestrationV2ShellSnapshot.parse({
+    schemaVersion: 1,
     snapshotSequence: input.snapshotSequence ?? 1,
     projects: input.projects ?? [],
     threads: input.threads ?? [],
-    updatedAt: at,
+    archivedThreads: input.archivedThreads ?? [],
   });
 }
 
-export function makeSnapshot(
-  thread: OrchestrationThread,
-  snapshotSequence: number,
-): OrchestrationThreadDetailSnapshot {
-  return { snapshotSequence, thread };
-}
-
-export function makeSession(overrides: Partial<OrchestrationSession> = {}): OrchestrationSession {
-  return {
-    threadId: ids.threadId,
-    status: "idle",
-    providerName: null,
-    runtimeMode: "auto",
-    activeTurnId: null,
-    lastError: null,
-    updatedAt: at,
-    ...overrides,
-  };
-}
-
-/** A wire-shaped event, as the server sends it. */
+/** A wire-shaped domain event, as the server sends it inside a stream item. */
 export function rawEvent(
   sequence: number,
   type: string,
   payload: Record<string, unknown>,
 ): Record<string, unknown> {
-  return {
-    sequence,
-    eventId: `event-${sequence}`,
-    aggregateKind: "thread",
-    aggregateId: ids.threadId,
-    occurredAt: at,
-    commandId: null,
-    causationEventId: null,
-    correlationId: null,
-    metadata: {},
-    type,
-    payload: { threadId: ids.threadId, ...payload },
-  };
+  return { id: `event-${sequence}`, threadId: ids.threadId, occurredAt: at, type, payload };
 }
 
-export function parseEvent(raw: Record<string, unknown>): OrchestrationEvent {
-  return OrchestrationEvent.parse(raw);
+/** A wire-shaped `{ kind: "event" }` stream item. */
+export function eventItem(
+  sequence: number,
+  type: string,
+  payload: Record<string, unknown>,
+): Record<string, unknown> {
+  return { kind: "event", sequence, event: rawEvent(sequence, type, payload) };
+}
+
+export function snapshotItem(
+  sequence: number,
+  projection: OrchestrationV2ThreadProjection = makeProjection(),
+): Record<string, unknown> {
+  return { kind: "snapshot", snapshotSequence: sequence, projection };
+}
+
+export function parseEvent(raw: Record<string, unknown>): OrchestrationV2DomainEvent {
+  return OrchestrationV2DomainEvent.parse(raw);
 }
 
 export const events = {
-  sessionSet: (sequence: number, session: Partial<OrchestrationSession>) =>
-    rawEvent(sequence, "thread.session-set", { session: makeSession(session) }),
-  messageSent: (
+  runCreated: (sequence: number, run: Record<string, unknown> = {}) =>
+    eventItem(sequence, "run.created", makeRun(run)),
+  runUpdated: (sequence: number, run: Record<string, unknown> = {}) =>
+    eventItem(sequence, "run.updated", makeRun(run)),
+  messageUpdated: (sequence: number, message: Record<string, unknown> = {}) =>
+    eventItem(sequence, "message.updated", makeMessage(message)),
+  turnItemUpdated: (sequence: number, item: Record<string, unknown>) =>
+    eventItem(sequence, "turn-item.updated", item),
+  runtimeRequestUpdated: (
     sequence: number,
-    message: {
-      messageId: string;
-      role?: "user" | "assistant" | "system" | "reasoning";
-      text: string;
-      streaming?: boolean;
-      turnId?: string | null;
-    },
-  ) =>
-    rawEvent(sequence, "thread.message-sent", {
-      messageId: message.messageId,
-      role: message.role ?? "assistant",
-      text: message.text,
-      turnId: message.turnId === undefined ? ids.turnId : message.turnId,
-      streaming: message.streaming ?? true,
-      createdAt: at,
-      updatedAt: at,
-    }),
-  turnStartRequested: (sequence: number, messageId: MessageId | string) =>
-    rawEvent(sequence, "thread.turn-start-requested", {
-      messageId,
-      runtimeMode: "auto",
-      interactionMode: "default",
-      createdAt: at,
-    }),
-  activityAppended: (
-    sequence: number,
-    activity: Partial<Omit<OrchestrationThreadActivity, "id">> & { id?: string },
-  ) =>
-    rawEvent(sequence, "thread.activity-appended", {
-      activity: {
-        id: `activity-${sequence}`,
-        tone: "approval",
-        kind: "approval.requested",
-        summary: "Sample activity",
-        payload: {},
-        turnId: ids.turnId,
-        createdAt: at,
-        ...activity,
-      },
-    }),
-  turnDiffCompleted: (
-    sequence: number,
-    input: { turnId?: string; status?: "ready" | "missing" | "error"; assistantMessageId?: string },
-  ) =>
-    rawEvent(sequence, "thread.turn-diff-completed", {
-      turnId: input.turnId ?? ids.turnId,
-      checkpointTurnCount: 1,
-      checkpointRef: "checkpoint-1",
-      status: input.status ?? "ready",
-      files: [],
-      assistantMessageId: input.assistantMessageId ?? null,
-      completedAt: at,
-    }),
-  metaUpdated: (sequence: number, patch: Record<string, unknown>) =>
-    rawEvent(sequence, "thread.meta-updated", { updatedAt: at, ...patch }),
-  archived: (sequence: number) =>
-    rawEvent(sequence, "thread.archived", { archivedAt: at, updatedAt: at }),
-  reverted: (sequence: number, turnCount: number) =>
-    rawEvent(sequence, "thread.reverted", { turnCount }),
-  snoozed: (sequence: number, snoozedUntil: string) =>
-    rawEvent(sequence, "thread.snoozed", { snoozedUntil, snoozedAt: at, updatedAt: at }),
-  unsnoozed: (sequence: number) =>
-    rawEvent(sequence, "thread.unsnoozed", { reason: "user", updatedAt: at }),
-  pinned: (sequence: number, pinOrderKey?: string) =>
-    rawEvent(sequence, "thread.pinned", {
-      pinnedAt: at,
-      ...(pinOrderKey === undefined ? {} : { pinOrderKey }),
-      updatedAt: at,
-    }),
-  unpinned: (sequence: number) => rawEvent(sequence, "thread.unpinned", { updatedAt: at }),
-  autoSettleSet: (sequence: number, autoSettleDisabledAt: string | null) =>
-    rawEvent(sequence, "thread.auto-settle-set", { autoSettleDisabledAt, updatedAt: at }),
-  pullRequestLinked: (sequence: number, number: number) =>
-    rawEvent(sequence, "thread.pull-request-linked", {
-      link: {
-        host: "Example.test",
-        repository: "Sample/Repo",
-        number,
-        url: `https://example.test/sample/repo/pull/${number}`,
-        source: "manual",
-        linkedAt: at,
-        snapshot: null,
-        stack: null,
-      },
-      updatedAt: at,
-    }),
-  pullRequestUnlinked: (sequence: number, number: number) =>
-    rawEvent(sequence, "thread.pull-request-unlinked", {
-      host: "example.test",
-      repository: "sample/repo",
-      number,
-      updatedAt: at,
-    }),
-  pullRequestSynced: (sequence: number, number: number, state: "open" | "merged") =>
-    rawEvent(sequence, "thread.pull-request-synced", {
-      host: "example.test",
-      repository: "sample/repo",
-      number,
-      snapshot: {
-        state,
-        title: "Sample change",
-        headBranch: "feature",
-        baseBranch: "main",
-        isDraft: false,
-        updatedAt: at,
-        syncedAt: at,
-      },
-      stack: null,
-      updatedAt: at,
-    }),
+    requestId: string,
+    request: Record<string, unknown> = {},
+  ) => eventItem(sequence, "runtime-request.updated", makeRuntimeRequest(requestId, request)),
+  threadState: (sequence: number, type: string, thread: Record<string, unknown> = {}) =>
+    eventItem(sequence, type, makeAppThread(thread)),
 };
 
-/** A message in the read-model shape. */
-export function makeMessage(input: {
-  id: string;
-  role?: "user" | "assistant" | "system" | "reasoning";
-  text?: string;
-  turnId?: string | null;
-  createdAt?: string;
-}): Record<string, unknown> {
-  return {
-    id: input.id,
-    role: input.role ?? "assistant",
-    text: input.text ?? input.id,
-    turnId: input.turnId === undefined ? ids.turnId : input.turnId,
-    streaming: false,
-    createdAt: input.createdAt ?? at,
-    updatedAt: input.createdAt ?? at,
-  };
+/** The items a finished run produces: an assistant reply streamed in two parts, then completion. */
+export function completedRunItems(from: number, text = "pong"): Record<string, unknown>[] {
+  const half = Math.ceil(text.length / 2);
+  return [
+    events.runCreated(from),
+    events.messageUpdated(from + 1),
+    events.turnItemUpdated(from + 2, items.assistantMessage(text.slice(0, half))),
+    events.turnItemUpdated(from + 3, items.assistantMessage(text)),
+    events.turnItemUpdated(from + 4, items.assistantMessage(text, false, { status: "completed" })),
+    events.messageUpdated(from + 5, {
+      id: "message-2",
+      role: "assistant",
+      text,
+      createdBy: "agent",
+      creationSource: "provider",
+    }),
+    events.runUpdated(from + 6, { status: "completed", completedAt: at }),
+  ];
 }
-
-/** A checkpoint summary in the read-model shape. */
-export function makeCheckpoint(input: {
-  turnId: string;
-  checkpointTurnCount: number;
-  status?: "ready" | "missing" | "error";
-  assistantMessageId?: string | null;
-  completedAt?: string;
-}): Record<string, unknown> {
-  return {
-    turnId: input.turnId,
-    checkpointTurnCount: input.checkpointTurnCount,
-    checkpointRef: `checkpoint-${input.checkpointTurnCount}`,
-    status: input.status ?? "ready",
-    files: [],
-    assistantMessageId: input.assistantMessageId ?? null,
-    completedAt: input.completedAt ?? at,
-  };
-}
-
-export const approvalRequested = (requestId: string) =>
-  ({
-    kind: "approval.requested",
-    payload: { requestId, requestKind: "command", detail: "run sample" },
-  }) as const;
-
-export const approvalResolved = (requestId: string) =>
-  ({ kind: "approval.resolved", payload: { requestId, decision: "accept" } }) as const;
-
-export const userInputRequested = (requestId: string) =>
-  ({
-    kind: "user-input.requested",
-    tone: "info",
-    payload: {
-      requestId,
-      questions: [{ id: "q1", question: "Proceed?", options: [{ label: "yes" }] }],
-    },
-  }) as const;

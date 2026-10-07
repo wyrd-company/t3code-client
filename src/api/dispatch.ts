@@ -1,11 +1,11 @@
 /**
  * CommandDispatcher: the one path every facade uses to send an orchestration
- * command. It validates the command, prefers the socket (typed
- * `OrchestrationDispatchCommandError`), and falls back to
- * `POST /api/orchestration/dispatch` only when the socket is fatally
- * unavailable. It also mints the bookkeeping ids and timestamps commands need.
+ * command. It validates the command against `OrchestrationV2Command` and
+ * sends it over the socket, which answers with the typed
+ * `OrchestrationV2DispatchCommandError`. It also mints the bookkeeping ids
+ * and timestamps commands need.
  */
-import { T3ConnectionError, T3PreconditionError, T3RpcError } from "../errors.ts";
+import { T3PreconditionError, T3RpcError } from "../errors.ts";
 import { nowIso, systemClock, type Clock } from "../internal/clock.ts";
 import { newId } from "../internal/ids.ts";
 import type { RpcClient } from "../rpc/client.ts";
@@ -20,9 +20,8 @@ import {
   type ProjectId,
   type ThreadId,
 } from "../schemas/common.ts";
-import { ClientOrchestrationCommand } from "../schemas/orchestration/commands.ts";
-import { DispatchResult } from "../schemas/orchestration/stream.ts";
-import type { HttpTransport } from "../transport/http.ts";
+import { OrchestrationV2Command } from "../schemas/orchestration/commands.ts";
+import type { DispatchResult } from "../schemas/orchestration/stream.ts";
 
 export interface CommandDispatcherOptions {
   readonly clock?: Clock;
@@ -31,17 +30,11 @@ export interface CommandDispatcherOptions {
 
 export class CommandDispatcher {
   readonly #rpc: RpcClient<RpcMethods>;
-  readonly #http: HttpTransport;
   readonly #clock: Clock;
   readonly #ids: () => string;
 
-  constructor(
-    rpc: RpcClient<RpcMethods>,
-    http: HttpTransport,
-    options: CommandDispatcherOptions = {},
-  ) {
+  constructor(rpc: RpcClient<RpcMethods>, options: CommandDispatcherOptions = {}) {
     this.#rpc = rpc;
-    this.#http = http;
     this.#clock = options.clock ?? systemClock;
     this.#ids = options.ids ?? newId;
   }
@@ -67,11 +60,8 @@ export class CommandDispatcher {
     return nowIso(this.#clock);
   }
 
-  async dispatch(
-    command: ClientOrchestrationCommand,
-    signal?: AbortSignal,
-  ): Promise<DispatchResult> {
-    const parsed = ClientOrchestrationCommand.safeParse(command);
+  async dispatch(command: OrchestrationV2Command, signal?: AbortSignal): Promise<DispatchResult> {
+    const parsed = OrchestrationV2Command.safeParse(command);
     if (!parsed.success) {
       const issue = parsed.error.issues[0];
       const field = issue?.path.map(String).join(".") || "command";
@@ -80,27 +70,39 @@ export class CommandDispatcher {
         { cause: parsed.error },
       );
     }
-    try {
-      return await this.#rpc.call("orchestration.dispatchCommand", parsed.data, signal);
-    } catch (error) {
-      if (!(error instanceof T3ConnectionError) || error.reason !== "open_failed") throw error;
-    }
-    return this.#http.request({
-      method: "POST",
-      path: "/api/orchestration/dispatch",
-      auth: "required",
-      body: parsed.data,
-      decode: DispatchResult,
-      ...(signal === undefined ? {} : { signal }),
-    });
+    return this.#rpc.call("orchestration.dispatchCommand", parsed.data, signal);
   }
 }
 
-/** `true` when the server rejected the command because its thread or project does not exist. */
+/** How the server words a missing thread or project across its layers. */
+const missingResource =
+  /\bwas not found\b|\bdoes not exist\b|\bnot found\b|\bno orchestration projection exists\b/i;
+
+/** `true` when the server rejected a command or mutation because its thread or project does not exist. */
 export function isMissingResourceError(error: unknown): boolean {
-  return (
-    error instanceof T3RpcError &&
-    error.is("OrchestrationDispatchCommandError") &&
-    /\bdoes not exist\b/.test(error.record.message)
-  );
+  if (!(error instanceof T3RpcError)) return false;
+  if (error.is("OrchestrationV2DispatchCommandError")) {
+    const { message, detail, cause } = error.record;
+    return (
+      missingResource.test(message) ||
+      (detail !== undefined && missingResource.test(detail)) ||
+      mentionsMissingResource(cause)
+    );
+  }
+  if (error.is("ProjectMutationError")) {
+    return (
+      missingResource.test(error.record.message) || mentionsMissingResource(error.record.cause)
+    );
+  }
+  return false;
+}
+
+function mentionsMissingResource(cause: unknown): boolean {
+  if (cause === undefined || cause === null) return false;
+  try {
+    const text = typeof cause === "string" ? cause : JSON.stringify(cause);
+    return /NotFoundError|was not found|does not exist/.test(text);
+  } catch {
+    return false;
+  }
 }

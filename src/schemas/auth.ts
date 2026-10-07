@@ -30,8 +30,17 @@ export type ServerAuthSessionMethod = z.infer<typeof ServerAuthSessionMethod>;
 const authEnvironmentScopes = [
   "orchestration:read",
   "orchestration:operate",
+  "settings:write",
+  "providers:manage",
+  "environment:maintain",
+  "preview:operate",
+  "diagnostics:read",
+  "terminal:read",
   "terminal:operate",
+  "filesystem:read",
+  "filesystem:write",
   "review:write",
+  "source-control:write",
   "access:read",
   "access:write",
   "relay:read",
@@ -41,6 +50,10 @@ const authEnvironmentScopes = [
 /** Strict: validates the scopes a caller asks for. */
 export const AuthEnvironmentScope = z.enum(authEnvironmentScopes);
 export type AuthEnvironmentScope = z.infer<typeof AuthEnvironmentScope>;
+
+/** What a pairing credential may be granted: every scope but `review:write`, which grants nothing. */
+export const AuthGrantScope = z.enum(authEnvironmentScopes.filter((s) => s !== "review:write"));
+export type AuthGrantScope = z.infer<typeof AuthGrantScope>;
 
 /**
  * A scope as the server reports it (session state, token exchange, pairing
@@ -54,9 +67,28 @@ export type AuthGrantedScope = KnownOr<AuthEnvironmentScope>;
 export const AuthStandardClientScopes = [
   "orchestration:read",
   "orchestration:operate",
+  "settings:write",
+  "providers:manage",
+  "environment:maintain",
+  "preview:operate",
+  "diagnostics:read",
+  "terminal:read",
   "terminal:operate",
-  "review:write",
+  "source-control:write",
+  "filesystem:read",
+  "filesystem:write",
   "relay:read",
+] as const satisfies readonly AuthEnvironmentScope[];
+
+/**
+ * The scopes clients released before granular permissions knew. Servers
+ * report `scopes` filtered to these and the full grant as `permissions`.
+ */
+export const AuthLegacyScopes = [
+  "access:read",
+  "access:write",
+  "relay:read",
+  "relay:write",
 ] as const satisfies readonly AuthEnvironmentScope[];
 
 export const AuthAdministrativeScopes = [
@@ -71,13 +103,32 @@ export const ServerAuthDescriptor = z.looseObject({
   bootstrapMethods: z.array(ServerAuthBootstrapMethod),
   sessionMethods: z.array(ServerAuthSessionMethod),
   sessionCookieName: TrimmedNonEmptyString,
+  /** Older servers omit this and authorize self-updates with orchestration:operate. */
+  serverUpdateScope: z.literal("environment:maintain").optional(),
 });
 export type ServerAuthDescriptor = z.infer<typeof ServerAuthDescriptor>;
+
+/**
+ * `scopes` holds only the legacy vocabulary; `permissions` is the whole grant.
+ * `grantedScopes` reads the grant from whichever the server sent.
+ */
+const authScopeResponseFields = {
+  scopes: z.array(AuthGrantedScope),
+  permissions: z.array(AuthGrantedScope).optional(),
+} as const;
+
+export function grantedScopes(response: {
+  readonly scopes?: readonly AuthGrantedScope[] | undefined;
+  readonly permissions?: readonly AuthGrantedScope[] | undefined;
+}): AuthGrantedScope[] {
+  return [...(response.permissions ?? response.scopes ?? [])];
+}
 
 export const AuthSessionState = z.looseObject({
   authenticated: z.boolean(),
   auth: ServerAuthDescriptor,
   scopes: z.array(AuthGrantedScope).optional(),
+  permissions: z.array(AuthGrantedScope).optional(),
   sessionMethod: ServerAuthSessionMethod.optional(),
   expiresAt: IsoDateTime.optional(),
 });
@@ -108,7 +159,7 @@ export type AuthPairingCredentialResult = z.infer<typeof AuthPairingCredentialRe
 
 export const AuthPairingLink = z.looseObject({
   id: TrimmedNonEmptyString,
-  scopes: z.array(AuthGrantedScope),
+  ...authScopeResponseFields,
   subject: TrimmedNonEmptyString,
   label: TrimmedNonEmptyString.optional(),
   createdAt: IsoDateTime,
@@ -138,7 +189,7 @@ export type AuthClientMetadata = z.infer<typeof AuthClientMetadata>;
 export const AuthClientSession = z.looseObject({
   sessionId: AuthSessionId,
   subject: TrimmedNonEmptyString,
-  scopes: z.array(AuthGrantedScope),
+  ...authScopeResponseFields,
   method: ServerAuthSessionMethod,
   client: AuthClientMetadata,
   issuedAt: IsoDateTime,
@@ -151,7 +202,7 @@ export type AuthClientSession = z.infer<typeof AuthClientSession>;
 
 export const AuthCreatePairingCredentialInput = z.looseObject({
   label: TrimmedNonEmptyString.optional(),
-  scopes: z.array(AuthEnvironmentScope).optional(),
+  scopes: z.array(AuthGrantScope).optional(),
 });
 export type AuthCreatePairingCredentialInput = z.infer<typeof AuthCreatePairingCredentialInput>;
 

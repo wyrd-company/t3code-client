@@ -4,17 +4,12 @@ import {
   at,
   events,
   ids,
-  makeMessage,
-  makeSession,
-  makeShellSnapshot,
-  makeShellThread,
+  items,
+  makeProjection,
   makeSnapshot,
-  makeThread,
 } from "../../test/support/threadFixtures.ts";
 import { RpcClient } from "../rpc/client.ts";
 import { rpcMethods } from "../rpc/registry.ts";
-import { turnId } from "../schemas/common.ts";
-import type { OrchestrationThreadDetailSnapshot } from "../schemas/orchestration/readModel.ts";
 import { HttpTransport } from "../transport/http.ts";
 import { RpcConnection } from "../transport/rpcConnection.ts";
 import { SocketTransport } from "../transport/socket.ts";
@@ -23,7 +18,20 @@ import { ThreadsApi } from "./threads.ts";
 import type { ThreadWatchItem } from "./threadWatch.ts";
 import { inspectTurn } from "./turns.ts";
 
-const eventItem = (event: Record<string, unknown>) => ({ kind: "event", event });
+/** The items a run for `userMessageId` produces: a reply streamed in two parts, then completion. */
+const completedRun = (from: number, userMessageId: string, text = "pong") => [
+  events.runCreated(from, { userMessageId }),
+  events.turnItemUpdated(from + 1, items.assistantMessage(text.slice(0, 2))),
+  events.turnItemUpdated(from + 2, items.assistantMessage(text)),
+  events.messageUpdated(from + 3, {
+    id: "message-2",
+    role: "assistant",
+    text,
+    createdBy: "agent",
+    creationSource: "provider",
+  }),
+  events.runUpdated(from + 4, { userMessageId, status: "completed", completedAt: at }),
+];
 
 describe("ThreadsApi.startTurn", () => {
   let server: FakeT3Server;
@@ -43,20 +51,14 @@ describe("ThreadsApi.startTurn", () => {
       fetch: server.fetch,
       getAccessToken: async () => "token-1",
     });
-    // Commands are stamped after every fixture timestamp, like a live dispatch.
-    const clock = { now: () => new Date("2020-01-01T00:00:10.000Z") };
-    threads = new ThreadsApi(http, rpc, new CommandDispatcher(rpc, http, { clock }));
+    threads = new ThreadsApi(http, rpc, new CommandDispatcher(rpc));
     server.handle("orchestration.dispatchCommand", (payload) => {
       dispatched.push(payload as Record<string, unknown>);
       return { kind: "value", value: { sequence: 10 } };
     });
-    server.routes.route("GET /api/orchestration/shell", () => ({
-      status: 200,
-      body: makeShellSnapshot({ threads: [makeShellThread({ runtimeMode: "auto" })] }),
-    }));
     server.routes.route(`GET /api/orchestration/threads/${ids.threadId}`, () => ({
       status: 200,
-      body: makeSnapshot(makeThread(), 10),
+      body: makeSnapshot(makeProjection(), 10),
     }));
   });
   afterEach(async () => {
@@ -64,120 +66,80 @@ describe("ThreadsApi.startTurn", () => {
     await server.close();
   });
 
-  const scriptTurn = (extra: Record<string, unknown>[] = []) =>
+  /** Scripts the subscription; called after startTurn so the run can name our message. */
+  const script = (chunks: Record<string, unknown>[]) =>
     server.handle("orchestration.subscribeThread", (payload) => {
       subscriptions.push(payload as Record<string, unknown>);
-      return {
-        kind: "stream",
-        chunks: [
-          [eventItem(events.sessionSet(11, { status: "running", activeTurnId: ids.turnId }))],
-          [eventItem(events.messageSent(12, { messageId: "a1", text: "po" }))],
-          [eventItem(events.messageSent(13, { messageId: "a1", text: "ng" }))],
-          [eventItem(events.messageSent(14, { messageId: "a1", text: "pong", streaming: false }))],
-          [eventItem(events.sessionSet(15, { status: "ready" }))],
-          ...extra.map((event) => [eventItem(event)]),
-        ],
-      };
+      return { kind: "stream", chunks: chunks.map((item) => [item]) };
     });
 
-  it("dispatches the command with generated ids and resolves completion from the events", async () => {
-    scriptTurn();
+  it("dispatches message.dispatch and resolves completion from the run's events", async () => {
     const handle = await threads.startTurn({ threadId: ids.threadId, text: "Say pong." });
     expect(handle.sequence).toBe(10);
-    expect(dispatched[0]).toMatchObject({
-      type: "thread.turn.start",
-      commandId: handle.commandId,
-      threadId: ids.threadId,
-      runtimeMode: "auto",
-      interactionMode: "default",
-      message: { messageId: handle.messageId, role: "user", text: "Say pong.", attachments: [] },
-    });
-    const items: ThreadWatchItem[] = [];
+    expect(dispatched).toEqual([
+      {
+        type: "message.dispatch",
+        createdBy: "user",
+        creationSource: "web",
+        commandId: handle.commandId,
+        threadId: ids.threadId,
+        messageId: handle.messageId,
+        text: "Say pong.",
+        attachments: [],
+        dispatchMode: { type: "start_immediately" },
+        deliveryIntent: "auto",
+      },
+    ]);
+    script(completedRun(11, handle.messageId));
+    const collected: ThreadWatchItem[] = [];
     const collect = (async () => {
-      for await (const item of handle.events()) items.push(item);
+      for await (const item of handle.events()) collected.push(item);
     })();
     const outcome = await handle.completion;
     await collect;
     expect(outcome).toMatchObject({
       state: "completed",
-      turnId: ids.turnId,
-      assistantMessage: { id: "a1", text: "pong" },
+      runId: ids.runId,
+      run: { status: "completed" },
+      assistantMessage: { id: "message-2", text: "pong" },
     });
     expect(outcome.error).toBeUndefined();
-    // Resumes after the receipt, seeded over HTTP, and ends once the turn settled.
-    expect(subscriptions[0]).toMatchObject({ threadId: ids.threadId, afterSequence: 10 });
-    expect(items[0]?.kind).toBe("snapshot");
-    expect(
-      items
-        .filter((i) => i.kind === "assistant-delta")
-        .map((i) => i.kind === "assistant-delta" && i.text),
-    ).toEqual(["po", "ng"]);
-    expect(items.at(-1)?.kind).toBe("turn-settled");
-  });
-
-  it("passes the reasoning opt-in to the watch and its HTTP seed", async () => {
-    scriptTurn();
-    const handle = await threads.startTurn({
+    expect(handle.runId).toBe(ids.runId);
+    // Resumes after the receipt, seeded over HTTP, and ends once the run settled.
+    expect(subscriptions[0]).toMatchObject({
       threadId: ids.threadId,
-      text: "Say pong.",
-      runtimeMode: "auto",
-      interactionMode: "default",
-      reasoningMessages: true,
+      afterSequence: 10,
+      requestCompletionMarker: true,
     });
-    await handle.completion;
-    expect(subscriptions[0]).toMatchObject({ reasoningMessages: true });
-    const seed = server.routes.requests.find((r) =>
-      r.path.startsWith("/api/orchestration/threads/"),
-    );
-    expect(seed?.query.get("reasoningMessages")).toBe("true");
+    expect(collected[0]?.kind).toBe("snapshot");
+    expect(
+      collected.flatMap((i) => (i.kind === "assistant-delta" ? [[i.text, i.delta]] : [])),
+    ).toEqual([
+      ["po", "po"],
+      ["pong", "ng"],
+    ]);
+    expect(collected.at(-1)?.kind).toBe("turn-settled");
   });
 
   it("resolves completion without events() being consumed", async () => {
-    scriptTurn();
-    const handle = await threads.startTurn({
-      threadId: ids.threadId,
-      text: "Say pong.",
-      runtimeMode: "full-access",
-      interactionMode: "default",
-    });
+    const handle = await threads.startTurn({ threadId: ids.threadId, text: "Say pong." });
+    script(completedRun(11, handle.messageId));
     await expect(handle.completion).resolves.toMatchObject({ state: "completed" });
-    // The shell was not read because both modes were given.
-    expect(server.routes.requests.map((r) => r.path)).not.toContain("/api/orchestration/shell");
+    expect(inspectTurn(handle)).toEqual({ subscribers: 0, buffered: 0 });
   });
 
-  it("resolves an error outcome when the session fails before the turn starts", async () => {
-    server.handle("orchestration.subscribeThread", () => ({
-      kind: "stream",
-      chunks: [[eventItem(events.sessionSet(11, { status: "error", lastError: "provider down" }))]],
-    }));
+  it("resolves a failed outcome with the run's error item message", async () => {
     const handle = await threads.startTurn({ threadId: ids.threadId, text: "Say pong." });
+    script([
+      events.runCreated(11, { userMessageId: handle.messageId }),
+      events.turnItemUpdated(12, items.error("provider down")),
+      events.runUpdated(13, { userMessageId: handle.messageId, status: "failed", completedAt: at }),
+    ]);
     await expect(handle.completion).resolves.toMatchObject({
-      state: "error",
-      turnId: null,
+      state: "failed",
+      runId: ids.runId,
       error: "provider down",
     });
-  });
-
-  it("interrupt() dispatches thread.turn.interrupt with the known turn id", async () => {
-    server.handle("orchestration.subscribeThread", (_payload, context) => {
-      context.connection.send({
-        _tag: "Chunk",
-        requestId: context.requestId,
-        values: [eventItem(events.sessionSet(11, { status: "running", activeTurnId: ids.turnId }))],
-      });
-      return { kind: "hang" };
-    });
-    const handle = await threads.startTurn({ threadId: ids.threadId, text: "Say pong." });
-    const iterator = handle.events()[Symbol.asyncIterator]();
-    await iterator.next(); // snapshot
-    await iterator.next(); // session-set event
-    await handle.interrupt();
-    expect(dispatched[1]).toMatchObject({
-      type: "thread.turn.interrupt",
-      threadId: ids.threadId,
-      turnId: ids.turnId,
-    });
-    await iterator.return?.();
   });
 
   it("rejects completion with T3InterruptedError when the caller aborts", async () => {
@@ -193,12 +155,19 @@ describe("ThreadsApi.startTurn", () => {
     await expect(completion).rejects.toMatchObject({ code: "interrupted" });
   });
 
+  it("rejects completion when the watch ends before the run settles", async () => {
+    const handle = await threads.startTurn({ threadId: ids.threadId, text: "Say pong." });
+    script([events.runCreated(11, { userMessageId: handle.messageId })]);
+    await expect(handle.completion).rejects.toMatchObject({ code: "interrupted" });
+    expect(handle.runId).toBe(ids.runId);
+  });
+
   it("events() buffers nothing until iterated and drops a consumer that returns", async () => {
     server.handle("orchestration.subscribeThread", (_payload, context) => {
       context.connection.send({
         _tag: "Chunk",
         requestId: context.requestId,
-        values: [eventItem(events.sessionSet(11, { status: "running", activeTurnId: ids.turnId }))],
+        values: [events.runCreated(11, { userMessageId: "message-other" })],
       });
       return { kind: "hang" };
     });
@@ -210,10 +179,9 @@ describe("ThreadsApi.startTurn", () => {
     });
     const idle = handle.events(); // never iterated
     const completion = handle.completion;
-    // Let the snapshot and the first event arrive.
     const iterator = handle.events()[Symbol.asyncIterator]();
-    await iterator.next();
-    await iterator.next();
+    expect((await iterator.next()).value).toMatchObject({ kind: "snapshot" });
+    expect((await iterator.next()).value).toMatchObject({ kind: "event", sequence: 11 });
     expect(inspectTurn(handle)).toEqual({ subscribers: 1, buffered: 0 });
     await iterator.return?.();
     expect(inspectTurn(handle)).toEqual({ subscribers: 0, buffered: 0 });
@@ -222,100 +190,12 @@ describe("ThreadsApi.startTurn", () => {
     await expect(completion).rejects.toMatchObject({ code: "interrupted" });
   });
 
-  it("two turns started back to back both follow the one provider turn they were folded into", async () => {
-    // The event order a live codex session produced for two starts 44 ms apart:
-    // both user messages, one running session, two assistant messages, ready.
-    let sequence = 20;
-    server.handle("orchestration.dispatchCommand", (payload) => {
-      dispatched.push(payload as Record<string, unknown>);
-      sequence += 4;
-      return { kind: "value", value: { sequence } };
-    });
-    const script = (from: number) =>
-      [
-        eventItem(events.sessionSet(23, { status: "starting" })),
-        eventItem(events.sessionSet(28, { status: "starting" })),
-        eventItem(events.sessionSet(31, { status: "running", activeTurnId: ids.turnId })),
-        eventItem(events.messageSent(32, { messageId: "a1", text: "One", streaming: false })),
-        eventItem(events.messageSent(36, { messageId: "a2", text: "marmalade", streaming: false })),
-        eventItem(events.sessionSet(39, { status: "ready" })),
-      ]
-        .filter((item) => (item.event["sequence"] as number) > from)
-        .map((item) => [item]);
-    server.handle("orchestration.subscribeThread", (payload) => ({
-      kind: "stream",
-      chunks: script((payload as { afterSequence: number }).afterSequence),
-    }));
-    let detail: OrchestrationThreadDetailSnapshot = makeSnapshot(makeThread(), 20);
-    server.routes.route(`GET /api/orchestration/threads/${ids.threadId}`, () => ({
-      status: 200,
-      body: detail,
-    }));
-
-    const first = await threads.startTurn({ threadId: ids.threadId, text: "Count to five." });
-    expect(first.sequence).toBe(24);
-    const second = await threads.startTurn({ threadId: ids.threadId, text: "Say marmalade." });
-    expect(second.sequence).toBe(28);
-    detail = makeSnapshot(
-      makeThread({
-        messages: [
-          makeMessage({ id: first.messageId, role: "user", turnId: null, createdAt: at }),
-          makeMessage({ id: second.messageId, role: "user", turnId: null, createdAt: at }),
-        ],
-        session: makeSession({ status: "starting" }),
-      }),
-      28,
-    );
-    const [one, two] = await Promise.all([first.completion, second.completion]);
-    expect(one).toMatchObject({ state: "completed", turnId: ids.turnId });
-    expect(two).toMatchObject({
-      state: "completed",
-      turnId: ids.turnId,
-      assistantMessage: { id: "a2", text: "marmalade" },
-    });
-  });
-
-  it("a turn started during a running one resolves when that turn settles, or follows a turn that supersedes it", async () => {
-    const turnB = turnId("turn-2");
-    server.routes.route(`GET /api/orchestration/threads/${ids.threadId}`, () => ({
-      status: 200,
-      body: makeSnapshot(
-        makeThread({
-          session: makeSession({ status: "running", activeTurnId: ids.turnId }),
-          latestTurn: {
-            turnId: ids.turnId,
-            state: "running",
-            requestedAt: at,
-            startedAt: at,
-            completedAt: null,
-            assistantMessageId: null,
-          },
-        }),
-        10,
-      ),
-    }));
-    server.handle("orchestration.subscribeThread", () => ({
-      kind: "stream",
-      chunks: [
-        [eventItem(events.sessionSet(11, { status: "running", activeTurnId: turnB }))],
-        [
-          eventItem(
-            events.messageSent(12, {
-              messageId: "b1",
-              text: "beta",
-              streaming: false,
-              turnId: turnB,
-            }),
-          ),
-        ],
-        [eventItem(events.sessionSet(13, { status: "ready" }))],
-      ],
-    }));
-    const handle = await threads.startTurn({ threadId: ids.threadId, text: "Say beta." });
-    await expect(handle.completion).resolves.toMatchObject({
-      state: "completed",
-      turnId: turnB,
-      assistantMessage: { id: "b1", text: "beta" },
-    });
+  it("a consumer attached after settlement sees an ended stream", async () => {
+    const handle = await threads.startTurn({ threadId: ids.threadId, text: "Say pong." });
+    script(completedRun(11, handle.messageId));
+    await handle.completion;
+    const late: ThreadWatchItem[] = [];
+    for await (const item of handle.events()) late.push(item);
+    expect(late).toEqual([]);
   });
 });
