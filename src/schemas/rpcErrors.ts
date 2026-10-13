@@ -14,8 +14,6 @@ import {
   CommandId,
   NonNegativeInt,
   PositiveInt,
-  ProjectId,
-  ThreadId,
   TrimmedNonEmptyString,
   forwardCompatibleLiteral,
   isUnknownVariant,
@@ -42,9 +40,25 @@ import {
   SourceControlProviderError,
   TextGenerationError,
 } from "./rpcErrors/vcs.ts";
+import {
+  OrchestrationDispatchCommandError,
+  OrchestrationGetFullThreadDiffError,
+  OrchestrationGetTurnDiffError,
+  OrchestrationGetWorkflowScriptError,
+  OrchestrationSearchThreadsError,
+  OrchestrationV2DispatchCommandError,
+  OrchestrationV2GetShellSnapshotError,
+  OrchestrationV2GetThreadProjectionError,
+  OrchestrationV2SearchThreadError,
+  OrchestrationV2StopWorkflowError,
+  OrchestrationV2ThreadLaunchError,
+} from "./rpcErrors/orchestration.ts";
+import { McpAppRequestError } from "./rpcErrors/mcpApps.ts";
 
 export * from "./rpcErrors/terminal.ts";
 export * from "./rpcErrors/vcs.ts";
+export * from "./rpcErrors/orchestration.ts";
+export * from "./rpcErrors/mcpApps.ts";
 
 // auth.ts
 
@@ -161,67 +175,6 @@ export const ProjectMutationError = taggedError("ProjectMutationError", {
   ...messageAndCause,
 });
 
-// orchestrationDispatch.ts, orchestrationV2.ts, checkpointDiff.ts, threadSearch.ts
-
-/** Raised by `projects.ensureScratch` and `projects.createNew`. */
-export const OrchestrationDispatchCommandError = taggedError("OrchestrationDispatchCommandError", {
-  ...messageAndCause,
-  bootstrapThreadDisposition: forwardCompatibleLiteral(["deleted", "not-created"]).optional(),
-});
-/** Raised by `orchestration.dispatchCommand`; `detail` is the user-facing cause when known. */
-export const OrchestrationV2DispatchCommandError = taggedError(
-  "OrchestrationV2DispatchCommandError",
-  {
-    commandId: CommandId,
-    commandType: z.string(),
-    message: z.string(),
-    detail: z.string().optional(),
-    cause: Defect.optional(),
-  },
-);
-export const OrchestrationV2GetThreadProjectionError = taggedError(
-  "OrchestrationV2GetThreadProjectionError",
-  { threadId: ThreadId, ...messageAndCause },
-);
-export const OrchestrationV2GetShellSnapshotError = taggedError(
-  "OrchestrationV2GetShellSnapshotError",
-  messageAndCause,
-);
-export const OrchestrationV2ThreadLaunchError = taggedError("OrchestrationV2ThreadLaunchError", {
-  commandId: CommandId,
-  projectId: ProjectId,
-  ...messageAndCause,
-});
-export const OrchestrationGetTurnDiffError = taggedError(
-  "OrchestrationGetTurnDiffError",
-  messageAndCause,
-);
-export const OrchestrationGetFullThreadDiffError = taggedError(
-  "OrchestrationGetFullThreadDiffError",
-  messageAndCause,
-);
-export const OrchestrationSearchThreadsError = taggedError(
-  "OrchestrationSearchThreadsError",
-  messageAndCause,
-);
-export const OrchestrationGetWorkflowScriptError = taggedError(
-  "OrchestrationGetWorkflowScriptError",
-  {
-    reason: forwardCompatibleLiteral([
-      "invalid-path",
-      "root-unavailable",
-      "not-found",
-      "outside-root",
-      "not-js",
-      "not-regular-file",
-      "changed-during-read",
-      "read-failed",
-    ]),
-    scriptPath: z.string(),
-    cause: Defect.optional(),
-  },
-);
-
 /**
  * Every tagged failure a registered RPC method declares. A failure with an
  * unrecognised `_tag` decodes as `{ unknown: true, raw }`. Use
@@ -263,6 +216,9 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   OrchestrationGetFullThreadDiffError,
   OrchestrationSearchThreadsError,
   OrchestrationGetWorkflowScriptError,
+  OrchestrationV2StopWorkflowError,
+  OrchestrationV2SearchThreadError,
+  McpAppRequestError,
 ]);
 export type RpcErrorRecord = z.infer<typeof RpcErrorRecord>;
 export type UnknownRpcErrorRecord = UnknownVariant<"_tag">;

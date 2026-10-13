@@ -19,8 +19,8 @@ importers:
         specifier: ^8.18.1
         version: 8.18.1
       t3:
-        specifier: 0.0.46-nightly.20261007.2774
-        version: 0.0.46-nightly.20261007.2774
+        specifier: 0.0.46-nightly.20261013.3042
+        version: 0.0.46-nightly.20261013.3042
       typescript:
         specifier: 7.0.2
         version: 7.0.2
@@ -342,8 +342,8 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@t3code/t3-darwin-arm64@0.0.46-nightly.20261007.2774':
-    resolution: {integrity: sha512-VlbVEiDzXC58I02K/qKJfn+rdJCTA3ro1B+9CQrMm3IUvqiyBh9pMCil8SXZUpifU+/9tPF1tj11l2osEBIQfA==}
+  '@t3code/t3-darwin-arm64@0.0.46-nightly.20261013.3042':
+    resolution: {integrity: sha512-zY1LtBQPetpLzN8rT/eyBq/nH8mCXd8OzHRBWVnum/Kxv6AZVu0IPtIZePgrwVua5dEx5oVUaYuVEVVBjXcQhQ==}
     cpu: [arm64]
     os: [darwin]
     bundledDependencies:
@@ -365,8 +365,8 @@ packages:
       - playwright-core
       - zod
 
-  '@t3code/t3-linux-arm64@0.0.46-nightly.20261007.2774':
-    resolution: {integrity: sha512-HnR+YE5M5Dx+WfThr2XghIkAgJh890v2ukwQCYkFUoIsb+sDfEi6kf29+TdH+0VMCLr/ZrUdPoBUNZmmj0DbhQ==}
+  '@t3code/t3-linux-arm64@0.0.46-nightly.20261013.3042':
+    resolution: {integrity: sha512-KmT8tG0lWDuf7hPK5dn2DeL6yQcOU0LlHThO7vvLUEUTdQq6RFKCZI1xycIQ2sIrmrF0v2wKEhMp/pBF3wHRTw==}
     cpu: [arm64]
     os: [linux]
     bundledDependencies:
@@ -389,8 +389,8 @@ packages:
       - playwright-core
       - zod
 
-  '@t3code/t3-linux-x64@0.0.46-nightly.20261007.2774':
-    resolution: {integrity: sha512-miDewfWR5tcUwcwbXXHvmgMjVGhMfka6svgX6znDDjeJV301zwQsMXRQVPfONLRfCRYGV6OV7CeQKIhtS2EjjQ==}
+  '@t3code/t3-linux-x64@0.0.46-nightly.20261013.3042':
+    resolution: {integrity: sha512-ZPFAvj/672LuYKit4D5qdJ/z5RTpENNfYCEeVFuhmd5Qx8d0qVKxJPJwAuSOeu3cL+3iQkKcZQWA1sDK6mk7vg==}
     cpu: [x64]
     os: [linux]
     bundledDependencies:
@@ -413,8 +413,8 @@ packages:
       - playwright-core
       - zod
 
-  '@t3code/t3-win32-arm64@0.0.46-nightly.20261007.2774':
-    resolution: {integrity: sha512-sbakuYV7ezHntRdzMTmx6zOibOwsKoqfvrutHhmD2rPVK1Uqa1mOf9Za5y+lTKguKpvjQRFvhKb3HPqf3N8OLg==}
+  '@t3code/t3-win32-arm64@0.0.46-nightly.20261013.3042':
+    resolution: {integrity: sha512-epR90jx0NZHv+YfqtuwdeWHl4gaeotFuy+SsOad4WNYTRZmYVk62ke2QOMvSeKAKbEzFIzYZpQG71juQTHgRrA==}
     cpu: [arm64]
     os: [win32]
     bundledDependencies:
@@ -435,8 +435,8 @@ packages:
       - playwright-core
       - zod
 
-  '@t3code/t3-win32-x64@0.0.46-nightly.20261007.2774':
-    resolution: {integrity: sha512-DUxO07PXDGeip9EVGzNzM0+jT1KHbhKer2Ynwe+4a7zB/kzdiQcYeovp5lG1gFNjwEr+vTvXaLQhTF68fh9bZQ==}
+  '@t3code/t3-win32-x64@0.0.46-nightly.20261013.3042':
+    resolution: {integrity: sha512-VnundbkFV1WeLm5JZlB0XpDB2mZLoXsFCP8YPi3RyTm4/4YLMl24mYsXjlgmXqlUzWONx03KfIyotQL4x81jyQ==}
     cpu: [x64]
     os: [win32]
     bundledDependencies:
@@ -1140,8 +1140,8 @@ packages:
   std-env@4.2.0:
     resolution: {integrity: sha512-oCUKSupKTHX53EyjDtuZQ64pjLJ6yYCtpmEw0goYxtjG9KpbRe8KAsl2tBUGU9DyMcJ0RwJ8GqJAFzMXcXW1Rw==}
 
-  t3@0.0.46-nightly.20261007.2774:
-    resolution: {integrity: sha512-/o5eG4JFd5QzcSLcY6tA42TjlkucF3LbRiljcO3AIvnQqvAeKLzhI+uzVrk84oGBItU9Aaa1cHu2O7RbJ3XfDA==}
+  t3@0.0.46-nightly.20261013.3042:
+    resolution: {integrity: sha512-gn2kSK+OZ76uVWbyb5rR05xUxqnYgsiIGFl/s2aYT4hgwmrRwFg37zScKNOyWxe2Mk2tt4YhdpODUW4z+YXdJw==}
     hasBin: true
 
   tinybench@2.9.0:
@@ -1416,19 +1416,19 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@t3code/t3-darwin-arm64@0.0.46-nightly.20261007.2774':
+  '@t3code/t3-darwin-arm64@0.0.46-nightly.20261013.3042':
     optional: true
 
-  '@t3code/t3-linux-arm64@0.0.46-nightly.20261007.2774':
+  '@t3code/t3-linux-arm64@0.0.46-nightly.20261013.3042':
     optional: true
 
-  '@t3code/t3-linux-x64@0.0.46-nightly.20261007.2774':
+  '@t3code/t3-linux-x64@0.0.46-nightly.20261013.3042':
     optional: true
 
-  '@t3code/t3-win32-arm64@0.0.46-nightly.20261007.2774':
+  '@t3code/t3-win32-arm64@0.0.46-nightly.20261013.3042':
     optional: true
 
-  '@t3code/t3-win32-x64@0.0.46-nightly.20261007.2774':
+  '@t3code/t3-win32-x64@0.0.46-nightly.20261013.3042':
     optional: true
 
   '@testing-library/dom@10.4.2':
@@ -1906,13 +1906,13 @@ snapshots:
 
   std-env@4.2.0: {}
 
-  t3@0.0.46-nightly.20261007.2774:
+  t3@0.0.46-nightly.20261013.3042:
     optionalDependencies:
-      '@t3code/t3-darwin-arm64': 0.0.46-nightly.20261007.2774
-      '@t3code/t3-linux-arm64': 0.0.46-nightly.20261007.2774
-      '@t3code/t3-linux-x64': 0.0.46-nightly.20261007.2774
-      '@t3code/t3-win32-arm64': 0.0.46-nightly.20261007.2774
-      '@t3code/t3-win32-x64': 0.0.46-nightly.20261007.2774
+      '@t3code/t3-darwin-arm64': 0.0.46-nightly.20261013.3042
+      '@t3code/t3-linux-arm64': 0.0.46-nightly.20261013.3042
+      '@t3code/t3-linux-x64': 0.0.46-nightly.20261013.3042
+      '@t3code/t3-win32-arm64': 0.0.46-nightly.20261013.3042
+      '@t3code/t3-win32-x64': 0.0.46-nightly.20261013.3042
 
   tinybench@2.9.0: {}
 

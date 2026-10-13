@@ -28,6 +28,11 @@ export const projectsMethods = {
     success: Project,
     stream: false,
     scope: "orchestration:operate",
+    // Project scripts run on the host, so carrying them needs the grant that saves them.
+    payloadScopes: (mutation) =>
+      mutation.type !== "project.delete" && mutation.scripts !== undefined
+        ? ["settings:write"]
+        : [],
   }),
   "projects.listEntries": defineMethod({
     payload: ProjectListEntriesInput,

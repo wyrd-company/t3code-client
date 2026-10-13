@@ -8,6 +8,7 @@ import {
   CommandId,
   IsoDateTime,
   MessageId,
+  NodeId,
   NonNegativeInt,
   ProjectId,
   ThreadId,
@@ -38,6 +39,8 @@ export const OrchestrationV2SubscribeThreadInput = z.looseObject({
   requestCompletionMarker: z.boolean().optional(),
   /** Allows the snapshot to be a bounded, pageable history window. */
   acceptBoundedSnapshot: z.boolean().optional(),
+  /** Allows a bounded snapshot to omit turn items that repeat local visible rows. */
+  acceptCompactTurnItems: z.boolean().optional(),
 });
 export type OrchestrationV2SubscribeThreadInput = z.infer<
   typeof OrchestrationV2SubscribeThreadInput
@@ -53,6 +56,7 @@ export const OrchestrationV2ThreadStreamItem = taggedUnionWithUnknown("kind", [
     hasMoreHistory: z.boolean().optional(),
     latestLocalTurnOrdinal: NonNegativeInt.nullable().optional(),
     payloadBudgetExceeded: z.boolean().optional(),
+    turnItemsOmitLocalVisible: z.literal(true).optional(),
   }),
   z.looseObject({
     kind: z.literal("event"),
@@ -179,3 +183,10 @@ export const OrchestrationGetWorkflowScriptResult = z.looseObject({
 export type OrchestrationGetWorkflowScriptResult = z.infer<
   typeof OrchestrationGetWorkflowScriptResult
 >;
+
+/** Stops a workflow run by its coordinator subagent. */
+export const OrchestrationV2StopWorkflowInput = z.looseObject({
+  threadId: ThreadId,
+  subagentId: NodeId,
+});
+export type OrchestrationV2StopWorkflowInput = z.infer<typeof OrchestrationV2StopWorkflowInput>;

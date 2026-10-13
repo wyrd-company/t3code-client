@@ -101,6 +101,12 @@ export const NotificationDeliveryAcceptCommand = z.looseObject({
   ...stamped,
   messageId: MessageId,
 });
+/** Stops one provider-native child while its owning run keeps working. */
+export const SubagentStopCommand = z.looseObject({
+  type: z.literal("subagent.stop"),
+  ...run,
+  subagentId: NodeId,
+});
 export const RunInterruptCommand = z.looseObject({
   type: z.literal("run.interrupt"),
   ...run,
@@ -161,6 +167,7 @@ export const messageCommandMembers = [
   PreparedRunProgressCommand,
   PreparedRunFailCommand,
   PreparedRunRetryCommand,
+  SubagentStopCommand,
   RunInterruptCommand,
   QueuedMessagePromoteToSteerCommand,
   QueueResumeCommand,

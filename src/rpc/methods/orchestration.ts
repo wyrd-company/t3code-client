@@ -25,11 +25,16 @@ import {
   OrchestrationV2GetThreadProjectionInput,
   OrchestrationV2GetTurnItemInput,
   OrchestrationV2GetTurnItemResult,
+  OrchestrationV2StopWorkflowInput,
   OrchestrationV2SubscribeThreadInput,
   OrchestrationV2ThreadLaunchInput,
   OrchestrationV2ThreadLaunchResult,
   OrchestrationV2ThreadStreamItem,
 } from "../../schemas/orchestration/stream.ts";
+import {
+  OrchestrationV2SearchThreadInput,
+  OrchestrationV2SearchThreadResult,
+} from "../../schemas/orchestration/threadFind.ts";
 
 const read = "orchestration:read";
 const operate = "orchestration:operate";
@@ -65,6 +70,12 @@ export const orchestrationMethods = {
     stream: false,
     scope: read,
   }),
+  "orchestration.stopWorkflow": defineMethod({
+    payload: OrchestrationV2StopWorkflowInput,
+    success: z.void(),
+    stream: false,
+    scope: operate,
+  }),
   "orchestration.getTurnDiff": defineMethod({
     payload: OrchestrationGetTurnDiffInput,
     success: OrchestrationGetTurnDiffResult,
@@ -81,6 +92,19 @@ export const orchestrationMethods = {
     payload: OrchestrationSearchThreadsInput,
     success: OrchestrationSearchThreadsResult,
     stream: false,
+    scope: read,
+  }),
+  "orchestration.searchThread": defineMethod({
+    payload: OrchestrationV2SearchThreadInput,
+    success: OrchestrationV2SearchThreadResult,
+    stream: false,
+    scope: read,
+  }),
+  /** Streams progressively better results; the last one has `complete: true`. */
+  "orchestration.searchThreadStream": defineMethod({
+    payload: OrchestrationV2SearchThreadInput,
+    success: OrchestrationV2SearchThreadResult,
+    stream: true,
     scope: read,
   }),
   "orchestration.getArchivedShellSnapshot": defineMethod({

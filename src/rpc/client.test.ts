@@ -13,6 +13,7 @@ const table = {
     success: z.looseObject({ area: z.number() }),
     stream: false,
     scope: "orchestration:read",
+    payloadScopes: (shape) => (shape.width > 100 ? ["settings:write"] : []),
   }),
   "shapes.watch": defineMethod({
     payload: z.looseObject({ kind: z.enum(["square", "circle"]) }),
@@ -97,6 +98,15 @@ describe("RpcClient", () => {
     const items = [];
     for await (const item of client.stream("shapes.watch", { kind: "circle" })) items.push(item);
     expect(items).toEqual([]);
+  });
+
+  it("checks the scopes a payload needs once it is valid", async () => {
+    scopes = ["orchestration:read"];
+    await expect(make().call("shapes.area", { width: 101, height: 1 })).rejects.toMatchObject({
+      code: "insufficient_scope",
+      requiredScope: "settings:write",
+    });
+    scopes = undefined;
   });
 
   it("callRaw and streamRaw bypass the table", async () => {

@@ -31,7 +31,8 @@ export type OrchestrationV2NotificationSource =
   | { readonly kind: "subagent"; readonly childThreadId?: ThreadId }
   | { readonly kind: "command" }
   | { readonly kind: "monitor" }
-  | { readonly kind: "background_task" };
+  | { readonly kind: "background_task" }
+  | { readonly kind: "system" };
 
 /**
  * What a notification reports on. The wire still carries the shapes clients
@@ -65,6 +66,8 @@ export const OrchestrationV2NotificationSource: z.ZodType<
         return { kind: "command" };
       case "monitor":
         return { kind: "monitor" };
+      case "system":
+        return { kind: "system" };
       default:
         return { kind: "background_task" };
     }
@@ -127,6 +130,8 @@ export const OrchestrationV2UserInputQuestion = z.looseObject({
   ),
   multiSelect: z.boolean().optional(),
   allowCustomAnswer: z.boolean().optional(),
+  /** Editable initial text; an answer may then be an empty string. */
+  initialAnswer: z.string().optional(),
   required: z.boolean().optional(),
 });
 export type OrchestrationV2UserInputQuestion = z.infer<typeof OrchestrationV2UserInputQuestion>;

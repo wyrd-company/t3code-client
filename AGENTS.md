@@ -19,9 +19,10 @@ unit and live tests, and `docs/releasing.md` explains releases.
 
 ## Reference source
 
-The library targets the T3 Code release pinned as the `t3` devDependency.
-Upstream is `pingdotgg/t3code`; read the source at that release's tag
-(`vX.Y.Z`). Contracts: `packages/contracts/src/*.ts`. Server RPC handlers:
+The library tracks upstream `main` through the nightly build named as the
+`t3` devDependency. Upstream is `pingdotgg/t3code`; read the source at that
+build's tag (`vX.Y.Z-nightly.YYYYMMDD.N`). `docs/releasing.md` describes an
+update. Contracts: `packages/contracts/src/*.ts`. Server RPC handlers:
 `apps/server/src/ws.ts`. Scope per method:
 `apps/server/src/auth/RpcAuthorization.ts`.
 

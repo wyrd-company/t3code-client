@@ -129,6 +129,12 @@ describe("ThreadsApi: reads and lifecycle", () => {
       path: `/api/orchestration/threads/${ids.threadId}/history`,
       headers: protocolHeader,
     });
+    await threads.historyPage(ids.threadId, "c1", {
+      throughEntryId: "entry-1",
+      view: "conversation",
+    });
+    const query = server.routes.requests.at(-1)?.query;
+    expect([query?.get("throughEntryId"), query?.get("view")]).toEqual(["entry-1", "conversation"]);
     const projection = await threads.projection(ids.threadId);
     expect(projection.thread.id).toBe(ids.threadId);
     expect(server.lastConnection.received.at(-1)).toMatchObject({

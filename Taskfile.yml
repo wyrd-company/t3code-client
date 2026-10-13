@@ -29,6 +29,10 @@ tasks:
     desc: Run live tests against the pinned T3 Code server (see docs/testing.md)
     cmds: [pnpm run test:live]
 
+  fixtures:
+    desc: Capture test/fixtures from the T3 Code server build the library targets
+    cmds: [node test/live/captureFixtures.ts]
+
   package:
     desc: Pack the package and check it as a consumer sees it
     cmds:

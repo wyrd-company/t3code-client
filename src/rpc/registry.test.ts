@@ -14,9 +14,12 @@ const expected = {
   "orchestration.getThreadProjection": [false, "orchestration:read"],
   "orchestration.getTurnItem": [false, "orchestration:read"],
   "orchestration.getWorkflowScript": [false, "orchestration:read"],
+  "orchestration.stopWorkflow": [false, "orchestration:operate"],
   "orchestration.getTurnDiff": [false, "orchestration:read"],
   "orchestration.getFullThreadDiff": [false, "orchestration:read"],
   "orchestration.searchThreads": [false, "orchestration:read"],
+  "orchestration.searchThread": [false, "orchestration:read"],
+  "orchestration.searchThreadStream": [true, "orchestration:read"],
   "orchestration.getArchivedShellSnapshot": [false, "orchestration:read"],
   "orchestration.subscribeArchivedShell": [true, "orchestration:read"],
   "orchestration.subscribeShell": [true, "orchestration:read"],
@@ -51,6 +54,10 @@ const expected = {
   "terminal.resize": [false, "terminal:operate"],
   "terminal.close": [false, "terminal:operate"],
   subscribeTerminalEvents: [true, "terminal:read"],
+  "mcpApps.callTool": [false, "orchestration:operate"],
+  "mcpApps.toolInfo": [false, "orchestration:read"],
+  "mcpApps.readResource": [false, "orchestration:read"],
+  "mcpApps.updateModelContext": [false, "orchestration:operate"],
 } as const;
 
 describe("RPC contract registry", () => {
@@ -59,6 +66,14 @@ describe("RPC contract registry", () => {
     for (const name of Object.keys(expected) as RpcMethodName[]) {
       expect([rpcMethods[name].stream, rpcMethods[name].scope], name).toEqual(expected[name]);
     }
+  });
+  it("asks for settings:write only when a project mutation carries scripts", () => {
+    const scopes = rpcMethods["projects.mutate"].payloadScopes;
+    const update = { type: "project.update", commandId: "command-1", projectId: "project-1" };
+    expect(scopes?.(rpcMethods["projects.mutate"].payload.parse(update))).toEqual([]);
+    expect(
+      scopes?.(rpcMethods["projects.mutate"].payload.parse({ ...update, scripts: [] })),
+    ).toEqual(["settings:write"]);
   });
   it("retains payload, success, and stream types", () => {
     expectTypeOf<"terminal.attach">().toExtend<StreamMethodName<RpcMethods>>();

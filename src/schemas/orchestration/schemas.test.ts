@@ -11,6 +11,7 @@ import { ModelSelection } from "./model.ts";
 import { OrchestrationV2NotificationSource } from "./messages.ts";
 import { OrchestrationV2ThreadDetailSnapshot } from "./projection.ts";
 import { OrchestrationV2PendingBackgroundTask } from "./providerState.ts";
+import { OrchestrationV2Subagent } from "./runs.ts";
 import { OrchestrationV2ShellSnapshot } from "./shell.ts";
 import { OrchestrationV2AppThread } from "./thread.ts";
 import { makeAppThread } from "../../../test/support/threadFixtures.ts";
@@ -100,6 +101,40 @@ describe("thread records", () => {
   });
 });
 
+describe("OrchestrationV2Subagent", () => {
+  it("carries a workflow coordinator's phases and agents", () => {
+    const subagent = OrchestrationV2Subagent.parse({
+      id: "node-1",
+      threadId: "thread-1",
+      runId: "run-1",
+      parentNodeId: "node-0",
+      origin: "provider_native",
+      createdBy: "agent",
+      driver: "sample-driver",
+      providerInstanceId: "instance-1",
+      providerThreadId: null,
+      childThreadId: null,
+      nativeTaskRef: null,
+      prompt: "Sample prompt",
+      title: null,
+      model: null,
+      status: "running",
+      workflow: {
+        phases: [{ index: 0, title: "Gather" }],
+        agents: [{ index: 0, label: "Reader", state: "a-future-state", startedAt: 1_000 }],
+      },
+      result: null,
+      startedAt: null,
+      completedAt: null,
+      updatedAt: "2026-01-01T00:00:00.000Z",
+    });
+    expect(subagent.workflow?.agents[0]).toMatchObject({
+      label: "Reader",
+      state: "a-future-state",
+    });
+  });
+});
+
 describe("OrchestrationV2NotificationSource", () => {
   it("reads the legacy subagent and command shapes into the plain kinds", () => {
     expect(
@@ -128,6 +163,9 @@ describe("OrchestrationV2NotificationSource", () => {
     });
     expect(OrchestrationV2NotificationSource.parse({ kind: "monitor" })).toEqual({
       kind: "monitor",
+    });
+    expect(OrchestrationV2NotificationSource.parse({ kind: "system" })).toEqual({
+      kind: "system",
     });
   });
   it("reads an unknown kind as background_task", () => {

@@ -1,0 +1,5 @@
+---
+t3code-client: minor
+---
+
+Track T3 Code main through its nightly builds (now 0.0.46-nightly.20261013.3042). New typed RPC methods: orchestration.stopWorkflow, orchestration.searchThread, orchestration.searchThreadStream, and the MCP Apps methods mcpApps.callTool, mcpApps.toolInfo, mcpApps.readResource, and mcpApps.updateModelContext, with their error records. New schema fields: workflow runs on subagents, the subagent.stop command, delegatedTaskId on runs, the system notification source, initialAnswer on questions, promptCacheTtlMs on token usage, lastSnoozeWakeAt on threads, workspaceId and updateRequiredModels on providers, and threadFind flags on the server config. The thread watch accepts acceptCompactTurnItems and restores the omitted turn items; boundedSnapshotProjection does the same for other readers. threads.historyPage takes throughEntryId and view options. projects.mutate checks settings:write locally when a mutation carries scripts. Source control provider kinds are an open slug.

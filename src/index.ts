@@ -48,6 +48,7 @@ export { ThreadsApi } from "./api/threads.ts";
 export type {
   ThreadCreateInput,
   ThreadLaunchInput,
+  ThreadHistoryPageOptions,
   ThreadListOptions,
   ThreadMetaUpdate,
   WatchOptions,

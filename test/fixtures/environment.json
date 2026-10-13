@@ -1,12 +1,12 @@
 {
-  "environmentId": "e23fcf74-4214-481e-b4ae-d4276710c0ab",
+  "environmentId": "a323bbfd-b546-4cc1-8816-76c85f2cc5d9",
   "label": "sample-environment",
   "platform": {
     "os": "linux",
     "arch": "x64",
     "machine": "desktop"
   },
-  "serverVersion": "0.0.46-nightly.20261007.2774",
+  "serverVersion": "0.0.46-nightly.20261013.3042",
   "orchestrationProtocolVersion": 2,
   "capabilities": {
     "repositoryIdentity": true,
@@ -16,21 +16,20 @@
     "fileAttachments": {
       "maxUploadBytes": 52428800
     },
-    "inlineMessageContext": true,
-    "threadSettlement": true,
-    "threadVisitedTracking": true,
-    "threadPullRequestWatch": true,
-    "serverResolvedCommandContext": true,
-    "serverBrowser": true,
-    "worktreesDirectory": true,
     "pullRequests": true,
     "pullRequestChecks": true,
+    "inlineMessageContext": true,
     "requiredWorktreeBootstrap": true,
+    "threadSettlement": true,
     "threadAutoSettlement": true,
     "storageCleanup": true,
+    "storageCleanupRun": true,
+    "otlpEndpointCheck": true,
     "projectWorktreeCleanup": true,
+    "worktreesDirectory": true,
     "threadRestartContinuation": true,
     "projectSettingsOverrides": true,
+    "projectProviderInstanceOverrides": true,
     "threadSnooze": true,
     "environmentThemes": true,
     "usageLimitSources": true,
@@ -41,11 +40,15 @@
     "threadActiveReorder": true,
     "threadAutoSettleOptOut": true,
     "threadTitleRegeneration": true,
+    "threadVisitedTracking": true,
     "threadPullRequestLinking": true,
+    "serverResolvedCommandContext": true,
     "threadPullRequests": true,
+    "threadPullRequestWatch": true,
     "pullRequestStackActions": true,
     "agentActivityPublishing": false,
     "projectCloneTracking": true,
-    "environmentIcon": true
+    "environmentIcon": true,
+    "serverBrowser": true
   }
 }

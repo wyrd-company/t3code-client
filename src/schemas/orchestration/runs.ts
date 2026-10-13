@@ -28,6 +28,7 @@ import {
   taggedUnionWithUnknown,
 } from "../common.ts";
 import { ModelSelection, OrchestrationV2Actor, OrchestrationV2ProviderRef } from "./model.ts";
+import { OrchestrationV2SubagentWorkflow } from "./workflow.ts";
 
 export const RUN_TERMINAL_STATUSES = [
   "completed",
@@ -156,6 +157,8 @@ export const OrchestrationV2Run = z.looseObject({
   checkpointId: CheckpointId.nullable(),
   contextHandoffId: ContextHandoffId.nullable(),
   restartContinuationOfRunId: RunId.optional(),
+  /** The delegated task this run answers, including a follow-up in an existing child thread. */
+  delegatedTaskId: NodeId.optional(),
   /** When the work a wake run continues started; read it through `runWorkStartedAt`. */
   workStartedAt: IsoDateTime.optional(),
   restartCancelledBackgroundWork: z.array(OrchestrationV2RestartCancelledBackgroundWork).optional(),
@@ -258,6 +261,7 @@ export const OrchestrationV2Subagent = z.looseObject({
   prompt: z.string(),
   title: z.string().nullable(),
   model: z.string().nullable(),
+  modelSelection: ModelSelection.optional(),
   completionWake: forwardCompatibleLiteral(["always", "settled_only"]).optional(),
   completionDelivery: OrchestrationV2DelegatedCompletionTaskDelivery.optional(),
   status: forwardCompatibleLiteral([
@@ -271,6 +275,8 @@ export const OrchestrationV2Subagent = z.looseObject({
     "interrupted",
   ]),
   progress: z.string().optional(),
+  /** Present only on a workflow coordinator task. */
+  workflow: OrchestrationV2SubagentWorkflow.optional(),
   result: z.string().nullable(),
   startedAt: IsoDateTime.nullable(),
   completedAt: IsoDateTime.nullable(),

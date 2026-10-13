@@ -54,7 +54,7 @@ lightweight cross-thread view: project and thread summaries.
 In this library a **turn** is one run. `threads.startTurn` sends a message
 and returns a handle that follows the run the server links to it.
 
-## Wire facts (verified against T3 Code 0.0.46-nightly.20261007.2774)
+## Wire facts (verified against T3 Code 0.0.46-nightly.20261013.3042)
 
 The server speaks orchestration protocol 2 and refuses other clients. The
 `/ws` upgrade must carry `?orchestrationProtocol=2` (a 426 answers an upgrade
@@ -135,26 +135,44 @@ to give a better error.
 Orchestration RPC methods (`ORCHESTRATION_V2_WS_METHODS` in the contracts;
 scope in `apps/server/src/auth/RpcAuthorization.ts`):
 
-| Method                                   | Scope        | Payload → result                                                                                                             |
-| ---------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| `orchestration.dispatchCommand`          | orch:operate | `OrchestrationV2Command` → `{sequence}`; fails `OrchestrationV2DispatchCommandError`                                         |
-| `orchestration.launchThread`             | orch:operate | `OrchestrationV2ThreadLaunchInput` → `{threadId, projection, resumed}`                                                       |
-| `orchestration.getThreadProjection`      | orch:read    | `{threadId}` → `OrchestrationV2ThreadProjection` with a bounded timeline window                                              |
-| `orchestration.getTurnItem`              | orch:read    | `{threadId, itemId}` → `{item}` with the full, size-bounded input and output                                                 |
-| `orchestration.getWorkflowScript`        | orch:read    | unchanged                                                                                                                    |
-| `orchestration.getTurnDiff`              | orch:read    | unchanged                                                                                                                    |
-| `orchestration.getFullThreadDiff`        | orch:read    | unchanged                                                                                                                    |
-| `orchestration.searchThreads`            | orch:read    | unchanged                                                                                                                    |
-| `orchestration.getArchivedShellSnapshot` | orch:read    | `{}` → `OrchestrationV2ArchivedShellSnapshot`                                                                                |
-| `orchestration.subscribeArchivedShell`   | orch:read    | stream of `OrchestrationV2ArchivedShellStreamItem`                                                                           |
-| `orchestration.subscribeShell`           | orch:read    | `{afterSequence?, requestCompletionMarker?}` → stream of `OrchestrationV2ShellStreamItem`                                    |
-| `orchestration.subscribeThread`          | orch:read    | `{threadId, afterSequence?, requestCompletionMarker?, acceptBoundedSnapshot?}` → stream of `OrchestrationV2ThreadStreamItem` |
+| Method                                   | Scope        | Payload → result                                                                                                                                      |
+| ---------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `orchestration.dispatchCommand`          | orch:operate | `OrchestrationV2Command` → `{sequence}`; fails `OrchestrationV2DispatchCommandError`                                                                  |
+| `orchestration.launchThread`             | orch:operate | `OrchestrationV2ThreadLaunchInput` → `{threadId, projection, resumed}`                                                                                |
+| `orchestration.getThreadProjection`      | orch:read    | `{threadId}` → `OrchestrationV2ThreadProjection` with a bounded timeline window                                                                       |
+| `orchestration.getTurnItem`              | orch:read    | `{threadId, itemId}` → `{item}` with the full, size-bounded input and output                                                                          |
+| `orchestration.getWorkflowScript`        | orch:read    | unchanged                                                                                                                                             |
+| `orchestration.stopWorkflow`             | orch:operate | `{threadId, subagentId}` → nothing; fails `OrchestrationV2StopWorkflowError` with a `reason`                                                          |
+| `orchestration.getTurnDiff`              | orch:read    | unchanged                                                                                                                                             |
+| `orchestration.getFullThreadDiff`        | orch:read    | unchanged                                                                                                                                             |
+| `orchestration.searchThreads`            | orch:read    | unchanged                                                                                                                                             |
+| `orchestration.searchThread`             | orch:read    | `OrchestrationV2SearchThreadInput` → `OrchestrationV2SearchThreadResult`: one match and the navigation around it                                      |
+| `orchestration.searchThreadStream`       | orch:read    | the same input → stream of results that converge; the last has `complete: true`                                                                       |
+| `orchestration.getArchivedShellSnapshot` | orch:read    | `{}` → `OrchestrationV2ArchivedShellSnapshot`                                                                                                         |
+| `orchestration.subscribeArchivedShell`   | orch:read    | stream of `OrchestrationV2ArchivedShellStreamItem`                                                                                                    |
+| `orchestration.subscribeShell`           | orch:read    | `{afterSequence?, requestCompletionMarker?}` → stream of `OrchestrationV2ShellStreamItem`                                                             |
+| `orchestration.subscribeThread`          | orch:read    | `{threadId, afterSequence?, requestCompletionMarker?, acceptBoundedSnapshot?, acceptCompactTurnItems?}` → stream of `OrchestrationV2ThreadStreamItem` |
 
 Projects are not orchestration commands: `projects.mutate` (orch:operate)
 takes a `ProjectMutation` (`project.create`, `project.update`,
 `project.delete`) and answers with the `Project`; it fails with
-`ProjectMutationError`, whose `cause` names a missing project. The shell
-stream reports projects as `project.updated` and `project.removed`.
+`ProjectMutationError`, whose `cause` names a missing project. A create or
+update that carries `scripts` also needs `settings:write`, because project
+scripts run on the host. The shell stream reports projects as
+`project.updated` and `project.removed`.
+
+A workflow run is a subagent whose `workflow` field carries the provider's
+replace-in-full view of the run: an append-only phase list and one entry
+per agent. `orchestration.stopWorkflow` stops the run by that subagent; the
+`subagent.stop` command stops one provider-native child while its run keeps
+working. The server advertises thread find with `threadFind` and
+`threadFindProgressive` in `ServerConfig`.
+
+With `acceptCompactTurnItems`, a bounded snapshot may omit from
+`projection.turnItems` the items its local visible rows already carry and
+sets `turnItemsOmitLocalVisible: true`. `boundedSnapshotProjection` puts
+them back; the thread watch does this before it yields the snapshot, so a
+watch consumer always sees the whole list.
 
 A thread stream starts with `{kind:"snapshot", snapshotSequence, projection}`
 unless `afterSequence` is given, in which case persisted events after it are
@@ -221,7 +239,10 @@ const config = await client.server.getConfig();
 const codex = config.providers.find((p) => p.instanceId === "codex");
 
 // Projects and threads, idempotently
-const project = await client.projects.ensure({ workspaceRoot: "/srv/repo", title: "repo" });
+const project = await client.projects.ensure({
+  workspaceRoot: "/srv/repo",
+  title: "repo",
+});
 const thread = await client.threads.ensure({
   threadId: stableThreadId,
   projectId: project.id,
@@ -240,7 +261,10 @@ const launched = await client.threads.launch({
 });
 
 // Run a turn and wait for it to settle
-const turn = await client.threads.startTurn({ threadId: thread.id, text: "Review the diff." });
+const turn = await client.threads.startTurn({
+  threadId: thread.id,
+  text: "Review the diff.",
+});
 for await (const item of turn.events()) {
   if (item.kind === "assistant-delta") process.stdout.write(item.delta);
   if (item.kind === "approval-requested")
@@ -292,7 +316,8 @@ src/
     environment.ts          ExecutionEnvironmentDescriptor, repository identity, protocol constants
     httpErrors.ts           Environment*Error records
     rpcErrors.ts            RpcErrorRecord: every tagged error the registered RPC methods declare
-    rpcErrors/              vcs and terminal error records, shared tagged-error helpers
+    rpcErrors/              orchestration, MCP app, vcs, and terminal error records, shared tagged-error helpers
+    mcpApps.ts              MCP App tool calls, tool info, resource reads, model context
     projects.ts             Project, ProjectMutation, icons and scripts, file entries, read/write/search
     orchestration/          mirrors orchestrationV2.ts and the files it imports
       model.ts              ModelSelection, modes, decisions, answers, actor and creation source, ProviderRef
@@ -301,6 +326,7 @@ src/
       pullRequest.ts        thread ↔ pull request links
       thread.ts             OrchestrationV2AppThread
       runs.ts               runs, attempts, execution nodes, subagents, checkpoints, workspace strategy
+      workflow.ts           a workflow coordinator's phases, agents, and run handles
       providerState.ts      provider sessions, threads, turns, runtime requests
       providerCapabilities.ts
       providerRuntime.ts    token usage, tool activity labels
@@ -310,6 +336,8 @@ src/
       turnItems.ts          OrchestrationV2TurnItem union, projected rows
       events.ts             OrchestrationV2DomainEvent union
       projection.ts         OrchestrationV2ThreadProjection, detail, bounded, history page
+      boundedSnapshot.ts    boundedSnapshotProjection: restores a compact snapshot's turn items
+      threadFind.ts         find within one thread
       shell.ts              project and thread shells, shell snapshot and stream items
       stream.ts             thread stream items, RPC inputs and outputs, launch
       commands.ts           OrchestrationV2Command union (commands/*.ts by family)
@@ -581,7 +609,8 @@ interrupted, so a long-lived shared signal does not accumulate closures.
 ### rpc/registry.ts and rpc/client.ts
 
 ```ts
-export interface RpcMethodSpec<P, S> { payload: z.ZodType<P>; success: z.ZodType<S>; stream: boolean; scope: AuthEnvironmentScope }
+export interface RpcMethodSpec<P, S> { payload: z.ZodType<P>; success: z.ZodType<S>; stream: boolean; scope: AuthEnvironmentScope;
+  payloadScopes?(payload: P): readonly AuthEnvironmentScope[] }   // further scopes a particular payload needs
 export const rpcMethods: { [K in RpcMethodName]: RpcMethodSpec<…> }   // assembled from rpc/methods/*.ts
 export type RpcMethodName = keyof typeof rpcMethods
 export type RpcPayload<M> / RpcSuccess<M>
@@ -595,8 +624,9 @@ export class RpcClient {
 export type StreamItem<T> = { kind: "item"; value: T } | { kind: "decode-error"; error: T3DecodeError }
 ```
 
-Registry coverage for this version, all typed: the twelve orchestration
-methods; `projects.mutate`; `server.probe`, `server.getConfig`,
+Registry coverage for this version, all typed: the fifteen orchestration
+methods; `projects.mutate`; `mcpApps.callTool`, `mcpApps.toolInfo`,
+`mcpApps.readResource`, `mcpApps.updateModelContext`; `server.probe`, `server.getConfig`,
 `server.getSettings`, `server.refreshProviders`, `subscribeServerConfig`,
 `subscribeServerLifecycle`, `subscribeAuthAccess`; `vcs.listRefs`,
 `vcs.refreshStatus`, `vcs.createWorktree`, `vcs.removeWorktree`,
@@ -609,11 +639,14 @@ methods; `projects.mutate`; `server.probe`, `server.getConfig`,
 `callRaw` and `streamRaw` until it is added; adding a method is one entry in
 a family file. Each entry carries the scope the server checks: file reads
 need `filesystem:read`, file writes `filesystem:write`, worktree and ref
-changes `source-control:write`, terminal event streams `terminal:read`.
+changes `source-control:write`, terminal event streams `terminal:read`, MCP
+app tool calls and model context `orchestration:operate`.
 
 Before sending, `RpcClient` checks the credential's scopes when known and
 raises `T3AuthError("insufficient_scope")` locally so a workflow fails fast
-with the scope name instead of a generic server error.
+with the scope name instead of a generic server error. A method whose scope
+depends on the payload declares `payloadScopes`, checked once the payload is
+valid.
 
 ### auth/
 
@@ -702,7 +735,7 @@ export class ThreadsApi {
   get(threadId): Promise<OrchestrationV2ThreadShell | undefined>  // active first, then the archived shell
   detail(threadId): Promise<OrchestrationV2ThreadDetailSnapshot>  // HTTP, the full projection; T3NotFoundError
   projection(threadId): Promise<OrchestrationV2ThreadProjection>  // RPC, bounded timeline window
-  historyPage(threadId, cursor): Promise<OrchestrationV2ThreadHistoryPage>
+  historyPage(threadId, cursor, options?: { throughEntryId?; view?: "conversation" | "activity" }): Promise<OrchestrationV2ThreadHistoryPage>
   create(input: ThreadCreateInput): Promise<OrchestrationV2ThreadShell>   // caller may pass threadId; else generated
   ensure(input: ThreadCreateInput & { threadId: ThreadId }): Promise<OrchestrationV2ThreadShell>   // exists → return as is
   launch(input: ThreadLaunchInput): Promise<OrchestrationV2ThreadLaunchResult>  // thread + workspace + optional first message
