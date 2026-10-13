@@ -144,6 +144,8 @@ export const OrchestrationV2ThreadShell = z.looseObject({
   unsettledAt: IsoDateTime.nullable().optional(),
   snoozedUntil: IsoDateTime.nullable().optional(),
   snoozedAt: IsoDateTime.nullable().optional(),
+  /** Manual wakes restart inactivity without changing the sidebar's sort position. */
+  lastSnoozeWakeAt: IsoDateTime.nullable().optional(),
   limitRecovery: OrchestrationV2LimitRecovery.nullable().optional(),
   pinnedAt: IsoDateTime.nullable().optional(),
   autoSettleDisabledAt: IsoDateTime.nullable().optional(),

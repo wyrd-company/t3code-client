@@ -36,18 +36,25 @@ tarball and the changelog section as notes.
 
 ## Tracking T3 Code
 
-Each upstream T3 Code release gets its own client release. The client steps
-one upstream version at a time, so every release targets exactly one T3 Code
-release. To step to the next one:
+The library tracks upstream `main`. The `t3` devDependency names the
+upstream build the library targets: the newest nightly, which upstream cuts
+from `main` several times a day and publishes under the `nightly` dist-tag.
+Each upstream build has a git tag, `vX.Y.Z-nightly.YYYYMMDD.N`. An update
+moves to the newest nightly:
 
-1. Set the `t3` devDependency to the next version and install.
+1. Read the tag with `npm view t3 dist-tags.nightly`, set the `t3`
+   devDependency to that version, and install. pnpm adds the version to
+   `minimumReleaseAgeExclude` in `pnpm-workspace.yaml`; remove the entries
+   for the previous version.
 2. Compare the upstream contracts (`packages/contracts/src`), the server's
-   RPC handlers and scopes, and its HTTP routes between the two releases.
-   Update the schemas in `src/schemas/` to match. Type a new RPC method in
-   `src/rpc/methods/` when it belongs to a family the registry already covers;
-   other new methods stay reachable through `rpc.callRaw` and `rpc.streamRaw`.
-3. Run `pnpm run test:live` against the new server.
-4. Update the version named in `docs/design.md` and add an intent.
+   RPC handlers and scopes, and its HTTP routes between the tags of the two
+   builds. Update the schemas in `src/schemas/` to match: what upstream adds
+   is added, what it removes is removed. Type a new RPC method in
+   `src/rpc/methods/`; methods in the areas `docs/design.md` lists as out of
+   scope stay reachable through `rpc.callRaw` and `rpc.streamRaw`.
+3. Capture the fixtures in `test/fixtures/` again from the new server (see
+   `docs/testing.md`) and run `pnpm run test:live`.
+4. Update the build named in `docs/design.md` and add an intent.
 
 ## Recovery
 

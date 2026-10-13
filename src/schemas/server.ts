@@ -80,6 +80,9 @@ export const ServerConfig = z.looseObject({
   threadSnapshotPagination: z.boolean().optional(),
   /** Thread reads accept the `reasoningMessages` opt-in. */
   reasoningMessages: z.boolean().optional(),
+  /** The server answers `orchestration.searchThread`; progressive adds its streaming form. */
+  threadFind: z.boolean().optional(),
+  threadFindProgressive: z.boolean().optional(),
   /**
    * Folder behind the environment's Scratch project. Present only when the
    * server answers `projects.ensureScratch` and its data directory is outside

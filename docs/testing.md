@@ -6,10 +6,13 @@
 `test/support/fakeServer.ts`, an in-process `ws` server plus a fake `fetch`
 that speak the same envelope protocol and HTTP routes as T3 Code. No network.
 
-`test/fixtures/` holds payloads captured from the pinned server with the
+`test/fixtures/` holds payloads captured from the targeted server with the
 client itself (environment descriptor, server config, shell snapshot, thread
-detail), with paths and names replaced by generic values and the server's
-skill and command listings emptied. The schema tests decode them, so a fixture
+detail), with paths, names, and provider accounts replaced by generic values
+and the server's skill and command listings emptied. `task fixtures` captures
+them again (`test/live/captureFixtures.ts`). The server reads this machine's
+provider logins, so review the result for anything identifying before
+committing it. The schema tests decode them, so a fixture
 captured from a newer server shows where the schemas have to change.
 
 ## Live tests
@@ -17,8 +20,8 @@ captured from a newer server shows where the schemas have to change.
 `pnpm run test:live` runs `test/live/**` against a real server.
 `test/live/globalSetup.ts` starts the `t3` devDependency on a free loopback
 port with its own data directory, issues a bearer token, and stops the server
-when the run ends. The pinned `t3` version is the server release this library
-targets, so the live suite is the check that the client still matches it.
+when the run ends. The `t3` version is the server build this library targets,
+so the live suite is the check that the client still matches it.
 
 | Variable          | Meaning                                                             |
 | ----------------- | ------------------------------------------------------------------- |

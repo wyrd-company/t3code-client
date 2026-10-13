@@ -91,6 +91,11 @@ export interface ThreadListOptions {
   readonly includeArchived?: boolean;
 }
 
+export interface ThreadHistoryPageOptions {
+  readonly throughEntryId?: string;
+  readonly view?: "conversation" | "activity";
+}
+
 export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
 
 export class ThreadsApi {
@@ -166,16 +171,21 @@ export class ThreadsApi {
     return this.rpc.call("orchestration.getThreadProjection", { threadId }, signal);
   }
 
-  /** An older timeline page for a bounded snapshot's `historyCursor`. */
+  /**
+   * An older timeline page for a bounded snapshot's `historyCursor`.
+   * `throughEntryId` extends the page until it reaches that entry; the
+   * `conversation` view keeps only conversation rows.
+   */
   historyPage(
     threadId: ThreadId,
     cursor: string,
+    options: ThreadHistoryPageOptions = {},
     signal?: AbortSignal,
   ): Promise<OrchestrationV2ThreadHistoryPage> {
     return this.http.request({
       method: "GET",
       path: `/api/orchestration/threads/${encodeURIComponent(threadId)}/history`,
-      query: { cursor },
+      query: { cursor, ...options },
       auth: "required",
       headers: orchestrationHttpHeaders,
       decode: OrchestrationV2ThreadHistoryPage,

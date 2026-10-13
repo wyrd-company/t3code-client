@@ -145,6 +145,8 @@ export const OrchestrationV2ProviderTurnTokenUsage = z.looseObject({
   cachedInputTokens: NonNegativeInt.optional(),
   outputTokens: NonNegativeInt.optional(),
   reasoningOutputTokens: NonNegativeInt.optional(),
+  /** Prompt cache lifetime; the cache is cold once `updatedAt` is this old. */
+  promptCacheTtlMs: PositiveInt.optional(),
   updatedAt: z.string(),
 });
 export type OrchestrationV2ProviderTurnTokenUsage = z.infer<

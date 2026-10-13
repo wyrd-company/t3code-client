@@ -8,6 +8,7 @@ import { vcsMethods } from "./methods/vcs.ts";
 import { projectsMethods } from "./methods/projects.ts";
 import { terminalMethods } from "./methods/terminal.ts";
 import { authAccessMethods } from "./methods/authAccess.ts";
+import { mcpAppsMethods } from "./methods/mcpApps.ts";
 
 export const rpcMethods = {
   ...orchestrationMethods,
@@ -16,6 +17,7 @@ export const rpcMethods = {
   ...projectsMethods,
   ...terminalMethods,
   ...authAccessMethods,
+  ...mcpAppsMethods,
 };
 export type RpcMethods = typeof rpcMethods;
 export type RpcMethodName = keyof RpcMethods;

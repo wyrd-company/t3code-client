@@ -113,6 +113,8 @@ export const ServerProviderAuth = z.looseObject({
   email: TrimmedNonEmptyString.optional(),
   subscriptionSharing: z.boolean().optional(),
   profileId: TrimmedNonEmptyString.optional(),
+  /** The workspace or organization whose quota the login draws on. */
+  workspaceId: TrimmedNonEmptyString.optional(),
 });
 export type ServerProviderAuth = z.infer<typeof ServerProviderAuth>;
 export const ServerProviderAvailability = forwardCompatibleLiteral(["available", "unavailable"]);
@@ -132,6 +134,13 @@ export const ServerProviderModel = z.looseObject({
   capabilities: ModelCapabilities.nullable(),
 });
 export type ServerProviderModel = z.infer<typeof ServerProviderModel>;
+/** A model the installed provider version is too old to run; never selectable. */
+export const ServerProviderUpdateRequiredModel = z.looseObject({
+  slug: TrimmedNonEmptyString,
+  name: TrimmedNonEmptyString,
+  badge: forwardCompatibleLiteral(["new"]).optional(),
+  minVersion: TrimmedNonEmptyString,
+});
 export const ServerProviderSkill = z.looseObject({
   name: TrimmedNonEmptyString,
   description: TrimmedNonEmptyString.optional(),
@@ -282,6 +291,7 @@ export const ServerProvider = z.looseObject({
   availability: ServerProviderAvailability.optional(),
   unavailableReason: TrimmedNonEmptyString.optional(),
   models: z.array(ServerProviderModel),
+  updateRequiredModels: z.array(ServerProviderUpdateRequiredModel).optional(),
   slashCommands: z.array(ServerProviderSlashCommand).default([]),
   skills: z.array(ServerProviderSkill).default([]),
   workspaceSnapshots: z.array(ServerProviderWorkspaceSnapshot).optional(),

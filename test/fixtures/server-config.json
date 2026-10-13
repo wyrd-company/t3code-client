@@ -1,13 +1,13 @@
 {
   "environment": {
-    "environmentId": "e23fcf74-4214-481e-b4ae-d4276710c0ab",
+    "environmentId": "a323bbfd-b546-4cc1-8816-76c85f2cc5d9",
     "label": "sample-environment",
     "platform": {
       "os": "linux",
       "arch": "x64",
       "machine": "desktop"
     },
-    "serverVersion": "0.0.46-nightly.20261007.2774",
+    "serverVersion": "0.0.46-nightly.20261013.3042",
     "orchestrationProtocolVersion": 2,
     "capabilities": {
       "repositoryIdentity": true,
@@ -17,21 +17,20 @@
       "fileAttachments": {
         "maxUploadBytes": 52428800
       },
-      "inlineMessageContext": true,
-      "threadSettlement": true,
-      "threadVisitedTracking": true,
-      "threadPullRequestWatch": true,
-      "serverResolvedCommandContext": true,
-      "serverBrowser": true,
-      "worktreesDirectory": true,
       "pullRequests": true,
       "pullRequestChecks": true,
+      "inlineMessageContext": true,
       "requiredWorktreeBootstrap": true,
+      "threadSettlement": true,
       "threadAutoSettlement": true,
       "storageCleanup": true,
+      "storageCleanupRun": true,
+      "otlpEndpointCheck": true,
       "projectWorktreeCleanup": true,
+      "worktreesDirectory": true,
       "threadRestartContinuation": true,
       "projectSettingsOverrides": true,
+      "projectProviderInstanceOverrides": true,
       "threadSnooze": true,
       "environmentThemes": true,
       "usageLimitSources": true,
@@ -42,19 +41,23 @@
       "threadActiveReorder": true,
       "threadAutoSettleOptOut": true,
       "threadTitleRegeneration": true,
+      "threadVisitedTracking": true,
       "threadPullRequestLinking": true,
+      "serverResolvedCommandContext": true,
       "threadPullRequests": true,
+      "threadPullRequestWatch": true,
       "pullRequestStackActions": true,
       "agentActivityPublishing": false,
       "projectCloneTracking": true,
-      "environmentIcon": true
+      "environmentIcon": true,
+      "serverBrowser": true
     }
   },
   "auth": {
     "policy": "loopback-browser",
     "bootstrapMethods": ["one-time-token"],
     "sessionMethods": ["browser-session-cookie", "bearer-access-token", "dpop-access-token"],
-    "sessionCookieName": "t3_session_45879_2bdf141d8602",
+    "sessionCookieName": "t3_session_33411_69205a563768",
     "serverUpdateScope": "environment:maintain"
   },
   "cwd": "/srv/sample",
@@ -127,6 +130,24 @@
         "shiftKey": false,
         "altKey": true,
         "modKey": true
+      }
+    },
+    {
+      "command": "threadPanel.toggle",
+      "shortcut": {
+        "key": "b",
+        "metaKey": false,
+        "ctrlKey": false,
+        "shiftKey": true,
+        "altKey": false,
+        "modKey": true
+      },
+      "whenAst": {
+        "type": "not",
+        "node": {
+          "type": "identifier",
+          "name": "terminalFocus"
+        }
       }
     },
     {
@@ -696,6 +717,34 @@
       }
     },
     {
+      "command": "chat.find",
+      "shortcut": {
+        "key": "f",
+        "metaKey": false,
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "modKey": true
+      },
+      "whenAst": {
+        "type": "and",
+        "left": {
+          "type": "not",
+          "node": {
+            "type": "identifier",
+            "name": "terminalFocus"
+          }
+        },
+        "right": {
+          "type": "not",
+          "node": {
+            "type": "identifier",
+            "name": "previewFocus"
+          }
+        }
+      }
+    },
+    {
       "command": "modelPicker.toggle",
       "shortcut": {
         "key": "m",
@@ -995,8 +1044,18 @@
         "modKey": true
       },
       "whenAst": {
-        "type": "identifier",
-        "name": "isDesktop"
+        "type": "and",
+        "left": {
+          "type": "not",
+          "node": {
+            "type": "identifier",
+            "name": "modelPickerOpen"
+          }
+        },
+        "right": {
+          "type": "identifier",
+          "name": "isDesktop"
+        }
       }
     },
     {
@@ -1010,8 +1069,18 @@
         "modKey": true
       },
       "whenAst": {
-        "type": "identifier",
-        "name": "isDesktop"
+        "type": "and",
+        "left": {
+          "type": "not",
+          "node": {
+            "type": "identifier",
+            "name": "modelPickerOpen"
+          }
+        },
+        "right": {
+          "type": "identifier",
+          "name": "isDesktop"
+        }
       }
     },
     {
@@ -1025,8 +1094,18 @@
         "modKey": true
       },
       "whenAst": {
-        "type": "identifier",
-        "name": "isDesktop"
+        "type": "and",
+        "left": {
+          "type": "not",
+          "node": {
+            "type": "identifier",
+            "name": "modelPickerOpen"
+          }
+        },
+        "right": {
+          "type": "identifier",
+          "name": "isDesktop"
+        }
       }
     },
     {
@@ -1040,8 +1119,18 @@
         "modKey": true
       },
       "whenAst": {
-        "type": "identifier",
-        "name": "isDesktop"
+        "type": "and",
+        "left": {
+          "type": "not",
+          "node": {
+            "type": "identifier",
+            "name": "modelPickerOpen"
+          }
+        },
+        "right": {
+          "type": "identifier",
+          "name": "isDesktop"
+        }
       }
     },
     {
@@ -1055,8 +1144,18 @@
         "modKey": true
       },
       "whenAst": {
-        "type": "identifier",
-        "name": "isDesktop"
+        "type": "and",
+        "left": {
+          "type": "not",
+          "node": {
+            "type": "identifier",
+            "name": "modelPickerOpen"
+          }
+        },
+        "right": {
+          "type": "identifier",
+          "name": "isDesktop"
+        }
       }
     },
     {
@@ -1070,8 +1169,18 @@
         "modKey": true
       },
       "whenAst": {
-        "type": "identifier",
-        "name": "isDesktop"
+        "type": "and",
+        "left": {
+          "type": "not",
+          "node": {
+            "type": "identifier",
+            "name": "modelPickerOpen"
+          }
+        },
+        "right": {
+          "type": "identifier",
+          "name": "isDesktop"
+        }
       }
     },
     {
@@ -1085,8 +1194,18 @@
         "modKey": true
       },
       "whenAst": {
-        "type": "identifier",
-        "name": "isDesktop"
+        "type": "and",
+        "left": {
+          "type": "not",
+          "node": {
+            "type": "identifier",
+            "name": "modelPickerOpen"
+          }
+        },
+        "right": {
+          "type": "identifier",
+          "name": "isDesktop"
+        }
       }
     },
     {
@@ -1100,8 +1219,18 @@
         "modKey": true
       },
       "whenAst": {
-        "type": "identifier",
-        "name": "isDesktop"
+        "type": "and",
+        "left": {
+          "type": "not",
+          "node": {
+            "type": "identifier",
+            "name": "modelPickerOpen"
+          }
+        },
+        "right": {
+          "type": "identifier",
+          "name": "isDesktop"
+        }
       }
     },
     {
@@ -1115,8 +1244,18 @@
         "modKey": true
       },
       "whenAst": {
-        "type": "identifier",
-        "name": "isDesktop"
+        "type": "and",
+        "left": {
+          "type": "not",
+          "node": {
+            "type": "identifier",
+            "name": "modelPickerOpen"
+          }
+        },
+        "right": {
+          "type": "identifier",
+          "name": "isDesktop"
+        }
       }
     },
     {
@@ -1430,49 +1569,504 @@
       "driver": "codex",
       "displayName": "Codex",
       "continuation": {
-        "groupKey": "codex:home:/home/sample"
+        "groupKey": "codex:home:/home/sample/.codex"
       },
       "showInteractionModeToggle": true,
       "reportsContextWindow": true,
       "enabled": true,
-      "installed": false,
-      "version": null,
-      "status": "warning",
+      "installed": true,
+      "version": "0.160.1",
+      "status": "ready",
       "auth": {
-        "status": "unknown"
+        "status": "authenticated",
+        "type": "chatgpt",
+        "label": "ChatGPT Pro 20x Subscription",
+        "email": "user@example.test",
+        "workspaceId": "00000000-0000-4000-8000-000000000001"
       },
-      "checkedAt": "2026-10-07T15:21:47.055Z",
-      "message": "Codex provider status has not been checked in this session yet.",
-      "models": [],
+      "checkedAt": "2026-10-13T02:28:20.341Z",
+      "models": [
+        {
+          "slug": "gpt-6.1-sol",
+          "name": "GPT-6.1-Sol",
+          "isCustom": false,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "id": "reasoningEffort",
+                "label": "Reasoning",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "low",
+                    "label": "Low",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "medium",
+                    "label": "Medium"
+                  },
+                  {
+                    "id": "high",
+                    "label": "High"
+                  },
+                  {
+                    "id": "xhigh",
+                    "label": "Extra High"
+                  },
+                  {
+                    "id": "max",
+                    "label": "Max"
+                  },
+                  {
+                    "id": "ultra",
+                    "label": "Ultra"
+                  }
+                ],
+                "currentValue": "low"
+              },
+              {
+                "id": "serviceTier",
+                "label": "Service Tier",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "default",
+                    "label": "Standard",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "priority",
+                    "label": "Fast",
+                    "description": "2x speed, increased usage"
+                  }
+                ],
+                "currentValue": "default"
+              }
+            ]
+          }
+        },
+        {
+          "slug": "gpt-6-astra",
+          "name": "GPT-6-Astra",
+          "isCustom": false,
+          "isDefault": true,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "id": "reasoningEffort",
+                "label": "Reasoning",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "low",
+                    "label": "Low"
+                  },
+                  {
+                    "id": "medium",
+                    "label": "Medium",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "high",
+                    "label": "High"
+                  },
+                  {
+                    "id": "xhigh",
+                    "label": "Extra High"
+                  },
+                  {
+                    "id": "max",
+                    "label": "Max"
+                  },
+                  {
+                    "id": "ultra",
+                    "label": "Ultra"
+                  }
+                ],
+                "currentValue": "medium"
+              },
+              {
+                "id": "serviceTier",
+                "label": "Service Tier",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "default",
+                    "label": "Standard",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "priority",
+                    "label": "Fast",
+                    "description": "2x speed, increased usage"
+                  }
+                ],
+                "currentValue": "default"
+              }
+            ]
+          }
+        },
+        {
+          "slug": "gpt-6-sol",
+          "name": "GPT-6-Sol",
+          "isCustom": false,
+          "isLegacy": true,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "id": "reasoningEffort",
+                "label": "Reasoning",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "low",
+                    "label": "Low"
+                  },
+                  {
+                    "id": "medium",
+                    "label": "Medium",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "high",
+                    "label": "High"
+                  },
+                  {
+                    "id": "xhigh",
+                    "label": "Extra High"
+                  },
+                  {
+                    "id": "max",
+                    "label": "Max"
+                  },
+                  {
+                    "id": "ultra",
+                    "label": "Ultra"
+                  }
+                ],
+                "currentValue": "medium"
+              },
+              {
+                "id": "serviceTier",
+                "label": "Service Tier",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "default",
+                    "label": "Standard",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "priority",
+                    "label": "Fast",
+                    "description": "1.5x speed"
+                  }
+                ],
+                "currentValue": "default"
+              }
+            ]
+          }
+        },
+        {
+          "slug": "gpt-6-luna",
+          "name": "GPT-6-Luna",
+          "isCustom": false,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "id": "reasoningEffort",
+                "label": "Reasoning",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "low",
+                    "label": "Low"
+                  },
+                  {
+                    "id": "medium",
+                    "label": "Medium",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "high",
+                    "label": "High"
+                  },
+                  {
+                    "id": "xhigh",
+                    "label": "Extra High"
+                  },
+                  {
+                    "id": "max",
+                    "label": "Max"
+                  }
+                ],
+                "currentValue": "medium"
+              },
+              {
+                "id": "serviceTier",
+                "label": "Service Tier",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "default",
+                    "label": "Standard",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "priority",
+                    "label": "Fast",
+                    "description": "1.5x speed"
+                  }
+                ],
+                "currentValue": "default"
+              }
+            ]
+          }
+        },
+        {
+          "slug": "gpt-5.6-sol",
+          "name": "GPT-5.6-Sol",
+          "isCustom": false,
+          "isLegacy": true,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "id": "reasoningEffort",
+                "label": "Reasoning",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "low",
+                    "label": "Low",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "medium",
+                    "label": "Medium"
+                  },
+                  {
+                    "id": "high",
+                    "label": "High"
+                  },
+                  {
+                    "id": "xhigh",
+                    "label": "Extra High"
+                  },
+                  {
+                    "id": "max",
+                    "label": "Max"
+                  },
+                  {
+                    "id": "ultra",
+                    "label": "Ultra"
+                  }
+                ],
+                "currentValue": "low"
+              },
+              {
+                "id": "serviceTier",
+                "label": "Service Tier",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "default",
+                    "label": "Standard",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "priority",
+                    "label": "Fast",
+                    "description": "1.5x speed, increased usage"
+                  }
+                ],
+                "currentValue": "default"
+              }
+            ]
+          }
+        },
+        {
+          "slug": "gpt-5.6-terra",
+          "name": "GPT-5.6-Terra",
+          "isCustom": false,
+          "isLegacy": true,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "id": "reasoningEffort",
+                "label": "Reasoning",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "low",
+                    "label": "Low"
+                  },
+                  {
+                    "id": "medium",
+                    "label": "Medium",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "high",
+                    "label": "High"
+                  },
+                  {
+                    "id": "xhigh",
+                    "label": "Extra High"
+                  },
+                  {
+                    "id": "max",
+                    "label": "Max"
+                  },
+                  {
+                    "id": "ultra",
+                    "label": "Ultra"
+                  }
+                ],
+                "currentValue": "medium"
+              },
+              {
+                "id": "serviceTier",
+                "label": "Service Tier",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "default",
+                    "label": "Standard",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "priority",
+                    "label": "Fast",
+                    "description": "1.5x speed, increased usage"
+                  }
+                ],
+                "currentValue": "default"
+              }
+            ]
+          }
+        },
+        {
+          "slug": "gpt-5.6-luna",
+          "name": "GPT-5.6-Luna",
+          "isCustom": false,
+          "isLegacy": true,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "id": "reasoningEffort",
+                "label": "Reasoning",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "low",
+                    "label": "Low"
+                  },
+                  {
+                    "id": "medium",
+                    "label": "Medium",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "high",
+                    "label": "High"
+                  },
+                  {
+                    "id": "xhigh",
+                    "label": "Extra High"
+                  },
+                  {
+                    "id": "max",
+                    "label": "Max"
+                  }
+                ],
+                "currentValue": "medium"
+              },
+              {
+                "id": "serviceTier",
+                "label": "Service Tier",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "default",
+                    "label": "Standard",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "priority",
+                    "label": "Fast",
+                    "description": "1.5x speed, increased usage"
+                  }
+                ],
+                "currentValue": "default"
+              }
+            ]
+          }
+        }
+      ],
       "slashCommands": [],
-      "skills": []
+      "skills": [],
+      "usageLimits": {
+        "checkedAt": "2026-10-13T02:28:20.341Z",
+        "windows": [
+          {
+            "id": "primary",
+            "kind": "weekly",
+            "label": "Weekly",
+            "usedPercent": 1,
+            "resetsAt": "2026-10-18T05:07:07.000Z",
+            "windowDurationMins": 10080
+          }
+        ],
+        "resetCredits": {
+          "availableCount": 3,
+          "nextExpiresAt": "2026-10-22T20:51:23.000Z"
+        }
+      },
+      "versionAdvisory": {
+        "status": "behind_latest",
+        "currentVersion": "0.160.1",
+        "latestVersion": "0.162.1",
+        "updateCommand": "/home/sample/.local/bin/codex update",
+        "canUpdate": true,
+        "canInstallVersion": false,
+        "checkedAt": "2026-10-13T02:28:21.154Z",
+        "message": "Install the update now or review provider settings."
+      },
+      "compatibilityAdvisory": {
+        "status": "supported",
+        "latestVersionStatus": "supported",
+        "message": null,
+        "recommendedVersion": null,
+        "recommendedRange": ">=0.159.0"
+      }
     },
     {
       "instanceId": "claudeAgent",
       "driver": "claudeAgent",
       "displayName": "Claude",
       "continuation": {
-        "groupKey": "claude:home:/home/sample"
+        "groupKey": "claude:home:/home/sample/.claude"
       },
       "showInteractionModeToggle": true,
       "reportsContextWindow": true,
       "enabled": true,
       "installed": true,
-      "version": "2.1.289",
+      "version": "2.1.296",
       "status": "ready",
       "auth": {
         "status": "authenticated",
         "type": "Claude Max",
         "label": "Claude Max Subscription",
-        "email": "user@example.test"
+        "email": "user@example.test",
+        "workspaceId": "00000000-0000-4000-8000-000000000001"
       },
-      "checkedAt": "2026-10-07T15:21:47.059Z",
+      "checkedAt": "2026-10-13T02:28:20.342Z",
       "models": [
         {
           "slug": "claude-opus-5-5",
           "name": "Claude Opus 5.5",
-          "aliases": ["opus-5.5", "claude-opus-5.5"],
-          "badge": "new",
+          "aliases": ["opus", "opus-5.5", "claude-opus-5.5"],
           "isCustom": false,
           "capabilities": {
             "optionDescriptors": [
@@ -1518,22 +2112,6 @@
                 "id": "fastMode",
                 "label": "Fast Mode",
                 "type": "boolean"
-              },
-              {
-                "id": "contextWindow",
-                "label": "Context Window",
-                "type": "select",
-                "options": [
-                  {
-                    "id": "200k",
-                    "label": "200k"
-                  },
-                  {
-                    "id": "1m",
-                    "label": "1M",
-                    "isDefault": true
-                  }
-                ]
               }
             ]
           }
@@ -1541,8 +2119,7 @@
         {
           "slug": "claude-sonnet-5-5",
           "name": "Claude Sonnet 5.5",
-          "aliases": ["sonnet-5.5", "claude-sonnet-5.5"],
-          "badge": "new",
+          "aliases": ["sonnet", "sonnet-5.5", "claude-sonnet-5.5"],
           "isCustom": false,
           "capabilities": {
             "optionDescriptors": [
@@ -1578,22 +2155,6 @@
                   }
                 ],
                 "promptInjectedValues": ["ultrathink"]
-              },
-              {
-                "id": "contextWindow",
-                "label": "Context Window",
-                "type": "select",
-                "options": [
-                  {
-                    "id": "200k",
-                    "label": "200k",
-                    "isDefault": true
-                  },
-                  {
-                    "id": "1m",
-                    "label": "1M"
-                  }
-                ]
               }
             ]
           }
@@ -1643,22 +2204,6 @@
                   }
                 ],
                 "promptInjectedValues": ["ultrathink"]
-              },
-              {
-                "id": "contextWindow",
-                "label": "Context Window",
-                "type": "select",
-                "options": [
-                  {
-                    "id": "200k",
-                    "label": "200k"
-                  },
-                  {
-                    "id": "1m",
-                    "label": "1M",
-                    "isDefault": true
-                  }
-                ]
               }
             ]
           }
@@ -1707,22 +2252,6 @@
                   }
                 ],
                 "promptInjectedValues": ["ultrathink"]
-              },
-              {
-                "id": "contextWindow",
-                "label": "Context Window",
-                "type": "select",
-                "options": [
-                  {
-                    "id": "200k",
-                    "label": "200k"
-                  },
-                  {
-                    "id": "1m",
-                    "label": "1M",
-                    "isDefault": true
-                  }
-                ]
               }
             ]
           }
@@ -1730,8 +2259,9 @@
         {
           "slug": "claude-opus-5",
           "name": "Claude Opus 5",
-          "aliases": ["opus", "opus-5", "claude-opus-5.0", "claude-opus-5-0"],
+          "aliases": ["opus-5", "claude-opus-5.0", "claude-opus-5-0"],
           "isCustom": false,
+          "isLegacy": true,
           "capabilities": {
             "optionDescriptors": [
               {
@@ -1776,22 +2306,6 @@
                 "id": "fastMode",
                 "label": "Fast Mode",
                 "type": "boolean"
-              },
-              {
-                "id": "contextWindow",
-                "label": "Context Window",
-                "type": "select",
-                "options": [
-                  {
-                    "id": "200k",
-                    "label": "200k"
-                  },
-                  {
-                    "id": "1m",
-                    "label": "1M",
-                    "isDefault": true
-                  }
-                ]
               }
             ]
           }
@@ -2002,8 +2516,9 @@
         {
           "slug": "claude-sonnet-5",
           "name": "Claude Sonnet 5",
-          "aliases": ["sonnet", "sonnet-5", "claude-sonnet-5.0", "claude-sonnet-5-0"],
+          "aliases": ["sonnet-5", "claude-sonnet-5.0", "claude-sonnet-5-0"],
           "isCustom": false,
+          "isLegacy": true,
           "capabilities": {
             "optionDescriptors": [
               {
@@ -2038,22 +2553,6 @@
                   }
                 ],
                 "promptInjectedValues": ["ultrathink"]
-              },
-              {
-                "id": "contextWindow",
-                "label": "Context Window",
-                "type": "select",
-                "options": [
-                  {
-                    "id": "200k",
-                    "label": "200k",
-                    "isDefault": true
-                  },
-                  {
-                    "id": "1m",
-                    "label": "1M"
-                  }
-                ]
               }
             ]
           }
@@ -2115,9 +2614,53 @@
           }
         },
         {
+          "slug": "claude-haiku-5-5",
+          "name": "Claude Haiku 5.5",
+          "aliases": ["haiku", "haiku-5.5", "claude-haiku-5.5"],
+          "badge": "new",
+          "isCustom": false,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "id": "effort",
+                "label": "Reasoning",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "low",
+                    "label": "Low"
+                  },
+                  {
+                    "id": "medium",
+                    "label": "Medium",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "high",
+                    "label": "High"
+                  },
+                  {
+                    "id": "xhigh",
+                    "label": "Extra High"
+                  },
+                  {
+                    "id": "max",
+                    "label": "Max"
+                  },
+                  {
+                    "id": "ultrathink",
+                    "label": "Ultrathink"
+                  }
+                ],
+                "promptInjectedValues": ["ultrathink"]
+              }
+            ]
+          }
+        },
+        {
           "slug": "claude-haiku-4-5",
           "name": "Claude Haiku 4.5",
-          "aliases": ["haiku", "haiku-4.5", "claude-haiku-4.5", "claude-haiku-4-5-20251001"],
+          "aliases": ["haiku-4.5", "claude-haiku-4.5", "claude-haiku-4-5-20251001"],
           "isCustom": false,
           "isLegacy": true,
           "capabilities": {
@@ -2134,30 +2677,30 @@
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-10-07T15:21:47.059Z",
+        "checkedAt": "2026-10-13T02:28:20.342Z",
         "windows": [
           {
             "id": "five_hour",
             "kind": "session",
             "label": "Session",
-            "usedPercent": 23,
-            "resetsAt": "2026-10-07T17:40:00.492Z",
+            "usedPercent": 11,
+            "resetsAt": "2026-10-13T03:00:00.006Z",
             "windowDurationMins": 300
           },
           {
             "id": "seven_day",
             "kind": "weekly",
             "label": "Weekly",
-            "usedPercent": 62,
-            "resetsAt": "2026-10-07T17:00:00.492Z",
+            "usedPercent": 21,
+            "resetsAt": "2026-10-14T17:00:00.006Z",
             "windowDurationMins": 10080
           },
           {
             "id": "seven_day_fable",
             "kind": "weekly",
-            "label": "Weekly \u00b7 Fable",
-            "usedPercent": 11,
-            "resetsAt": "2026-10-07T17:00:00.493Z",
+            "label": "Weekly · Fable",
+            "usedPercent": 10,
+            "resetsAt": "2026-10-14T17:00:00.006Z",
             "windowDurationMins": 10080
           }
         ],
@@ -2168,14 +2711,14 @@
         }
       },
       "versionAdvisory": {
-        "status": "behind_latest",
-        "currentVersion": "2.1.289",
-        "latestVersion": "2.1.292",
-        "updateCommand": "/home/sample",
+        "status": "current",
+        "currentVersion": "2.1.296",
+        "latestVersion": "2.1.296",
+        "updateCommand": "/home/sample/.local/bin/claude update",
         "canUpdate": true,
         "canInstallVersion": false,
-        "checkedAt": "2026-10-07T15:21:48.049Z",
-        "message": "Install the update now or review provider settings."
+        "checkedAt": "2026-10-13T02:28:21.453Z",
+        "message": null
       },
       "compatibilityAdvisory": {
         "status": "supported",
@@ -2206,7 +2749,7 @@
         "status": "unknown",
         "canLogout": true
       },
-      "checkedAt": "2026-10-07T15:21:47.085Z",
+      "checkedAt": "2026-10-13T02:28:20.372Z",
       "message": "Cursor is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -2220,6 +2763,7 @@
         "groupKey": "grok:instance:grok"
       },
       "showInteractionModeToggle": false,
+      "supportedRuntimeModes": ["approval-required", "auto", "full-access"],
       "supportsConversationRollback": false,
       "enabled": false,
       "installed": false,
@@ -2228,7 +2772,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-07T15:21:47.082Z",
+      "checkedAt": "2026-10-13T02:28:20.369Z",
       "message": "Grok is disabled in T3 Code settings.",
       "models": [
         {
@@ -2241,18 +2785,7 @@
         }
       ],
       "slashCommands": [],
-      "skills": [],
-      "versionAdvisory": {
-        "status": "unknown",
-        "currentVersion": null,
-        "latestVersion": null,
-        "updateCommand": "/home/sample",
-        "canUpdate": true,
-        "canInstallVersion": false,
-        "checkedAt": "2026-10-07T15:21:47.082Z",
-        "message": null
-      },
-      "supportedRuntimeModes": ["approval-required", "auto", "full-access"]
+      "skills": []
     },
     {
       "instanceId": "opencode",
@@ -2269,27 +2802,17 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-07T15:21:47.083Z",
+      "checkedAt": "2026-10-13T02:28:20.370Z",
       "message": "OpenCode is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-10-07T15:21:47.083Z",
+        "checkedAt": "2026-10-13T02:28:20.370Z",
         "windows": [],
         "unavailable": {
           "reason": "unsupported"
         }
-      },
-      "versionAdvisory": {
-        "status": "unknown",
-        "currentVersion": null,
-        "latestVersion": null,
-        "updateCommand": null,
-        "canUpdate": false,
-        "canInstallVersion": false,
-        "checkedAt": "2026-10-07T15:21:47.083Z",
-        "message": null
       }
     },
     {
@@ -2314,12 +2837,35 @@
         "status": "unknown",
         "type": "oauth-personal"
       },
-      "checkedAt": "2026-10-07T15:21:47.094Z",
+      "checkedAt": "2026-10-13T02:28:20.382Z",
       "message": "Antigravity is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
       "skills": [],
       "workspaceSnapshots": []
+    },
+    {
+      "instanceId": "muse",
+      "driver": "muse",
+      "displayName": "Muse Code",
+      "continuation": {
+        "groupKey": "muse:instance:muse"
+      },
+      "showInteractionModeToggle": false,
+      "reportsContextWindow": true,
+      "supportedRuntimeModes": ["approval-required", "full-access"],
+      "enabled": false,
+      "installed": false,
+      "version": null,
+      "status": "disabled",
+      "auth": {
+        "status": "unknown"
+      },
+      "checkedAt": "2026-10-13T02:28:20.387Z",
+      "message": "Muse Code is disabled in T3 Code settings.",
+      "models": [],
+      "slashCommands": [],
+      "skills": []
     },
     {
       "instanceId": "pi",
@@ -2330,6 +2876,7 @@
       },
       "showInteractionModeToggle": false,
       "reportsContextWindow": true,
+      "supportedRuntimeModes": ["approval-required", "auto-accept-edits", "full-access"],
       "requiresNewThreadForModelChange": false,
       "enabled": false,
       "installed": false,
@@ -2338,7 +2885,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-07T15:21:47.097Z",
+      "checkedAt": "2026-10-13T02:28:20.387Z",
       "message": "Pi is disabled in T3 Code settings.",
       "models": [
         {
@@ -2351,22 +2898,12 @@
         }
       ],
       "slashCommands": [],
-      "skills": [],
-      "versionAdvisory": {
-        "status": "unknown",
-        "currentVersion": null,
-        "latestVersion": null,
-        "updateCommand": null,
-        "canUpdate": false,
-        "canInstallVersion": false,
-        "checkedAt": "2026-10-07T15:21:47.097Z",
-        "message": null
-      },
-      "supportedRuntimeModes": ["approval-required", "auto-accept-edits", "full-access"]
+      "skills": []
     }
   ],
-  "availableEditors": ["cursor", "vscode"],
+  "availableEditors": ["cursor", "sample"],
   "remoteOpenTargets": [],
+  "directEndpoints": [],
   "observability": {
     "logsDirectoryPath": "/home/sample/.t3/userdata/logs",
     "localTracingEnabled": true,
@@ -2375,8 +2912,11 @@
     "otlpLogsEnabled": false
   },
   "settings": {
+    "favorites": null,
+    "providerModelPreferences": null,
     "worktreeCleanup": null,
     "storageCleanup": {
+      "worktreeKeepWhen": "uncommitted-changes",
       "worktreeAfterDays": null,
       "worktreeOnMerge": false,
       "worktreeOnDelete": false,
@@ -2388,7 +2928,7 @@
     "previousWorktreesDirectories": [],
     "responseStreamingMode": "paragraph",
     "enableProviderUpdateChecks": true,
-    "continueThreadsAfterServerUpdate": false,
+    "continueThreadsAfterServerUpdate": true,
     "enableAgentBrowserAccess": true,
     "projectAgentBrowserAccessOverrides": {},
     "defaultAutoPull": false,
@@ -2441,71 +2981,17 @@
       "followChangeRequestTemplates": true
     },
     "sourceControlWriterModelSelection": null,
+    "reviewGuidesEnabled": false,
+    "reviewGuideModelSelection": null,
+    "reviewGuideInstructions": "",
     "pullRequestMergeMethod": null,
-    "providers": {
-      "codex": {
-        "enabled": true,
-        "binaryPath": "codex",
-        "homePath": "",
-        "shadowHomePath": "",
-        "launchArgs": "",
-        "customModels": []
-      },
-      "claudeAgent": {
-        "enabled": true,
-        "binaryPath": "claude",
-        "homePath": "",
-        "customModels": [],
-        "launchArgs": "",
-        "autoCompactWindow": ""
-      },
-      "cursor": {
-        "enabled": false,
-        "customModels": []
-      },
-      "grok": {
-        "enabled": false,
-        "binaryPath": "grok",
-        "customModels": []
-      },
-      "pi": {
-        "enabled": false,
-        "binaryPath": "pi",
-        "launchArgs": "",
-        "customModels": []
-      },
-      "opencode": {
-        "enabled": false,
-        "binaryPath": "opencode",
-        "serverUrl": "",
-        "serverPassword": "",
-        "customModels": []
-      },
-      "antigravity": {
-        "enabled": false,
-        "authMethod": "oauth-personal",
-        "apiKey": "",
-        "gcpProject": "",
-        "gcpLocation": "",
-        "binaryPath": "",
-        "customModels": []
-      }
-    },
     "providerInstances": {},
     "observability": {
       "otlpTracesUrl": "",
       "otlpMetricsUrl": "",
       "otlpLogsUrl": ""
     },
-    "bitbucket": {
-      "email": "",
-      "accessToken": "",
-      "apiToken": ""
-    },
-    "github": {
-      "hosts": {},
-      "tokens": {}
-    },
+    "sourceControlHosts": {},
     "usageLimitSources": {},
     "cursorKeychainUsageEnabled": false,
     "usagePriceOverrides": {},
@@ -2514,7 +3000,8 @@
   "shellResumeCompletionMarker": true,
   "threadResumeCompletionMarker": true,
   "threadSnapshotPagination": true,
+  "threadFind": true,
+  "threadFindProgressive": true,
   "scratchWorkspaceRoot": "/home/sample/.t3/scratch",
-  "newProjectsRoot": "/home/sample/.t3/projects",
-  "directEndpoints": []
+  "newProjectsRoot": "/home/sample/.t3/projects"
 }

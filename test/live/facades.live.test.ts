@@ -15,6 +15,7 @@ import { WebSocket as WsWebSocket } from "ws";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import type { ShellWatchItem } from "../../src/api/shell.ts";
 import { T3Client } from "../../src/client.ts";
+import { T3RpcError } from "../../src/errors.ts";
 import type { WebSocketConstructor } from "../../src/internal/websocket.ts";
 import { threadId, type ProjectId, type ThreadId } from "../../src/schemas/common.ts";
 
@@ -111,6 +112,26 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(projection.thread.title).toBe("live sample thread");
     expect(client.threads.phase(thread)).toBe("idle");
     expect(await client.threads.pendingRequests(id)).toEqual([]);
+  });
+
+  it("finds within a thread and refuses workflow and app requests it cannot serve", async () => {
+    const config = await client.rpc.call("server.getConfig", {});
+    expect([config.threadFind, config.threadFindProgressive]).toEqual([true, true]);
+    const found = await client.rpc.call("orchestration.searchThread", {
+      threadId: id,
+      query: "no such words",
+    });
+    expect(found).toMatchObject({ totalMatches: 0, match: null });
+    const stop = await client.rpc
+      .call("orchestration.stopWorkflow", { threadId: id, subagentId: "node-missing" as never })
+      .catch((error: unknown) => error);
+    expect(stop).toBeInstanceOf(T3RpcError);
+    expect((stop as T3RpcError).is("OrchestrationV2StopWorkflowError")).toBe(true);
+    const app = await client.rpc
+      .call("mcpApps.toolInfo", { threadId: id, itemId: "item-missing" as never, name: "sample" })
+      .catch((error: unknown) => error);
+    expect(app).toBeInstanceOf(T3RpcError);
+    expect((app as T3RpcError).is("McpAppRequestError")).toBe(true);
   });
 
   it("updates thread settings through commands", async () => {

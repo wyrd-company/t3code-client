@@ -18,6 +18,8 @@ export interface RpcMethodSpec<Payload = unknown, Success = unknown> {
   readonly stream: boolean;
   /** Scope the server requires; checked locally when the session's scopes are known. */
   readonly scope: AuthEnvironmentScope;
+  /** Further scopes the server requires for this payload, checked the same way. */
+  payloadScopes?(payload: Payload): readonly AuthEnvironmentScope[];
 }
 
 export type RpcMethodTable = Readonly<Record<string, RpcMethodSpec>>;
@@ -41,6 +43,7 @@ export function defineMethod<Payload, Success, const Stream extends boolean>(spe
   readonly success: z.ZodType<Success, unknown>;
   readonly stream: Stream;
   readonly scope: AuthEnvironmentScope;
+  payloadScopes?(payload: Payload): readonly AuthEnvironmentScope[];
 }): RpcMethodSpec<Payload, Success> & { readonly stream: Stream } {
   return spec;
 }

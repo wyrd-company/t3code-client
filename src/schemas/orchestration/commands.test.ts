@@ -50,6 +50,19 @@ describe("OrchestrationV2Command", () => {
       }),
     ).toMatchObject({ importedNativeThread: { ref: { nativeId: "native-1" } } });
   });
+  it("accepts subagent.stop for one child of a run", () => {
+    const stop = {
+      type: "subagent.stop",
+      commandId: "command-1",
+      threadId: ids.threadId,
+      runId: ids.runId,
+      subagentId: "node-1",
+    };
+    expect(OrchestrationV2Command.parse(stop)).toEqual(stop);
+    expect(OrchestrationV2Command.safeParse({ ...stop, subagentId: undefined }).success).toBe(
+      false,
+    );
+  });
   it("accepts message.dispatch with each dispatch mode", () => {
     expect(OrchestrationV2Command.parse(messageDispatch)).toEqual(messageDispatch);
     for (const dispatchMode of [

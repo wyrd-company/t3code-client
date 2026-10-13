@@ -78,14 +78,11 @@ export const VcsStatusChangeRequest = z.looseObject({
   updatedAt: z.string().nullable().optional(),
 });
 export type VcsStatusChangeRequest = z.infer<typeof VcsStatusChangeRequest>;
-export const SourceControlProviderKind = forwardCompatibleLiteral([
-  "github",
-  "gitlab",
-  "forgejo",
-  "azure-devops",
-  "bitbucket",
-  "unknown",
-]);
+/**
+ * An open slug naming a source control host, such as `github`. `unknown` is a
+ * remote the server cannot attribute to any host.
+ */
+export const SourceControlProviderKind = TrimmedNonEmptyString.max(64).regex(/^[a-z][a-z0-9-]*$/);
 export type SourceControlProviderKind = z.infer<typeof SourceControlProviderKind>;
 export const SourceControlProviderInfo = z.looseObject({
   kind: SourceControlProviderKind,

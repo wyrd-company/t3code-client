@@ -124,6 +124,8 @@ export class RpcClient<Table extends RpcMethodTable> {
         { cause: result.error },
       );
     }
+    const missing = scopes && spec.payloadScopes?.(result.data).find((s) => !scopes.includes(s));
+    if (missing) throw T3AuthError.insufficientScope(missing, method);
     return result.data;
   }
 }

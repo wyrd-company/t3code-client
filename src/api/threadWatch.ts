@@ -14,6 +14,7 @@ import type { RpcClient } from "../rpc/client.ts";
 import type { RpcMethods } from "../rpc/registry.ts";
 import type { ThreadId } from "../schemas/common.ts";
 import type { OrchestrationV2DomainEvent } from "../schemas/orchestration/events.ts";
+import { boundedSnapshotProjection } from "../schemas/orchestration/boundedSnapshot.ts";
 import type { OrchestrationV2ThreadDetailSnapshot } from "../schemas/orchestration/projection.ts";
 import { isKnownVariant } from "./threadProjection.ts";
 import { ThreadProjectionTracker, type ThreadDerivedItem } from "./threadTracker.ts";
@@ -37,6 +38,8 @@ export interface ThreadWatchOptions {
   readonly afterSequence?: number;
   /** Accept a bounded snapshot: full control-plane state with a recent window of timeline rows. */
   readonly acceptBoundedSnapshot?: boolean;
+  /** Let a bounded snapshot omit repeated turn items; the watch restores them before yielding. */
+  readonly acceptCompactTurnItems?: boolean;
   readonly signal?: AbortSignal;
   /** Loads a detail snapshot when the server replays events without one (HTTP thread detail). */
   readonly snapshotLoader?: (signal?: AbortSignal) => Promise<OrchestrationV2ThreadDetailSnapshot>;
@@ -73,6 +76,7 @@ async function* run(
         requestCompletionMarker: true,
         ...(afterSequence === undefined ? {} : { afterSequence }),
         ...(options.acceptBoundedSnapshot === true ? { acceptBoundedSnapshot: true } : {}),
+        ...(options.acceptCompactTurnItems === true ? { acceptCompactTurnItems: true } : {}),
       };
       const stream = rpc.stream(
         "orchestration.subscribeThread",
@@ -91,7 +95,11 @@ async function* run(
         const value = item.value;
         if (!isKnownVariant(value)) continue;
         if (value.kind === "snapshot") {
-          const { kind: _kind, ...snapshot } = value;
+          const { kind: _kind, turnItemsOmitLocalVisible, ...rest } = value;
+          const snapshot = {
+            ...rest,
+            projection: boundedSnapshotProjection({ ...rest, turnItemsOmitLocalVisible }),
+          };
           afterSequence = Math.max(afterSequence ?? 0, snapshot.snapshotSequence);
           yield { kind: "snapshot", snapshot };
           yield* tracker.seed(snapshot);

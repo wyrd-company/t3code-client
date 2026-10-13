@@ -174,7 +174,7 @@ export const ProjectMonogramText = TrimmedNonEmptyString.max(32).regex(
 );
 export type ProjectMonogramText = z.infer<typeof ProjectMonogramText>;
 export const ProjectFaviconPath = TrimmedNonEmptyString.max(1024).regex(
-  /\.(?:avif|gif|ico|jpe?g|png|svg|webp)$/i,
+  /\.(?:avif|gif|icns|ico|jpe?g|png|svg|webp)$/i,
 );
 export type ProjectFaviconPath = z.infer<typeof ProjectFaviconPath>;
 

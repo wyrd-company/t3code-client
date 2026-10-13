@@ -50,6 +50,24 @@ describe("RpcErrorRecord", () => {
     }
   });
 
+  it("decodes the workflow stop and MCP app failures with their reasons", () => {
+    const stop = decodeRpcErrorRecord({
+      _tag: "OrchestrationV2StopWorkflowError",
+      threadId: "thread-1",
+      subagentId: "node-1",
+      reason: "not-running",
+    });
+    expect(isRpcErrorOfTag(stop, "OrchestrationV2StopWorkflowError") && stop.reason).toBe(
+      "not-running",
+    );
+    const app = decodeRpcErrorRecord({
+      _tag: "McpAppRequestError",
+      threadId: "thread-1",
+      reason: "a-future-reason",
+    });
+    expect(isRpcErrorOfTag(app, "McpAppRequestError") && app.reason).toBe("a-future-reason");
+  });
+
   it("decodes the projection, shell snapshot, and project mutation failures", () => {
     const projection = decodeRpcErrorRecord({
       _tag: "OrchestrationV2GetThreadProjectionError",
