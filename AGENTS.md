@@ -19,12 +19,13 @@ unit and live tests, and `docs/releasing.md` explains releases.
 
 ## Reference source
 
-The library tracks upstream `main` through the nightly build named as the
-`t3` devDependency. Upstream is `pingdotgg/t3code`; read the source at that
-build's tag (`vX.Y.Z-nightly.YYYYMMDD.N`). `docs/releasing.md` describes an
-update. Contracts: `packages/contracts/src/*.ts`. Server RPC handlers:
-`apps/server/src/ws.ts`. Scope per method:
-`apps/server/src/auth/RpcAuthorization.ts`.
+The library targets the T3 Code build pinned as the `t3` devDependency: the
+newest release on `main`, the newest nightly on a branch that prepares for
+the next upstream version. Upstream is `pingdotgg/t3code`; read the source at
+that build's tag (`vX.Y.Z` or `vX.Y.Z-nightly.YYYYMMDD.N`).
+`docs/releasing.md` describes an update. Contracts:
+`packages/contracts/src/*.ts`. Server RPC handlers: `apps/server/src/ws.ts`.
+Scope per method: `apps/server/src/auth/RpcAuthorization.ts`.
 
 The library tracks upstream. A capability upstream removes is removed here;
 a capability upstream adds is added here. Following upstream does not need

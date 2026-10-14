@@ -36,13 +36,17 @@ tarball and the changelog section as notes.
 
 ## Tracking T3 Code
 
-The library tracks upstream `main`. The `t3` devDependency names the
-upstream build the library targets: the newest nightly, which upstream cuts
-from `main` several times a day and publishes under the `nightly` dist-tag.
-Each upstream build has a git tag, `vX.Y.Z-nightly.YYYYMMDD.N`. An update
-moves to the newest nightly:
+The `t3` devDependency names the upstream build the library targets. On
+`main` it is the newest release, published under the `latest` dist-tag and
+tagged `vX.Y.Z`. Work for the next upstream version happens on a
+preparation branch that targets the newest nightly, which upstream cuts from
+`main` several times a day, publishes under the `nightly` dist-tag, and
+tags `vX.Y.Z-nightly.YYYYMMDD.N`. When upstream releases that version, the
+branch moves to the release and merges into `main`.
 
-1. Read the tag with `npm view t3 dist-tags.nightly`, set the `t3`
+An update moves to the newest build of the branch's dist-tag:
+
+1. Read the version with `npm view t3 dist-tags`, set the `t3`
    devDependency to that version, and install. pnpm adds the version to
    `minimumReleaseAgeExclude` in `pnpm-workspace.yaml`; remove the entries
    for the previous version.

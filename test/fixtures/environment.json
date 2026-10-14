@@ -1,12 +1,12 @@
 {
-  "environmentId": "a323bbfd-b546-4cc1-8816-76c85f2cc5d9",
+  "environmentId": "dc4d2940-3117-45bd-96b8-1af3d70b0b35",
   "label": "sample-environment",
   "platform": {
     "os": "linux",
     "arch": "x64",
     "machine": "desktop"
   },
-  "serverVersion": "0.0.46-nightly.20261013.3042",
+  "serverVersion": "0.0.46-nightly.20261014.3093",
   "orchestrationProtocolVersion": 2,
   "capabilities": {
     "repositoryIdentity": true,

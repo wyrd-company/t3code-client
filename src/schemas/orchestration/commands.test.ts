@@ -63,6 +63,28 @@ describe("OrchestrationV2Command", () => {
       false,
     );
   });
+  it("accepts delegated_task.request with a worktree workspace strategy", () => {
+    const request = {
+      type: "delegated_task.request",
+      ...creation,
+      commandId: "command-1",
+      parentThreadId: ids.threadId,
+      parentRunId: ids.runId,
+      parentNodeId: ids.nodeId,
+      task: "Count the files.",
+      modelSelection,
+      runtimeMode: "auto",
+      interactionMode: "default",
+      workspaceStrategy: { type: "worktree", baseRef: "main" },
+    };
+    expect(OrchestrationV2Command.parse(request)).toMatchObject({
+      workspaceStrategy: { type: "worktree", baseRef: "main" },
+    });
+    expect(
+      OrchestrationV2Command.safeParse({ ...request, workspaceStrategy: { type: "future" } })
+        .success,
+    ).toBe(false);
+  });
   it("accepts message.dispatch with each dispatch mode", () => {
     expect(OrchestrationV2Command.parse(messageDispatch)).toEqual(messageDispatch);
     for (const dispatchMode of [

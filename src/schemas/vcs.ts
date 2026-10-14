@@ -100,7 +100,7 @@ export const VcsStatusLocalShape = {
   workingTree: z.looseObject({
     files: z.array(
       z.looseObject({
-        path: TrimmedNonEmptyString,
+        path: z.string().min(1),
         insertions: NonNegativeInt,
         deletions: NonNegativeInt,
       }),

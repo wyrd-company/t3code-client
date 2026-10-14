@@ -20,6 +20,7 @@ import {
   ProviderInteractionMode,
   RuntimeMode,
 } from "../model.ts";
+import { OrchestrationV2ThreadLaunchWorkspaceStrategy } from "../runs.ts";
 
 export const ThreadForkCommand = z.looseObject({
   type: z.literal("thread.fork"),
@@ -52,6 +53,7 @@ export const DelegatedTaskRequestCommand = z.looseObject({
   modelSelection: ModelSelection,
   runtimeMode: RuntimeMode,
   interactionMode: ProviderInteractionMode,
+  workspaceStrategy: OrchestrationV2ThreadLaunchWorkspaceStrategy.optional(),
   completionWake: forwardCompatibleLiteral(["always", "settled_only"]).optional(),
   createdAt: IsoDateTime.optional(),
 });

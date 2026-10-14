@@ -1,13 +1,13 @@
 {
   "environment": {
-    "environmentId": "a323bbfd-b546-4cc1-8816-76c85f2cc5d9",
+    "environmentId": "dc4d2940-3117-45bd-96b8-1af3d70b0b35",
     "label": "sample-environment",
     "platform": {
       "os": "linux",
       "arch": "x64",
       "machine": "desktop"
     },
-    "serverVersion": "0.0.46-nightly.20261013.3042",
+    "serverVersion": "0.0.46-nightly.20261014.3093",
     "orchestrationProtocolVersion": 2,
     "capabilities": {
       "repositoryIdentity": true,
@@ -57,7 +57,7 @@
     "policy": "loopback-browser",
     "bootstrapMethods": ["one-time-token"],
     "sessionMethods": ["browser-session-cookie", "bearer-access-token", "dpop-access-token"],
-    "sessionCookieName": "t3_session_33411_69205a563768",
+    "sessionCookieName": "t3_session_41213_7db63ce374b1",
     "serverUpdateScope": "environment:maintain"
   },
   "cwd": "/srv/sample",
@@ -1584,7 +1584,7 @@
         "email": "user@example.test",
         "workspaceId": "00000000-0000-4000-8000-000000000001"
       },
-      "checkedAt": "2026-10-13T02:28:20.341Z",
+      "checkedAt": "2026-10-14T05:52:26.498Z",
       "models": [
         {
           "slug": "gpt-6.1-sol",
@@ -2007,14 +2007,14 @@
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-10-13T02:28:20.341Z",
+        "checkedAt": "2026-10-14T05:52:26.498Z",
         "windows": [
           {
             "id": "primary",
             "kind": "weekly",
             "label": "Weekly",
-            "usedPercent": 1,
-            "resetsAt": "2026-10-18T05:07:07.000Z",
+            "usedPercent": 0,
+            "resetsAt": "2026-10-20T04:58:57.000Z",
             "windowDurationMins": 10080
           }
         ],
@@ -2030,7 +2030,7 @@
         "updateCommand": "/home/sample/.local/bin/codex update",
         "canUpdate": true,
         "canInstallVersion": false,
-        "checkedAt": "2026-10-13T02:28:21.154Z",
+        "checkedAt": "2026-10-14T05:52:27.342Z",
         "message": "Install the update now or review provider settings."
       },
       "compatibilityAdvisory": {
@@ -2061,7 +2061,7 @@
         "email": "user@example.test",
         "workspaceId": "00000000-0000-4000-8000-000000000001"
       },
-      "checkedAt": "2026-10-13T02:28:20.342Z",
+      "checkedAt": "2026-10-14T05:52:26.499Z",
       "models": [
         {
           "slug": "claude-opus-5-5",
@@ -2677,30 +2677,30 @@
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-10-13T02:28:20.342Z",
+        "checkedAt": "2026-10-14T05:52:26.499Z",
         "windows": [
           {
             "id": "five_hour",
             "kind": "session",
             "label": "Session",
-            "usedPercent": 11,
-            "resetsAt": "2026-10-13T03:00:00.006Z",
+            "usedPercent": 3,
+            "resetsAt": "2026-10-14T09:29:59.936Z",
             "windowDurationMins": 300
           },
           {
             "id": "seven_day",
             "kind": "weekly",
             "label": "Weekly",
-            "usedPercent": 21,
-            "resetsAt": "2026-10-14T17:00:00.006Z",
+            "usedPercent": 24,
+            "resetsAt": "2026-10-14T16:59:59.936Z",
             "windowDurationMins": 10080
           },
           {
             "id": "seven_day_fable",
             "kind": "weekly",
             "label": "Weekly · Fable",
-            "usedPercent": 10,
-            "resetsAt": "2026-10-14T17:00:00.006Z",
+            "usedPercent": 15,
+            "resetsAt": "2026-10-14T16:59:59.936Z",
             "windowDurationMins": 10080
           }
         ],
@@ -2711,14 +2711,14 @@
         }
       },
       "versionAdvisory": {
-        "status": "current",
+        "status": "behind_latest",
         "currentVersion": "2.1.296",
-        "latestVersion": "2.1.296",
+        "latestVersion": "2.1.299",
         "updateCommand": "/home/sample/.local/bin/claude update",
         "canUpdate": true,
         "canInstallVersion": false,
-        "checkedAt": "2026-10-13T02:28:21.453Z",
-        "message": null
+        "checkedAt": "2026-10-14T05:52:27.473Z",
+        "message": "Install the update now or review provider settings."
       },
       "compatibilityAdvisory": {
         "status": "supported",
@@ -2749,7 +2749,7 @@
         "status": "unknown",
         "canLogout": true
       },
-      "checkedAt": "2026-10-13T02:28:20.372Z",
+      "checkedAt": "2026-10-14T05:52:26.523Z",
       "message": "Cursor is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -2772,7 +2772,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-13T02:28:20.369Z",
+      "checkedAt": "2026-10-14T05:52:26.521Z",
       "message": "Grok is disabled in T3 Code settings.",
       "models": [
         {
@@ -2802,13 +2802,13 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-13T02:28:20.370Z",
+      "checkedAt": "2026-10-14T05:52:26.522Z",
       "message": "OpenCode is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-10-13T02:28:20.370Z",
+        "checkedAt": "2026-10-14T05:52:26.522Z",
         "windows": [],
         "unavailable": {
           "reason": "unsupported"
@@ -2837,7 +2837,7 @@
         "status": "unknown",
         "type": "oauth-personal"
       },
-      "checkedAt": "2026-10-13T02:28:20.382Z",
+      "checkedAt": "2026-10-14T05:52:26.532Z",
       "message": "Antigravity is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -2861,7 +2861,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-13T02:28:20.387Z",
+      "checkedAt": "2026-10-14T05:52:26.537Z",
       "message": "Muse Code is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -2885,7 +2885,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-13T02:28:20.387Z",
+      "checkedAt": "2026-10-14T05:52:26.537Z",
       "message": "Pi is disabled in T3 Code settings.",
       "models": [
         {
