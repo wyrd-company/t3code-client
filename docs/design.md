@@ -54,7 +54,7 @@ lightweight cross-thread view: project and thread summaries.
 In this library a **turn** is one run. `threads.startTurn` sends a message
 and returns a handle that follows the run the server links to it.
 
-## Wire facts (verified against T3 Code 0.0.46-nightly.20261013.3042)
+## Wire facts (verified against T3 Code 0.0.46-nightly.20261014.3093)
 
 The server speaks orchestration protocol 2 and refuses other clients. The
 `/ws` upgrade must carry `?orchestrationProtocol=2` (a 426 answers an upgrade

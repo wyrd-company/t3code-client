@@ -13,7 +13,11 @@ const localStatus = {
   isDefaultRef: false,
   refName: "sample-ref",
   hasWorkingTreeChanges: false,
-  workingTree: { files: [], insertions: 0, deletions: 0 },
+  workingTree: {
+    files: [{ path: " sample file.txt ", insertions: 1, deletions: 0 }],
+    insertions: 1,
+    deletions: 0,
+  },
 };
 
 describe("VcsApi", () => {
@@ -52,7 +56,10 @@ describe("VcsApi", () => {
     const items = [];
     for await (const item of api.watchStatus({ cwd: "/tmp/sample" })) items.push(item);
 
-    expect(items[0]).toMatchObject({ _tag: "snapshot", local: { refName: "sample-ref" } });
+    expect(items[0]).toMatchObject({
+      _tag: "snapshot",
+      local: { refName: "sample-ref", workingTree: { files: [{ path: " sample file.txt " }] } },
+    });
     expect(items[1]).toMatchObject({ kind: "decode-error" });
   });
 });
