@@ -72,6 +72,7 @@ describe.skipIf(!baseUrl || !token)("live RPC", () => {
           url.searchParams.set("wsTicket", ticket);
           return url;
         },
+        webSocket: globalThis.WebSocket as unknown as WebSocketConstructor,
       }),
     );
     try {

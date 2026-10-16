@@ -3,6 +3,11 @@
  * normalises the events of Node's global `WebSocket` and the `ws` package.
  * Both accept `{ headers }` as the constructor's second argument.
  */
+
+/** The `ws` error code for a message over its `maxPayload`. */
+const WS_MESSAGE_TOO_LARGE = "WS_ERR_UNSUPPORTED_MESSAGE_LENGTH";
+/** Close code 1009, Message Too Big. */
+const CLOSE_MESSAGE_TOO_BIG = 1009;
 export interface WebSocketLike {
   readonly readyState: number;
   send(data: string): void;
@@ -22,6 +27,23 @@ export interface WebSocketCloseInfo {
   readonly reason: string;
   /** HTTP status of a rejected upgrade, when the implementation exposes it (`ws` does). */
   readonly upgradeStatus?: number;
+  /** One message was over a size limit: ours (`ws` reports it) or the server's (close 1009). */
+  readonly messageTooLarge?: boolean;
+}
+
+let defaultConstructor: Promise<WebSocketConstructor> | undefined;
+
+/**
+ * The `ws` package when it is installed, else the global `WebSocket`. `ws`
+ * accepts messages up to 100 MiB; the global `WebSocket` of some Node builds
+ * closes on a compressed message that inflates past 4 MiB.
+ */
+export function defaultWebSocket(): Promise<WebSocketConstructor> {
+  defaultConstructor ??= import("ws").then(
+    (module) => module.WebSocket as unknown as WebSocketConstructor,
+    () => globalThis.WebSocket as unknown as WebSocketConstructor,
+  );
+  return defaultConstructor;
 }
 
 export interface WebSocketEvents {
@@ -52,6 +74,7 @@ export function openWebSocket(
   const init = headers ? ({ headers } as never) : undefined;
   const socket = new ctor(url, init);
   let upgradeStatus: number | undefined;
+  let messageTooLarge = false;
   if (hasEmitter(socket)) {
     socket.on("unexpected-response", (_req, res) => {
       upgradeStatus = res.statusCode;
@@ -62,6 +85,9 @@ export function openWebSocket(
   socket.addEventListener("open", () => events.onOpen());
   socket.addEventListener("message", (event: { data?: unknown }) => events.onMessage(event.data));
   socket.addEventListener("error", (event: { message?: unknown; error?: unknown }) => {
+    if ((event.error as { code?: unknown } | undefined)?.code === WS_MESSAGE_TOO_LARGE) {
+      messageTooLarge = true;
+    }
     const message =
       typeof event.message === "string" && event.message.length > 0
         ? event.message
@@ -71,10 +97,12 @@ export function openWebSocket(
     events.onError(message);
   });
   socket.addEventListener("close", (event: { code?: unknown; reason?: unknown }) => {
+    const code = typeof event.code === "number" ? event.code : 1006;
     const info: WebSocketCloseInfo = {
-      code: typeof event.code === "number" ? event.code : 1006,
+      code,
       reason: typeof event.reason === "string" ? event.reason : "",
       ...(upgradeStatus === undefined ? {} : { upgradeStatus }),
+      ...(messageTooLarge || code === CLOSE_MESSAGE_TOO_BIG ? { messageTooLarge: true } : {}),
     };
     events.onClose(info);
   });

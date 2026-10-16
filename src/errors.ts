@@ -169,7 +169,13 @@ function defectText(defect: unknown): string {
   return JSON.stringify(defect) ?? String(defect);
 }
 
-export type T3ConnectionFailureReason = "closed" | "open_failed" | "ping_timeout" | "protocol";
+export type T3ConnectionFailureReason =
+  | "closed"
+  | "open_failed"
+  | "ping_timeout"
+  | "protocol"
+  /** One message was over the WebSocket implementation's or the server's size limit. */
+  | "message_too_large";
 
 /** The socket is not usable: it failed to open, closed, timed out, or spoke garbage. */
 export class T3ConnectionError extends T3Error {

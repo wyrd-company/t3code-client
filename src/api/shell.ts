@@ -7,7 +7,7 @@
  * active and archived) as a snapshot over HTTP or a resumable live stream
  * over RPC.
  */
-import { T3ConnectionError, T3InterruptedError, type T3DecodeError } from "../errors.ts";
+import { T3InterruptedError, type T3DecodeError } from "../errors.ts";
 import type { RpcClient } from "../rpc/client.ts";
 import type { RpcMethods } from "../rpc/registry.ts";
 import {
@@ -22,6 +22,7 @@ import {
 } from "../schemas/orchestration/shell.ts";
 import type { HttpTransport } from "../transport/http.ts";
 import { isKnownVariant } from "./threadProjection.ts";
+import { shouldResubscribe } from "./watchRetry.ts";
 
 export type ShellWatchItem =
   | Exclude<OrchestrationV2ShellStreamItem, { unknown: true }>
@@ -118,9 +119,7 @@ export class ShellApi {
             return;
           } catch (error) {
             if (signal?.aborted || error instanceof T3InterruptedError) return;
-            const transient =
-              error instanceof T3ConnectionError && rpc.connection.state === "connecting";
-            if (transient) {
+            if (shouldResubscribe(error, rpc.connection.state, received)) {
               resumed = true;
               continue;
             }
@@ -141,6 +140,7 @@ export class ShellApi {
         const { signal } = options;
         for (;;) {
           if (signal?.aborted) return;
+          let received = false;
           try {
             const stream = rpc.stream(
               "orchestration.subscribeArchivedShell",
@@ -148,6 +148,7 @@ export class ShellApi {
               signal === undefined ? {} : { signal },
             );
             for await (const item of stream) {
+              received = true;
               if (item.kind === "decode-error") {
                 yield item;
                 continue;
@@ -157,8 +158,7 @@ export class ShellApi {
             return;
           } catch (error) {
             if (signal?.aborted || error instanceof T3InterruptedError) return;
-            if (error instanceof T3ConnectionError && rpc.connection.state === "connecting")
-              continue;
+            if (shouldResubscribe(error, rpc.connection.state, received)) continue;
             throw error;
           }
         }
