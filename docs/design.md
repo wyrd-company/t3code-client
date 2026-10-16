@@ -378,6 +378,7 @@ src/
     turns.ts                TurnHandle: events(), completion, derived from a thread watch
     turnAdoption.ts         which run a message produced
     threadWatch.ts          resumable live view
+    watchRetry.ts           when a thread or shell watch resubscribes after a failure
     threadTracker.ts        projection state plus derived items
     threadProjection.ts     applyThreadEvent (upsert rules)
     threadDerived.ts        pendingRequests, runOutcome, activeRun, threadPhase
@@ -417,7 +418,7 @@ export class T3AuthError extends T3HttpError    // code: "auth_invalid" | "insuf
 export class T3NotFoundError extends T3HttpError // code: "not_found"; reason
 export class T3RpcError extends T3Error         // code: "rpc_failed"; tag, record: RpcErrorRecord (typed by _tag), is(tag) narrows record
 export class T3RpcDefectError extends T3Error   // code: "rpc_defect"; defect (string or unknown)
-export class T3ConnectionError extends T3Error  // code: "connection"; reason: "closed" | "open_failed" | "ping_timeout" | "protocol"
+export class T3ConnectionError extends T3Error  // code: "connection"; reason: "closed" | "open_failed" | "ping_timeout" | "protocol" | "message_too_large"
 export class T3DecodeError extends T3Error      // code: "decode"; path, issues (zod issues), raw (secrets redacted)
 export class T3PreconditionError extends T3Error // code: "precondition"; caller misuse detected locally
 export class T3InterruptedError extends T3Error // code: "interrupted"; stream/call cancelled by us
@@ -547,7 +548,7 @@ export type SocketState = "idle" | "connecting" | "open" | "closed";
 export interface SocketTransportOptions {
   url: () => Promise<URL>; // resolves auth on every (re)connect: ticket query or bearer header
   headers?: () => Promise<Record<string, string>>;
-  webSocket?: WebSocketConstructor; // defaults to globalThis.WebSocket
+  webSocket?: WebSocketConstructor; // defaults to the ws package when installed, else globalThis.WebSocket
   pingIntervalMs?: number;
   missedPongLimit?: number; // 5000 / 3, matching the server's client
   backoff?: BackoffPolicy;
@@ -586,13 +587,19 @@ transport permanently. Only the `ws` package exposes the upgrade status; the glo
 validates the token over HTTP inside `headers()` in bearer-header mode and
 throws `T3AuthError`, which the transport treats as fatal.
 
-The server compresses socket messages (permessage-deflate). The global
-`WebSocket` of some Node builds (undici 7.24, in Node 25.9) closes the socket
-with 1006 when one message inflates past 4 MiB, and later undici builds have
-no such cap by default. A shell or thread snapshot can be larger than that, so
-a caller that reads large snapshots on such a build passes `webSocket` from
-the `ws` package, whose limit is 100 MiB. Abort listeners
-that `connect` adds to a caller's signal are removed when the wait settles.
+Abort listeners that `connect` adds to a caller's signal are removed when the
+wait settles.
+
+The default constructor is the `ws` package, an optional peer dependency,
+when it is installed, and the global `WebSocket` otherwise. The server
+compresses socket messages (permessage-deflate), and a shell or thread
+snapshot can be many megabytes. `ws` accepts a message up to 100 MiB. The
+global `WebSocket` of some Node builds (undici 7.24, in Node 25.9) closes on a
+message that inflates past 4 MiB and reports only an abnormal close (1006),
+which the transport cannot tell from a network drop. A message over the `ws`
+limit (its error code `WS_ERR_UNSUPPORTED_MESSAGE_LENGTH`), or a 1009 close
+from the server, is a drop with reason `message_too_large`: the transport
+reconnects, and in-flight work fails with that reason.
 
 ### transport/rpc-connection.ts
 
@@ -822,7 +829,11 @@ keeps its last cursor across the gap and filters replay overlap. Credential
 rejections end the watch with the connection error; caller abort ends it quietly,
 and `client.close()` ends it with a closed connection error. The transport's
 connecting state determines whether a connection failure triggers a retry,
-rather than its reason or the number of empty subscriptions. A connection
+rather than its reason or the number of empty subscriptions, with one
+exception: a `message_too_large` failure ends the watch with that error when
+the subscription delivered nothing, because the server sends the same
+snapshot on every attempt. A watch that was already live resubscribes, and
+ends only if that fresh subscription fails the same way. A connection
 error raised while the socket is open, including an HTTP detail failure while
 seeding a resumed thread watch, ends the watch with that error.
 

@@ -14,6 +14,8 @@ import {
 } from "../../test/support/threadFixtures.ts";
 import { RpcClient } from "../rpc/client.ts";
 import { rpcMethods } from "../rpc/registry.ts";
+import { WebSocket } from "ws";
+import type { WebSocketConstructor } from "../internal/websocket.ts";
 import { RpcConnection } from "../transport/rpcConnection.ts";
 import { SocketTransport } from "../transport/socket.ts";
 import { watchThread, type ThreadWatchItem } from "./threadWatch.ts";
@@ -202,6 +204,45 @@ describe("watchThread", () => {
     expect(collected[1]).toMatchObject({ kind: "event", sequence: 11, event: { unknown: true } });
     const settled = collected.at(-1);
     expect(settled?.kind === "turn-settled" && settled.outcome.projection.runs).toHaveLength(1);
+  });
+
+  it("ends with message_too_large when a fresh subscription's first message is over the limit", async () => {
+    /** `ws` with a 64 KiB limit, so a modest snapshot is over it. */
+    class SmallWebSocket extends WebSocket {
+      constructor(url: string, init?: WebSocket.ClientOptions) {
+        super(url, { ...init, maxPayload: 64 * 1024 });
+      }
+    }
+    const small = new RpcConnection(
+      new SocketTransport({
+        url: async () => server.wsUrl,
+        webSocket: SmallWebSocket as unknown as WebSocketConstructor,
+        backoff: { initialMs: 10, factor: 1, maxMs: 10 },
+      }),
+    );
+    let subscriptions = 0;
+    server.handle("orchestration.subscribeThread", (_payload, context) => {
+      subscriptions += 1;
+      const snapshot = snapshotItem(1);
+      context.connection.send({
+        _tag: "Chunk",
+        requestId: context.requestId,
+        values: [{ ...snapshot, padding: "x".repeat(128 * 1024) }],
+      });
+      return { kind: "hang" };
+    });
+    try {
+      const iterator = watchThread(new RpcClient(small, rpcMethods), ids.threadId)[
+        Symbol.asyncIterator
+      ]();
+      await expect(iterator.next()).rejects.toMatchObject({
+        code: "connection",
+        reason: "message_too_large",
+      });
+      expect(subscriptions).toBe(1);
+    } finally {
+      await small.close();
+    }
   });
 
   it("returns silently on abort and throws on a fatal connection error", async () => {

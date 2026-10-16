@@ -14,6 +14,7 @@ import { createBackoff, defaultBackoffPolicy, type BackoffPolicy } from "../inte
 import { noopLogger, type Logger } from "../internal/logger.ts";
 import {
   closeWebSocket,
+  defaultWebSocket,
   openWebSocket,
   terminateWebSocket,
   type WebSocketCloseInfo,
@@ -36,7 +37,7 @@ export interface SocketTransportOptions {
   readonly url: () => Promise<URL>;
   /** Extra upgrade headers for each attempt (for example `authorization`). */
   readonly headers?: () => Promise<Record<string, string>>;
-  /** Defaults to `globalThis.WebSocket`. */
+  /** Defaults to the `ws` package when it is installed, else `globalThis.WebSocket`. */
   readonly webSocket?: WebSocketConstructor;
   readonly pingIntervalMs?: number;
   readonly missedPongLimit?: number;
@@ -196,8 +197,8 @@ export class SocketTransport {
       return;
     }
     if (generation !== this.#generation || this.#closing) return;
-    const ctor =
-      this.#options.webSocket ?? (globalThis.WebSocket as unknown as WebSocketConstructor);
+    const ctor = this.#options.webSocket ?? (await defaultWebSocket());
+    if (generation !== this.#generation || this.#closing) return;
     const isCurrent = () => generation === this.#generation;
     this.#socket = openWebSocket(ctor, url.toString(), headers, {
       onOpen: () => isCurrent() && this.#onOpen(),

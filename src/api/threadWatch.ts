@@ -9,7 +9,7 @@
  * instead of sending a snapshot), derives domain items from the projection,
  * and resubscribes with `afterSequence` when the socket drops.
  */
-import { T3ConnectionError, T3InterruptedError, type T3DecodeError } from "../errors.ts";
+import { T3InterruptedError, type T3DecodeError } from "../errors.ts";
 import type { RpcClient } from "../rpc/client.ts";
 import type { RpcMethods } from "../rpc/registry.ts";
 import type { ThreadId } from "../schemas/common.ts";
@@ -18,6 +18,7 @@ import { boundedSnapshotProjection } from "../schemas/orchestration/boundedSnaps
 import type { OrchestrationV2ThreadDetailSnapshot } from "../schemas/orchestration/projection.ts";
 import { isKnownVariant } from "./threadProjection.ts";
 import { ThreadProjectionTracker, type ThreadDerivedItem } from "./threadTracker.ts";
+import { shouldResubscribe } from "./watchRetry.ts";
 
 export type { ThreadDerivedItem } from "./threadTracker.ts";
 
@@ -126,8 +127,7 @@ async function* run(
       return;
     } catch (error) {
       if (signal?.aborted || error instanceof T3InterruptedError) return;
-      if (error instanceof T3ConnectionError && rpc.connection.state === "connecting") {
-        // The transport reconnects on its own; we only need to resubscribe.
+      if (shouldResubscribe(error, rpc.connection.state, received)) {
         resumed = true;
         continue;
       }
