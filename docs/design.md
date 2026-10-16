@@ -54,7 +54,7 @@ lightweight cross-thread view: project and thread summaries.
 In this library a **turn** is one run. `threads.startTurn` sends a message
 and returns a handle that follows the run the server links to it.
 
-## Wire facts (verified against T3 Code 0.0.46-nightly.20261014.3093)
+## Wire facts (verified against T3 Code 0.1.0)
 
 The server speaks orchestration protocol 2 and refuses other clients. The
 `/ws` upgrade must carry `?orchestrationProtocol=2` (a 426 answers an upgrade
@@ -64,25 +64,26 @@ says which protocol a server speaks.
 
 HTTP, all under one base URL:
 
-| Method and path                                    | Auth                 | Notes                                                                              |
-| -------------------------------------------------- | -------------------- | ---------------------------------------------------------------------------------- |
-| `GET /.well-known/t3/environment`                  | none                 | `ExecutionEnvironmentDescriptor`                                                   |
-| `GET /api/auth/session`                            | optional bearer      | `AuthSessionState`; `authenticated:false` without a credential                     |
-| `POST /oauth/token`                                | none                 | form-encoded token exchange; pairing token is single use                           |
-| `POST /api/auth/websocket-ticket`                  | bearer               | `{ticket, expiresAt}`; ticket lives about five minutes                             |
-| `POST /api/auth/pairing-token`                     | bearer, access:write | body `{label?, scopes?}`; the credential is returned once                          |
-| `GET /api/auth/pairing-links`                      | bearer, access:read  |                                                                                    |
-| `POST /api/auth/pairing-links/revoke`              | bearer, access:write | `{id}` → `{revoked}`                                                               |
-| `GET /api/auth/clients`                            | bearer, access:read  | `AuthClientSession[]`                                                              |
-| `POST /api/auth/clients/revoke`                    | bearer, access:write | `{sessionId}` → `{revoked}`                                                        |
-| `POST /api/auth/clients/revoke-others`             | bearer, access:write | `{revokedCount}`                                                                   |
-| `GET /api/projects`                                | bearer, orch:read    | `ProjectSnapshot`: every project record                                            |
-| `POST /api/projects/mutate`                        | bearer, orch:operate | `ProjectMutation` → `Project`                                                      |
-| `GET /api/orchestration/shell`                     | bearer, orch:read    | `OrchestrationV2ShellSnapshot` (protocol header)                                   |
-| `GET /api/orchestration/threads/:threadId`         | bearer, orch:read    | `OrchestrationV2ThreadDetailSnapshot`, the full projection; 404 `thread_not_found` |
-| `GET /api/orchestration/threads/:threadId/bounded` | bearer, orch:read    | `OrchestrationV2ThreadBoundedSnapshot`: a recent window plus `historyCursor`       |
-| `GET /api/orchestration/threads/:threadId/history` | bearer, orch:read    | query `cursor`; `OrchestrationV2ThreadHistoryPage`; 400 `invalid_history_cursor`   |
-| `POST /api/pull-requests/diff`                     | bearer               | out of scope for this version                                                      |
+| Method and path                                       | Auth                 | Notes                                                                                      |
+| ----------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------ |
+| `GET /.well-known/t3/environment`                     | none                 | `ExecutionEnvironmentDescriptor`                                                           |
+| `GET /api/auth/session`                               | optional bearer      | `AuthSessionState`; `authenticated:false` without a credential                             |
+| `POST /oauth/token`                                   | none                 | form-encoded token exchange; pairing token is single use                                   |
+| `POST /api/auth/websocket-ticket`                     | bearer               | `{ticket, expiresAt}`; ticket lives about five minutes                                     |
+| `POST /api/auth/pairing-token`                        | bearer, access:write | body `{label?, scopes?}`; the credential is returned once                                  |
+| `GET /api/auth/pairing-links`                         | bearer, access:read  |                                                                                            |
+| `POST /api/auth/pairing-links/revoke`                 | bearer, access:write | `{id}` → `{revoked}`                                                                       |
+| `GET /api/auth/clients`                               | bearer, access:read  | `AuthClientSession[]`                                                                      |
+| `POST /api/auth/clients/revoke`                       | bearer, access:write | `{sessionId}` → `{revoked}`                                                                |
+| `POST /api/auth/clients/revoke-others`                | bearer, access:write | `{revokedCount}`                                                                           |
+| `GET /api/projects`                                   | bearer, orch:read    | `ProjectSnapshot`: every project record                                                    |
+| `POST /api/projects/mutate`                           | bearer, orch:operate | `ProjectMutation` → `Project`                                                              |
+| `GET /api/orchestration/shell`                        | bearer, orch:read    | `OrchestrationV2ShellSnapshot` (protocol header)                                           |
+| `GET /api/orchestration/threads/:threadId`            | bearer, orch:read    | `OrchestrationV2ThreadDetailSnapshot`, the full projection; 404 `thread_not_found`         |
+| `GET /api/orchestration/threads/:threadId/bounded`    | bearer, orch:read    | `OrchestrationV2ThreadBoundedSnapshot`: a recent window plus `historyCursor`               |
+| `GET /api/orchestration/threads/:threadId/history`    | bearer, orch:read    | query `cursor`; `OrchestrationV2ThreadHistoryPage`; 400 `invalid_history_cursor`           |
+| `GET /api/orchestration/threads/:threadId/transcript` | bearer, orch:read    | `OrchestrationV2ThreadTranscript`: the visible timeline; 400 `thread_transcript_too_large` |
+| `POST /api/pull-requests/diff`                        | bearer               | out of scope for this version                                                              |
 
 HTTP errors are JSON tagged records: `EnvironmentRequestInvalidError` (400),
 `EnvironmentAuthInvalidError` (401), `EnvironmentScopeRequiredError` and
@@ -185,7 +186,13 @@ large or when nothing is newer). `requestCompletionMarker` puts a
 thread, `run.created`/`run.updated` a run, `turn-item.updated` a turn item,
 `runtime-request.updated` a runtime request, `message.updated` a message,
 and so on). Applying an event is an upsert by id; the T3 web client folds
-events the same way.
+events the same way. `thread.pull-request-link-updated` is the exception: its
+payload is one `ThreadPullRequestLink`, which replaces the thread's link with
+the same host, repository, and number.
+
+The transcript route answers with the thread's `visibleTurnItems`, its
+`title`, and `updatedAt` in one read. It refuses a thread whose transcript is
+larger than the server's file attachment limit.
 
 `message.dispatch` carries `dispatchMode` and, optionally, `deliveryIntent`.
 With `deliveryIntent: "auto"` the server resolves the mode against its
@@ -365,7 +372,7 @@ src/
   api/                      facades composed by T3Client
     server.ts               getConfig, probe, watchConfig, watchLifecycle
     projects.ts             list, get, snapshot, create, update, delete, ensure, ensureScratch, createNew, files
-    threads.ts              list, get, detail, projection, historyPage, create, ensure, launch, update, archive, delete, startTurn, interrupt, stop, respond*, watch
+    threads.ts              list, get, detail, projection, historyPage, transcript, create, ensure, launch, update, archive, delete, startTurn, interrupt, stop, respond*, watch
     threadCommands.ts       command builders
     threadTurnStart.ts      startTurn: modes, message.dispatch, delivery
     turns.ts                TurnHandle: events(), completion, derived from a thread watch
@@ -577,7 +584,14 @@ upgrade failures, retry until `close()`. A 4xx upgrade, a 1008 close, or a
 transport permanently. Only the `ws` package exposes the upgrade status; the global
 `WebSocket` reports a rejected upgrade as an ordinary drop, so `T3Client`
 validates the token over HTTP inside `headers()` in bearer-header mode and
-throws `T3AuthError`, which the transport treats as fatal. Abort listeners
+throws `T3AuthError`, which the transport treats as fatal.
+
+The server compresses socket messages (permessage-deflate). The global
+`WebSocket` of some Node builds (undici 7.24, in Node 25.9) closes the socket
+with 1006 when one message inflates past 4 MiB, and later undici builds have
+no such cap by default. A shell or thread snapshot can be larger than that, so
+a caller that reads large snapshots on such a build passes `webSocket` from
+the `ws` package, whose limit is 100 MiB. Abort listeners
 that `connect` adds to a caller's signal are removed when the wait settles.
 
 ### transport/rpc-connection.ts
@@ -736,6 +750,7 @@ export class ThreadsApi {
   detail(threadId): Promise<OrchestrationV2ThreadDetailSnapshot>  // HTTP, the full projection; T3NotFoundError
   projection(threadId): Promise<OrchestrationV2ThreadProjection>  // RPC, bounded timeline window
   historyPage(threadId, cursor, options?: { throughEntryId?; view?: "conversation" | "activity" }): Promise<OrchestrationV2ThreadHistoryPage>
+  transcript(threadId): Promise<OrchestrationV2ThreadTranscript>  // HTTP, the visible timeline; T3NotFoundError, T3HttpError thread_transcript_too_large
   create(input: ThreadCreateInput): Promise<OrchestrationV2ThreadShell>   // caller may pass threadId; else generated
   ensure(input: ThreadCreateInput & { threadId: ThreadId }): Promise<OrchestrationV2ThreadShell>   // exists → return as is
   launch(input: ThreadLaunchInput): Promise<OrchestrationV2ThreadLaunchResult>  // thread + workspace + optional first message

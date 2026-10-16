@@ -44,6 +44,9 @@ describe("HTTP error schemas", () => {
         traceId: "trace-1",
       });
     expect(invalid("invalid_history_cursor")).toMatchObject({ reason: "invalid_history_cursor" });
+    expect(invalid("thread_transcript_too_large")).toMatchObject({
+      reason: "thread_transcript_too_large",
+    });
     expect(invalid("invalid_command")).toMatchObject({ reason: "invalid_command" });
     expect(invalid("future_reason")).toMatchObject({ reason: "future_reason" });
     expect(

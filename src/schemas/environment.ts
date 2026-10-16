@@ -44,7 +44,11 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   threadPullRequestWatch: z.boolean().optional(),
   serverResolvedCommandContext: z.boolean().optional(),
   serverBrowser: z.boolean().optional(),
+  projectWorktreeCleanup: z.boolean().optional(),
+  settledWorktreeCleanup: z.boolean().optional(),
   worktreesDirectory: z.boolean().optional(),
+  /** Server can exclude pull-request-linked threads from inactivity settlement. */
+  threadAutoSettlementScope: z.boolean().optional(),
   serverInstallation: ServerInstallation.optional().catch(undefined),
 });
 export type ExecutionEnvironmentCapabilities = z.infer<typeof ExecutionEnvironmentCapabilities>;

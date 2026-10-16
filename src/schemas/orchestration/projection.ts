@@ -7,6 +7,7 @@ import { z } from "zod";
 import {
   IsoDateTime,
   NonNegativeInt,
+  ThreadId,
   TrimmedNonEmptyString,
   knownMembersArray,
 } from "../common.ts";
@@ -93,3 +94,12 @@ export const OrchestrationV2ThreadHistoryPage = z.looseObject({
   hasMoreHistory: z.boolean(),
 });
 export type OrchestrationV2ThreadHistoryPage = z.infer<typeof OrchestrationV2ThreadHistoryPage>;
+
+/** The thread's visible timeline in one read, for handing a conversation to another reader. */
+export const OrchestrationV2ThreadTranscript = z.looseObject({
+  threadId: ThreadId,
+  title: z.string(),
+  updatedAt: IsoDateTime,
+  items: OrchestrationV2ProjectedTurnItems,
+});
+export type OrchestrationV2ThreadTranscript = z.infer<typeof OrchestrationV2ThreadTranscript>;

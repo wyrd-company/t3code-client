@@ -149,6 +149,7 @@ export type {
   OrchestrationV2ThreadDetailSnapshot,
   OrchestrationV2ThreadBoundedSnapshot,
   OrchestrationV2ThreadHistoryPage,
+  OrchestrationV2ThreadTranscript,
 } from "./schemas/orchestration/projection.ts";
 export type { OrchestrationV2AppThread } from "./schemas/orchestration/thread.ts";
 export type {

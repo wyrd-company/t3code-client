@@ -11,6 +11,7 @@ export const EnvironmentRequestInvalidError = z.looseObject({
     "scope_not_granted",
     "invalid_command",
     "invalid_history_cursor",
+    "thread_transcript_too_large",
   ]),
   traceId: TrimmedNonEmptyString,
 });

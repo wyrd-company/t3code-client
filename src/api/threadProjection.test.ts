@@ -7,6 +7,7 @@ import {
   makeAppThread,
   makeMessage,
   makeProjection,
+  makePullRequestLink,
   makeRun,
   makeRuntimeRequest,
   parseEvent,
@@ -52,6 +53,30 @@ describe("applyThreadEvent", () => {
       ev(events.threadState(3, "thread.created", { title: "Fresh" })),
     );
     expect(projection.thread.title).toBe("Fresh");
+  });
+
+  it("replaces the matching pull request link and keeps the others", () => {
+    const thread = makeAppThread({
+      pullRequests: [makePullRequestLink(1), makePullRequestLink(2)],
+    });
+    let projection = applyThreadEvent(
+      makeProjection(),
+      ev(events.threadState(1, "thread.pull-request-synced", thread)),
+    );
+    projection = applyThreadEvent(
+      projection,
+      ev(
+        events.pullRequestLinkUpdated(
+          2,
+          makePullRequestLink(2, { host: "Git.Example.Test", source: "agent" }),
+        ),
+      ),
+    );
+    expect(projection.thread.pullRequests?.map((link) => [link.number, link.source])).toEqual([
+      [1, "manual"],
+      [2, "agent"],
+    ]);
+    expect(projection.updatedAt).toBe(later);
   });
 
   it("upserts runs by id and keeps their order", () => {
