@@ -21,6 +21,7 @@ import {
   OrchestrationV2ThreadDetailSnapshot,
   OrchestrationV2ThreadHistoryPage,
   type OrchestrationV2ThreadProjection,
+  OrchestrationV2ThreadTranscript,
 } from "../schemas/orchestration/projection.ts";
 import type { OrchestrationV2ThreadLaunchWorkspaceStrategy } from "../schemas/orchestration/runs.ts";
 import type { OrchestrationV2ThreadShell } from "../schemas/orchestration/shell.ts";
@@ -189,6 +190,22 @@ export class ThreadsApi {
       auth: "required",
       headers: orchestrationHttpHeaders,
       decode: OrchestrationV2ThreadHistoryPage,
+      ...(signal === undefined ? {} : { signal }),
+    });
+  }
+
+  /**
+   * The thread's visible timeline in one HTTP read. Raises `T3NotFoundError`
+   * when the thread does not exist, and `T3HttpError` with reason
+   * `thread_transcript_too_large` when it exceeds the server's file attachment limit.
+   */
+  transcript(threadId: ThreadId, signal?: AbortSignal): Promise<OrchestrationV2ThreadTranscript> {
+    return this.http.request({
+      method: "GET",
+      path: `/api/orchestration/threads/${encodeURIComponent(threadId)}/transcript`,
+      auth: "required",
+      headers: orchestrationHttpHeaders,
+      decode: OrchestrationV2ThreadTranscript,
       ...(signal === undefined ? {} : { signal }),
     });
   }

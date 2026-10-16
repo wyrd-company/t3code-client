@@ -16,6 +16,7 @@ import {
   type OrchestrationV2DomainEvent,
 } from "../schemas/orchestration/events.ts";
 import type { OrchestrationV2ThreadProjection } from "../schemas/orchestration/projection.ts";
+import type { ThreadPullRequestLink } from "../schemas/orchestration/pullRequest.ts";
 
 export {
   assistantMessageForRun,
@@ -69,6 +70,8 @@ export function applyThreadEvent(
 function applyKnownEvent(p: Projection, event: KnownOrchestrationV2DomainEvent): Projection {
   if (isThreadRecordEvent(event)) return { ...p, thread: event.payload };
   switch (event.type) {
+    case "thread.pull-request-link-updated":
+      return { ...p, thread: { ...p.thread, pullRequests: replaceLink(p.thread, event.payload) } };
     case "run.created":
     case "run.updated":
       return { ...p, runs: upsertById(p.runs, event.payload) };
@@ -129,6 +132,20 @@ function applyKnownEvent(p: Projection, event: KnownOrchestrationV2DomainEvent):
     default:
       return unreachableEvent(event, p);
   }
+}
+
+/** The thread's links with the one sharing `updated`'s key replaced; other links stay as they are. */
+function replaceLink(
+  thread: Projection["thread"],
+  updated: ThreadPullRequestLink,
+): ThreadPullRequestLink[] {
+  const key = pullRequestKey(updated);
+  return (thread.pullRequests ?? []).map((link) => (pullRequestKey(link) === key ? updated : link));
+}
+
+/** Host and repository compare case-insensitively, as upstream keys them. */
+function pullRequestKey(link: ThreadPullRequestLink): string {
+  return `${link.host.trim().toLowerCase()}/${link.repository.trim().toLowerCase()}#${link.number}`;
 }
 
 /** Compile-time check that every known event type has a branch above. */

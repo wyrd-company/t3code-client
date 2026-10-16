@@ -35,7 +35,9 @@ pnpm add @wyrd-company/t3code-client
 
 Node 22.16 or newer. The built-in `WebSocket` is used by default; pass
 `webSocket: WebSocket` from the `ws` package to authenticate the socket with a
-bearer header instead of a one-time ticket.
+bearer header instead of a one-time ticket. Pass it as well on a Node build
+whose built-in `WebSocket` caps one compressed message at 4 MiB (undici 7.24,
+Node 25.9), so that large shell and thread snapshots arrive.
 
 ## Quick start
 

@@ -1,12 +1,12 @@
 {
-  "environmentId": "dc4d2940-3117-45bd-96b8-1af3d70b0b35",
+  "environmentId": "4873ab5f-5938-4af7-b390-c468b25a49c1",
   "label": "sample-environment",
   "platform": {
     "os": "linux",
     "arch": "x64",
     "machine": "desktop"
   },
-  "serverVersion": "0.0.46-nightly.20261014.3093",
+  "serverVersion": "0.1.0",
   "orchestrationProtocolVersion": 2,
   "capabilities": {
     "repositoryIdentity": true,
@@ -26,7 +26,9 @@
     "storageCleanupRun": true,
     "otlpEndpointCheck": true,
     "projectWorktreeCleanup": true,
+    "settledWorktreeCleanup": true,
     "worktreesDirectory": true,
+    "threadAutoSettlementScope": true,
     "threadRestartContinuation": true,
     "projectSettingsOverrides": true,
     "projectProviderInstanceOverrides": true,

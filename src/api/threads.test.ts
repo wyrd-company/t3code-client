@@ -135,6 +135,21 @@ describe("ThreadsApi: reads and lifecycle", () => {
     });
     const query = server.routes.requests.at(-1)?.query;
     expect([query?.get("throughEntryId"), query?.get("view")]).toEqual(["entry-1", "conversation"]);
+    server.routes.route(`GET /api/orchestration/threads/${ids.threadId}/transcript`, () => ({
+      status: 200,
+      body: {
+        threadId: ids.threadId,
+        title: "Thread",
+        updatedAt: "2020-01-01T00:00:00.000Z",
+        items: [],
+      },
+    }));
+    const transcript = await threads.transcript(ids.threadId);
+    expect(transcript).toMatchObject({ threadId: ids.threadId, items: [] });
+    expect(server.routes.requests.at(-1)).toMatchObject({
+      path: `/api/orchestration/threads/${ids.threadId}/transcript`,
+      headers: protocolHeader,
+    });
     const projection = await threads.projection(ids.threadId);
     expect(projection.thread.id).toBe(ids.threadId);
     expect(server.lastConnection.received.at(-1)).toMatchObject({

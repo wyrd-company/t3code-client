@@ -305,7 +305,27 @@ export const events = {
   ) => eventItem(sequence, "runtime-request.updated", makeRuntimeRequest(requestId, request)),
   threadState: (sequence: number, type: string, thread: Record<string, unknown> = {}) =>
     eventItem(sequence, type, makeAppThread(thread)),
+  pullRequestLinkUpdated: (sequence: number, link: Record<string, unknown>) =>
+    eventItem(sequence, "thread.pull-request-link-updated", link),
 };
+
+/** A linked pull request on a generic host. */
+export function makePullRequestLink(
+  number: number,
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  return {
+    host: "git.example.test",
+    repository: "sample/repo",
+    number,
+    url: `https://git.example.test/sample/repo/pull/${number}`,
+    source: "manual",
+    linkedAt: at,
+    snapshot: null,
+    stack: null,
+    ...overrides,
+  };
+}
 
 /** The items a finished run produces: an assistant reply streamed in two parts, then completion. */
 export function completedRunItems(from: number, text = "pong"): Record<string, unknown>[] {

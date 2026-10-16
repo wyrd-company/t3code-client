@@ -22,6 +22,7 @@ import {
 } from "../common.ts";
 import { OrchestrationV2ContextHandoff, OrchestrationV2ContextTransfer } from "./context.ts";
 import { OrchestrationV2ConversationMessage, OrchestrationV2PlanArtifact } from "./messages.ts";
+import { ThreadPullRequestLink } from "./pullRequest.ts";
 import {
   OrchestrationV2ProviderSession,
   OrchestrationV2ProviderSessionDetached,
@@ -87,6 +88,8 @@ export const OrchestrationV2DomainEvent = taggedUnionWithUnknown("type", [
     type: z.enum(THREAD_STATE_EVENT_TYPES),
     payload: OrchestrationV2AppThread,
   }),
+  /** One linked pull request changed; the payload replaces the thread's link with the same key. */
+  event("thread.pull-request-link-updated", ThreadPullRequestLink),
   event("run.created", OrchestrationV2Run),
   event("run.updated", OrchestrationV2Run),
   event("run.background-work-cancelled", OrchestrationV2RunBackgroundWorkCancelled),

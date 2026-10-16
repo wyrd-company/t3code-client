@@ -1,13 +1,13 @@
 {
   "environment": {
-    "environmentId": "dc4d2940-3117-45bd-96b8-1af3d70b0b35",
+    "environmentId": "4873ab5f-5938-4af7-b390-c468b25a49c1",
     "label": "sample-environment",
     "platform": {
       "os": "linux",
       "arch": "x64",
       "machine": "desktop"
     },
-    "serverVersion": "0.0.46-nightly.20261014.3093",
+    "serverVersion": "0.1.0",
     "orchestrationProtocolVersion": 2,
     "capabilities": {
       "repositoryIdentity": true,
@@ -27,7 +27,9 @@
       "storageCleanupRun": true,
       "otlpEndpointCheck": true,
       "projectWorktreeCleanup": true,
+      "settledWorktreeCleanup": true,
       "worktreesDirectory": true,
+      "threadAutoSettlementScope": true,
       "threadRestartContinuation": true,
       "projectSettingsOverrides": true,
       "projectProviderInstanceOverrides": true,
@@ -57,7 +59,7 @@
     "policy": "loopback-browser",
     "bootstrapMethods": ["one-time-token"],
     "sessionMethods": ["browser-session-cookie", "bearer-access-token", "dpop-access-token"],
-    "sessionCookieName": "t3_session_41213_7db63ce374b1",
+    "sessionCookieName": "t3_session_45667_7d081839a6cd",
     "serverUpdateScope": "environment:maintain"
   },
   "cwd": "/srv/sample",
@@ -1575,7 +1577,7 @@
       "reportsContextWindow": true,
       "enabled": true,
       "installed": true,
-      "version": "0.160.1",
+      "version": "0.163.0",
       "status": "ready",
       "auth": {
         "status": "authenticated",
@@ -1584,7 +1586,7 @@
         "email": "user@example.test",
         "workspaceId": "00000000-0000-4000-8000-000000000001"
       },
-      "checkedAt": "2026-10-14T05:52:26.498Z",
+      "checkedAt": "2026-10-16T05:33:25.580Z",
       "models": [
         {
           "slug": "gpt-6.1-sol",
@@ -2007,14 +2009,14 @@
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-10-14T05:52:26.498Z",
+        "checkedAt": "2026-10-16T05:33:25.580Z",
         "windows": [
           {
             "id": "primary",
             "kind": "weekly",
             "label": "Weekly",
-            "usedPercent": 0,
-            "resetsAt": "2026-10-20T04:58:57.000Z",
+            "usedPercent": 2,
+            "resetsAt": "2026-10-22T06:13:18.000Z",
             "windowDurationMins": 10080
           }
         ],
@@ -2024,14 +2026,14 @@
         }
       },
       "versionAdvisory": {
-        "status": "behind_latest",
-        "currentVersion": "0.160.1",
-        "latestVersion": "0.162.1",
+        "status": "current",
+        "currentVersion": "0.163.0",
+        "latestVersion": "0.163.0",
         "updateCommand": "/home/sample/.local/bin/codex update",
         "canUpdate": true,
         "canInstallVersion": false,
-        "checkedAt": "2026-10-14T05:52:27.342Z",
-        "message": "Install the update now or review provider settings."
+        "checkedAt": "2026-10-16T05:33:26.508Z",
+        "message": null
       },
       "compatibilityAdvisory": {
         "status": "supported",
@@ -2052,7 +2054,7 @@
       "reportsContextWindow": true,
       "enabled": true,
       "installed": true,
-      "version": "2.1.296",
+      "version": "2.1.301",
       "status": "ready",
       "auth": {
         "status": "authenticated",
@@ -2061,7 +2063,7 @@
         "email": "user@example.test",
         "workspaceId": "00000000-0000-4000-8000-000000000001"
       },
-      "checkedAt": "2026-10-14T05:52:26.499Z",
+      "checkedAt": "2026-10-16T05:33:25.581Z",
       "models": [
         {
           "slug": "claude-opus-5-5",
@@ -2677,30 +2679,30 @@
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-10-14T05:52:26.499Z",
+        "checkedAt": "2026-10-16T05:33:25.581Z",
         "windows": [
           {
             "id": "five_hour",
             "kind": "session",
             "label": "Session",
-            "usedPercent": 3,
-            "resetsAt": "2026-10-14T09:29:59.936Z",
+            "usedPercent": 2,
+            "resetsAt": "2026-10-16T07:49:59.964Z",
             "windowDurationMins": 300
           },
           {
             "id": "seven_day",
             "kind": "weekly",
             "label": "Weekly",
-            "usedPercent": 24,
-            "resetsAt": "2026-10-14T16:59:59.936Z",
+            "usedPercent": 7,
+            "resetsAt": "2026-10-21T16:59:59.964Z",
             "windowDurationMins": 10080
           },
           {
             "id": "seven_day_fable",
             "kind": "weekly",
             "label": "Weekly · Fable",
-            "usedPercent": 15,
-            "resetsAt": "2026-10-14T16:59:59.936Z",
+            "usedPercent": 3,
+            "resetsAt": "2026-10-21T16:59:59.964Z",
             "windowDurationMins": 10080
           }
         ],
@@ -2711,14 +2713,14 @@
         }
       },
       "versionAdvisory": {
-        "status": "behind_latest",
-        "currentVersion": "2.1.296",
-        "latestVersion": "2.1.299",
+        "status": "current",
+        "currentVersion": "2.1.301",
+        "latestVersion": "2.1.301",
         "updateCommand": "/home/sample/.local/bin/claude update",
         "canUpdate": true,
         "canInstallVersion": false,
-        "checkedAt": "2026-10-14T05:52:27.473Z",
-        "message": "Install the update now or review provider settings."
+        "checkedAt": "2026-10-16T05:33:26.655Z",
+        "message": null
       },
       "compatibilityAdvisory": {
         "status": "supported",
@@ -2749,7 +2751,7 @@
         "status": "unknown",
         "canLogout": true
       },
-      "checkedAt": "2026-10-14T05:52:26.523Z",
+      "checkedAt": "2026-10-16T05:33:25.612Z",
       "message": "Cursor is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -2772,7 +2774,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-14T05:52:26.521Z",
+      "checkedAt": "2026-10-16T05:33:25.610Z",
       "message": "Grok is disabled in T3 Code settings.",
       "models": [
         {
@@ -2802,13 +2804,13 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-14T05:52:26.522Z",
+      "checkedAt": "2026-10-16T05:33:25.610Z",
       "message": "OpenCode is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-10-14T05:52:26.522Z",
+        "checkedAt": "2026-10-16T05:33:25.610Z",
         "windows": [],
         "unavailable": {
           "reason": "unsupported"
@@ -2837,7 +2839,7 @@
         "status": "unknown",
         "type": "oauth-personal"
       },
-      "checkedAt": "2026-10-14T05:52:26.532Z",
+      "checkedAt": "2026-10-16T05:33:25.620Z",
       "message": "Antigravity is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -2861,7 +2863,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-14T05:52:26.537Z",
+      "checkedAt": "2026-10-16T05:33:25.625Z",
       "message": "Muse Code is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -2885,7 +2887,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-14T05:52:26.537Z",
+      "checkedAt": "2026-10-16T05:33:25.625Z",
       "message": "Pi is disabled in T3 Code settings.",
       "models": [
         {
@@ -2918,6 +2920,7 @@
     "storageCleanup": {
       "worktreeKeepWhen": "uncommitted-changes",
       "worktreeAfterDays": null,
+      "worktreeSettledAfterDays": null,
       "worktreeOnMerge": false,
       "worktreeOnDelete": false,
       "worktreeUnchanged": false,
@@ -2946,6 +2949,7 @@
     "sidebarAutoSettleAfterDays": 3,
     "snoozeLimitedThreads": false,
     "autoResumeLimitedThreads": false,
+    "sidebarAutoSettleKeepPullRequests": false,
     "sidebarAutoSettleOnMerge": true,
     "backgroundActivity": {
       "schemaVersion": 1,

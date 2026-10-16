@@ -108,6 +108,8 @@ describe.skipIf(!enabled)("live facades", () => {
     const detail = await client.threads.detail(id);
     expect(detail.projection.thread.id).toBe(id);
     expect(detail.projection.runs).toEqual([]);
+    const transcript = await client.threads.transcript(id);
+    expect(transcript).toMatchObject({ threadId: id, title: "live sample thread", items: [] });
     const projection = await client.threads.projection(id);
     expect(projection.thread.title).toBe("live sample thread");
     expect(client.threads.phase(thread)).toBe("idle");
@@ -241,6 +243,9 @@ describe.skipIf(!enabled)("live facades", () => {
       expect(outcome.assistantMessage?.text.toLowerCase()).toContain("pong");
       expect(kinds).toContain("assistant-delta");
       expect(kinds.at(-1)).toBe("turn-settled");
+      const transcript = await client.threads.transcript(id);
+      const reply = transcript.items.findLast((row) => row.item.type === "assistant_message");
+      expect(reply?.item).toMatchObject({ messageId: outcome.assistantMessage?.id });
     },
     180_000,
   );
