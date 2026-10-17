@@ -11,6 +11,8 @@ import * as NodeNet from "node:net";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
+import { processAbsent, processIdentities } from "./serverEvidence.ts";
+
 const READY_TIMEOUT_MS = 60_000;
 const PROBE_TIMEOUT_MS = 2_000;
 const LOG_TAIL_LINES = 40;
@@ -112,6 +114,31 @@ export default async function setup(): Promise<(() => Promise<void>) | undefined
     { stdio: ["ignore", log.fd, log.fd] },
   );
 
+  let ownedProcesses: Awaited<ReturnType<typeof processIdentities>> = [];
+  const evidenceDir = process.env["T3_LIVE_EVIDENCE_DIR"];
+  const identity = {
+    pid: server.pid,
+    startedAt: new Date().toISOString(),
+    bin,
+    root,
+    baseDir,
+    workspace,
+    baseUrl,
+    platform: process.platform,
+    startIdentity:
+      server.pid && process.platform === "linux"
+        ? await NodeFSP.readFile(`/proc/${server.pid}/stat`, "utf8").catch(() => null)
+        : null,
+  };
+  const writeEvidence = async (phase: string, extra: object = {}) => {
+    if (!evidenceDir) return;
+    await NodeFSP.mkdir(evidenceDir, { recursive: true });
+    await NodeFSP.writeFile(
+      NodePath.join(evidenceDir, `${NodePath.basename(root)}-${phase}.json`),
+      JSON.stringify({ ...identity, phase, ...extra }, null, 2),
+    );
+  };
+
   const stop = async () => {
     if (!hasExited(server)) {
       const exited = new Promise((resolve) => server.once("exit", resolve));
@@ -119,17 +146,60 @@ export default async function setup(): Promise<(() => Promise<void>) | undefined
       await exited;
     }
     await log.close();
+    await writeEvidence("stopped", {
+      exitCode: server.exitCode,
+      signalCode: server.signalCode,
+      pidAbsent: server.pid !== undefined && processAbsent(server.pid),
+      ownedProcesses: ownedProcesses.map((identity) => ({
+        ...identity,
+        absent: processAbsent(identity.pid),
+      })),
+    });
   };
 
   const teardown = async () => {
     await stop();
+    if (evidenceDir) {
+      const output = await NodeFSP.readFile(NodePath.join(root, "server.log"), "utf8");
+      const session = process.env["T3_LIVE_TOKEN"];
+      const sanitized = (session ? output.replaceAll(session, "[redacted]") : output)
+        .replace(/Bearer\s+[^\s"']+/gi, "Bearer [redacted]")
+        .replace(
+          /((?:token|credential|secret|password|ticket)["']?\s*[:=]\s*["']?)[^\s,"'}]+/gi,
+          "$1[redacted]",
+        );
+      await NodeFSP.writeFile(
+        NodePath.join(evidenceDir, `${NodePath.basename(root)}-server.log`),
+        sanitized,
+      );
+    }
     if (process.env["T3_LIVE_KEEP"] !== "1") {
       await NodeFSP.rm(root, { recursive: true, force: true });
     }
+    await writeEvidence("cleanup", {
+      rootAbsent: await NodeFSP.stat(root).then(
+        () => false,
+        (error) => {
+          if ((error as NodeJS.ErrnoException).code === "ENOENT") return true;
+          throw error;
+        },
+      ),
+      kept: process.env["T3_LIVE_KEEP"] === "1",
+    });
   };
 
   try {
+    await writeEvidence("started");
     await waitForReady(baseUrl, server);
+    if (server.pid) ownedProcesses = await processIdentities(server.pid);
+    const descriptor = (await fetch(new URL("/.well-known/t3/environment", baseUrl)).then(
+      (response) => response.json(),
+    )) as Record<string, unknown>;
+    await writeEvidence("ready", {
+      ownedProcesses,
+      serverVersion: descriptor["serverVersion"],
+      protocol: descriptor["orchestrationProtocolVersion"],
+    });
     process.env["T3_LIVE_URL"] = baseUrl;
     process.env["T3_LIVE_TOKEN"] = issueToken(bin, baseDir);
     process.env["T3_LIVE_HOME"] = baseDir;

@@ -199,7 +199,8 @@ it("inspects projects, server and Luna conversations through the built CLI", asy
           ? null
           : "approval-required shell prompt produced no observable pending approval",
       },
-      oversizedTranscript: "controlled unit fake; live size refusal not induced",
+      oversizedTranscript:
+        "separate largeTranscript.live.test.ts proves stock refusal and recovery",
     });
   } finally {
     if (process.env["T3C_INSPECTION_EVIDENCE"])
