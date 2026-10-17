@@ -2,92 +2,26 @@
 // relationships:
 //   verifies: command-line
 // ---
-import * as NodeChildProcess from "node:child_process";
 import * as NodeFSP from "node:fs/promises";
-import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
-import { afterAll, beforeAll, expect, it } from "vite-plus/test";
-import { ProfileManager, T3Client, threadId, type ProjectId } from "@wyrd-company/t3code-lib";
+import { expect, it } from "vite-plus/test";
+import { ProfileManager, threadId } from "@wyrd-company/t3code-lib";
+import {
+  agent,
+  cli,
+  client,
+  directory,
+  execute,
+  issuer,
+  ownedProjects,
+  ownedThreads,
+  record,
+  runCommand,
+  startCommand,
+  useDispatchHarness,
+} from "./dispatchHarness.ts";
 
-let directory: string;
-let client: T3Client;
-let issuer: T3Client;
-let env: NodeJS.ProcessEnv;
-const ownedThreads = new Set<string>();
-const ownedProjects = new Set<ProjectId>();
-const records: Record<string, unknown>[] = [];
-const evidenceFile = process.env["T3C_DISPATCH_EVIDENCE"];
-function record(value: Record<string, unknown>) {
-  records.push(value);
-  console.log(JSON.stringify(value));
-}
-const selection = ["--provider", "codex", "--model", "gpt-6-luna"];
-const runCommand = ["run", ...selection];
-const startCommand = ["thread", "start", ...selection];
-const agent = process.env["T3_LIVE_AGENT"] === "1";
-
-beforeAll(async () => {
-  directory = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3c-dispatch-"));
-  const url = process.env["T3_LIVE_URL"]!;
-  issuer = T3Client.create({ baseUrl: url, accessToken: process.env["T3_LIVE_TOKEN"]! });
-  const configHome = NodePath.join(directory, "config");
-  const profiles = new ProfileManager({ configDir: configHome });
-  const pair = await issuer.auth.createPairingCredential({
-    label: "sample-dispatch",
-    scopes: ["orchestration:read", "orchestration:operate"],
-  });
-  await profiles.pair({ name: "sample", url }, pair.credential);
-  client = T3Client.create(await profiles.resolve({ env: {} }));
-  env = { ...process.env, T3C_CONFIG_HOME: configHome, T3_SERVER_URL: "", T3_TOKEN: "" };
-});
-afterAll(async () => {
-  try {
-    for (const id of ownedThreads) {
-      await client.threads.interrupt(threadId(id), undefined, { holdQueue: true }).catch(() => {});
-      await client.threads.delete(threadId(id)).catch(() => {});
-    }
-    for (const id of ownedProjects) await client.projects.delete(id).catch(() => {});
-  } finally {
-    if (evidenceFile) await NodeFSP.writeFile(evidenceFile, JSON.stringify(records, null, 2));
-    await client?.close();
-    await issuer?.close();
-    if (directory) await NodeFSP.rm(directory, { recursive: true, force: true });
-  }
-});
-
-function cli(
-  args: string[],
-  input = "",
-  signalAfterDispatch = false,
-  overrides: NodeJS.ProcessEnv = {},
-): Promise<{ stdout: string; stderr: string; exit: number }> {
-  return new Promise((resolve, reject) => {
-    const child = NodeChildProcess.spawn(process.execPath, ["dist/cli.js", ...args], {
-      env: { ...env, ...overrides },
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    let stdout = "",
-      stderr = "",
-      signalled = false;
-    child.stdout.on("data", (chunk: Buffer) => {
-      stdout += chunk.toString();
-    });
-    child.stderr.on("data", (chunk: Buffer) => {
-      stderr += chunk.toString();
-      if (signalAfterDispatch && !signalled && stderr.includes("Thread: ")) {
-        signalled = true;
-        child.kill("SIGTERM");
-      }
-    });
-    child.once("error", reject);
-    child.once("exit", (exit, signal) =>
-      signal
-        ? reject(new Error(`CLI killed by ${signal}`))
-        : resolve({ stdout, stderr, exit: exit ?? 1 }),
-    );
-    child.stdin.end(input);
-  });
-}
+useDispatchHarness("run");
 
 it.skipIf(!agent)("thread start exits once its server thread and linked run exist", async () => {
   for (const json of [true, false]) {
@@ -142,6 +76,7 @@ it("pre-dispatch failures create no server thread", async () => {
   }
   expect((await client.threads.list()).map((thread) => thread.id).sort()).toEqual(before);
 });
+
 it("credential and scope refusals exit 9 without creating a thread", async () => {
   const before = (await client.threads.list()).map((thread) => thread.id).sort();
   const config = NodePath.join(directory, "limited");
@@ -165,20 +100,6 @@ it("credential and scope refusals exit 9 without creating a thread", async () =>
   }
   expect((await client.threads.list()).map((thread) => thread.id).sort()).toEqual(before);
 });
-async function execute(label: string, args: string[], signal = false) {
-  const result = await cli([...args, "--json"], "", signal);
-  expect(result.stdout.trim().split("\n")).toHaveLength(1);
-  const value = JSON.parse(result.stdout);
-  const { threadId, runId, state, runtimeMode } = value;
-  if (typeof threadId === "string") ownedThreads.add(threadId);
-  record({ case: label, threadId, runId, state, runtimeMode, exit: result.exit });
-  expect(value.exitCode).toBe(result.exit);
-  expect(result.stderr.match(/Thread: /g)).toHaveLength(1);
-  if (args.includes("info"))
-    expect(result.stderr).toContain(`Runtime mode: ${value.runtimeMode}\n`);
-  else expect(result.stderr).not.toContain("Runtime mode:");
-  return value;
-}
 
 it.skipIf(!agent)("run reads positional, stdin and files with clean output", async () => {
   const file = NodePath.join(directory, "prompt.txt");
@@ -269,103 +190,4 @@ it.skipIf(!agent)("thread start --wait uses project-path and run output", async 
   ownedProjects.add(projection.thread.projectId);
   expect((await client.projects.get(projection.thread.projectId))?.workspaceRoot).toBe(root);
   expect(projection.thread.worktreePath).toBeNull();
-});
-
-it.skipIf(!agent)("run prepares a worktree from the supplied base ref", async () => {
-  const root = NodePath.join(directory, "sample-repository");
-  await NodeFSP.mkdir(root);
-  const author = ["-c", "user.name=Sample", "-c", "user.email=sample@example.invalid"];
-  for (const args of [
-    ["init", "--initial-branch=sample-base"],
-    [...author, "commit", "--allow-empty", "-m", "Initial commit"],
-  ])
-    NodeChildProcess.execFileSync("git", args, { cwd: root, stdio: "ignore" });
-  for (const base of ["sample-base", undefined]) {
-    const value = await execute(`worktree ${base ?? "default HEAD"}`, [
-      ...runCommand,
-      "Reply SAMPLE only.",
-      "--project-path",
-      root,
-      "--worktree",
-      ...(base ? ["--base-ref", base] : []),
-    ]);
-    expect(value).toMatchObject({ assistantMessage: "SAMPLE", state: "completed", exitCode: 0 });
-    const projection = await client.threads.projection(threadId(value.threadId));
-    expect(projection.thread.worktreePath).toBeTruthy();
-    expect(projection.thread.worktreePath).not.toBe(root);
-    ownedProjects.add(projection.thread.projectId);
-    expect(projection.runs[0]!.id).toBe(value.runId);
-    // Test-owned Git cleanup avoids the stock server null/void RPC result mismatch.
-    NodeChildProcess.execFileSync(
-      "git",
-      ["worktree", "remove", "--force", projection.thread.worktreePath!],
-      { cwd: root, stdio: "ignore" },
-    );
-  }
-});
-
-it.skipIf(!agent)("run applies timeout interrupt/detach and SIGTERM policies", async () => {
-  const prompt = "Run the shell command sleep 20, then reply SAMPLE only.";
-  for (const [policy, expected] of [
-    [undefined, 6],
-    ["detach", 5],
-  ] as const) {
-    const args = [
-      ...runCommand,
-      prompt,
-      "--timeout",
-      "1s",
-      ...(policy ? ["--on-timeout", policy] : []),
-    ];
-    const value = await execute(policy ?? "default interrupt", args);
-    expect(value.exitCode).toBe(expected);
-    expect(value.threadId).toBeTruthy();
-    expect(value.runId).toBeTruthy();
-    const projection = await client.threads.projection(threadId(value.threadId));
-    const run = projection.runs.find((candidate) => candidate.id === value.runId);
-    expect(run).toBeDefined();
-    if (policy === "detach")
-      expect(["preparing", "queued", "starting", "running", "waiting"]).toContain(run!.status);
-    await client.threads.interrupt(threadId(value.threadId), undefined, { holdQueue: true });
-  }
-  const signalled = await execute("SIGTERM run", [...runCommand, prompt], true);
-  expect(signalled.exitCode).toBe(4);
-  expect(signalled.threadId).toBeTruthy();
-});
-
-it.skipIf(!agent)("run applies accept and reject to live shell approvals", async () => {
-  const root = NodePath.join(directory, "approval-workspace");
-  await NodeFSP.mkdir(root);
-  for (const policy of ["accept", "reject"]) {
-    // A shell write outside the workspace induces the same approval used by inspection proof.
-    const file = NodePath.join(directory, `approval-${policy}.txt`);
-    const value = await execute(`approval ${policy}`, [
-      ...runCommand,
-      `Use a shell command to write SAMPLE to ${file}. Request approval if required. If denied, do not retry or use another tool. Reply SAMPLE only.`,
-      "--project-path",
-      root,
-      "--mode",
-      "approval-required",
-      "--approve",
-      policy,
-    ]);
-    const projection = await client.threads.projection(threadId(value.threadId));
-    ownedProjects.add(projection.thread.projectId);
-    const requests = projection.runtimeRequests.filter((request) => request.kind === "command");
-    record({ case: `approval ${policy} requests`, threadId: value.threadId, requests });
-    expect(requests.length).toBeGreaterThan(0);
-    expect(requests).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          status: "resolved",
-          decision: policy === "accept" ? "accept" : "decline",
-        }),
-      ]),
-    );
-    expect(value).toMatchObject({
-      exitCode: 0,
-      runtimeMode: "approval-required",
-      state: "completed",
-    });
-  }
 });
