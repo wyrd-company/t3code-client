@@ -10,11 +10,11 @@ url="${2:?published npm tarball URL required}"
 tap="$(realpath "${3:?tap checkout required}")"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 [[ -e "$tap/.git" ]] || { echo "Tap checkout not found." >&2; exit 1; }
-python3 "$root/scripts/release/render-homebrew.py" "$archive" "$url" "$tap/Formula/t3c.rb"
 download="$(mktemp /tmp/t3c-published-XXXXXX.tgz)"
 trap 'rm -f "$download"' EXIT
 curl --fail --silent --show-error --location "$url" --output "$download"
 cmp "$archive" "$download"
+python3 "$root/scripts/release/render-homebrew.py" "$archive" "$url" "$tap/Formula/t3c.rb"
 git -C "$tap" add Formula/t3c.rb
 if git -C "$tap" diff --cached --quiet -- Formula/t3c.rb; then
   echo "Formula already up to date."

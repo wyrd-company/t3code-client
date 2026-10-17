@@ -12,10 +12,6 @@ Type "export PS1='$ '; clear"
 Enter
 Sleep 300ms
 Show
-Type "t3c --version"
-Enter
-Wait+Line /\$$/
-Sleep 1s
 Type "t3c run 'Reply with HELLO only.' --model gpt-6-luna"
 Enter
 Wait+Line@3m /\$$/

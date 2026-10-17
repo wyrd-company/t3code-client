@@ -20,6 +20,9 @@ use `gpt-6-luna` for test subjects.
 `task release:test` checks release selection, tag/manifest agreement, package
 contents, private package refusal and shrinkwrap handoff using disposable
 repositories and fake publication commands. It never publishes or pushes tags.
+Fake-tool Homebrew regressions verify that a mismatched download preserves the
+formula, HEAD and index, and that an existing installation permits only the
+preflight call before rejection.
 `actionlint` and `shellcheck scripts/release/*.sh` validate workflows and scripts.
 
 Before initial publication, `task intents` validates a scratch Git repository
@@ -69,7 +72,9 @@ output, error context, shrinkwrap and Taskfile ownership interfaces.
 `task demo` starts a fresh pinned server home outside Git and renders the
 committed `packages/t3code-cli/demo/demo.tape` to the published GIF. It clears
 operational server/token/home overrides and both display variables. The tape
-runs the built CLI's version, a `gpt-6-luna` prompt and thread listing. Captured
+runs a `gpt-6-luna` prompt and thread listing. A hidden real `version --json`
+preflight verifies the pinned server version and protocol. Package and consumer
+checks verify the actual package versions. Captured
 command exits, the exact generic answer and the same completed thread identity
 must agree before the renderer succeeds. Sanitized output records actual server
 version/protocol, owned homes, subject identity and cleanup.

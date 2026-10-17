@@ -33,8 +33,20 @@ function prepare(mismatch: boolean) {
   git(["init"]);
   git(["config", "user.name", "Example"]);
   git(["config", "user.email", "example@example.invalid"]);
-  git(["commit", "--allow-empty", "-m", "chore: initialize test"]);
-  const before = git(["rev-parse", "HEAD"]).trim();
+  write(tap, "Formula/t3c.rb", "original committed formula\n");
+  git(["add", "Formula/t3c.rb"]);
+  git(["commit", "-m", "chore: initialize test"]);
+  if (mismatch) {
+    write(tap, "Formula/t3c.rb", "original staged formula\n");
+    git(["add", "Formula/t3c.rb"]);
+    write(tap, "Formula/t3c.rb", "original working formula\n");
+  }
+  const snapshot = () => ({
+    head: git(["rev-parse", "HEAD"]).trim(),
+    index: NodeFS.readFileSync(NodePath.join(tap, ".git/index")).toString("hex"),
+    formula: NodeFS.readFileSync(NodePath.join(tap, "Formula/t3c.rb"), "utf8"),
+  });
+  const before = snapshot();
   const env = fake(root, "curl", 'for last; do :; done\ncp "$SOURCE" "$last"');
   const result = NodeChildProcess.spawnSync(
     "bash",
@@ -46,18 +58,22 @@ function prepare(mismatch: boolean) {
     ],
     { env: { ...process.env, ...env, SOURCE: source, PUSH_TAP: "0" }, encoding: "utf8" },
   );
-  return { result, before, after: git(["rev-parse", "HEAD"]).trim(), tap };
+  return { result, before, after: snapshot(), tap, git };
 }
 it("commits formula only when the published download matches the supplied archive", () => {
-  const { result, before, after, tap } = prepare(false);
+  const { result, before, after, tap, git } = prepare(false);
   expect(result.status, result.stderr).toBe(0);
-  expect(after).not.toBe(before);
+  expect(after.head).not.toBe(before.head);
+  expect(git(["show", "HEAD:Formula/t3c.rb"])).toBe(after.formula);
+  expect(git(["status", "--porcelain"])).toBe("");
   expect(NodeFS.readFileSync(NodePath.join(tap, "Formula/t3c.rb"), "utf8")).toContain(
     "t3code-cli-0.1.0.tgz",
   );
 });
-it("refuses to commit when published URL bytes differ", () => {
+it("preserves formula bytes HEAD and index when published URL bytes differ", () => {
   const { result, before, after } = prepare(true);
-  expect(result.status).not.toBe(0);
-  expect(after).toBe(before);
+  expect(result.status, result.stderr).toBe(1);
+  expect(after.head, "HEAD must be unchanged").toBe(before.head);
+  expect(after.index, "index bytes must be unchanged").toBe(before.index);
+  expect(after.formula, "formula bytes must be unchanged").toBe(before.formula);
 });

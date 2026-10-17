@@ -9,7 +9,6 @@ import {
 } from "../../packages/t3code-cli/scripts/demoEvidence.ts";
 function evidence(): DemoCommand[] {
   return [
-    { command: ["--version"], exitCode: 0, stdout: "t3c 0.0.0\n" },
     {
       command: ["run", "Reply with HELLO only.", "--model", "gpt-6-luna"],
       exitCode: 0,
@@ -28,35 +27,35 @@ it("accepts the real-command evidence contract and preserves subject identity", 
   });
 });
 it("rejects an incomplete recording", () => {
-  expect(() => verifyDemoCommands(evidence().slice(0, 2))).toThrow("count");
+  expect(() => verifyDemoCommands(evidence().slice(0, 1))).toThrow("count");
 });
 it("rejects substituted demo commands or model", () => {
   const rows = evidence();
-  rows[1]!.command[3] = "other";
+  rows[0]!.command[3] = "other";
   expect(() => verifyDemoCommands(rows)).toThrow("sequence");
 });
 it("rejects a failed real command", () => {
   const rows = evidence();
-  rows[1]!.exitCode = 8;
+  rows[0]!.exitCode = 8;
   expect(() => verifyDemoCommands(rows)).toThrow("failed");
 });
 it("rejects a non-generic assistant answer", () => {
   const rows = evidence();
-  rows[1]!.stdout = "A different reply";
+  rows[0]!.stdout = "A different reply";
   expect(() => verifyDemoCommands(rows)).toThrow("generic");
 });
 it("rejects missing real thread identity", () => {
   const rows = evidence();
-  delete rows[1]!.threadId;
+  delete rows[0]!.threadId;
   expect(() => verifyDemoCommands(rows)).toThrow("identity");
 });
 it("rejects completion evidence for another thread", () => {
   const rows = evidence();
-  rows[2]!.stdout = "other-thread completed";
+  rows[1]!.stdout = "other-thread completed";
   expect(() => verifyDemoCommands(rows)).toThrow("completion");
 });
 it("rejects a thread that has not completed", () => {
   const rows = evidence();
-  rows[2]!.stdout = "sample-thread running";
+  rows[1]!.stdout = "sample-thread running";
   expect(() => verifyDemoCommands(rows)).toThrow("completion");
 });
