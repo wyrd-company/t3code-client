@@ -173,6 +173,10 @@ async function execute(label: string, args: string[], signal = false) {
   if (typeof threadId === "string") ownedThreads.add(threadId);
   record({ case: label, threadId, runId, state, runtimeMode, exit: result.exit });
   expect(value.exitCode).toBe(result.exit);
+  expect(result.stderr.match(/Thread: /g)).toHaveLength(1);
+  if (args.includes("info"))
+    expect(result.stderr).toContain(`Runtime mode: ${value.runtimeMode}\n`);
+  else expect(result.stderr).not.toContain("Runtime mode:");
   return value;
 }
 
@@ -216,7 +220,15 @@ it.skipIf(!agent)("run reads positional, stdin and files with clean output", asy
 });
 
 it.skipIf(!agent)("run continuation and send follow linked runs on one thread", async () => {
-  const first = await execute("first run", [...runCommand, "Reply SAMPLE only."]);
+  const first = await execute("first run explicit mode", [
+    ...runCommand,
+    "Reply SAMPLE only.",
+    "--mode",
+    "full-access",
+    "--log-level",
+    "info",
+  ]);
+  expect(first.runtimeMode).toBe("full-access");
   const next = await execute("continuation", [
     ...runCommand,
     "Reply NEXT only.",
@@ -225,6 +237,7 @@ it.skipIf(!agent)("run continuation and send follow linked runs on one thread", 
   ]);
   expect(first.exitCode).toBe(0);
   expect(next.exitCode).toBe(0);
+  expect(next.runtimeMode).toBeNull();
   expect(next.threadId).toBe(first.threadId);
   expect(next.runId).not.toBe(first.runId);
   expect(next.assistantMessage).toBe("NEXT");
@@ -233,6 +246,7 @@ it.skipIf(!agent)("run continuation and send follow linked runs on one thread", 
     threadId: first.threadId,
     assistantMessage: "SENT",
     state: "completed",
+    runtimeMode: null,
     exitCode: 0,
   });
   expect(sent.runId).not.toBe(next.runId);
@@ -250,6 +264,7 @@ it.skipIf(!agent)("thread start --wait uses project-path and run output", async 
     "--wait",
   ]);
   expect(value).toMatchObject({ assistantMessage: "SAMPLE", state: "completed", exitCode: 0 });
+  expect(value.runtimeMode).toBe((await client.server.getSettings())["defaultRuntimeMode"] ?? null);
   const projection = await client.threads.projection(threadId(value.threadId));
   ownedProjects.add(projection.thread.projectId);
   expect((await client.projects.get(projection.thread.projectId))?.workspaceRoot).toBe(root);
@@ -265,26 +280,28 @@ it.skipIf(!agent)("run prepares a worktree from the supplied base ref", async ()
     [...author, "commit", "--allow-empty", "-m", "Initial commit"],
   ])
     NodeChildProcess.execFileSync("git", args, { cwd: root, stdio: "ignore" });
-  const args = [
-    "Reply SAMPLE only.",
-    "--project-path",
-    root,
-    "--worktree",
-    "--base-ref",
-    "sample-base",
-  ];
-  const value = await execute("worktree base ref", [...runCommand, ...args]);
-  expect(value).toMatchObject({ assistantMessage: "SAMPLE", state: "completed", exitCode: 0 });
-  const projection = await client.threads.projection(threadId(value.threadId));
-  expect(projection.thread.worktreePath).toBeTruthy();
-  expect(projection.thread.worktreePath).not.toBe(root);
-  ownedProjects.add(projection.thread.projectId);
-  expect(projection.runs[0]!.id).toBe(value.runId);
-  await issuer.vcs.removeWorktree({
-    cwd: root,
-    path: projection.thread.worktreePath!,
-    force: true,
-  });
+  for (const base of ["sample-base", undefined]) {
+    const value = await execute(`worktree ${base ?? "default HEAD"}`, [
+      ...runCommand,
+      "Reply SAMPLE only.",
+      "--project-path",
+      root,
+      "--worktree",
+      ...(base ? ["--base-ref", base] : []),
+    ]);
+    expect(value).toMatchObject({ assistantMessage: "SAMPLE", state: "completed", exitCode: 0 });
+    const projection = await client.threads.projection(threadId(value.threadId));
+    expect(projection.thread.worktreePath).toBeTruthy();
+    expect(projection.thread.worktreePath).not.toBe(root);
+    ownedProjects.add(projection.thread.projectId);
+    expect(projection.runs[0]!.id).toBe(value.runId);
+    // Test-owned Git cleanup avoids the stock server null/void RPC result mismatch.
+    NodeChildProcess.execFileSync(
+      "git",
+      ["worktree", "remove", "--force", projection.thread.worktreePath!],
+      { cwd: root, stdio: "ignore" },
+    );
+  }
 });
 
 it.skipIf(!agent)("run applies timeout interrupt/detach and SIGTERM policies", async () => {
@@ -314,4 +331,41 @@ it.skipIf(!agent)("run applies timeout interrupt/detach and SIGTERM policies", a
   const signalled = await execute("SIGTERM run", [...runCommand, prompt], true);
   expect(signalled.exitCode).toBe(4);
   expect(signalled.threadId).toBeTruthy();
+});
+
+it.skipIf(!agent)("run applies accept and reject to live shell approvals", async () => {
+  const root = NodePath.join(directory, "approval-workspace");
+  await NodeFSP.mkdir(root);
+  for (const policy of ["accept", "reject"]) {
+    // A shell write outside the workspace induces the same approval used by inspection proof.
+    const file = NodePath.join(directory, `approval-${policy}.txt`);
+    const value = await execute(`approval ${policy}`, [
+      ...runCommand,
+      `Use a shell command to write SAMPLE to ${file}. Request approval if required. If denied, do not retry or use another tool. Reply SAMPLE only.`,
+      "--project-path",
+      root,
+      "--mode",
+      "approval-required",
+      "--approve",
+      policy,
+    ]);
+    const projection = await client.threads.projection(threadId(value.threadId));
+    ownedProjects.add(projection.thread.projectId);
+    const requests = projection.runtimeRequests.filter((request) => request.kind === "command");
+    record({ case: `approval ${policy} requests`, threadId: value.threadId, requests });
+    expect(requests.length).toBeGreaterThan(0);
+    expect(requests).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          status: "resolved",
+          decision: policy === "accept" ? "accept" : "decline",
+        }),
+      ]),
+    );
+    expect(value).toMatchObject({
+      exitCode: 0,
+      runtimeMode: "approval-required",
+      state: "completed",
+    });
+  }
 });
