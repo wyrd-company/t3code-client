@@ -248,8 +248,7 @@
           },
           {
             "code": 4,
-            "meaning": "Interrupted or cancelled",
-            "including by signal.": null
+            "meaning": "Interrupted or cancelled, including by signal."
           },
           {
             "code": 5,
@@ -273,8 +272,7 @@
           },
           {
             "code": 10,
-            "meaning": "Thread",
-            "project or model not found.": null
+            "meaning": "Thread, project or model not found."
           }
         ]
       }
@@ -465,8 +463,7 @@
               },
               {
                 "code": 4,
-                "meaning": "Interrupted or cancelled",
-                "including by signal.": null
+                "meaning": "Interrupted or cancelled, including by signal."
               },
               {
                 "code": 5,
@@ -490,8 +487,7 @@
               },
               {
                 "code": 10,
-                "meaning": "Thread",
-                "project or model not found.": null
+                "meaning": "Thread, project or model not found."
               }
             ]
           },
@@ -584,8 +580,7 @@
               },
               {
                 "code": 4,
-                "meaning": "Interrupted or cancelled",
-                "including by signal.": null
+                "meaning": "Interrupted or cancelled, including by signal."
               },
               {
                 "code": 5,
@@ -609,8 +604,7 @@
               },
               {
                 "code": 10,
-                "meaning": "Thread",
-                "project or model not found.": null
+                "meaning": "Thread, project or model not found."
               }
             ]
           }
@@ -683,8 +677,7 @@
               },
               {
                 "code": 4,
-                "meaning": "Interrupted or cancelled",
-                "including by signal.": null
+                "meaning": "Interrupted or cancelled, including by signal."
               },
               {
                 "code": 5,
@@ -708,8 +701,7 @@
               },
               {
                 "code": 10,
-                "meaning": "Thread",
-                "project or model not found.": null
+                "meaning": "Thread, project or model not found."
               }
             ]
           }
@@ -933,15 +925,13 @@
       "subcommands": [
         {
           "name": "info",
-          "summary": "Show environment descriptor",
-          "providers and models.": null
+          "summary": "Show environment descriptor, providers and models."
         }
       ]
     },
     {
       "name": "version",
-      "summary": "Show CLI",
-      "library and target versions with an informational reachable-server verdict.": null
+      "summary": "Show CLI, library and target versions with an informational reachable-server verdict."
     }
   ],
   "parsing-boundaries": [

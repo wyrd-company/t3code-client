@@ -1,6 +1,7 @@
 $schema: https://refinery.systems/ontology/technical-design
-title: T3 Code library — library
-objective: Provide the stock T3 Code Node library contract for library.
+title: T3 Code Node client architecture
+objective: >-
+  Let Node programs create, manage and monitor stock T3 Code sessions through typed Promise and AsyncIterable APIs.
 relationships:
   related-to:
     - library-wire

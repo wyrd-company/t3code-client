@@ -1,6 +1,7 @@
 $schema: https://refinery.systems/ontology/technical-design
-title: T3 Code library — usage
-objective: Provide the stock T3 Code Node library contract for library-usage.
+title: T3 Code client composition and usage
+objective: >-
+  Expose one T3Client composition root that connects credentials, transports and facades with explicit connection and cleanup lifecycles.
 relationships:
   related-to:
     - library
