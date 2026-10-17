@@ -58,11 +58,15 @@ One SIGTERM/SIGINT scope spans prompt reading, preflight, dispatch and following
 for `run`, `thread start` (with or without `--wait`) and `thread send`.
 During preflight, the first signal exits `4`, creates no thread or run and
 reports null identities (`data: null` for nonwaiting `thread start`).
-Once a mutation is sent, the CLI retains its acknowledgement and waits for the
-linked run through the existing handle. It never aborts or retries that request.
-It interrupts that exact run with `holdQueue`, exits `4`, and reports the thread
-and run identities on stderr and in the envelope. An acknowledgement or link
-failure exits `4` with the known thread identity and the failure in `error`.
+Once a mutation is sent, the CLI retains its acknowledgement without aborting
+or retrying that request. After a signal, it sends no further mutation in the
+dispatch pipeline. A thread creation or title update links no run: after its
+acknowledgement the CLI exits `4`, reports the known thread identity with a null
+run id, and sends no interrupt. For a run-linking mutation (`startTurn` or
+`launch`), the CLI waits for the linked run through the existing handle, interrupts
+that exact run with `holdQueue`, and exits `4` with the thread and run identities
+on stderr and in the envelope. An acknowledgement or link failure exits `4`
+with the known thread identity and the failure in `error`.
 A second signal exits immediately, including while a receipt or run link is pending.
 
 During following, the first signal interrupts the run and exits `4`.

@@ -100,6 +100,9 @@ it.skipIf(!agent)(
       if (value.runId) {
         const projection = await client.threads.projection(threadId(value.threadId));
         expect(projection.runs.find((run) => run.id === value.runId)?.status).toBe("interrupted");
+      } else if (value.threadId) {
+        const projection = await client.threads.projection(threadId(value.threadId));
+        expect(projection.runs).toHaveLength(0);
       } else expect(value.threadId).toBeNull();
       record({
         case: "dispatch signal sample",
