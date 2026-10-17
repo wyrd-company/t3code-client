@@ -1,6 +1,7 @@
 $schema: https://refinery.systems/ontology/technical-design
-title: T3 Code library — facades
-objective: Provide the stock T3 Code Node library contract for library-facades.
+title: T3 Code project and thread facades
+objective: >-
+  Map project, thread and runtime-request operations to typed calls, and follow the server-linked run through pending requests and terminal outcomes.
 relationships:
   related-to:
     - library

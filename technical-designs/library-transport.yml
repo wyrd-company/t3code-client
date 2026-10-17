@@ -1,6 +1,7 @@
 $schema: https://refinery.systems/ontology/technical-design
-title: T3 Code library — transport
-objective: Provide the stock T3 Code Node library contract for library-transport.
+title: T3 Code schema validation and RPC transport
+objective: >-
+  Validate protocol payloads, correlate RPC calls and streams, and report typed failures while preserving backpressure and connection recovery.
 relationships:
   related-to:
     - library

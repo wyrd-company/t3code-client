@@ -1,6 +1,7 @@
 $schema: https://refinery.systems/ontology/technical-design
-title: T3 Code library — auth
-objective: Provide the stock T3 Code Node library contract for library-auth.
+title: T3 Code bearer credentials and access control
+objective: >-
+  Obtain and store bearer credentials, check granted scopes and refresh socket authentication when credentials change.
 relationships:
   related-to:
     - library

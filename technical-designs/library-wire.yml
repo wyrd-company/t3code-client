@@ -1,6 +1,7 @@
 $schema: https://refinery.systems/ontology/technical-design
-title: T3 Code library — wire
-objective: Provide the stock T3 Code Node library contract for library-wire.
+title: T3 Code HTTP and WebSocket protocol
+objective: >-
+  Define protocol 2 authentication, requests, responses and events so library calls interoperate with stock T3 Code 0.1.0.
 relationships:
   related-to:
     - library
