@@ -69,9 +69,14 @@ it("measures the deadline from invocation start rather than follow start", async
   const s = setup();
   await vi.advanceTimersByTimeAsync(900);
   const promise = followRun(s.invocation, target, { ...policy, timeoutMs: 1000 });
+  let finished = false;
+  void promise.then(() => {
+    finished = true;
+  });
   s.snapshot();
   await flush();
   await vi.advanceTimersByTimeAsync(100);
+  expect(finished).toBe(true);
   expect(await promise).toMatchObject({ exitCode: 5, durationMs: 1000 });
 });
 
@@ -220,4 +225,34 @@ it("preserves deadlines longer than the Node timer limit", async () => {
   expect(done).toBe(false);
   await vi.advanceTimersByTimeAsync(timeoutMs - 2_147_483_648);
   expect(await promise).toMatchObject({ exitCode: 5, durationMs: timeoutMs });
+});
+
+it("cancels the invocation deadline when the run completes early", async () => {
+  const s = setup();
+  const promise = followRun(s.invocation, target, { ...policy, timeoutMs: 3_600_000 });
+  s.snapshot({ runs: [makeRun({ status: "completed" })] });
+  expect((await promise).exitCode).toBe(0);
+  expect(vi.getTimerCount()).toBe(0);
+});
+
+it("keeps observing terminal state instead of failing on requests during interrupt grace", async () => {
+  const s = setup();
+  const promise = followRun(s.invocation, target, {
+    ...policy,
+    timeoutMs: 1,
+    onTimeout: "interrupt",
+  });
+  let done = false;
+  void promise.then(() => {
+    done = true;
+  });
+  s.snapshot();
+  await flush();
+  await vi.advanceTimersByTimeAsync(1);
+  s.snapshot({ runtimeRequests: [makeRuntimeRequest("approval-1")] });
+  await flush();
+  expect(done).toBe(false);
+  expect(s.respondToApproval).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(5000);
+  expect((await promise).exitCode).toBe(6);
 });

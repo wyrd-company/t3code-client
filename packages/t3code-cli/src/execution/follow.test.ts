@@ -40,6 +40,7 @@ afterEach(() => {
 describe("follow policy", () => {
   it("has no default deadline and parses all explicit policies", () => {
     expect(policy).toEqual({ onTimeout: "detach", onRequest: "fail" });
+    expect(followPolicy({}, "interrupt").onTimeout).toBe("interrupt");
     expect(
       followPolicy(
         { timeout: "1s", onTimeout: "interrupt", onRequest: "wait", approve: "reject" },
@@ -102,6 +103,7 @@ it.each([true, false])(
       state: confirmed ? "interrupted" : "running",
     });
     expect(s.invocation.errorContext).toBe("run-interrupt");
+    expect(vi.getTimerCount()).toBe(0);
   },
 );
 
