@@ -11,6 +11,9 @@ relationships:
 
 # Dagu custom harness
 
+The [CLI specification](https://github.com/wyrd-company/t3code-client/blob/main/docs/specifications/command-line.yml)
+and its native command asset define the command contract. This guide explains its use.
+
 The Dagu custom harness starts one `t3c run` process, supplies its prompt on
 stdin, and consumes the final assistant message on stdout. Progress and thread
 identity go to stderr. The exit code preserves run, request, transport and

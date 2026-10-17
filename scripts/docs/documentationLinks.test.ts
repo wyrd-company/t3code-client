@@ -8,7 +8,10 @@ import * as NodePath from "node:path";
 import { expect, it } from "vite-plus/test";
 
 const root = NodePath.resolve(import.meta.dirname, "../..");
-const repositoryPrefix = "https://github.com/wyrd-company/t3code-client/blob/main/";
+const repositoryPrefixes = [
+  "https://github.com/wyrd-company/t3code-client/blob/main/",
+  "https://raw.githubusercontent.com/wyrd-company/t3code-client/main/",
+];
 const paths = [
   "README.md",
   "AGENTS.md",
@@ -27,13 +30,15 @@ it("resolves guide, context and canonical structured documentation links and anc
     const content = NodeFS.readFileSync(path, "utf8");
     for (const [, href] of content.matchAll(/\]\(([^)]+)\)/gu)) {
       if (!href) continue;
-      const local = href.startsWith(repositoryPrefix)
-        ? NodePath.join(root, href.slice(repositoryPrefix.length))
-        : /^[a-z]+:/u.test(href)
-          ? undefined
-          : href.startsWith("#")
-            ? `${path}${href}`
-            : NodePath.resolve(NodePath.dirname(path), href);
+      const repositoryPrefix = repositoryPrefixes.find((prefix) => href.startsWith(prefix));
+      const local =
+        repositoryPrefix !== undefined
+          ? NodePath.join(root, href.slice(repositoryPrefix.length))
+          : /^[a-z]+:/u.test(href)
+            ? undefined
+            : href.startsWith("#")
+              ? `${path}${href}`
+              : NodePath.resolve(NodePath.dirname(path), href);
       if (local === undefined) continue;
       const [target, anchor] = local.split("#");
       expect(NodeFS.existsSync(target!), `${name}: ${href}`).toBe(true);
