@@ -121,3 +121,17 @@ it("never sends an approval decision for a user-input request", async () => {
   await vi.advanceTimersByTimeAsync(1);
   expect((await promise).exitCode).toBe(5);
 });
+
+it("prints a pending approval's prompt and id without answering it by default", async () => {
+  const s = setup();
+  const promise = followRun(s.invocation, target, policy);
+  s.snapshot({
+    runtimeRequests: [makeRuntimeRequest("approval-1")],
+    turnItems: [items.approvalRequest("approval-1", { prompt: "Allow sample command?" })],
+  });
+  expect((await promise).exitCode).toBe(7);
+  expect(s.stderr.join("")).toContain("approval-1");
+  expect(s.stderr.join("")).toContain("Allow sample command?");
+  expect(s.respondToApproval).not.toHaveBeenCalled();
+  expect(s.interrupt).not.toHaveBeenCalled();
+});
