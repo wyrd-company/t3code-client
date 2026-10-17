@@ -47,12 +47,16 @@ describe("ThreadProjectionTracker", () => {
       events.runtimeRequestUpdated(6, "r1", { status: "resolved", resolvedAt: at }),
     );
     expect(resolved).toEqual([{ kind: "request-resolved", requestId: "r1" }]);
-    const question = apply(tracker, events.runtimeRequestUpdated(7, "r2", { kind: "user_input" }));
+    // The request arrives before its timeline item; its questions are not known yet.
+    expect(apply(tracker, events.runtimeRequestUpdated(7, "r2", { kind: "user_input" }))).toEqual(
+      [],
+    );
+    const question = apply(tracker, events.turnItemUpdated(8, items.userInputRequest("r2")));
     expect(question).toMatchObject([
-      { kind: "user-input-requested", requestId: "r2", questions: [] },
+      { kind: "user-input-requested", requestId: "r2", questions: [{ id: "q1" }] },
     ]);
     // Announced once: another update to the same open request is quiet.
-    expect(apply(tracker, events.runtimeRequestUpdated(8, "r2", { kind: "user_input" }))).toEqual(
+    expect(apply(tracker, events.runtimeRequestUpdated(9, "r2", { kind: "user_input" }))).toEqual(
       [],
     );
   });

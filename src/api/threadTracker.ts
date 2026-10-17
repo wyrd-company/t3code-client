@@ -131,6 +131,9 @@ export class ThreadProjectionTracker {
     }
     for (const request of open) {
       if (this.#announced.has(request.requestId)) continue;
+      // A user-input request's questions live on its timeline item, which can
+      // arrive after the request; announce it once the questions are known.
+      if (request.kind === "user-input" && request.item === undefined) continue;
       this.#announced.add(request.requestId);
       const { kind: _kind, ...rest } = request;
       yield request.kind === "approval"

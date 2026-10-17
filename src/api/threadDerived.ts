@@ -119,11 +119,27 @@ function runError(
   return projection.thread.rollbackFailure?.message;
 }
 
-/** The newest run that holds the thread: preparing, queued, starting, running, or waiting. */
+const interruptibleRunStatuses: ReadonlySet<string> = new Set([
+  "preparing",
+  "starting",
+  "running",
+  "waiting",
+]);
+
+/**
+ * The run an interrupt targets: the highest-ordinal run that is preparing,
+ * starting, running, or waiting. A queued run has not started, so it is not
+ * the active run.
+ */
 export function activeRun(
   projection: Pick<OrchestrationV2ThreadProjection, "runs">,
 ): OrchestrationV2Run | undefined {
-  return projection.runs.findLast((run) => !isRunTerminalStatus(run.status));
+  let active: OrchestrationV2Run | undefined;
+  for (const run of projection.runs) {
+    if (!interruptibleRunStatuses.has(run.status)) continue;
+    if (active === undefined || run.ordinal > active.ordinal) active = run;
+  }
+  return active;
 }
 
 /** Pure classification of a shell thread. */

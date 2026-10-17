@@ -175,6 +175,25 @@ describe("AuthClient", () => {
     expect(changes).toEqual([1, 2, 3]);
   });
 
+  it("stores the whole grant when the session reports permissions", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>(async () =>
+      json({
+        ...sessionState,
+        scopes: ["access:read"],
+        permissions: ["access:read", "filesystem:read"],
+      }),
+    );
+    const store = memoryCredentialStore();
+    const client = makeClient(fetch, store);
+
+    await client.setAccessToken("credential-3");
+    expect(client.scopesSync()).toEqual(["access:read", "filesystem:read"]);
+    await expect(store.load()).resolves.toMatchObject({
+      scopes: ["access:read", "filesystem:read"],
+    });
+    await expect(client.hasScope("filesystem:read")).resolves.toBe(true);
+  });
+
   it("does not store a candidate token for an unauthenticated session", async () => {
     const fetch = vi.fn<typeof globalThis.fetch>(async () =>
       json({ authenticated: false, auth: authDescriptor }),

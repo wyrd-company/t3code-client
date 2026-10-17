@@ -61,7 +61,16 @@ describe("auth scope vocabulary", () => {
     expect(AuthStandardClientScopes).toHaveLength(13);
     expect(AuthStandardClientScopes).toEqual(expect.arrayContaining([...granular, "relay:read"]));
     expect(AuthStandardClientScopes).not.toContain("access:read");
-    expect(AuthLegacyScopes).toEqual(["access:read", "access:write", "relay:read", "relay:write"]);
+    expect(AuthLegacyScopes).toEqual([
+      "orchestration:read",
+      "orchestration:operate",
+      "terminal:operate",
+      "review:write",
+      "access:read",
+      "access:write",
+      "relay:read",
+      "relay:write",
+    ]);
     expect(AuthAdministrativeScopes).toHaveLength(16);
     expect(AuthAdministrativeScopes).not.toContain("review:write");
   });

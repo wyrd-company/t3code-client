@@ -18,6 +18,7 @@ import {
   AuthPairingLink,
   AuthSessionState,
   AuthWebSocketTicketResult,
+  grantedScopes,
   type AuthAccessTokenResult as AuthAccessTokenResultType,
   type AuthClientMetadataDeviceType as AuthClientMetadataDeviceTypeType,
   type AuthClientSession as AuthClientSessionType,
@@ -295,7 +296,9 @@ function sameCredentials(a: StoredCredentials, b: StoredCredentials): boolean {
 function credentialsFromState(token: string, state: AuthSessionStateType): StoredCredentials {
   return {
     accessToken: token,
-    ...(state.scopes === undefined ? {} : { scopes: [...state.scopes] }),
+    ...(state.scopes === undefined && state.permissions === undefined
+      ? {}
+      : { scopes: grantedScopes(state) }),
     ...(state.expiresAt === undefined ? {} : { expiresAt: state.expiresAt }),
     ...(state.sessionMethod === undefined ? {} : { sessionMethod: state.sessionMethod }),
   };

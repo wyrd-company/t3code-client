@@ -79,6 +79,28 @@ describe("applyThreadEvent", () => {
     expect(projection.updatedAt).toBe(later);
   });
 
+  it("reads an older thread's single linked pull request as its link list", () => {
+    const thread = makeAppThread({
+      linkedPullRequest: {
+        projectId: ids.projectId,
+        repository: "Sample/Repo",
+        number: 2,
+        url: "https://git.example.test/sample/repo/pull/2",
+      },
+    });
+    let projection = applyThreadEvent(
+      makeProjection(),
+      ev(events.threadState(1, "thread.pull-request-synced", thread)),
+    );
+    projection = applyThreadEvent(
+      projection,
+      ev(events.pullRequestLinkUpdated(2, makePullRequestLink(2, { source: "agent" }))),
+    );
+    expect(projection.thread.pullRequests?.map((link) => [link.number, link.source])).toEqual([
+      [2, "agent"],
+    ]);
+  });
+
   it("upserts runs by id and keeps their order", () => {
     let projection = makeProjection();
     projection = applyThreadEvent(projection, ev(events.runCreated(1)));

@@ -85,6 +85,10 @@ export const AuthStandardClientScopes = [
  * report `scopes` filtered to these and the full grant as `permissions`.
  */
 export const AuthLegacyScopes = [
+  "orchestration:read",
+  "orchestration:operate",
+  "terminal:operate",
+  "review:write",
   "access:read",
   "access:write",
   "relay:read",
