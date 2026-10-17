@@ -43,16 +43,20 @@ export function createInvocation(
     startedAt: Date.now(),
     errorContext: "local",
     async resolve() {
+      if (connection !== undefined) return connection;
+      const previousContext = invocation.errorContext;
       invocation.errorContext = "local";
-      connection ??= await profiles.resolve({
+      connection = await profiles.resolve({
         ...(options.server === undefined ? {} : { server: options.server }),
         ...(options.credentials === undefined ? {} : { credentialsFile: options.credentials }),
       });
+      invocation.errorContext = previousContext;
       return connection;
     },
     async client() {
+      if (client !== undefined) return client;
       const resolved = await invocation.resolve();
-      client ??= T3Client.create({
+      client = T3Client.create({
         ...resolved,
         credentials: {
           async load() {
@@ -90,7 +94,7 @@ export function createInvocation(
           error: () => diagnostic("error"),
         },
       });
-      invocation.errorContext = "connection";
+      if (invocation.errorContext === "local") invocation.errorContext = "connection";
       return client;
     },
     async close() {

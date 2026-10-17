@@ -56,7 +56,7 @@ it("reports a clear minimum Node error before loading command behavior", async (
         },
       }),
     ).toBe(2);
-    expect(stderr.join("")).toBe("t3c: t3c requires Node >=22.16.\n");
+    expect(stderr.join("")).toBe("t3c: requires Node >=22.16.\n");
   } finally {
     Object.defineProperty(process.versions, "node", original);
   }

@@ -25,7 +25,11 @@ start time, and operation `errorContext`. `client()` supplies a 30-second
 `openTimeoutMs`, or the selected `--connect-timeout`. Client resources close in
 `main`'s finally path. Credential-store failures retain local context; transport
 failures use connection context. Set context for dispatch and run deadline
-operations so the common mapping remains method-specific. Exact named profile
+operations so the common mapping remains method-specific. Successful profile
+resolution restores the caller context. Cached resolution/client access preserves
+it. First client creation changes the initial local context to connection and
+retains any handler-selected dispatch/deadline context. Failed profile resolution
+or credential backend operations select local context for that failure. Exact named profile
 lookup maps not_found to 10; switch/logout preconditions map to 2.
 
 Handlers finish exactly once through `Output.finish()`. Execution handlers use
@@ -39,7 +43,10 @@ null ids for errors before dispatch. Never retry ambiguous launches blindly.
 `Output.progress()` uses stderr. Library diagnostics emit the diagnostic level
 without raw payloads. Final failure prose is fixed and short. Handlers must not
 pass credentials to progress, result data or events. The main process returns
-the output's exit code; 124 is never used.
+the output's exit code; 124 is never used. Bare root/group invocations print
+usage help on stderr in text mode before the final usage-error line. JSON mode
+keeps one error object on stdout and the short final line on stderr. Explicit
+`--help` prints help on stdout and exits successfully.
 
 The scaffold owns `scripts/shrinkwrap.mjs`, which resolves dependencies through
 npm using the local built library tarball, records its integrity and replaces
