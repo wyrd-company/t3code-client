@@ -16,30 +16,29 @@ let env: NodeJS.ProcessEnv;
 const ownedThreads = new Set<string>();
 const ownedProjects = new Set<ProjectId>();
 const records: Record<string, unknown>[] = [];
+const evidenceFile = process.env["T3C_DISPATCH_EVIDENCE"];
 function record(value: Record<string, unknown>) {
   records.push(value);
   console.log(JSON.stringify(value));
 }
 const selection = ["--provider", "codex", "--model", "gpt-6-luna"];
+const runCommand = ["run", ...selection];
+const startCommand = ["thread", "start", ...selection];
 const agent = process.env["T3_LIVE_AGENT"] === "1";
 
 beforeAll(async () => {
   directory = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3c-dispatch-"));
   const url = process.env["T3_LIVE_URL"]!;
   issuer = T3Client.create({ baseUrl: url, accessToken: process.env["T3_LIVE_TOKEN"]! });
-  const profiles = new ProfileManager({ configDir: NodePath.join(directory, "config") });
+  const configHome = NodePath.join(directory, "config");
+  const profiles = new ProfileManager({ configDir: configHome });
   const pair = await issuer.auth.createPairingCredential({
     label: "sample-dispatch",
     scopes: ["orchestration:read", "orchestration:operate"],
   });
   await profiles.pair({ name: "sample", url }, pair.credential);
   client = T3Client.create(await profiles.resolve({ env: {} }));
-  env = {
-    ...process.env,
-    T3C_CONFIG_HOME: NodePath.join(directory, "config"),
-    T3_SERVER_URL: "",
-    T3_TOKEN: "",
-  };
+  env = { ...process.env, T3C_CONFIG_HOME: configHome, T3_SERVER_URL: "", T3_TOKEN: "" };
 });
 afterAll(async () => {
   try {
@@ -49,11 +48,7 @@ afterAll(async () => {
     }
     for (const id of ownedProjects) await client.projects.delete(id).catch(() => {});
   } finally {
-    if (process.env["T3C_DISPATCH_EVIDENCE"])
-      await NodeFSP.writeFile(
-        process.env["T3C_DISPATCH_EVIDENCE"],
-        JSON.stringify(records, null, 2),
-      );
+    if (evidenceFile) await NodeFSP.writeFile(evidenceFile, JSON.stringify(records, null, 2));
     await client?.close();
     await issuer?.close();
     if (directory) await NodeFSP.rm(directory, { recursive: true, force: true });
@@ -64,10 +59,11 @@ function cli(
   args: string[],
   input = "",
   signalAfterDispatch = false,
+  overrides: NodeJS.ProcessEnv = {},
 ): Promise<{ stdout: string; stderr: string; exit: number }> {
   return new Promise((resolve, reject) => {
     const child = NodeChildProcess.spawn(process.execPath, ["dist/cli.js", ...args], {
-      env,
+      env: { ...env, ...overrides },
       stdio: ["pipe", "pipe", "pipe"],
     });
     let stdout = "",
@@ -95,13 +91,7 @@ function cli(
 
 it.skipIf(!agent)("thread start exits once its server thread and linked run exist", async () => {
   for (const json of [true, false]) {
-    const result = await cli([
-      "thread",
-      "start",
-      "Reply SAMPLE only.",
-      ...selection,
-      ...(json ? ["--json"] : []),
-    ]);
+    const result = await cli([...startCommand, "Reply SAMPLE only.", ...(json ? ["--json"] : [])]);
     expect(result.exit).toBe(0);
     const id = json ? (JSON.parse(result.stdout).data.threadId as string) : result.stdout.trim();
     ownedThreads.add(id);
@@ -121,14 +111,8 @@ it.skipIf(!agent)("thread start exits once its server thread and linked run exis
         exitCode: 0,
       });
     else expect(result.stdout).toBe(`${id}\n`);
-    record({
-      case: "thread start",
-      json,
-      threadId: id,
-      runId: run!.id,
-      state: run!.status,
-      exit: result.exit,
-    });
+    const { id: runId, status: state } = run!;
+    record({ case: "thread start", json, threadId: id, runId, state, exit: result.exit });
   }
 });
 
@@ -158,8 +142,29 @@ it("pre-dispatch failures create no server thread", async () => {
   }
   expect((await client.threads.list()).map((thread) => thread.id).sort()).toEqual(before);
 });
-const runCommand = ["run", ...selection];
-const startCommand = ["thread", "start", ...selection];
+it("credential and scope refusals exit 9 without creating a thread", async () => {
+  const before = (await client.threads.list()).map((thread) => thread.id).sort();
+  const config = NodePath.join(directory, "limited");
+  const profiles = new ProfileManager({ configDir: config });
+  const pair = await issuer.auth.createPairingCredential({
+    label: "sample-limited",
+    scopes: ["orchestration:read"],
+  });
+  await profiles.pair({ name: "sample", url: process.env["T3_LIVE_URL"]! }, pair.credential);
+  for (const [label, override] of [
+    ["credential", { T3_TOKEN: "unrecognized-session" }],
+    ["scope", { T3C_CONFIG_HOME: config }],
+  ] as const) {
+    const result = await cli([...startCommand, "sample prompt", "--json"], "", false, override);
+    expect(result.exit).toBe(9);
+    const value = JSON.parse(result.stdout);
+    expect(value).toMatchObject({ data: null, exitCode: 9 });
+    if (label === "scope") expect(value.error.requiredScope).toBe("orchestration:operate");
+    else expect(value.error.code).toBe("auth_invalid");
+    record({ case: label, threadId: null, exit: result.exit, error: value.error });
+  }
+  expect((await client.threads.list()).map((thread) => thread.id).sort()).toEqual(before);
+});
 async function execute(label: string, args: string[], signal = false) {
   const result = await cli([...args, "--json"], "", signal);
   expect(result.stdout.trim().split("\n")).toHaveLength(1);
