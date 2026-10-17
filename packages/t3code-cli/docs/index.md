@@ -6,6 +6,8 @@ relationships:
   references: [command-line, profiles, releasing]
 ---
 
+![t3c runs a Luna conversation and lists the thread](assets/demo.gif)
+
 # Run a conversation from your terminal
 
 `t3c` sends prompts to a stock T3 Code server and prints the assistant's final

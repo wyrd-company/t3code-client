@@ -15,3 +15,5 @@ install:
     command: npm install -g @wyrd-company/t3code-cli
   - label: Homebrew
     command: brew install wyrd-company/tools/t3c
+assets:
+  - assets/demo.gif

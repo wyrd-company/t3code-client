@@ -1,4 +1,7 @@
 ---
+docs: true
+title: Auth and profiles
+order: 2
 relationships:
   references: [command-line, command-contract, profiles, output-contract]
 ---
@@ -58,7 +61,7 @@ Server selection uses `--server`, then `T3_SERVER_URL`, then current.
 Credentials use `--credentials`, then `T3_TOKEN`, then that profile's saved
 credential. `T3_TOKEN` alone uses the current server. Overrides are not saved.
 Blank environment inputs fall through as defined in the
-[library configuration contract](../../t3code-lib/docs/profiles.md#configuration).
+[library configuration contract](https://github.com/wyrd-company/t3code-client/blob/main/packages/t3code-lib/docs/profiles.md#configuration).
 
 Config and credentials are separate. The config root uses `T3C_CONFIG_HOME`,
 then `$XDG_CONFIG_HOME/t3c`, then `~/.config/t3c`. Each named profile has its own

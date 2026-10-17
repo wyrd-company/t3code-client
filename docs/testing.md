@@ -63,3 +63,19 @@ not read by tests. Only owned processes and homes are removed.
 
 See [CLI composition](../packages/t3code-cli/docs/composition.md) for handler,
 output, error context, shrinkwrap and Taskfile ownership interfaces.
+
+## Recorded CLI demonstration
+
+`task demo` starts a fresh pinned server home outside Git and renders the
+committed `packages/t3code-cli/demo/demo.tape` to the published GIF. It clears
+operational server/token/home overrides and both display variables. The tape
+runs the built CLI's version, a `gpt-6-luna` prompt and thread listing. Captured
+command exits, the exact generic answer and the same completed thread identity
+must agree before the renderer succeeds. Sanitized output records actual server
+version/protocol, owned homes, subject identity and cleanup.
+
+`task demo:check` repeats that real acceptance into an owned temporary GIF, so
+exact-head verification does not replace the committed recording. Normal live
+server overrides remain available outside isolated demo/acceptance commands.
+`task docs` generates the public pages and reference; published navigation tests
+verify their metadata, local links and registered GIF asset.

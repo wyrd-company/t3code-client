@@ -44,6 +44,10 @@ tasks:
   docs:check:
     desc: Verify generated published pages
     cmds: [node scripts/docs.mjs --check]
+  demo:check:
+    desc: Verify a fresh real demo without changing the committed GIF
+    deps: [build]
+    cmds: [node scripts/demo.mjs --check]
   demo:
     desc: Record real CLI commands on a fresh pinned server with Luna
     deps: [build]

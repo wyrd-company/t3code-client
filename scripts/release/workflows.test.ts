@@ -93,3 +93,31 @@ describe("distribution workflow agreements", () => {
     expect(shrinkwrap).toBeLessThan(commit);
   });
 });
+
+describe("package dependency build ordering", () => {
+  it("builds the selected package and library dependency before CI package typecheck or test", () => {
+    const ci = NodeFS.readFileSync(
+      new URL("../../.github/workflows/ci.yml", import.meta.url),
+      "utf8",
+    );
+    const matrix = ci.split("  check:")[1]!;
+    const build = matrix.indexOf('pnpm --filter "@wyrd-company/$UNIT..." run build');
+    expect(build).toBeGreaterThan(0);
+    for (const verb of ["typecheck", "test", "test:live", "package"])
+      expect(build).toBeLessThan(matrix.indexOf(`pnpm --filter "@wyrd-company/$UNIT" run ${verb}`));
+  });
+  it("builds dependencies before selected Publish package checks", () => {
+    const workflow = publish();
+    const build = workflow.indexOf(
+      'pnpm --filter "@wyrd-company/${GITHUB_REF_NAME%@*}..." run build',
+    );
+    expect(build).toBeGreaterThan(0);
+    expect(build).toBeLessThan(
+      workflow.indexOf('pnpm --filter "@wyrd-company/${GITHUB_REF_NAME%@*}" run typecheck'),
+    );
+  });
+  it("builds the workspace before Release package checks", () => {
+    const workflow = release();
+    expect(workflow.indexOf("pnpm run build")).toBeLessThan(workflow.indexOf("pnpm run typecheck"));
+  });
+});

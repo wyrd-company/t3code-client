@@ -51,6 +51,7 @@ jobs:
       - name: Check
         run: |
           pnpm run check
+          pnpm --filter "@wyrd-company/${GITHUB_REF_NAME%@*}..." run build
           pnpm --filter "@wyrd-company/${GITHUB_REF_NAME%@*}" run typecheck
           pnpm --filter "@wyrd-company/${GITHUB_REF_NAME%@*}" run test
           pnpm --filter "@wyrd-company/${GITHUB_REF_NAME%@*}" run test:live

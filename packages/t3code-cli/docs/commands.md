@@ -61,11 +61,14 @@ its model from the live server catalog, including custom models. An omitted
 provider or model uses the selected project default, then the server-advertised
 default. An ambiguous selection exits `2`; an unavailable model exits `10`. `--title`
 supplies the thread title. `--mode` passes through the requested runtime mode;
-the CLI supplies no permissive default.
+new threads use explicit `--mode`, then the server-advertised
+`settings.defaultRuntimeMode`, then the library default when the server advertises
+no mode. Continuation sends a mode only when `--mode` is supplied.
 
 `--worktree` launches through `threads.launch` with the new-worktree workspace
 strategy. `--base-ref` supplies its base ref and requires `--worktree`. The
-server prepares the workspace. Root launches use the selected project's root.
+server prepares the workspace. Without `--base-ref`, the base is the project's
+current checkout (`HEAD`). Root launches use the selected project's root.
 `--thread <id>` continues an existing conversation and dispatches a new prompt
 through `threads.startTurn`, retaining the existing thread identity. The
 library resolves delivery against active server state and links the message to
@@ -121,6 +124,16 @@ through the library's native APIs.
 `auth status` reports every profile's URL, label, scopes, expiry and current
 marker and probes each server's `/.well-known/t3/environment`. It returns
 non-zero when the current profile fails, while retaining the other results.
+Saved profiles use exact named resolution without overrides. The effective
+flag/environment/current selection is probed separately and reports its URL
+and server/credential sources. With an override, the exit follows that effective
+probe; otherwise it follows current. No current and no override exits 0.
+The environment descriptor supplies reachability and label; session state supplies
+authentication, scopes and expiry. A supplied past expiry reports `expired`;
+rejection without expiry reports `auth_invalid`. Text output lists a table with
+the current profile marked and an effective-selection source line.
+JSON data contains `profiles`, `current` and `effective`, including each probe's
+`reachable`, `authenticated`, `label`, `scopes`, `expiresAt` and optional `error`.
 `auth switch <name>` selects the current profile. `auth logout [name]` uses
 the named profile, or the current profile when the name is omitted. Logging out
 the current profile clears current without selecting another profile.

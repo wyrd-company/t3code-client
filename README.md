@@ -1,5 +1,7 @@
 # t3code-client
 
+![t3c runs a Luna conversation and lists the thread](packages/t3code-cli/docs/assets/demo.gif)
+
 A pnpm workspace for stock T3 Code 0.1.0, orchestration protocol 2.
 
 - [`@wyrd-company/t3code-lib`](packages/t3code-lib/README.md): TypeScript library
