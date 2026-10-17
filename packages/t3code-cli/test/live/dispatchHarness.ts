@@ -14,6 +14,8 @@ export let directory: string;
 export let client: T3Client;
 export let issuer: T3Client;
 let env: NodeJS.ProcessEnv;
+let suiteName: string;
+let commandIndex = 0;
 export const ownedThreads = new Set<string>();
 export const ownedProjects = new Set<ProjectId>();
 const records: Record<string, unknown>[] = [];
@@ -29,6 +31,7 @@ export const agent = process.env["T3_LIVE_AGENT"] === "1";
 
 /** Registers owned setup and cleanup; evidence goes to `<T3C_DISPATCH_EVIDENCE>.<suite>.json`. */
 export function useDispatchHarness(suite: string): void {
+  suiteName = suite;
   const evidenceFile = evidenceBase && `${evidenceBase}.${suite}.json`;
   beforeAll(async () => {
     directory = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3c-dispatch-"));
@@ -87,11 +90,22 @@ export function cli(
       }
     });
     child.once("error", reject);
-    child.once("exit", (exit, signal) =>
-      signal
-        ? reject(new Error(`CLI killed by ${signal}`))
-        : resolve({ stdout, stderr, exit: exit ?? 1 }),
-    );
+    child.once("close", async (exit, signal) => {
+      try {
+        const evidence = process.env["T3C_COMMAND_EVIDENCE"];
+        if (evidence) {
+          await NodeFSP.mkdir(evidence, { recursive: true });
+          await NodeFSP.writeFile(
+            NodePath.join(evidence, `${suiteName}-${++commandIndex}.json`),
+            JSON.stringify({ args, input, stdout, stderr, exit, signal }, null, 2),
+          );
+        }
+        if (signal) reject(new Error(`CLI killed by ${signal}`));
+        else resolve({ stdout, stderr, exit: exit ?? 1 });
+      } catch (error) {
+        reject(error);
+      }
+    });
     child.stdin.end(input);
   });
 }

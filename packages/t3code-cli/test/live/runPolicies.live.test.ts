@@ -44,12 +44,12 @@ it.skipIf(!agent)("run prepares a worktree from the supplied base ref", async ()
     expect(projection.thread.worktreePath).not.toBe(root);
     ownedProjects.add(projection.thread.projectId);
     expect(projection.runs[0]!.id).toBe(value.runId);
-    // Test-owned Git cleanup avoids the stock server null/void RPC result mismatch.
-    NodeChildProcess.execFileSync(
-      "git",
-      ["worktree", "remove", "--force", projection.thread.worktreePath!],
-      { cwd: root, stdio: "ignore" },
-    );
+    await client.vcs.removeWorktree({
+      cwd: root,
+      path: projection.thread.worktreePath!,
+      force: true,
+    });
+    expect(await NodeFSP.stat(projection.thread.worktreePath!).catch(() => null)).toBeNull();
   }
 });
 

@@ -16,7 +16,8 @@ it("pairs all auth input forms, probes exact profiles, switches, logs out and ru
   const issuer = T3Client.create({ baseUrl: url, accessToken: process.env["T3_LIVE_TOKEN"]! });
   const profiles = new ProfileManager({ configDir: home });
   const env = { ...process.env, T3C_CONFIG_HOME: home, T3_SERVER_URL: " ", T3_TOKEN: "" };
-  const invocations: { args: string[]; exitCode: number | null }[] = [];
+  const invocations: { args: string[]; exitCode: number | null; stdout: string; stderr: string }[] =
+    [];
   function cli(args: string[], input?: string) {
     const result = NodeChildProcess.spawnSync(
       process.execPath,
@@ -25,8 +26,12 @@ it("pairs all auth input forms, probes exact profiles, switches, logs out and ru
     );
     // Evidence excludes link/token arguments and all credential input.
     invocations.push({
-      args: args.filter((a) => !a.includes("token=") && a !== input),
+      args: args.map((value, index) =>
+        value.includes("token=") || args[index - 1] === "--pairing-token" ? "[redacted]" : value,
+      ),
       exitCode: result.status,
+      stdout: result.stdout,
+      stderr: result.stderr,
     });
     if (result.error) throw result.error;
     expect(result.stdout.trim().split("\n")).toHaveLength(1);
@@ -87,6 +92,8 @@ it("pairs all auth input forms, probes exact profiles, switches, logs out and ru
     invocations.push({
       args: ["auth", "pair", "--server", url, "--pairing-token", "[redacted]", "--name", "split"],
       exitCode: result.status,
+      stdout: result.stdout,
+      stderr: result.stderr,
     });
     expect(
       cli(
