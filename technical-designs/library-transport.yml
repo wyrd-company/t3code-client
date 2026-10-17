@@ -25,6 +25,7 @@ proposed-design:
     export class T3NotFoundError extends T3HttpError // code: "not_found"; reason
     export class T3RpcError extends T3Error         // code: "rpc_failed"; tag, record: RpcErrorRecord (typed by _tag), is(tag) narrows record
     export class T3RpcDefectError extends T3Error   // code: "rpc_defect"; defect (string or unknown)
+    export class T3StorageError extends T3Error     // code: "storage"; profile config/credential I/O with cause and path
     export class T3ConnectionError extends T3Error  // code: "connection"; reason: "closed" | "open_failed" | "ping_timeout" | "protocol" | "message_too_large"
     export class T3DecodeError extends T3Error      // code: "decode"; path, issues (zod issues), raw (secrets redacted)
     export class T3PreconditionError extends T3Error // code: "precondition"; caller misuse detected locally

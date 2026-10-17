@@ -24,6 +24,7 @@ export type T3ErrorCode =
   | "not_found"
   | "rpc_failed"
   | "rpc_defect"
+  | "storage"
   | "connection"
   | "decode"
   | "precondition"
@@ -38,6 +39,11 @@ export abstract class T3Error extends Error {
     super(message, options);
     this.name = new.target.name;
   }
+}
+
+/** Local profile configuration or credential backend I/O failed. */
+export class T3StorageError extends T3Error {
+  override readonly code = "storage" as const;
 }
 
 export interface T3HttpErrorDetails {

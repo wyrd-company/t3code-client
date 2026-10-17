@@ -152,6 +152,7 @@ Every failure is a `T3Error` with a stable `code`:
 | `T3HttpError`         | `http`                               | any other non-2xx                                  |
 | `T3RpcError`          | `rpc_failed`                         | the server answered an RPC with a tagged error     |
 | `T3RpcDefectError`    | `rpc_defect`                         | the server died handling an RPC                    |
+| `T3StorageError`      | `storage`                            | profile config or credential backend I/O           |
 | `T3ConnectionError`   | `connection`                         | socket open failed, closed, ping timeout, protocol |
 | `T3DecodeError`       | `decode`                             | a server payload did not match the schema          |
 | `T3PreconditionError` | `precondition`                       | invalid input caught before sending                |

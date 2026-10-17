@@ -120,6 +120,16 @@ through the library's native APIs.
 `auth status` reports every profile's URL, label, scopes, expiry and current
 marker and probes each server's `/.well-known/t3/environment`. It returns
 non-zero when the current profile fails, while retaining the other results.
+Saved profiles use exact named resolution without overrides. The effective
+flag/environment/current selection is probed separately and reports its URL
+and server/credential sources. With an override, the exit follows that effective
+probe; otherwise it follows current. No current and no override exits 0.
+The environment descriptor supplies reachability and label; session state supplies
+authentication, scopes and expiry. A supplied past expiry reports `expired`;
+rejection without expiry reports `auth_invalid`. Text output lists a table with
+the current profile marked and an effective-selection source line.
+JSON data contains `profiles`, `current` and `effective`, including each probe's
+`reachable`, `authenticated`, `label`, `scopes`, `expiresAt` and optional `error`.
 `auth switch <name>` selects the current profile. `auth logout [name]` uses
 the named profile, or the current profile when the name is omitted. Logging out
 the current profile clears current without selecting another profile.

@@ -17,6 +17,7 @@ export {
   T3RpcError,
   T3RpcDefectError,
   T3ConnectionError,
+  T3StorageError,
   T3DecodeError,
   T3PreconditionError,
   T3InterruptedError,

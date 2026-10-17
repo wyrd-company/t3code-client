@@ -9,6 +9,7 @@ import { expect, it, vi, afterEach } from "vite-plus/test";
 import {
   ProfileManager,
   T3ConnectionError,
+  T3StorageError,
   T3PreconditionError,
   T3TimeoutError,
   T3InterruptedError,
@@ -89,7 +90,8 @@ it("parses positive durations with bare seconds and checks the Node minimum", ()
   for (const value of ["22.16.0", "24.0.0"]) expect(() => checkNode(value)).not.toThrow();
 });
 it("maps stable errors by operation context and all terminal states", () => {
-  expect(exitCodeFor(new T3ConnectionError("open_failed", "sample"), "local")).toBe(1);
+  expect(exitCodeFor(new T3ConnectionError("open_failed", "sample"), "local")).toBe(8);
+  expect(exitCodeFor(new T3StorageError("sample"), "connection")).toBe(1);
   expect(exitCodeFor(new T3ConnectionError("open_failed", "sample"), "connection")).toBe(8);
   expect(exitCodeFor(new T3PreconditionError("sample"))).toBe(2);
   expect(exitCodeFor(T3AuthError.insufficientScope("orchestration:read", "sample"))).toBe(9);

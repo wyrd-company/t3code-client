@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import {
   ProfileManager,
   T3Client,
-  T3ConnectionError,
+  T3StorageError,
   T3PreconditionError,
   T3NotFoundError,
   memoryCredentialStore,
@@ -137,12 +137,12 @@ describe("profile configuration", () => {
 
   it("wraps failed config reads and writes as library errors", async () => {
     await NodeFSP.mkdir(NodePath.join(directory, "config.json"));
-    await expect(manager().list()).rejects.toBeInstanceOf(T3ConnectionError);
+    await expect(manager().list()).rejects.toBeInstanceOf(T3StorageError);
     await NodeFSP.rm(NodePath.join(directory, "config.json"), { recursive: true });
     await NodeFSP.writeFile(NodePath.join(directory, "credentials"), "blocked");
     await expect(
       manager().setAccessToken({ name: "first", url }, "sample-token"),
-    ).rejects.toBeInstanceOf(T3ConnectionError);
+    ).rejects.toBeInstanceOf(T3StorageError);
   });
 
   it("supports profile names without interpreting them as file paths or object prototypes", async () => {
@@ -287,7 +287,7 @@ describe("profile resolution", () => {
         throw new Error("sample-secret");
       },
     });
-    await expect(profiles.resolve({ env: {} })).rejects.toBeInstanceOf(T3ConnectionError);
+    await expect(profiles.resolve({ env: {} })).rejects.toBeInstanceOf(T3StorageError);
     try {
       await profiles.resolve({ env: {} });
     } catch (error) {
@@ -297,7 +297,7 @@ describe("profile resolution", () => {
 
   it("wraps config write failures and removes temporary files", async () => {
     await NodeFSP.mkdir(NodePath.join(directory, "config.json"));
-    await expect(saveConfig(directory, { servers: {} })).rejects.toBeInstanceOf(T3ConnectionError);
+    await expect(saveConfig(directory, { servers: {} })).rejects.toBeInstanceOf(T3StorageError);
     expect(await NodeFSP.readdir(directory)).toEqual(["config.json"]);
   });
 });
