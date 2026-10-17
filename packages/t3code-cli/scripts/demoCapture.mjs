@@ -3,9 +3,9 @@
 //   verifies: command-line
 //   references: profiles
 // ---
-import { randomUUID } from "node:crypto";
-import * as cp from "node:child_process";
-import * as fs from "node:fs/promises";
+import * as NodeCrypto from "node:crypto";
+import * as NodeChildProcess from "node:child_process";
+import * as NodeFSP from "node:fs/promises";
 import { ProfileManager, T3Client, threadId } from "@wyrd-company/t3code-lib";
 
 import { sanitizeDemoOutput } from "./demoSafety.ts";
@@ -20,9 +20,9 @@ export async function captureDemoCommand(cli, root, args) {
     args.some((arg) => /token=|bearer|--credentials|--pairing-token$|--token-stdin/iu.test(arg))
   )
     throw new Error("Unsafe demo invocation.");
-  const secrets = JSON.parse(await fs.readFile(`${root}/secrets.json`, "utf8"));
+  const secrets = JSON.parse(await NodeFSP.readFile(`${root}/secrets.json`, "utf8"));
   const result = await new Promise((resolve, reject) => {
-    const child = cp.spawn(process.execPath, [cli, ...args], {
+    const child = NodeChildProcess.spawn(process.execPath, [cli, ...args], {
       stdio: ["inherit", "pipe", "pipe"],
     });
     let stdout = "";
@@ -78,10 +78,10 @@ export async function captureDemoCommand(cli, root, args) {
         state: run?.status,
       };
     }
-    await fs.appendFile(
+    await NodeFSP.appendFile(
       `${root}/commands.jsonl`,
       JSON.stringify({
-        commandId: randomUUID(),
+        commandId: NodeCrypto.randomUUID(),
         command: args,
         exitCode: result.exitCode,
         stdout,
