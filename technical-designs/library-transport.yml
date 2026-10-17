@@ -1,0 +1,262 @@
+$schema: https://refinery.systems/ontology/technical-design
+title: T3 Code library — transport
+objective: Provide the stock T3 Code Node library contract for library-transport.
+relationships:
+  related-to:
+    - library
+  references:
+    - profiles
+    - testing
+    - releasing
+proposed-design:
+  high-level-overview: >-
+    The library implements stock T3 Code 0.1.0 and orchestration protocol 2.
+    Related library designs carry the wire, transport, auth, usage and facade
+    contracts. The package design.md points to this canonical design family.
+  errors-ts: |
+    One error strategy: every failure the library raises is a `T3Error` subclass
+    with a stable `code` string, and never a bare `Error` or a rejected `unknown`.
+
+    ```ts
+    export abstract class T3Error extends Error { readonly code: string; readonly cause?: unknown }
+    export class T3HttpError extends T3Error        // code: "http"; status, body (secrets redacted), tag?, reason?, traceId?
+    export class T3AuthError extends T3HttpError    // code: "auth_invalid" | "insufficient_scope"; requiredScope?
+    export class T3NotFoundError extends T3HttpError // code: "not_found"; reason
+    export class T3RpcError extends T3Error         // code: "rpc_failed"; tag, record: RpcErrorRecord (typed by _tag), is(tag) narrows record
+    export class T3RpcDefectError extends T3Error   // code: "rpc_defect"; defect (string or unknown)
+    export class T3ConnectionError extends T3Error  // code: "connection"; reason: "closed" | "open_failed" | "ping_timeout" | "protocol" | "message_too_large"
+    export class T3DecodeError extends T3Error      // code: "decode"; path, issues (zod issues), raw (secrets redacted)
+    export class T3PreconditionError extends T3Error // code: "precondition"; caller misuse detected locally
+    export class T3InterruptedError extends T3Error // code: "interrupted"; stream/call cancelled by us
+    export class T3TimeoutError extends T3Error     // code: "timeout"
+    ```
+
+    `body` and `raw` pass through `redactSecrets` (`internal/redact.ts`): string
+    values whose key looks like a credential (`token`, `credential`, `secret`,
+    `authorization`, `password`, `ticket`) become `"[redacted]"`, so an error that
+    carries a badly shaped `/oauth/token` response never carries the token.
+  schemas: |
+    Conventions:
+
+    - Every object is `z.looseObject({...})` so unknown keys pass through.
+    - Branded ids: `ThreadId`, `ProjectId`, `CommandId`, `MessageId`, `RunId`,
+      `NodeId`, `TurnItemId`, `RuntimeRequestId`, `EventId`, `AuthSessionId`,
+      `ProviderInstanceId` and the rest are `z.string().min(1).brand<"ThreadId">()`
+      etc. Constructors `threadId(s)` brand a trusted string without validation
+      cost.
+    - Growing literal sets use `forwardCompatibleLiteral([...])`, which yields the
+      known union plus a `string` fallback typed as `(typeof known)[number] | (string & {})`.
+    - Discriminated unions that grow (`OrchestrationV2DomainEvent`,
+      `OrchestrationV2TurnItem`, stream items, RPC error records) decode through
+      `taggedUnionWithUnknown("type", members)`: an unrecognised member decodes as
+      `{ unknown: true, raw }` rather than failing; a recognised member whose
+      fields do not match still fails, so drift on a known member is visible.
+      Arrays of such unions in a projection (`turnItems`, `plans`,
+      `visibleTurnItems`) drop unknown members, as upstream does.
+    - Unions a caller sends (`OrchestrationV2Command`, `ProjectMutation`,
+      workspace strategies, `ProjectIconOverride`) are strict discriminated
+      unions, so a bad command fails locally with a `T3PreconditionError`.
+    - `unknown` appears only where the server itself leaves a value opaque (raw
+      provider data, `Schema.Defect()` causes, dynamic tool input) or at the raw
+      transport boundary before a method's schema applies. `any` is a lint error.
+    - Each schema file exports the zod schema and `type X = z.infer<typeof X>`
+      with the same name, mirroring the contracts package naming
+      (`OrchestrationV2AppThread`, `OrchestrationV2Run`, ...) so a reader can diff
+      against `packages/contracts/src`.
+    - Input schemas are used by the library to validate what the caller passes
+      before sending. Output schemas decode server responses; a decode failure
+      raises `T3DecodeError` for unary calls and is delivered as an
+      `{ kind: "decode-error" }` item for streams (the stream continues).
+  wire-envelope-ts: |
+    ```ts
+    export type RequestId = string;
+    export interface RequestEnvelope {
+      _tag: "Request";
+      id: RequestId;
+      tag: string;
+      payload: unknown;
+      headers: [];
+    }
+    export interface AckEnvelope {
+      _tag: "Ack";
+      requestId: RequestId;
+    }
+    export interface InterruptEnvelope {
+      _tag: "Interrupt";
+      requestId: RequestId;
+    }
+    export interface PingEnvelope {
+      _tag: "Ping";
+    }
+    export type ClientEnvelope =
+      RequestEnvelope | AckEnvelope | InterruptEnvelope | PingEnvelope | { _tag: "Eof" };
+    export type ServerEnvelope = ChunkEnvelope | ExitEnvelope | DefectEnvelope | PongEnvelope; // zod-validated
+    export const ServerEnvelope: z.ZodType<ServerEnvelope>;
+    export function decodeServerFrame(text: string): ServerEnvelope[]; // handles arrays; throws T3ConnectionError("protocol")
+    export function encodeClientEnvelope(e: ClientEnvelope): string;
+    ```
+
+    `decodeServerFrame` skips an envelope whose `_tag` it does not know (a newer
+    server) and throws `protocol` for invalid JSON or for a known tag whose shape
+    is wrong, so the transport fails everything in flight instead of leaving one
+    request waiting forever. A `Success` exit without a `value` key is valid
+    (`Stream<void>`).
+  wire-exit-ts: |
+    ```ts
+    export type RpcExitOutcome =
+      | { kind: "success"; value: unknown }
+      | { kind: "fail"; error: { _tag: string } & Record<string, unknown> }
+      | { kind: "die"; defect: unknown }
+      | { kind: "interrupt" };
+    export function normalizeExit(exit: ExitEncoded): RpcExitOutcome; // first cause wins, Fail preferred over Die
+    export function exitToError(outcome: RpcExitOutcome, method: string): T3Error;
+    ```
+  transport-http-ts: |
+    ```ts
+    export interface HttpTransportOptions {
+      baseUrl: string;
+      fetch?: typeof fetch;
+      credentials: CredentialStore;
+      userAgent?: string;
+    }
+    export interface HttpRequest<T> {
+      method: "GET" | "POST" | "PUT" | "DELETE";
+      path: string;
+      query?: Record<string, string | number | undefined>;
+      body?: unknown | URLSearchParams;
+      auth?: "required" | "optional" | "none";
+      headers?: Record<string, string>; // the orchestration routes add the protocol header
+      decode: z.ZodType<T> | "empty";
+      signal?: AbortSignal;
+    }
+    export class HttpTransport {
+      request<T>(req: HttpRequest<T>): Promise<T>;
+    }
+    ```
+
+    `request` attaches `authorization: Bearer` when a token is present, maps
+    non-2xx to `T3HttpError` subclasses using the tagged error body when present,
+    decodes 2xx JSON through the schema, and treats 204 or an empty body as
+    `undefined` when `decode` is `"empty"`.
+  transport-socket-ts: |
+    ```ts
+    export type SocketState = "idle" | "connecting" | "open" | "closed";
+    export interface SocketTransportOptions {
+      url: () => Promise<URL>; // resolves auth on every (re)connect: ticket query or bearer header
+      headers?: () => Promise<Record<string, string>>;
+      webSocket?: WebSocketConstructor; // defaults to the ws package when installed, else globalThis.WebSocket
+      pingIntervalMs?: number;
+      missedPongLimit?: number; // 5000 / 3, matching the server's client
+      backoff?: BackoffPolicy;
+      openTimeoutMs?: number; // absent: no open timeout
+      logger?: Logger;
+    }
+    export class SocketTransport {
+      readonly state: SocketState;
+      connect(signal?: AbortSignal): Promise<void>; // idempotent; resolves when open
+      send(text: string): void; // throws T3ConnectionError when not open
+      onMessage(handler: (text: string) => void): () => void;
+      onStateChange(handler: (state: SocketState, error?: T3ConnectionError) => void): () => void;
+      reconnect(): void; // drops the socket and connects again at once; in-flight work fails with "closed"
+      close(): Promise<void>; // stops reconnecting
+    }
+    ```
+
+    The default heartbeat sends a ping every five seconds and drops the socket
+    when three pongs remain unanswered at the next interval. Default reconnect
+    backoff is 500 ms × 1.5, capped at 5 s, with jitter 0.2. `T3ClientOptions`
+    passes `backoff`, `pingIntervalMs`, and `missedPongLimit` to the transport.
+    `BackoffPolicy` is exported and has `initialMs`, `factor`, `maxMs`, and an
+    optional `jitter` fraction (default 0 for a supplied policy).
+
+    `openTimeoutMs` optionally bounds each WebSocket handshake, starting after
+    URL and header resolution. A stalled handshake is abandoned, its later events
+    are ignored, and the transport retries after backoff with reason `open_failed`.
+    An absent option means no open timeout. The open timer is cleared on open,
+    close, credential reconnect, or abandonment.
+
+    Transient failures, including refused or reset connections and non-4xx
+    upgrade failures, retry until `close()`. A 4xx upgrade, a 1008 close, or a
+    `T3AuthError` resolving URL or headers reports `open_failed` and closes the
+    transport permanently. Only the `ws` package exposes the upgrade status; the global
+    `WebSocket` reports a rejected upgrade as an ordinary drop, so `T3Client`
+    validates the token over HTTP inside `headers()` in bearer-header mode and
+    throws `T3AuthError`, which the transport treats as fatal.
+
+    Abort listeners that `connect` adds to a caller's signal are removed when the
+    wait settles.
+
+    The default constructor is the `ws` package, an optional peer dependency,
+    when it is installed, and the global `WebSocket` otherwise. The server
+    compresses socket messages (permessage-deflate), and a shell or thread
+    snapshot can be many megabytes. `ws` accepts a message up to 100 MiB. The
+    global `WebSocket` of some Node builds (undici 7.24, in Node 25.9) closes on a
+    message that inflates past 4 MiB and reports only an abnormal close (1006),
+    which the transport cannot tell from a network drop. A message over the `ws`
+    limit (its error code `WS_ERR_UNSUPPORTED_MESSAGE_LENGTH`), or a 1009 close
+    from the server, is a drop with reason `message_too_large`: the transport
+    reconnects, and in-flight work fails with that reason.
+  transport-rpc-connection-ts: |
+    ```ts
+    export interface RpcStreamOptions {
+      signal?: AbortSignal;
+      highWaterMark?: number;
+    }
+    export class RpcConnection {
+      readonly state: SocketState;
+      constructor(socket: SocketTransport, options?: { idGenerator?: () => string; logger?: Logger });
+      call(tag: string, payload: unknown, signal?: AbortSignal): Promise<unknown>;
+      stream(tag: string, payload: unknown, options?: RpcStreamOptions): AsyncIterable<unknown>;
+      close(): Promise<void>;
+    }
+    ```
+
+    Rules: one `Request` per call; `Chunk` values are queued and an `Ack` is sent
+    after each chunk is consumed by the iterator (backpressure); `Exit` resolves
+    or rejects; an `Interrupt` is sent when the consumer returns early or the
+    signal aborts; a socket close rejects every in-flight call with
+    `T3ConnectionError("closed")` and ends every stream with the same error
+    (streams are not transparently resumed here; the facades resume using
+    `afterSequence`). `Defect` fails everything in flight. Every abort listener
+    is removed when its call settles or its stream ends, fails, or is
+    interrupted, so a long-lived shared signal does not accumulate closures.
+  rpc-registry-ts-and-rpc-client-ts: |
+    ```ts
+    export interface RpcMethodSpec<P, S> { payload: z.ZodType<P>; success: z.ZodType<S>; stream: boolean; scope: AuthEnvironmentScope;
+      payloadScopes?(payload: P): readonly AuthEnvironmentScope[] }   // further scopes a particular payload needs
+    export const rpcMethods: { [K in RpcMethodName]: RpcMethodSpec<…> }   // assembled from rpc/methods/*.ts
+    export type RpcMethodName = keyof typeof rpcMethods
+    export type RpcPayload<M> / RpcSuccess<M>
+
+    export class RpcClient {
+      call<M extends UnaryMethod>(method: M, payload: RpcPayload<M>, signal?: AbortSignal): Promise<RpcSuccess<M>>
+      stream<M extends StreamMethod>(method: M, payload: RpcPayload<M>, options?: RpcStreamOptions): AsyncIterable<StreamItem<RpcSuccess<M>>>
+      callRaw(tag: string, payload: unknown, signal?: AbortSignal): Promise<unknown>      // any method, no schemas
+      streamRaw(tag: string, payload: unknown, options?: RpcStreamOptions): AsyncIterable<unknown>
+    }
+    export type StreamItem<T> = { kind: "item"; value: T } | { kind: "decode-error"; error: T3DecodeError }
+    ```
+
+    Registry coverage for this version, all typed: the fifteen orchestration
+    methods; `projects.mutate`; `mcpApps.callTool`, `mcpApps.toolInfo`,
+    `mcpApps.readResource`, `mcpApps.updateModelContext`; `server.probe`, `server.getConfig`,
+    `server.getSettings`, `server.refreshProviders`, `subscribeServerConfig`,
+    `subscribeServerLifecycle`, `subscribeAuthAccess`; `vcs.listRefs`,
+    `vcs.refreshStatus`, `vcs.createWorktree`, `vcs.removeWorktree`,
+    `vcs.createRef`, `vcs.switchRef`, `subscribeVcsStatus`,
+    `subscribeWorktreeSetup`, `worktreeSetup.cancel`; `projects.listEntries`,
+    `projects.readFile`, `projects.writeFile`, `projects.searchEntries`,
+    `projects.searchContents`, `projects.ensureScratch`, `projects.createNew`;
+    `terminal.open`, `terminal.attach`, `terminal.write`, `terminal.resize`,
+    `terminal.close`, `subscribeTerminalEvents`. Everything else goes through
+    `callRaw` and `streamRaw` until it is added; adding a method is one entry in
+    a family file. Each entry carries the scope the server checks: file reads
+    need `filesystem:read`, file writes `filesystem:write`, worktree and ref
+    changes `source-control:write`, terminal event streams `terminal:read`, MCP
+    app tool calls and model context `orchestration:operate`.
+
+    Before sending, `RpcClient` checks the credential's scopes when known and
+    raises `T3AuthError("insufficient_scope")` locally so a workflow fails fast
+    with the scope name instead of a generic server error. A method whose scope
+    depends on the payload declares `payloadScopes`, checked once the payload is
+    valid.

@@ -1,4 +1,12 @@
-# t3code-client
+---
+relationships:
+  references:
+    - design
+    - testing
+    - releasing
+---
+
+# t3code-lib
 
 TypeScript client library for the stock T3 Code server, published to npmjs as
 `@wyrd-company/t3code-lib`. Read `docs/design.md` before changing anything;

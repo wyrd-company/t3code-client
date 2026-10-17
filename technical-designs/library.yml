@@ -1,0 +1,201 @@
+$schema: https://refinery.systems/ontology/technical-design
+title: T3 Code library — library
+objective: Provide the stock T3 Code Node library contract for library.
+relationships:
+  related-to:
+    - library-wire
+    - library-usage
+    - library-transport
+    - library-auth
+    - library-facades
+  references:
+    - profiles
+    - api
+    - testing
+    - releasing
+proposed-design:
+  high-level-overview: >-
+    The library implements stock T3 Code 0.1.0 and orchestration protocol 2.
+    Related library designs carry the wire, transport, auth, usage and facade
+    contracts. The package design.md points to this canonical design family.
+  overview: |
+    `@wyrd-company/t3code-lib` is a TypeScript library that lets a Node program
+    drive a T3 Code server the way the T3 web and desktop clients do: create
+    projects and threads, launch threads into worktrees, start runs, watch a
+    thread live, answer approvals and questions, and manage the server's auth
+    control plane. It is the foundation for software-delivery workflows that
+    dispatch, manage, and monitor agent sessions while a person can still open
+    the same session in a normal T3 client.
+
+    The library is a package that a larger program imports. It is not a workflow
+    engine, and it does not spawn or install the server.
+  constraints-the-design-answers: |
+    - **No Effect dependency.** The server is built on Effect 4 release candidates
+      and its contracts package is private to the monorepo. The consumer of this
+      library is a plain Node program. The library therefore speaks the server's
+      wire formats directly and models them with `zod`, and exposes `Promise` and
+      `AsyncIterable` surfaces only.
+    - **Forward compatibility.** The server evolves weekly. Every object schema is
+      loose (unknown keys pass through), every growing literal set decodes an
+      unknown member into an `unknown` variant instead of failing, and every
+      stream keeps flowing when one item fails to decode.
+    - **One credential model.** A bearer access token is the only steady-state
+      credential. The library obtains one by exchanging a pairing token, or the
+      caller supplies one issued by `t3 auth session issue`. The library never
+      shells out.
+    - **Small files, deep modules.** Each module has a small interface and hides
+      its implementation. No file over roughly 300 lines. Callers compose the
+      facade; tests cross the same seams callers do.
+  vocabulary: |
+    The server's orchestration model is its protocol version 2 ("V2"). A
+    **thread** holds **runs**; a run is one prompt's execution, from the user
+    message that requested it to a terminal status. A run is made of **turn
+    items**: the timeline rows of a thread (user and assistant messages,
+    reasoning, tool calls, approvals, questions, errors), each typed by `type`.
+    **Runtime requests** are the approvals and questions a provider raises and the
+    answers it got. A **projection** is one thread's whole state: the thread
+    record and every array of records that belongs to it. A **shell** is the
+    lightweight cross-thread view: project and thread summaries.
+
+    In this library a **turn** is one run. `threads.startTurn` sends a message
+    and returns a handle that follows the run the server links to it.
+  module-map: |
+    ```text
+    src/
+      index.ts                    public exports only
+      client.ts                   T3Client: composition root, close()
+      errors.ts                   T3Error hierarchy (one strategy everywhere)
+      schemas/                  zod schemas mirrored from packages/contracts
+        common.ts               ids, IsoDateTime, looseObject helpers, forwardCompatible helpers
+        auth.ts                 scopes, descriptors, session state, tokens, pairing links, clients
+        environment.ts          ExecutionEnvironmentDescriptor, repository identity, protocol constants
+        httpErrors.ts           Environment*Error records
+        rpcErrors.ts            RpcErrorRecord: every tagged error the registered RPC methods declare
+        rpcErrors/              orchestration, MCP app, vcs, and terminal error records, shared tagged-error helpers
+        mcpApps.ts              MCP App tool calls, tool info, resource reads, model context
+        projects.ts             Project, ProjectMutation, icons and scripts, file entries, read/write/search
+        orchestration/          mirrors orchestrationV2.ts and the files it imports
+          model.ts              ModelSelection, modes, decisions, answers, actor and creation source, ProviderRef
+          attachments.ts        ChatAttachment family
+          messageContext.ts     OrchestrationMessageContext and its records
+          pullRequest.ts        thread ↔ pull request links
+          thread.ts             OrchestrationV2AppThread
+          runs.ts               runs, attempts, execution nodes, subagents, checkpoints, workspace strategy
+          workflow.ts           a workflow coordinator's phases, agents, and run handles
+          providerState.ts      provider sessions, threads, turns, runtime requests
+          providerCapabilities.ts
+          providerRuntime.ts    token usage, tool activity labels
+          messages.ts           conversation messages, notifications, plans, questions
+          context.ts            context handoffs and transfers
+          turnItemParts.ts      turn item base fields, failures, small records
+          turnItems.ts          OrchestrationV2TurnItem union, projected rows
+          events.ts             OrchestrationV2DomainEvent union
+          projection.ts         OrchestrationV2ThreadProjection, detail, bounded, history page
+          boundedSnapshot.ts    boundedSnapshotProjection: restores a compact snapshot's turn items
+          threadFind.ts         find within one thread
+          shell.ts              project and thread shells, shell snapshot and stream items
+          stream.ts             thread stream items, RPC inputs and outputs, launch
+          commands.ts           OrchestrationV2Command union (commands/*.ts by family)
+        server.ts               ServerConfig (providers typed, settings loose), config/lifecycle stream events
+        provider.ts             provider snapshot, models, auth status
+        vcs.ts                  refs, status, worktree inputs/results
+        terminal.ts             open/attach/write/events
+      wire/
+        envelope.ts             zod schemas + types for every envelope (Request, Ack, Chunk, Exit, ...)
+        exit.ts                 ExitEncoded → { ok, value } | { ok:false, failure } normalisation
+      transport/
+        http.ts                 HttpTransport: fetch wrapper, auth header, extra headers, error mapping, JSON decode
+        socket.ts               SocketTransport: WebSocket lifecycle, reconnect, send/receive
+        keepalive.ts            Ping/Pong liveness for one open socket
+        socketClose.ts          classifies a close event: credential rejection (fatal) or drop (retry)
+        rpcConnection.ts        RpcConnection: request ids, correlation, Chunk→AsyncIterable with Ack, Interrupt
+      rpc/
+        registry.ts             RpcMethodTable: method name → { payload, success, stream } zod schemas + scope
+        methods/*.ts            one file per family (orchestration, server, vcs, projects, terminal, authAccess)
+        client.ts               RpcClient: typed call/stream over RpcConnection using the registry
+      auth/
+        credentialStore.ts      CredentialStore seam + memoryCredentialStore + fileCredentialStore
+        authClient.ts           AuthClient: exchange, ticket, session state, pairing links, clients, scopes
+        scopes.ts               scope constants, hasScope, grantedScopes
+      api/                      facades composed by T3Client
+        server.ts               getConfig, probe, watchConfig, watchLifecycle
+        projects.ts             list, get, snapshot, create, update, delete, ensure, ensureScratch, createNew, files
+        threads.ts              list, get, detail, projection, historyPage, transcript, create, ensure, launch, update, archive, delete, startTurn, interrupt, stop, respond*, watch
+        threadReads.ts          shell lookups with the archived fallback; detail, history page, transcript routes
+        threadCreation.ts       create and launch inputs and payloads
+        threadCommands.ts       command builders
+        threadTurnStart.ts      startTurn: modes, message.dispatch, delivery
+        turns.ts                TurnHandle: events(), completion, derived from a thread watch
+        turnAdoption.ts         which run a message produced
+        threadWatch.ts          resumable live view
+        watchRetry.ts           when a thread or shell watch resubscribes after a failure
+        threadTracker.ts        projection state plus derived items
+        threadProjection.ts     applyThreadEvent (upsert rules)
+        pullRequestKeys.ts      pull request link identity and the legacy single link
+        threadDerived.ts        pendingRequests, runOutcome, activeRun, threadPhase
+        shell.ts                snapshot, archivedSnapshot, watch, watchArchived
+        vcs.ts                  listRefs, status, createWorktree, removeWorktree, createRef, switchRef
+        terminal.ts             open, attach, write, resize, close
+        dispatch.ts             CommandDispatcher: validate and send OrchestrationV2Command
+      internal/
+        asyncIterable.ts        channel/queue helpers, withAbort, merge
+        ids.ts                  newId (uuid v4 via node:crypto)
+        clock.ts                now() ISO, injectable for tests
+        backoff.ts              exponential backoff policy
+        logger.ts               optional logger seam (no-op default)
+        redact.ts               redactSecrets: strips credential-shaped values before they ride on an error
+    ```
+
+    Test layout:
+
+    ```text
+    src/**/*.test.ts              unit tests next to the module (fake fetch, fake ws server)
+    test/support/                 FakeT3Server: a `ws` server speaking the envelope protocol + fake HTTP routes; V2 fixture builders
+    test/fixtures/                payloads captured from the pinned server
+    test/live/                    gated by T3_LIVE=1, T3_LIVE_URL, T3_LIVE_TOKEN; runs against a real server
+    ```
+  idempotent-ensure-operations: |
+    | Operation                           | Key                                 | Behaviour                                                                                             |
+    | ----------------------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------- |
+    | `projects.ensure`                   | normalised `workspaceRoot`          | find in shell snapshot; create with a fresh id when absent; update title only if given and different  |
+    | `projects.ensureScratch`            | `ServerConfig.scratchWorkspaceRoot` | the server finds the Scratch project or creates it; racing callers get the same project               |
+    | `threads.ensure`                    | caller-supplied `threadId`          | return existing shell thread (active or archived); create otherwise; never mutates an existing thread |
+    | `threads.launch`                    | `threadId` + `reuseExistingThread`  | the server returns the existing thread's projection with `resumed: true`                              |
+    | `auth.setAccessToken`               | token                               | validate then store; same token stored twice is a no-op                                               |
+    | `projects.delete`, `threads.delete` | id                                  | absent resource resolves without error                                                                |
+
+    Command ids are generated per dispatch, never reused, because the server
+    treats a command id as an attempt id rather than an idempotency key.
+  decisions-worth-recording: |
+    1. **Reimplement the wire instead of depending on Effect.** Verified: the
+       envelope protocol is small and stable (documented in Effect's
+       `RpcMessage`), the server uses plain JSON serialization, and both auth
+       modes work with Node's built-in `WebSocket`. Cost: schemas are mirrored by
+       hand and must be kept in step with each server release. Mitigation: file
+       names and schema names mirror `packages/contracts/src`, and a live test
+       suite runs against the release.
+    2. **zod 4 for schemas.** Loose objects and cheap brand types match the
+       forward-compatibility rule; the consumer project is not on Effect.
+    3. **Commands go over the socket only.** The server has no HTTP dispatch
+       route for protocol 2; the socket returns the typed
+       `OrchestrationV2DispatchCommandError`. HTTP serves snapshot reads and
+       project mutations.
+    4. **Ticket auth by default on the socket.** Bearer headers on the upgrade
+       need a non-standard WebSocket option; tickets work everywhere and cost one
+       HTTP round trip per (re)connect.
+    5. **A turn is a run.** The library keeps `startTurn` and `TurnHandle` as
+       its vocabulary for "send a message and follow its execution" and carries
+       the server's `runId`, so a workflow does not have to learn the server's
+       run and attempt model to wait for an answer.
+  out-of-scope-for-this-version: |
+    Pull requests, previews, devices, cloud relay, DPoP, desktop bootstrap,
+    attachment upload signing, source-control clone flows, scheduled tasks, MCP
+    OAuth, forks and merge-backs, delegated tasks, and settings mutation. They
+    stay reachable through `rpc.callRaw`, `rpc.streamRaw`, and
+    `threads.dispatch` with the full `OrchestrationV2Command` union.
+  profiles-and-target: >-
+    TARGET_T3_CODE_VERSION exports the target version. ProfileManager owns shared
+    named-server resolution and CredentialSource plugs in credential stores.
+    packages/t3code-lib/docs/profiles.md defines the profile API and file contract;
+    packages/t3code-lib/docs/api.md is the generated public API reference.
+    AuthClient retains token validation, exchange and credential access ownership.

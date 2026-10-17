@@ -1,0 +1,40 @@
+---
+relationships:
+  references:
+    - command-line
+    - design
+---
+
+# Dagu custom harness
+
+The Dagu custom harness starts one `t3c run` process, supplies its prompt on
+stdin, and consumes the final assistant message on stdout. Progress and thread
+identity go to stderr. The exit code preserves run, request, transport and
+credential outcomes; `124` belongs to Dagu.
+
+```yaml
+binary: t3c
+prefix_args: [run]
+prompt_mode: stdin
+with:
+  model: gpt-6-luna
+  project-path: /workspace/project
+  timeout: 5m
+```
+
+Dagu supplies `T3_TOKEN` and `T3_SERVER_URL` through masked secrets. The CLI
+resolves these through the library profile module. An explicit `--server` or
+`--credentials` overrides the corresponding environment input. `T3_TOKEN` alone
+uses the current profile's server. The process uses the same profile and
+credential contract as other library consumers.
+
+Pushback continues the existing conversation with `t3c run --thread <id>` and
+a new stdin prompt. Thread ids emitted on stderr remain available when the
+process detaches, times out, blocks on a request, or loses its connection.
+
+Without `--timeout`, `run` waits without a run deadline. The Dagu timeout and
+the CLI run timeout are separate controls. CLI timeout interruption uses the
+library's interrupt operation with `holdQueue`; Dagu can also terminate the
+process with a signal. A signal reports exit `4` and the first signal requests
+interruption. User-input requests require explicit responses through
+`thread respond`; an automated harness does not invent answers.

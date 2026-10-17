@@ -1,0 +1,134 @@
+$schema: https://refinery.systems/ontology/technical-design
+title: T3 Code library — usage
+objective: Provide the stock T3 Code Node library contract for library-usage.
+relationships:
+  related-to:
+    - library
+  references:
+    - profiles
+    - testing
+    - releasing
+proposed-design:
+  high-level-overview: >-
+    The library implements stock T3 Code 0.1.0 and orchestration protocol 2.
+    Related library designs carry the wire, transport, auth, usage and facade
+    contracts. The package design.md points to this canonical design family.
+  caller-s-view: |
+    ```ts
+    import { T3Client, memoryCredentialStore } from "@wyrd-company/t3code-lib";
+
+    const client = T3Client.create({
+      baseUrl: "http://127.0.0.1:3979",
+      credentials: memoryCredentialStore({ accessToken: process.env.T3_TOKEN }),
+      clientLabel: "sdlc-workflows",
+    });
+
+    // Auth control plane
+    const state = await client.auth.sessionState();
+    await client.auth.exchangePairingToken("4BM5VPTCWT7L"); // stores the access token
+    const link = await client.auth.createPairingCredential({
+      label: "reviewer",
+      scopes: ["orchestration:read"],
+    });
+
+    // Discover what the server can run
+    const config = await client.server.getConfig();
+    const codex = config.providers.find((p) => p.instanceId === "codex");
+
+    // Projects and threads, idempotently
+    const project = await client.projects.ensure({
+      workspaceRoot: "/srv/repo",
+      title: "repo",
+    });
+    const thread = await client.threads.ensure({
+      threadId: stableThreadId,
+      projectId: project.id,
+      title: "Review PR 42",
+      modelSelection: { instanceId: "codex", model: "gpt-5.6-luna" },
+      runtimeMode: "auto",
+    });
+
+    // Or launch a thread into its own worktree with a first message
+    const launched = await client.threads.launch({
+      projectId: project.id,
+      title: "Fix the flaky test",
+      modelSelection: { instanceId: "codex", model: "gpt-5.6-luna" },
+      workspace: { type: "worktree", baseRef: "main" },
+      initialMessage: { text: "Find and fix the flaky test." },
+    });
+
+    // Run a turn and wait for it to settle
+    const turn = await client.threads.startTurn({
+      threadId: thread.id,
+      text: "Review the diff.",
+    });
+    for await (const item of turn.events()) {
+      if (item.kind === "assistant-delta") process.stdout.write(item.delta);
+      if (item.kind === "approval-requested")
+        await client.threads.respondToApproval({
+          threadId: thread.id,
+          requestId: item.requestId,
+          decision: "accept",
+        });
+      if (item.kind === "user-input-requested")
+        await client.threads.respondToUserInput({
+          threadId: thread.id,
+          requestId: item.requestId,
+          answers: { [item.questions[0].id]: "yes" },
+        });
+    }
+    const outcome = await turn.completion; // { state: "completed" | "interrupted" | "failed" | ..., assistantMessage, run, projection }
+
+    // Watch everything
+    for await (const item of client.shell.watch({ signal })) {
+      /* snapshot, project.updated, thread.updated, thread.removed, ... */
+    }
+
+    // Escape hatch for any RPC method
+    const diff = await client.rpc.call("orchestration.getTurnDiff", {
+      threadId,
+      fromTurnCount: 0,
+      toTurnCount: 1,
+    });
+    for await (const ev of client.rpc.stream("subscribeServerLifecycle", {})) {
+    }
+
+    await client.close();
+    ```
+
+    The connection opens lazily on the first RPC use and reconnects with backoff
+    until `close()`. Every method accepts an `AbortSignal` where waiting is
+    involved.
+  client-ts: |
+    ```ts
+    export interface T3ClientOptions {
+      baseUrl: string;
+      credentials?: CredentialStore; // default memoryCredentialStore()
+      accessToken?: string; // convenience: seeds the store
+      clientLabel?: string;
+      clientAppVersion?: string; // sent on the ws upgrade and token exchange
+      fetch?: typeof fetch;
+      webSocket?: WebSocketConstructor;
+      logger?: Logger;
+      backoff?: BackoffPolicy; // default 500 ms × 1.5, cap 5 s, jitter 0.2
+      pingIntervalMs?: number; // default 5000
+      missedPongLimit?: number; // default 3
+      openTimeoutMs?: number; // absent: no open timeout
+      socketAuth?: "ticket" | "bearer-header"; // default "ticket" (works with every WebSocket implementation)
+    }
+    export class T3Client {
+      static create(options: T3ClientOptions): T3Client;
+      readonly auth: AuthClient;
+      readonly server: ServerApi;
+      readonly projects: ProjectsApi;
+      readonly threads: ThreadsApi;
+      readonly shell: ShellApi;
+      readonly vcs: VcsApi;
+      readonly terminal: TerminalApi;
+      readonly rpc: RpcClient;
+      connect(signal?): Promise<void>; // optional eager connect
+      close(): Promise<void>;
+    }
+    ```
+
+    The socket URL carries `orchestrationProtocol=2` and `clientSurface=cli`.

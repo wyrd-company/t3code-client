@@ -1,0 +1,79 @@
+$schema: https://refinery.systems/ontology/technical-design
+title: t3c command-line design
+objective: >-
+  Provide a Node command-line interface that composes the T3 Code library for
+  human use and Dagu custom harness execution.
+relationships:
+  related-to:
+    - library
+  references:
+    - command-line
+    - cli-surface
+    - command-contract
+    - output-contract
+    - harness
+    - profiles
+    - testing
+    - releasing
+proposed-design:
+  high-level-overview: >-
+    @wyrd-company/t3code-cli exposes t3c on Node >=22.16. Commander parses the
+    command surface in specifications/assets/cli-surface.json. The specification
+    at specifications/command-line.yml and its prose assets define behavior.
+    @wyrd-company/t3code-lib owns profiles, credentials, auth, the protocol and
+    project/thread facades. The CLI adapts arguments and environment to library
+    inputs, follows run outcomes and maps them to output and exit codes.
+  composition: >-
+    A startup boundary checks Node and parses arguments. A connection resolver
+    uses ProfileManager.resolve and constructs T3Client with the resolved URL,
+    credential store, client label/version and openTimeoutMs. Command handlers
+    consume this context. Execution handlers share prompt input, project/model
+    resolution, dispatch, run following, request policy, timeout and signal
+    handling. Inspection and auth handlers share the same output/error boundary.
+    Client resources close in a finally path for every completed invocation.
+  module-boundaries: >-
+    cli.ts is the executable entry point. Command registration and each command
+    family are separate modules. Deep modules own prompt sources, output,
+    error-to-exit mapping and the execution lifecycle. The profile module remains
+    in the library so all consumers share precedence and persistence. The CLI
+    uses library facades instead of owning HTTP routes, RPC envelopes or stores.
+  dispatch-and-watch: >-
+    New worktree launches use threads.launch. Existing-thread continuation uses
+    threads.startTurn and follows the server-linked message/run identity. Library
+    watches provide snapshots, deltas, pending requests and terminal outcomes.
+    The CLI emits output for the followed run. Interrupt uses holdQueue. Request
+    policy and timeouts are shared across run, waiting start, send and wait as
+    specified. Ambiguous launch failures preserve known ids for recovery.
+  reads-and-version: >-
+    Transcript reads use threads.transcript with threads.detail fallback only
+    for thread_transcript_too_large. Final output uses the turn outcome assistant
+    message with last assistant transcript item as fallback. Version output uses
+    each package version, TARGET_T3_CODE_VERSION and the reachable environment
+    descriptor. A version verdict is informational. Protocol handling stays in
+    the library, which targets protocol 2.
+  errors-and-output: >-
+    A single boundary maps T3Error subclasses, typed RPC records, local usage
+    failures and run outcomes to the specification's 0–10 exit codes. Execution
+    output owns one result envelope and supports an explicit streaming mode.
+    Assistant text is stdout data; progress, identities, warnings and short final
+    errors use stderr. Interactive input is conditional on a TTY. Credentials
+    are redacted before diagnostic output.
+  distribution: >-
+    Library and CLI are independent Intentional release units. The CLI package
+    ships dist/cli.js and npm-shrinkwrap.json with registry resolutions. Local
+    consumer validation installs both package tarballs together. npm publication
+    uses provenance. The t3c Homebrew formula depends on node and consumes the
+    release tarball. CLI docs are published from packages/t3code-cli/docs through
+    wyrd-company/wyrd.foo/.github/actions/publish-docs@v1 on t3code-cli@ tags.
+    docs.yml and pages include the generated library reference and demo.gif;
+    Taskfile targets generate the reference with jsdoc-to-markdown and render the
+    VHS tape. The README and docs display the same demo asset.
+  development: >-
+    pnpm 11, vite-plus 0.3.3, TypeScript 7, ESM/NodeNext, .ts relative imports and
+    erasableSyntaxOnly match the library. Root Taskfile verbs cover the workspace
+    and lib:/cli: select packages. Colocated tests import vite-plus/test. Real
+    command checks use a fresh server/config home outside Git and gpt-6-luna
+    subjects, with operational live overrides cleared. The Dagu verification
+    exercises the custom harness against that real server. One consolidated
+    minor intent per unit records the release; manifests remain 0.0.0 until
+    finalization. Intentional owns release versions and changelogs.
