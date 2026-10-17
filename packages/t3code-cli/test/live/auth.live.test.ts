@@ -167,11 +167,15 @@ it("pairs all auth input forms, probes exact profiles, switches, logs out and ru
       expect(cli(["auth", "logout", name]).code).toBe(0);
     expect(await profiles.list()).toEqual([]);
     evidence["invocations"] = invocations;
+    evidence["acceptanceCompleted"] = true;
     console.log(JSON.stringify({ authAcceptance: evidence }));
   } finally {
     await client?.close();
     await issuer.close();
     await NodeFSP.rm(home, { recursive: true, force: true });
+    evidence["ownedCleanup"] = "complete";
+    if (process.env["T3C_AUTH_EVIDENCE"])
+      await NodeFSP.writeFile(process.env["T3C_AUTH_EVIDENCE"], JSON.stringify(evidence, null, 2));
     console.log(JSON.stringify({ authProfileHome: home, ownedCleanup: "complete" }));
   }
 });
