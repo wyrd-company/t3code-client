@@ -2,7 +2,7 @@
 // relationships:
 //   implements: command-line
 // ---
-import { CommanderError } from "commander";
+import { CommanderError, type Command } from "commander";
 import { createInvocation, type Invocation } from "./context.ts";
 import { exitCodeFor, failureFor, UnimplementedCommandError } from "./errors.ts";
 import { checkNode } from "./options.ts";
@@ -25,6 +25,7 @@ export async function main(
   let invocation: Invocation | undefined;
   let output = new Output(sink, argv.includes("--json"));
   let execution = false;
+  let usageHelp: string | undefined;
   const startedAt = Date.now();
   try {
     try {
@@ -33,7 +34,7 @@ export async function main(
       output.finish({
         data: null,
         exitCode: 2,
-        error: { code: "node_version", message: "t3c requires Node >=22.16." },
+        error: { code: "node_version", message: "requires Node >=22.16." },
       });
       return 2;
     }
@@ -41,13 +42,21 @@ export async function main(
     const paths = Object.keys(handlers);
     const wrapped: CommandHandlers = {};
     const root = registerCommands(surface, wrapped, versions.cli);
-    root.exitOverride().configureOutput({ writeOut: sink.stdout, writeErr: () => {} });
+    function configure(command: Command) {
+      command
+        .exitOverride((error) => {
+          if (error.code === "commander.help") usageHelp = command.helpInformation();
+          throw error;
+        })
+        .configureOutput({ writeOut: sink.stdout, writeErr: () => {} });
+    }
+    configure(root);
     root.hook("preSubcommand", (_, selected) => {
       if (selected.name() === "run") execution = true;
     });
     function install(commands: typeof root.commands, prefix = "") {
       for (const command of commands) {
-        command.exitOverride().configureOutput({ writeOut: sink.stdout, writeErr: () => {} });
+        configure(command);
         const path = `${prefix}${command.name()}`;
         if (path === "thread")
           command.hook("preSubcommand", (_, selected) => {
@@ -87,6 +96,7 @@ export async function main(
       failure.code = "usage";
       failure.message = "Invalid command or option. Use --help.";
     }
+    if (usageHelp !== undefined && !output.json) sink.stderr(usageHelp);
     if (execution)
       output.finish({ ...emptyExecution(Date.now() - startedAt), exitCode, error: failure });
     else output.finish({ data: null, exitCode, error: failure });

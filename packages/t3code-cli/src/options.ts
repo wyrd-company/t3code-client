@@ -21,6 +21,6 @@ export function checkNode(version: string): void {
     major < 22 ||
     (major === 22 && (minor ?? 0) < 16)
   ) {
-    throw new T3PreconditionError("t3c requires Node >=22.16.");
+    throw new T3PreconditionError("requires Node >=22.16.");
   }
 }
