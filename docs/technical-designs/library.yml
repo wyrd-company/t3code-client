@@ -14,11 +14,15 @@ relationships:
     - api
     - testing
     - releasing
+    - client
+    - shell
+    - socket
+    - threadWatch
 proposed-design:
   high-level-overview: >-
     The library implements stock T3 Code 0.1.0 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade
-    contracts. The package design.md points to this canonical design family.
+    contracts. The library architecture links the canonical design family.
   overview: |
     `@wyrd-company/t3code-lib` is a TypeScript library that lets a Node program
     drive a T3 Code server the way the T3 web and desktop clients do: create
@@ -197,6 +201,6 @@ proposed-design:
   profiles-and-target: >-
     TARGET_T3_CODE_VERSION exports the target version. ProfileManager owns shared
     named-server resolution and CredentialSource plugs in credential stores.
-    packages/t3code-lib/docs/profiles.md defines the profile API and file contract;
-    packages/t3code-lib/docs/api.md is the generated public API reference.
+    docs/profiles.md defines public profile usage; docs/technical-designs/profile-storage.yml defines persistence ownership;
+    docs/api.md is the generated public API reference.
     AuthClient retains token validation, exchange and credential access ownership.

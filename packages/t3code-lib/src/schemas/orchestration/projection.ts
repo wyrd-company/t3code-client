@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /** One thread's full state as the server projects it, and the snapshot shapes that carry it. */
 import { z } from "zod";

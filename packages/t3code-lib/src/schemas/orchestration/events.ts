@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /**
  * `OrchestrationV2DomainEvent`: every event a thread subscription delivers.

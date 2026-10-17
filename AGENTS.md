@@ -9,15 +9,15 @@ relationships:
 
 # t3code-client workspace
 
-Read `packages/t3code-lib/docs/design.md` before changing library code. It is
+Read `docs/technical-designs/library.yml` before changing library code. It is
 the library contract. Package guidance is in `packages/t3code-lib/AGENTS.md`.
-Read `docs/testing.md` and `docs/releasing.md` before changing automation.
+Read `docs/testing.md` and `docs/technical-designs/releasing.yml` before changing automation.
 
 ## Layout
 
 - `packages/t3code-lib`: npm `@wyrd-company/t3code-lib`, release unit `t3code-lib`.
 - `packages/t3code-cli`: npm `@wyrd-company/t3code-cli`, unit `t3code-cli`, binary
-  `t3c`. Shared composition and handler ownership are in package docs/composition.md.
+  `t3c`. Shared composition and handler ownership are in `docs/technical-designs/composition.yml`.
 - `scripts/release`: shared unit-aware pack, validation and publication steps.
 - `.intentional`: independent unit projections and one pre-0.1.0 intent per unit.
 
@@ -29,8 +29,8 @@ Node >=22.16, pnpm 11, vite-plus 0.3.3 and TypeScript 7. ESM/NodeNext,
 Use generic example/test values. Follow Conventional Commits.
 Application code must not spawn CLIs. The CLI composes the library and does
 not implement wire protocol. Only build/test tools may spawn the test server.
-CLI command behavior is defined by `specifications/command-line.yml`; package
-`docs/design.md` files link to canonical `technical-designs/` artifacts.
+CLI command behavior is defined by `docs/specifications/command-line.yml`; canonical
+architecture is in `docs/technical-designs/`.
 The pinned `t3` devDependency is 0.1.0; runtime code must not enforce a pinned
 server version. Preserve protocol 2 and the supported upstream capabilities.
 

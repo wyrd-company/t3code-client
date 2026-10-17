@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 import * as NodeFSP from "node:fs/promises";
 import * as NodePath from "node:path";

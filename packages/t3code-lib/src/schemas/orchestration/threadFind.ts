@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /** Find within one thread: `orchestration.searchThread` and its streaming form. */
 import { z } from "zod";

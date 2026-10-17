@@ -1,6 +1,6 @@
 ---
 relationships:
-  implements: design
+  implements: library
   references: [api, credentialStore, authClient, profileManager, profileConfig]
 ---
 
@@ -34,13 +34,7 @@ are preserved as supplied. Explicit flags keep their existing input semantics.
 }
 ```
 
-The config has no credentials. Config writes use a temporary file and rename,
-with mode 0644. Each profile has a separate mode-0600 JSON credential file in
-`credentials/`. The filename is the SHA-256 digest of the complete profile name
-plus `.json`, so names cannot become paths. Both config and credential files
-are replaced atomically. These are individual file operations, not a transaction
-across the credential backend and config. Concurrent config writers must be
-serialized by the caller.
+The config has no credentials. Each profile has a separate mode-0600 credential file. Concurrent config writers must be serialized by the caller.
 
 Missing config means no profiles. Invalid JSON, an invalid config shape, an
 invalid server URL, or a current name absent from `servers` raises
@@ -145,16 +139,3 @@ const credentialSource: CredentialSource = (profile) => stores.forServer(profile
 const profiles = new ProfileManager({ credentialSource });
 const connection = await profiles.resolve();
 ```
-
-Only `AuthClient` reads, writes or clears the selected store. `ProfileManager`
-selects it and composes a client for registration or logout. Explicit
-`T3Client.create({credentials})` and `T3Client.create({accessToken})` retain their
-existing behavior; the direct client defaults to in-memory storage. An explicit
-credential-file override uses that file even when a custom profile backend is
-configured.
-
-Generate the [public API reference](api.md) with `task lib:docs` and verify it
-with `task lib:docs:check`. The generator uses `jsdoc-to-markdown` on compiled
-JavaScript and adds signatures from the public TypeScript source. The
-`typescript-api` development alias supplies the 5.9 compiler API for documentation;
-the build and typecheck toolchain remains TypeScript 7.

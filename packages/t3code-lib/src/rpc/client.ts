@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /**
  * RpcClient: typed `call` and `stream` over an RpcConnection, driven by a

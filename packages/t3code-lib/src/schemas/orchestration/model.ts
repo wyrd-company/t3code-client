@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /**
  * Mirrors `modelSelection.ts` and `providerPolicy.ts` in the contracts, plus

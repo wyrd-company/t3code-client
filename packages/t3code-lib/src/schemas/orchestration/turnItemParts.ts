@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /** The fields every turn item shares and the small records some of them carry. */
 import { z } from "zod";

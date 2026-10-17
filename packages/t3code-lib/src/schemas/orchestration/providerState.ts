@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /** Provider sessions, threads, turns, and runtime requests of `orchestrationV2.ts`. */
 import { z } from "zod";

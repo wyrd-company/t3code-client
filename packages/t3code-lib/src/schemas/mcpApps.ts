@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /**
  * Mirrors `packages/contracts/src/mcpApps.ts`: requests an MCP App makes of

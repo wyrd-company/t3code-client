@@ -198,7 +198,7 @@ it("rejects invalid policy before dispatch", async () => {
 it("commander rejects every existing-thread relocation flag before handler dispatch", async () => {
   const surface = JSON.parse(
     await NodeFSP.readFile(
-      new URL("../../../../specifications/assets/cli-surface.json", import.meta.url),
+      new URL("../../../../docs/specifications/assets/cli-surface.json", import.meta.url),
       "utf8",
     ),
   ) as CommandSurface;

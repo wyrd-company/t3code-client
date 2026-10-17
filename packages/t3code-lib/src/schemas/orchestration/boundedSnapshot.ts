@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /** Mirrors `packages/shared/src/orchestrationV2BoundedSnapshot.ts`: the client half of compact snapshots. */
 import type { OrchestrationV2ProjectedTurnItem } from "./turnItems.ts";

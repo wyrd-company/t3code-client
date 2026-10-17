@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /** Thread lifecycle and setting commands of `OrchestrationV2Command`. */
 import { z } from "zod";

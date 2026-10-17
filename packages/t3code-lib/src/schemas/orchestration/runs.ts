@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /** Runs, attempts, execution nodes, subagents, and checkpoints of `orchestrationV2.ts`. */
 import { z } from "zod";

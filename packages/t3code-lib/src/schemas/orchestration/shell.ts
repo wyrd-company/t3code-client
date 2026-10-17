@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /** The lightweight cross-thread view: project and thread shells, their snapshot, and its stream. */
 import { z } from "zod";

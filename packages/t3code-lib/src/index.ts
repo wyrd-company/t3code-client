@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /**
  * Public surface of @wyrd-company/t3code-lib. Everything a consumer may

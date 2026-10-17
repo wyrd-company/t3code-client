@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 import { z } from "zod";
 import { AuthClientSession, AuthPairingLink } from "../../schemas/auth.ts";

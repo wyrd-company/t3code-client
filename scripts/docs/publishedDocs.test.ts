@@ -5,7 +5,7 @@
 import * as NodeFS from "node:fs";
 import * as NodePath from "node:path";
 import { expect, it } from "vite-plus/test";
-const root = NodePath.resolve(import.meta.dirname, "../../packages/t3code-cli/docs");
+const root = NodePath.resolve(import.meta.dirname, "../../docs");
 const published = NodeFS.readdirSync(root).filter(
   (name) =>
     name.endsWith(".md") &&
@@ -27,6 +27,14 @@ it("publishes the complete CLI navigation and generated library page with unique
   });
   expect(orders).not.toContain(undefined);
   expect(new Set(orders).size).toBe(published.length);
+  expect(Object.fromEntries(published.map((name, index) => [name, orders[index]]))).toEqual({
+    "auth.md": "2",
+    "commands.md": "3",
+    "dagu.md": "5",
+    "index.md": "1",
+    "library.md": "6",
+    "policy.md": "4",
+  });
   expect(NodeFS.readFileSync(NodePath.join(root, "library.md"), "utf8")).toContain(
     "T3StorageError",
   );

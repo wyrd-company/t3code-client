@@ -3,7 +3,7 @@ title: t3c command-line contract
 description: >-
   t3c is a Node command-line interface to stock T3 Code. Its command surface is
   assets/cli-surface.json; its execution, output and failure semantics are in
-  ../packages/t3code-cli/docs/command-contract.md and ../packages/t3code-cli/docs/output-contract.md. These assets form
+  assets/command-contract.json, assets/output-contract.json and assets/harness.json. These assets form
   one normative contract. The CLI composes @wyrd-company/t3code-lib for profiles,
   auth, projects, thread launch, message dispatch, watches and interruption.
 format: cli

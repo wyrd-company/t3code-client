@@ -1,7 +1,7 @@
 ---
 relationships:
   references:
-    - design
+    - library
     - testing
     - releasing
 ---
@@ -9,9 +9,9 @@ relationships:
 # t3code-lib
 
 TypeScript client library for the stock T3 Code server, published to npmjs as
-`@wyrd-company/t3code-lib`. Read `docs/design.md` before changing anything;
+`@wyrd-company/t3code-lib`. Read `../../docs/technical-designs/library.yml` before changing anything;
 it is the contract every module is built against. `docs/testing.md` explains
-unit and live tests, and `docs/releasing.md` explains releases.
+unit and live tests, and `../../docs/technical-designs/releasing.yml` explains releases.
 
 ## Layout
 
@@ -31,7 +31,7 @@ The library targets the T3 Code build pinned as the `t3` devDependency: the
 newest release on `main`, the newest nightly on a branch that prepares for
 the next upstream version. Upstream is `pingdotgg/t3code`; read the source at
 that build's tag (`vX.Y.Z` or `vX.Y.Z-nightly.YYYYMMDD.N`).
-`docs/releasing.md` describes an update. Contracts:
+`../../docs/technical-designs/releasing.yml` describes an update. Contracts:
 `packages/contracts/src/*.ts`. Server RPC handlers: `apps/server/src/ws.ts`.
 Scope per method: `apps/server/src/auth/RpcAuthorization.ts`.
 

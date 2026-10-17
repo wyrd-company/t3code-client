@@ -149,6 +149,6 @@ jobs:
       - name: Publish documentation
         uses: wyrd-company/wyrd.foo/.github/actions/publish-docs@v1
         with:
-          docs-dir: packages/t3code-cli/docs
+          docs-dir: docs
           app-id: ${{ secrets.WYRD_TOOLS_DOCS_PUBLISHER_APP_ID }}
           private-key: ${{ secrets.WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY }}

@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   verifies: design
+//   verifies: library
 // ---
 import { WebSocket as WsWebSocket } from "ws";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";

@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /** The app-level thread record of `orchestrationV2.ts`: `OrchestrationV2AppThread` and its parts. */
 import { z } from "zod";

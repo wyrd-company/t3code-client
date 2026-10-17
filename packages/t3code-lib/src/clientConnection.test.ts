@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   verifies: design
+//   verifies: library
 // ---
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { ids, makeShellSnapshot, snapshotItem } from "../test/support/threadFixtures.ts";

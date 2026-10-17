@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /**
  * The timeline rows of a thread, typed by `type`. A row of a type this build

@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 import { unwrapStreamItems, type DecodedStreamItem } from "../api/streamItems.ts";
 import type { RpcClient } from "../rpc/client.ts";

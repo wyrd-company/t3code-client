@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /** Fork, merge-back, and delegated-task commands of `OrchestrationV2Command`. */
 import { z } from "zod";

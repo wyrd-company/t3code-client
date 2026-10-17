@@ -24,7 +24,7 @@ This is an independent project, not part of T3 Code. Each release targets the
 latest T3 Code release; the version it is tested against is the `t3` entry in
 `devDependencies`.
 
-See [`docs/design.md`](docs/design.md) for the architecture and
+See [library architecture](https://github.com/wyrd-company/t3code-client/blob/main/docs/technical-designs/library.yml) for the architecture and
 [`docs/testing.md`](docs/testing.md) for tests.
 
 ## Install
@@ -230,7 +230,7 @@ pnpm run test:live    # starts the pinned t3 server, see docs/testing.md
 task check            # all of the above
 ```
 
-Releases use the independent `t3code-lib` release unit; see [`docs/releasing.md`](docs/releasing.md).
+Releases use the independent `t3code-lib` release unit; see [release pipeline](https://github.com/wyrd-company/t3code-client/blob/main/docs/technical-designs/releasing.yml).
 
 ## License
 

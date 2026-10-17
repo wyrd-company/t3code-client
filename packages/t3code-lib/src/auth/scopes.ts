@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 import { T3AuthError } from "../errors.ts";
 import type { AuthEnvironmentScope, AuthGrantedScope } from "../schemas/auth.ts";

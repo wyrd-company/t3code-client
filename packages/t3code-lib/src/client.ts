@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /**
  * T3Client: the composition root. It wires the HTTP transport, the auth

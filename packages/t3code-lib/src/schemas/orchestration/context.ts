@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /** Context handoffs and transfers between provider threads, from `orchestrationV2.ts`. */
 import { z } from "zod";

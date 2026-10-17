@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /**
  * SocketTransport: one logical WebSocket connection to `/ws` that survives

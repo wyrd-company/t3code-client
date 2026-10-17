@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /** Workflow runs a coordinator subagent reports, from `orchestrationV2.ts`. */
 import { z } from "zod";
