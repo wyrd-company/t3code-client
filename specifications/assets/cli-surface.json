@@ -141,6 +141,7 @@
         },
         {
           "name": "base-ref",
+          "description": "Base ref for the new worktree (default: the project's current checkout).",
           "flags": ["--base-ref"],
           "kind": "option",
           "value": {
@@ -363,6 +364,7 @@
             },
             {
               "name": "base-ref",
+              "description": "Base ref for the new worktree (default: the project's current checkout).",
               "flags": ["--base-ref"],
               "kind": "option",
               "value": {
