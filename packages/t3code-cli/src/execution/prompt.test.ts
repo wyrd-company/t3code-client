@@ -32,7 +32,7 @@ it("selects each source without consuming another", async () => {
   );
   expect(source.readStdin).not.toHaveBeenCalled();
   expect(await readPrompt(undefined, "sample.txt", source)).toBe("file prompt");
-  expect(source.readFile).toHaveBeenCalledExactlyOnceWith("sample.txt");
+  expect(source.readFile).toHaveBeenCalledExactlyOnceWith("sample.txt", undefined);
   expect(await readPrompt(undefined, "-", source)).toBe("stdin prompt");
   expect(await readPrompt(undefined, undefined, source)).toBe("stdin prompt");
   expect(source.readStdin).toHaveBeenCalledTimes(2);

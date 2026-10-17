@@ -79,7 +79,12 @@ it.each(["run", "start", "send"] as const)(
       expect.objectContaining({ timeout: "2s", onTimeout: "detach" }),
       "interrupt",
     );
-    expect(f.followRun).toHaveBeenCalledExactlyOnceWith(f.invocation, f.target, f.policy);
+    expect(f.followRun).toHaveBeenCalledExactlyOnceWith(
+      f.invocation,
+      f.target,
+      f.policy,
+      expect.objectContaining({ close: expect.any(Function) }),
+    );
     expect(JSON.parse(f.stdout.join(""))).toEqual({ ...f.result, runtimeMode: null });
     expect(f.stdout.join("").trim().split("\n")).toHaveLength(1);
     expect(f.stderr.join("")).toBe("Thread: sample-thread\n");
@@ -89,6 +94,7 @@ it.each(["run", "start", "send"] as const)(
         "prompt text",
         expect.objectContaining({ thread: "sample-thread" }),
         expect.any(Function),
+        expect.objectContaining({ close: expect.any(Function) }),
       );
   },
 );
@@ -129,7 +135,12 @@ it("nonwaiting start reports the mode sent in its data", async () => {
 it("thread send takes its own positional prompt and default interrupt policy", async () => {
   const f = setup();
   await threadSendHandler(f.follower)(["sample-thread", "next prompt"], f.command, f.invocation);
-  expect(readPrompt).toHaveBeenCalledExactlyOnceWith("next prompt", undefined);
+  expect(readPrompt).toHaveBeenCalledExactlyOnceWith(
+    "next prompt",
+    undefined,
+    undefined,
+    expect.any(AbortSignal),
+  );
   expect(f.followPolicy).toHaveBeenCalledWith({}, "interrupt");
   expect(f.stdout.join("")).toBe("SAMPLE\n");
 });

@@ -54,8 +54,19 @@ for terminal state and exits `6` whether or not terminal confirmation arrives.
 The JSON result reports the last observed state. Connection/auth failures while requesting
 interruption retain their mapped error and known thread/run identity.
 
-The first SIGTERM or SIGINT interrupts the run and exits `4`. A second signal
-exits immediately. When the run is already terminal, the first signal aborts
+One SIGTERM/SIGINT scope spans prompt reading, preflight, dispatch and following
+for `run`, `thread start` (with or without `--wait`) and `thread send`.
+During preflight, the first signal exits `4`, creates no thread or run and
+reports null identities (`data: null` for nonwaiting `thread start`).
+Once a mutation is sent, the CLI retains its acknowledgement and waits for the
+linked run through the existing handle. It never aborts or retries that request.
+It interrupts that exact run with `holdQueue`, exits `4`, and reports the thread
+and run identities on stderr and in the envelope. An acknowledgement or link
+failure exits `4` with the known thread identity and the failure in `error`.
+A second signal exits immediately, including while a receipt or run link is pending.
+
+During following, the first signal interrupts the run and exits `4`.
+When the run is already terminal, the first signal aborts
 the remaining read and sends no interrupt. Exit `4` means the CLI was
 interrupted before it finished its work; the envelope's `state` carries what
 the run did. Signal handlers retain the thread id for recovery and

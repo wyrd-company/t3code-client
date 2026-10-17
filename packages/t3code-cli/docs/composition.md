@@ -27,12 +27,13 @@ with the detail route only for `thread_transcript_too_large`. Run, `thread
 start` and `thread send` read one prompt source (`prompt.ts`), resolve project,
 provider, model and mode before any thread exists (`selection.ts`), then
 dispatch (`dispatch.ts`) and produce a `FollowTarget`. `followRun(invocation,
-target, policy)` follows that run, or the run `thread wait` captures, and
+target, policy, scope?)` follows that run, or the run `thread wait` captures, and
 returns the `ExecutionResult`; `followPolicy(options, defaultOnTimeout)` reads
 the timeout, request and approval flags. The follower owns the run deadline,
-the interrupt grace, pending-request policy, streaming and the final answer. It
-installs SIGINT/SIGTERM handlers only for its own window and removes them on
-every exit. The handler finishes output with the returned result and adds the
+the interrupt grace, pending-request policy, streaming and the final answer. The dispatch handler owns one SIGINT/SIGTERM scope before prompt reading and
+preflight, retains mutation acknowledgements and run links after a signal, and
+passes the scope to the follower. It closes the scope on every exit.
+`thread wait` lets the follower create and close its own scope. The handler finishes output with the returned result and adds the
 runtime mode it sent.
 
 `Invocation` owns `profiles`, lazy `resolve()` and `client()`, `output`, elapsed

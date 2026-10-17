@@ -17,8 +17,9 @@ import type { ExecutionResult } from "../output.ts";
 import type { FollowPolicy, FollowTarget } from "./followTarget.ts";
 import { FollowObservation } from "./followObservation.ts";
 import { FollowStream } from "./followStream.ts";
+import { dispatchedRunId } from "./dispatch.ts";
 import { invocationDeadline } from "./deadline.ts";
-import { followSignals } from "./signals.ts";
+import { followSignals, type SignalScope } from "./signals.ts";
 import { readConversation, lastAssistantMessage } from "./transcript.ts";
 export { followPolicy } from "./followPolicy.ts";
 export type { FollowPolicy, FollowTarget } from "./followTarget.ts";
@@ -29,15 +30,25 @@ export async function followRun(
   invocation: Invocation,
   target: FollowTarget,
   policy: FollowPolicy,
+  scope?: SignalScope,
 ): Promise<ExecutionResult> {
   const observation = new FollowObservation(target);
   const result = observation.result;
   const controller = new AbortController();
-  const signals = followSignals(invocation.output);
+  const signals = scope ?? followSignals(invocation.output);
   const stream = new FollowStream(invocation.output);
   let cancelDeadline: (() => void) | undefined;
   let graceTimer: ReturnType<typeof setTimeout> | undefined;
   let stopping = false;
+  let linkFailure: unknown;
+  const linkedRun = async () => {
+    try {
+      return await dispatchedRunId(target);
+    } catch (error) {
+      linkFailure = error;
+      throw error;
+    }
+  };
   let interruptForSignal: (() => Promise<void>) | undefined;
   let iterator: AsyncIterator<ThreadWatchItem> | undefined;
   invocation.output.progress(`Thread: ${target.threadId}`);
@@ -48,7 +59,8 @@ export async function followRun(
       // Client acquisition has no abort input. Retain cancellation until a facade can interrupt.
       const client = await acquiring;
       invocation.errorContext = "run-interrupt";
-      const selected = target.turn?.runId ?? result.runId;
+      const selected = target.turn === undefined ? result.runId : await linkedRun();
+      result.runId = selected;
       await client.threads.interrupt(id, selected === null ? undefined : runId(selected), {
         holdQueue: true,
       });
@@ -126,6 +138,9 @@ export async function followRun(
       // A terminal selected run has nothing left to interrupt; retain its observed state.
       if (result.state === "idle" || isRunTerminalStatus(result.state)) return;
       invocation.errorContext = "run-interrupt";
+      if (target.turn !== undefined && result.runId === null) result.runId = await linkedRun();
+      if (scope !== undefined && result.runId !== null)
+        invocation.output.progress(`Run: ${result.runId}`);
       await interruptRun(true);
     };
     const racers: Promise<Reason>[] = [pump, signals.first];
@@ -180,10 +195,13 @@ export async function followRun(
       try {
         await interruptForSignal?.();
       } catch {
-        /* The signal determines the invocation exit. */
+        /* The signal determines the invocation exit. Retain a failed run link. */
       }
       result.exitCode = 4;
-      result.error = { code: "interrupted", message: "Operation interrupted." };
+      result.error =
+        linkFailure === undefined
+          ? { code: "interrupted", message: "Operation interrupted." }
+          : failureFor(linkFailure, invocation.errorContext);
     } else {
       result.exitCode = exitCodeFor(error, invocation.errorContext);
       result.error = failureFor(error, invocation.errorContext);
@@ -193,7 +211,7 @@ export async function followRun(
     void iterator?.return?.();
     cancelDeadline?.();
     clearTimeout(graceTimer);
-    signals.close();
+    if (scope === undefined) signals.close();
     result.durationMs = Date.now() - invocation.startedAt;
   }
   return result;
