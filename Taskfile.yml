@@ -17,7 +17,7 @@ tasks:
     desc: Install all workspace dependencies
     cmds: [pnpm install]
   build:
-    desc: Build workspace packages (CLI reserved)
+    desc: Build workspace packages
     cmds: [pnpm run build]
   fmt:
     desc: Format the workspace
@@ -27,18 +27,18 @@ tasks:
     cmds: [pnpm run check]
   typecheck:
     desc: Type-check packages and release automation
-    cmds: [pnpm exec tsc --noEmit, pnpm run typecheck]
+    cmds: [{ task: build }, pnpm exec tsc --noEmit, pnpm run typecheck]
   test:
     desc: Run package and release automation tests
     cmds: [pnpm run test, { task: "release:test" }]
   test:live:
     desc: Test the pinned server with an isolated temporary home
-    cmds: [pnpm run test:live]
+    cmds: [{ task: build }, pnpm run test:live]
   fixtures:
     desc: Capture sanitized library fixtures from the targeted server
     cmds: [{ task: "lib:fixtures" }]
   package:
-    desc: Pack packages and verify consumer installation (CLI reserved)
+    desc: Pack packages and verify consumer installation
     cmds: [pnpm run package]
   intents:
     desc: Validate intents with ephemeral baselines outside this repository
@@ -47,7 +47,7 @@ tasks:
     desc: Test release boundaries without publishing
     cmds: [pnpm exec vp test run]
   check:
-    desc: All workspace gates before handoff (CLI implementation reserved)
+    desc: All workspace gates before handoff
     cmds:
       - task: intents
       - task: lint

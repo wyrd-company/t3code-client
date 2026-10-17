@@ -16,8 +16,8 @@ Read `docs/testing.md` and `docs/releasing.md` before changing automation.
 ## Layout
 
 - `packages/t3code-lib`: npm `@wyrd-company/t3code-lib`, release unit `t3code-lib`.
-- `packages/t3code-cli`: reserved private npm `@wyrd-company/t3code-cli`, unit
-  `t3code-cli`, eventual binary `t3c`. Scaffold owns commander and implementation.
+- `packages/t3code-cli`: npm `@wyrd-company/t3code-cli`, unit `t3code-cli`, binary
+  `t3c`. Shared composition and handler ownership are in package docs/composition.md.
 - `scripts/release`: shared unit-aware pack, validation and publication steps.
 - `.intentional`: independent unit projections and one pre-0.1.0 intent per unit.
 
@@ -41,4 +41,4 @@ No authoritative baseline tags before epic finalization. `task check` uses a
 scratch repository for missing pre-release baselines, without tagging this repo.
 
 Run `task check` before handoff. Root verbs cover the workspace; `lib:*` and
-`cli:*` select a package. Reserved CLI verbs explicitly report their status.
+`cli:*` select a package. Registered commands without handlers explicitly fail.

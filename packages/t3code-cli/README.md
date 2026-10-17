@@ -1,22 +1,12 @@
----
-relationships:
-  references:
-    - command-line
-    - design
-    - releasing
----
-
 # @wyrd-company/t3code-cli
 
-Reserved private package for `t3c`, a Node command that composes
-`@wyrd-company/t3code-lib`. The CLI scaffold owns the command implementation,
-commander dependency, executable export and npm shrinkwrap.
+Node >=22.16 command-line client for stock T3 Code. `t3c version` reports the
+CLI, library and target versions and an informational server verdict.
+`t3c --version` prints the CLI package version. `--json` emits structured data.
 
-Taskfile verbs pass with an explicit reserved message. They do not validate a
-CLI implementation. The scaffold removes `private`, fills these verbs and
-supplies a package containing `dist/cli.js` and `npm-shrinkwrap.json`.
+The complete command tree is available through `t3c --help` and command help.
+Auth, thread, run, project and server commands are registered placeholders until
+their implementations land. A placeholder exits with failure.
 
-Release unit: `t3code-cli`. See [workspace releases](../../docs/releasing.md).
-
-The [CLI specification](../../specifications/command-line.yml) defines the command
-contract; [the package design](docs/design.md) links its technical design.
+Read [command behavior](docs/command-contract.md), [output](docs/output-contract.md)
+and the [Dagu harness contract](docs/harness.md).

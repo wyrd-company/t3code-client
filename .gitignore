@@ -147,3 +147,6 @@ vite.config.ts.timestamp-*
 
 # Intentional release plans are CI build material
 release-plan.json
+
+# Generated CLI command surface
+packages/t3code-cli/commandSurface.json

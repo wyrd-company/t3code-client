@@ -1,19 +1,39 @@
 {
   "name": "@wyrd-company/t3code-cli",
   "version": "0.0.0",
-  "private": true,
-  "description": "Reserved t3c command-line package; implementation belongs to the CLI scaffold.",
+  "description": "Node command-line client for stock T3 Code.",
   "license": "MIT",
+  "bin": {
+    "t3c": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "commandSurface.json",
+    "npm-shrinkwrap.json"
+  ],
   "type": "module",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
-    "build": "node -e \"console.log('Reserved CLI build: scaffold pending.')\"",
-    "fmt": "node -e \"console.log('Reserved CLI fmt: scaffold pending.')\"",
-    "lint": "node -e \"console.log('Reserved CLI lint: scaffold pending.')\"",
-    "typecheck": "node -e \"console.log('Reserved CLI typecheck: scaffold pending.')\"",
-    "test": "node -e \"console.log('Reserved CLI test: scaffold pending.')\"",
-    "test:live": "node -e \"console.log('Reserved CLI test:live: scaffold pending.')\"",
-    "package": "node -e \"console.log('Reserved CLI package: scaffold pending.')\"",
-    "check": "node -e \"console.log('Reserved CLI check: scaffold pending.')\""
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "check": "vp check",
+    "lint": "vp lint",
+    "fmt": "vp fmt",
+    "test": "vp test run",
+    "test:live": "vp test run --config vitest.live.config.ts",
+    "prepack": "pnpm build && node scripts/shrinkwrap.mjs",
+    "package": "node scripts/package.mjs"
+  },
+  "dependencies": {
+    "@wyrd-company/t3code-lib": "workspace:*",
+    "commander": "^15.0.0",
+    "semver": "^7.8.5"
+  },
+  "devDependencies": {
+    "@types/semver": "^7.8.0"
   },
   "engines": {
     "node": ">=22.16"
