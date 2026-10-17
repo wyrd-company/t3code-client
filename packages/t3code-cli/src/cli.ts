@@ -11,6 +11,7 @@ if (major < 22 || (major === 22 && minor < 16)) {
 } else {
   const NodeFS = await import("node:fs");
   const { authHandlers } = await import("./auth.ts");
+  const { executionHandlers } = await import("./execution/index.ts");
   const { main } = await import("./main.ts");
   const surface = JSON.parse(
     NodeFS.readFileSync(new URL("../commandSurface.json", import.meta.url), "utf8"),
@@ -26,6 +27,6 @@ if (major < 22 || (major === 22 && minor < 16)) {
         process.stderr.write(text);
       },
     },
-    authHandlers,
+    { ...authHandlers, ...executionHandlers },
   );
 }
