@@ -9,7 +9,7 @@ import {
   memoryCredentialStore,
   type CredentialStore,
 } from "../auth/credentialStore.ts";
-import { T3ConnectionError, T3Error, T3PreconditionError } from "../errors.ts";
+import { T3ConnectionError, T3Error, T3NotFoundError, T3PreconditionError } from "../errors.ts";
 import {
   configDirectory,
   credentialPath,
@@ -76,9 +76,21 @@ export class ProfileManager {
     return config.current === undefined ? undefined : profileNamed(config, config.current);
   }
 
-  /** Resolve one exact named profile without applying flag or environment overrides. */
+  /**
+   * Resolve one exact named profile without applying flag or environment overrides.
+   * @throws {T3NotFoundError} The named profile does not exist.
+   */
   async resolveProfile(name: string): Promise<ResolvedProfile> {
-    const profile = profileNamed(await loadConfig(this.configDir), name);
+    const profile = (await this.list()).find((candidate) => candidate.name === name);
+    if (profile === undefined) {
+      throw new T3NotFoundError("The selected profile does not exist.", {
+        status: 404,
+        method: "LOCAL",
+        path: "profile",
+        body: undefined,
+        reason: "profile_not_found",
+      });
+    }
     return {
       baseUrl: profile.url,
       credentials: await this.#store(profile),

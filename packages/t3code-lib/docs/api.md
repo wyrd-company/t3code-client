@@ -25,7 +25,7 @@ TypeScript declarations ship with the package.
 <dd><p>401 (auth_invalid) or 403 (insufficient_scope), from HTTP or detected locally.</p>
 </dd>
 <dt><a href="#T3NotFoundError">T3NotFoundError</a></dt>
-<dd><p>404 from HTTP; <code>reason</code> names what was missing (for example <code>thread_not_found</code>).</p>
+<dd><p>A missing resource from HTTP or exact local profile resolution; <code>reason</code> names what was missing.</p>
 </dd>
 <dt><a href="#T3RpcError">T3RpcError</a></dt>
 <dd><p>The server answered an RPC with a tagged failure (<code>Exit</code> → <code>Fail</code>).</p>
@@ -366,7 +366,7 @@ static insufficientScope(requiredScope: string, context: string): T3AuthError;
 
 ## T3NotFoundError
 
-404 from HTTP; `reason` names what was missing (for example `thread_not_found`).
+A missing resource from HTTP or exact local profile resolution; `reason` names what was missing.
 
 **Kind**: global class  
 <a name="T3RpcError"></a>
@@ -1882,6 +1882,10 @@ async resolveProfile(name: string): Promise<ResolvedProfile>;
 ```
 
 **Kind**: instance method of [<code>ProfileManager</code>](#ProfileManager)  
+**Throws**:
+
+- [<code>T3NotFoundError</code>](#T3NotFoundError) The named profile does not exist.
+
 <a name="ProfileManager+resolve"></a>
 
 ### profileManager.resolve()

@@ -97,8 +97,9 @@ Token issuance remains upstream; this module does not implement browser OAuth.
 `resolveProfile(name)` returns the exact named profile's connection inputs without
 flag or environment overrides. This lets status consumers probe each configured
 credential, including multiple names that share a URL, without changing current.
-It reports both sources as `profile` and raises `T3PreconditionError` for an
-unknown name.
+It reports both sources as `profile` and raises `T3NotFoundError`
+(`code: "not_found"`, `reason: "profile_not_found"`) for an unknown name.
+Unknown names supplied to `switch` or `logout` remain `T3PreconditionError`.
 
 `list()` returns names and URLs. `getCurrent()` returns the current profile or
 undefined. `switch(name)` requires an existing profile. `logout(name?)` clears
