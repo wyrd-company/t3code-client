@@ -110,7 +110,8 @@ proposed-design:
     A hidden real `version --json` preflight verifies the pinned server version and
     protocol; package and consumer checks verify actual package versions. The tape
     has no interim version frame. Owned logs are checked for credential values
-    before evidence is printed. Sanitized output records actual version/protocol,
+    before retained command evidence and lifecycle records are printed. Sanitized
+    output records actual version/protocol,
     owned homes, subject identities and the shared live harness's readiness roster,
     stop observations and home removal. Its process-scope limit is defined below.
 
