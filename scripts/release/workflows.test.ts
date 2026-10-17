@@ -73,3 +73,23 @@ describe("release foundation wiring", () => {
     expect(readiness).toBeLessThan(workflow.indexOf("scripts/release/apply-plan.sh"));
   });
 });
+
+describe("distribution workflow agreements", () => {
+  it("publishes the CLI docs only after its package succeeds", () => {
+    const job = publish().split("  docs:")[1];
+    expect(job).toContain("needs: [build, npm]");
+    expect(job).toContain("if: startsWith(github.ref_name, 't3code-cli@')");
+    expect(job).toContain("wyrd-company/wyrd.foo/.github/actions/publish-docs@v1");
+    expect(job).toContain("docs-dir: packages/t3code-cli/docs");
+    expect(job).toContain("secrets.WYRD_TOOLS_DOCS_PUBLISHER_APP_ID");
+    expect(job).toContain("secrets.WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY");
+  });
+  it("regenerates shrinkwrap after applying release versions before the commit", () => {
+    const workflow = release();
+    const apply = workflow.indexOf("scripts/release/apply-plan.sh");
+    const shrinkwrap = workflow.indexOf("exec node scripts/shrinkwrap.mjs");
+    const commit = workflow.indexOf("git commit");
+    expect(shrinkwrap).toBeGreaterThan(apply);
+    expect(shrinkwrap).toBeLessThan(commit);
+  });
+});

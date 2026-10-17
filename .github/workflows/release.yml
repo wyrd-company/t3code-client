@@ -75,6 +75,8 @@ jobs:
         run: |
           scripts/release/apply-plan.sh "$RUNNER_TEMP/release-plan.json"
           pnpm install --lockfile-only
+          pnpm run build
+          pnpm --filter @wyrd-company/t3code-cli exec node scripts/shrinkwrap.mjs
           pnpm run fmt:check
 
       - name: Commit and tag the release
