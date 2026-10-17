@@ -22,11 +22,3 @@ it("publishes the entire generated library reference with one canonical generato
   expect(prose(read("library-reference.md"))).toContain(prose(api));
   expect(read("library-reference.md")).toContain("from docs/api.md; edit the source.");
 });
-
-it("builds and packs exactly the canonical root command surface", () => {
-  const packed = NodeFS.readFileSync(
-    new URL("../../packages/t3code-cli/commandSurface.json", import.meta.url),
-    "utf8",
-  );
-  expect(JSON.parse(packed)).toEqual(JSON.parse(read("specifications/cli-surface.json")));
-});

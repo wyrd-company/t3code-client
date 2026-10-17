@@ -34,6 +34,12 @@ proposed-design:
     Fake-tool Homebrew regressions verify that a mismatched download preserves the
     formula, HEAD and index, and that an existing installation permits only the
     preflight call before rejection.
+    The root release-foundation suite runs after dependency installation without
+    package build outputs. Native-versus-packaged CLI surface equality is checked
+    by `scripts/release/verify-package.sh` after its `pnpm pack` invokes prepack
+    and the CLI build. The comparison reads the tarball member, requires it to be
+    present and compares the complete value with the canonical root native asset.
+    Package-boundary tests supply their own archives and canonical input fixtures.
     `actionlint` and `shellcheck scripts/release/*.sh` validate workflows and scripts.
 
     Before initial publication, `task intents` validates a scratch Git repository
