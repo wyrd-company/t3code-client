@@ -83,20 +83,43 @@ proposed-design:
     output, error context, shrinkwrap and Taskfile ownership interfaces.
   recorded-cli-demonstration: |
     `task demo` starts a fresh pinned server home outside Git and renders the
-    committed `packages/t3code-cli/demo/demo.tape` to the published GIF. It clears
-    operational server/token/home overrides and both display variables. The tape
-    runs a `gpt-6-luna` prompt and thread listing. A hidden real `version --json`
-    preflight verifies the pinned server version and protocol. Package and consumer
-    checks verify the actual package versions. Captured
-    command exits, the exact generic answer and the same completed thread identity
-    must agree before the renderer succeeds. Sanitized output records actual server
-    version/protocol, owned homes, subject identity and cleanup.
+    committed `packages/t3code-cli/demo/demo.tape` to `docs/assets/demo.gif`.
+    It replaces the config and server-evidence directories with owned paths and
+    clears operational server/token/home/workspace/keep overrides and both display
+    variables inside the isolated process. Ordinary live-test overrides remain
+    available outside isolated demo/acceptance commands.
 
-    `task demo:check` repeats that real acceptance into an owned temporary GIF, so
-    exact-head verification does not replace the committed recording. Normal live
-    server overrides remain available outside isolated demo/acceptance commands.
-    `task docs` generates the library API source and published reference; published navigation tests
-    verify their metadata, local links and registered GIF asset.
+    The tape pairs a fresh named profile with the existing `--pairing-token-stdin`
+    interface. The upstream pairing credential enters stdin from an owned file;
+    credential values never enter tape commands or argv. Capture buffers CLI output
+    and removes owned credential values before forwarding it to frames or evidence.
+    Later commands resolve the authenticated paired profile for both server and
+    credential sources, without operational token overrides.
+
+    `thread start --json` returns the actual thread and run identities. The tape
+    displays that response and uses `jq` to select its thread for `thread wait`.
+    Wait must complete that same run with the generic HELLO answer. A real `run`
+    continues that thread with a distinct completed run and the same answer.
+    `project list` must include the selected generic project identity, title and
+    workspace; `thread list` must report the same thread completed. Every captured
+    built CLI command has a unique evidence id, actual arguments, sanitized stdout
+    and stderr, exit status, authenticated profile sources and server observations.
+    The verifier checks command order, exits, model, profile, project, thread, run,
+    answer and terminal-state linkage before the renderer succeeds.
+
+    A hidden real `version --json` preflight verifies the pinned server version and
+    protocol; package and consumer checks verify actual package versions. The tape
+    has no interim version frame. Owned logs are checked for credential values
+    before evidence is printed. Sanitized output records actual version/protocol,
+    owned homes, subject identities and the shared live harness's readiness roster,
+    stop observations and home removal. Its process-scope limit is defined below.
+
+    `task demo:check` repeats the real acceptance into an owned temporary GIF so
+    exact-head verification does not replace the committed recording. A recorded
+    artifact identifies its committed producer and input digests; a later artifact
+    commit must preserve those inputs. Frame and log inspection verifies content
+    and privacy. `task docs` generates the library API source and published
+    reference; navigation tests verify metadata, local links and the GIF asset.
   consolidated-command-proof: |
     Agent acceptance spends provider credit and is explicit; ordinary `task check`
     keeps agent cases skipped. To retain evidence outside the checkout:

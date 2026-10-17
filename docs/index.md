@@ -9,7 +9,10 @@ relationships:
     - releasing
 ---
 
-![t3c runs a Luna conversation and lists the thread](assets/demo.gif)
+![t3c pairs a profile, starts and waits for a thread, and lists projects](assets/demo.gif)
+
+The recording pairs a fresh profile through stdin, starts a Luna thread, waits for
+its answer, continues the conversation, and lists the selected project and thread.
 
 # Run a conversation from your terminal
 

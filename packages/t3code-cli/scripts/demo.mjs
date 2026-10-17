@@ -3,6 +3,7 @@
 //   demonstrates: command-line
 //   references: testing
 // ---
+import * as NodeCrypto from "node:crypto";
 import * as NodeChildProcess from "node:child_process";
 import * as NodeFSP from "node:fs/promises";
 import * as NodePath from "node:path";
@@ -27,6 +28,7 @@ for (const key of [
   delete process.env[key];
 process.env.TMPDIR = root;
 process.env.T3C_CONFIG_HOME = `${root}/config`;
+process.env.T3_LIVE_EVIDENCE_DIR = `${root}/server-evidence`;
 async function verifyOwnedLogs() {
   const secrets = JSON.parse(
     await NodeFSP.readFile(`${root}/secrets.json`, "utf8").catch(() => "[]"),
@@ -69,7 +71,15 @@ try {
   if (versionResult.data.server?.version !== pinned || versionResult.data.server?.protocol !== 2)
     throw new Error("Demo server does not match the pinned target.");
   console.log(
-    JSON.stringify({ actualServer: versionResult.data.server, operationalOverridesCleared: true }),
+    JSON.stringify({
+      actualServer: versionResult.data.server,
+      packages: {
+        cli: versionResult.data.cli,
+        library: versionResult.data.library,
+        target: versionResult.data.target,
+      },
+      operationalOverridesCleared: true,
+    }),
   );
   const issuer = T3Client.create({
     baseUrl: process.env.T3_LIVE_URL,
@@ -171,6 +181,19 @@ catch { process.stderr.write("Demo capture failed.\\n"); process.exitCode = 1; }
       child.once("exit", (code, signal) => resolve(signal ? 1 : (code ?? 1)));
     });
     if (code !== 0) throw new Error(`VHS failed (${code}).`);
+    const artifactPath = process.argv.includes("--check")
+      ? `${root}/demo.gif`
+      : NodePath.resolve(import.meta.dirname, "../../../docs/assets/demo.gif");
+    const artifact = await NodeFSP.readFile(artifactPath);
+    console.log(
+      JSON.stringify({
+        demoArtifact: {
+          path: artifactPath,
+          size: artifact.length,
+          sha256: NodeCrypto.createHash("sha256").update(artifact).digest("hex"),
+        },
+      }),
+    );
   }
   const commands = (await NodeFSP.readFile(`${root}/commands.jsonl`, "utf8"))
     .trim()
@@ -189,6 +212,13 @@ catch { process.stderr.write("Demo capture failed.\\n"); process.exitCode = 1; }
   } finally {
     try {
       await teardown?.();
+      const records = await NodeFSP.readdir(`${root}/server-evidence`).catch(() => []);
+      const lifecycle = [];
+      for (const file of records.filter((file) => file.endsWith(".json")))
+        lifecycle.push(
+          JSON.parse(await NodeFSP.readFile(`${root}/server-evidence/${file}`, "utf8")),
+        );
+      console.log(JSON.stringify({ demoServerLifecycle: lifecycle }));
     } finally {
       await NodeFSP.rm(root, { recursive: true, force: true });
       console.log(JSON.stringify({ demoRoot: root, ownedCleanup: "complete" }));
