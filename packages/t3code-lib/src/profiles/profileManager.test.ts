@@ -11,6 +11,7 @@ import {
   T3Client,
   T3ConnectionError,
   T3PreconditionError,
+  T3NotFoundError,
   memoryCredentialStore,
 } from "../index.ts";
 import { credentialPath, saveConfig } from "./profileConfig.ts";
@@ -228,7 +229,11 @@ describe("profile resolution", () => {
     expect(await tokenFor(resolved)).toBe("second-token");
     expect(await tokenFor(await profiles.resolve({ server: url, env: {} }))).toBe("first-token");
     expect((await profiles.getCurrent())?.name).toBe("first");
-    await expect(profiles.resolveProfile("absent")).rejects.toBeInstanceOf(T3PreconditionError);
+    await expect(profiles.resolveProfile("absent")).rejects.toBeInstanceOf(T3NotFoundError);
+    await expect(profiles.resolveProfile("absent")).rejects.toMatchObject({
+      code: "not_found",
+      reason: "profile_not_found",
+    });
   });
 
   it("reports selection sources for explicit and environment URLs", async () => {

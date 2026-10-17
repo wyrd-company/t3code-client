@@ -107,7 +107,7 @@ export class T3AuthError extends T3HttpError {
   }
 }
 
-/** 404 from HTTP; `reason` names what was missing (for example `thread_not_found`). */
+/** A missing resource from HTTP or exact local profile resolution; `reason` names what was missing. */
 export class T3NotFoundError extends T3HttpError {
   override readonly code = "not_found" as const;
 }
