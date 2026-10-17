@@ -6,6 +6,7 @@
 import * as NodeChildProcess from "node:child_process";
 import * as NodeFSP from "node:fs/promises";
 import * as NodePath from "node:path";
+import { ProfileManager, T3Client } from "@wyrd-company/t3code-lib";
 import { verifyDemoCommands } from "./demoEvidence.ts";
 import setupServer from "../../t3code-lib/test/live/globalSetup.ts";
 
@@ -26,6 +27,31 @@ for (const key of [
   delete process.env[key];
 process.env.TMPDIR = root;
 process.env.T3C_CONFIG_HOME = `${root}/config`;
+async function verifyOwnedLogs() {
+  const secrets = JSON.parse(
+    await NodeFSP.readFile(`${root}/secrets.json`, "utf8").catch(() => "[]"),
+  );
+  const resolved = await new ProfileManager({ configDir: `${root}/config` })
+    .resolve()
+    .catch(() => undefined);
+  if (resolved) secrets.push((await resolved.credentials.load()).accessToken);
+  const logPaths = [
+    `${root}/commands.jsonl`,
+    ...(process.env.T3_LIVE_HOME
+      ? [NodePath.join(process.env.T3_LIVE_HOME, "..", "server.log")]
+      : []),
+  ];
+  let scanned = 0;
+  for (const path of logPaths) {
+    const content = await NodeFSP.readFile(path, "utf8").catch(() => undefined);
+    if (content === undefined) continue;
+    scanned++;
+    if (secrets.some((secret) => secret && content.includes(secret)))
+      throw new Error("Owned demo log contains a credential; evidence withheld.");
+  }
+  console.log(JSON.stringify({ ownedLogScan: { files: scanned, secretMatches: 0 } }));
+}
+
 let teardown;
 try {
   teardown = await setupServer();
@@ -45,53 +71,119 @@ try {
   console.log(
     JSON.stringify({ actualServer: versionResult.data.server, operationalOverridesCleared: true }),
   );
+  const issuer = T3Client.create({
+    baseUrl: process.env.T3_LIVE_URL,
+    accessToken: process.env.T3_LIVE_TOKEN,
+  });
+  let credential;
+  try {
+    credential = (
+      await issuer.auth.createPairingCredential({
+        label: "demo",
+        scopes: ["orchestration:read", "orchestration:operate"],
+      })
+    ).credential;
+  } finally {
+    await issuer.close();
+  }
+  await NodeFSP.writeFile(`${root}/pairing-input`, credential + "\n", { mode: 0o600 });
+  await NodeFSP.writeFile(
+    `${root}/secrets.json`,
+    JSON.stringify([credential, process.env.T3_LIVE_TOKEN]),
+    { mode: 0o600 },
+  );
+  delete process.env.T3_SERVER_URL;
+  delete process.env.T3_TOKEN;
+  delete process.env.T3_LIVE_TOKEN;
+  process.env.DEMO_SERVER = process.env.T3_LIVE_URL;
+  process.env.DEMO_PAIRING_INPUT = `${root}/pairing-input`;
+  process.env.DEMO_PROJECT = `${root}/sample-project`;
+  await NodeFSP.mkdir(process.env.DEMO_PROJECT);
   await NodeFSP.mkdir(`${root}/bin`);
   await NodeFSP.mkdir(new URL("../../../docs/assets/", import.meta.url), { recursive: true });
   await NodeFSP.writeFile(
-    `${root}/bin/t3c`,
+    `${root}/bin/t3c.mjs`,
     `#!/usr/bin/env node
-import * as fs from "node:fs";
-let stdout = "";
-let stderr = "";
-const writeOut = process.stdout.write.bind(process.stdout);
-const writeErr = process.stderr.write.bind(process.stderr);
-process.stdout.write = (chunk, ...args) => { stdout += chunk; return writeOut(chunk, ...args); };
-process.stderr.write = (chunk, ...args) => { stderr += chunk; return writeErr(chunk, ...args); };
-process.on("exit", code => fs.appendFileSync(${JSON.stringify(root + "/commands.jsonl")}, JSON.stringify({command:process.argv.slice(2),exitCode:code,stdout,threadId:stderr.match(/Thread: ([a-f0-9-]+)/i)?.[1]})+String.fromCharCode(10)));
-await import(${JSON.stringify(cli)});
+import { captureDemoCommand } from ${JSON.stringify(new URL("./demoCapture.mjs", import.meta.url).href)};
+try { await captureDemoCommand(${JSON.stringify(cli)}, ${JSON.stringify(root)}, process.argv.slice(2)); }
+catch { process.stderr.write("Demo capture failed.\\n"); process.exitCode = 1; }
 `,
     { mode: 0o755 },
   );
-  // .mjs makes the executable shim ESM on Node 22 as well as newer Node.
-  await NodeFSP.rename(`${root}/bin/t3c`, `${root}/bin/t3c.mjs`);
   await NodeFSP.symlink("t3c.mjs", `${root}/bin/t3c`);
   console.log(
     JSON.stringify({ demoRoot: root, serverHome: process.env.T3_LIVE_HOME, model: "gpt-6-luna" }),
   );
-  const outputs = process.argv.includes("--check") ? ["--output", `${root}/demo.gif`] : [];
-  const child = NodeChildProcess.spawn("vhs", ["demo/demo.tape", ...outputs], {
-    cwd: NodePath.resolve(import.meta.dirname, ".."),
-    env: {
-      ...process.env,
-      PATH: `${root}/bin:${process.env.PATH}`,
-      DISPLAY: "",
-      WAYLAND_DISPLAY: "",
-    },
-    stdio: "inherit",
-  });
-  const code = await new Promise((resolve, reject) => {
-    child.once("error", reject);
-    child.once("exit", (code, signal) => resolve(signal ? 1 : (code ?? 1)));
-  });
-  if (code !== 0) throw new Error(`VHS failed (${code}).`);
+  if (process.argv.includes("--commands-only")) {
+    const commands = [
+      [
+        "auth",
+        "pair",
+        "--server",
+        process.env.DEMO_SERVER,
+        "--pairing-token-stdin",
+        "--name",
+        "demo",
+      ],
+      [
+        "thread",
+        "start",
+        "Reply with HELLO only.",
+        "--project-path",
+        process.env.DEMO_PROJECT,
+        "--model",
+        "gpt-6-luna",
+        "--json",
+      ],
+    ];
+    let id;
+    const execute = (args, input) =>
+      NodeChildProcess.execFileSync(`${root}/bin/t3c`, args, {
+        env: process.env,
+        encoding: "utf8",
+        ...(input ? { input } : {}),
+      });
+    for (const args of commands) {
+      const output = execute(args, args[0] === "auth" ? credential + "\n" : undefined);
+      if (args[1] === "start") id = JSON.parse(output).data.threadId;
+    }
+    for (const args of [
+      ["thread", "wait", id],
+      ["run", "Reply with HELLO only.", "--thread", id, "--model", "gpt-6-luna"],
+      ["project", "list"],
+      ["thread", "list"],
+    ])
+      execute(args);
+  } else {
+    const outputs = process.argv.includes("--check") ? ["--output", `${root}/demo.gif`] : [];
+    const child = NodeChildProcess.spawn("vhs", ["demo/demo.tape", ...outputs], {
+      cwd: NodePath.resolve(import.meta.dirname, ".."),
+      env: {
+        ...process.env,
+        PATH: `${root}/bin:${process.env.PATH}`,
+        DISPLAY: "",
+        WAYLAND_DISPLAY: "",
+      },
+      stdio: "inherit",
+    });
+    const code = await new Promise((resolve, reject) => {
+      child.once("error", reject);
+      child.once("exit", (code, signal) => resolve(signal ? 1 : (code ?? 1)));
+    });
+    if (code !== 0) throw new Error(`VHS failed (${code}).`);
+  }
   const commands = (await NodeFSP.readFile(`${root}/commands.jsonl`, "utf8"))
     .trim()
     .split("\n")
     .map((line) => JSON.parse(line));
-  const subject = verifyDemoCommands(commands);
+  const subject = verifyDemoCommands(commands, {
+    server: process.env.DEMO_SERVER,
+    project: process.env.DEMO_PROJECT,
+  });
   console.log(JSON.stringify({ demoCommands: commands, subject }));
 } finally {
   try {
+    await verifyOwnedLogs();
     const evidence = await NodeFSP.readFile(`${root}/commands.jsonl`, "utf8").catch(() => null);
     console.log(JSON.stringify({ demoCommandEvidence: evidence }));
   } finally {
