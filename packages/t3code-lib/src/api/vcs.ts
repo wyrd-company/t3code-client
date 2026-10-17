@@ -1,8 +1,13 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 import type { RpcClient } from "../rpc/client.ts";
 import type { RpcMethods } from "../rpc/registry.ts";
 import type { RpcPayload, RpcSuccess } from "../rpc/spec.ts";
 import { unwrapStreamItems, type DecodedStreamItem } from "./streamItems.ts";
 
+/** Repository references, worktrees and status. */
 export class VcsApi {
   readonly rpc: RpcClient<RpcMethods>;
 
@@ -10,6 +15,7 @@ export class VcsApi {
     this.rpc = rpc;
   }
 
+  /** List repository references. */
   listRefs(
     input: RpcPayload<RpcMethods, "vcs.listRefs">,
     signal?: AbortSignal,
@@ -17,6 +23,7 @@ export class VcsApi {
     return this.rpc.call("vcs.listRefs", input, signal);
   }
 
+  /** Refresh repository status. */
   status(
     input: RpcPayload<RpcMethods, "vcs.refreshStatus">,
     signal?: AbortSignal,
@@ -24,6 +31,7 @@ export class VcsApi {
     return this.rpc.call("vcs.refreshStatus", input, signal);
   }
 
+  /** Create a worktree through the server. */
   createWorktree(
     input: RpcPayload<RpcMethods, "vcs.createWorktree">,
     signal?: AbortSignal,
@@ -31,6 +39,7 @@ export class VcsApi {
     return this.rpc.call("vcs.createWorktree", input, signal);
   }
 
+  /** Remove a worktree through the server. */
   removeWorktree(
     input: RpcPayload<RpcMethods, "vcs.removeWorktree">,
     signal?: AbortSignal,
@@ -38,6 +47,7 @@ export class VcsApi {
     return this.rpc.call("vcs.removeWorktree", input, signal);
   }
 
+  /** Create a repository reference. */
   createRef(
     input: RpcPayload<RpcMethods, "vcs.createRef">,
     signal?: AbortSignal,
@@ -45,6 +55,7 @@ export class VcsApi {
     return this.rpc.call("vcs.createRef", input, signal);
   }
 
+  /** Switch the selected repository reference. */
   switchRef(
     input: RpcPayload<RpcMethods, "vcs.switchRef">,
     signal?: AbortSignal,
@@ -52,6 +63,7 @@ export class VcsApi {
     return this.rpc.call("vcs.switchRef", input, signal);
   }
 
+  /** Subscribe to repository status changes. */
   watchStatus(
     input: RpcPayload<RpcMethods, "subscribeVcsStatus">,
     options?: { readonly signal?: AbortSignal },

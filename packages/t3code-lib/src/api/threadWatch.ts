@@ -50,6 +50,7 @@ export type ThreadWatchRpc = Pick<RpcClient<RpcMethods>, "stream"> & {
   readonly connection: Pick<RpcClient<RpcMethods>["connection"], "state">;
 };
 
+/** Watch a thread with replay, reconnection and derived run events. */
 export function watchThread(
   rpc: ThreadWatchRpc,
   threadId: ThreadId,

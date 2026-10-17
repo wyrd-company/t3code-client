@@ -1,0 +1,2379 @@
+---
+relationships:
+  references: [design, profiles]
+---
+
+# Library API reference
+
+Generated with `task lib:docs`. Import public symbols from `@wyrd-company/t3code-lib`.
+See [profiles](profiles.md) for configuration and [design](design.md) for the library contract.
+TypeScript declarations ship with the package.
+
+## Classes
+
+<dl>
+<dt><a href="#T3Client">T3Client</a></dt>
+<dd><p>Client composition root for HTTP, auth, RPC and server facades.</p>
+</dd>
+<dt><a href="#T3Error">T3Error</a></dt>
+<dd><p>Base class for library failures with stable error codes.</p>
+</dd>
+<dt><a href="#T3HttpError">T3HttpError</a></dt>
+<dd><p>A non-2xx HTTP response that is not one of the more specific classes below.</p>
+</dd>
+<dt><a href="#T3AuthError">T3AuthError</a></dt>
+<dd><p>401 (auth_invalid) or 403 (insufficient_scope), from HTTP or detected locally.</p>
+</dd>
+<dt><a href="#T3NotFoundError">T3NotFoundError</a></dt>
+<dd><p>404 from HTTP; <code>reason</code> names what was missing (for example <code>thread_not_found</code>).</p>
+</dd>
+<dt><a href="#T3RpcError">T3RpcError</a></dt>
+<dd><p>The server answered an RPC with a tagged failure (<code>Exit</code> → <code>Fail</code>).</p>
+</dd>
+<dt><a href="#T3RpcDefectError">T3RpcDefectError</a></dt>
+<dd><p>The server died while handling an RPC (<code>Exit</code> → <code>Die</code>), often a payload decode failure.</p>
+</dd>
+<dt><a href="#T3ConnectionError">T3ConnectionError</a></dt>
+<dd><p>The socket is not usable: it failed to open, closed, timed out, or spoke garbage.</p>
+</dd>
+<dt><a href="#T3DecodeError">T3DecodeError</a></dt>
+<dd><p>A server payload did not match the schema this library expects.</p>
+</dd>
+<dt><a href="#T3PreconditionError">T3PreconditionError</a></dt>
+<dd><p>The caller asked for something this client can tell is wrong before talking to the server.</p>
+</dd>
+<dt><a href="#T3InterruptedError">T3InterruptedError</a></dt>
+<dd><p>A call or stream was cancelled by the caller (abort signal or early return).</p>
+</dd>
+<dt><a href="#T3TimeoutError">T3TimeoutError</a></dt>
+<dd><p>A caller-selected wait exceeded its time bound.</p>
+</dd>
+<dt><a href="#AuthClient">AuthClient</a></dt>
+<dd><p>Auth control plane and the sole owner of credential-store access.</p>
+</dd>
+<dt><a href="#ProjectsApi">ProjectsApi</a></dt>
+<dd><p>Project discovery, creation, mutations and files.</p>
+</dd>
+<dt><a href="#ThreadsApi">ThreadsApi</a></dt>
+<dd><p>Thread lifecycle, history, runs and pending requests.</p>
+</dd>
+<dt><a href="#ShellApi">ShellApi</a></dt>
+<dd><p>Live and archived cross-thread snapshots.</p>
+</dd>
+<dt><a href="#ServerApi">ServerApi</a></dt>
+<dd><p>Server environment, configuration and providers.</p>
+</dd>
+<dt><a href="#VcsApi">VcsApi</a></dt>
+<dd><p>Repository references, worktrees and status.</p>
+</dd>
+<dt><a href="#TerminalApi">TerminalApi</a></dt>
+<dd><p>Server terminal operations and event streams.</p>
+</dd>
+<dt><a href="#CommandDispatcher">CommandDispatcher</a></dt>
+<dd><p>Validated orchestration dispatch and bookkeeping ids.</p>
+</dd>
+<dt><a href="#RpcClient">RpcClient</a></dt>
+<dd><p>Typed RPC calls and streams with scope checks.</p>
+</dd>
+<dt><a href="#ProfileManager">ProfileManager</a></dt>
+<dd><p>Named server configuration shared by command-line and MCP consumers.</p>
+</dd>
+</dl>
+
+## Constants
+
+<dl>
+<dt><a href="#AuthEnvironmentScope">AuthEnvironmentScope</a></dt>
+<dd><p>Strict: validates the scopes a caller asks for.</p>
+</dd>
+<dt><a href="#AuthLegacyScopes">AuthLegacyScopes</a></dt>
+<dd><p>The scopes clients released before granular permissions knew. Servers
+report <code>scopes</code> filtered to these and the full grant as <code>permissions</code>.</p>
+</dd>
+<dt><a href="#threadId">threadId</a></dt>
+<dd><p>Brand a trusted string without validation. Use for ids this process generated or already decoded.</p>
+</dd>
+<dt><a href="#ORCHESTRATION_PROTOCOL_VERSION">ORCHESTRATION_PROTOCOL_VERSION</a></dt>
+<dd><p>The orchestration wire protocol this client speaks; the server refuses others.</p>
+</dd>
+<dt><a href="#ORCHESTRATION_PROTOCOL_QUERY_PARAM">ORCHESTRATION_PROTOCOL_QUERY_PARAM</a></dt>
+<dd><p>Query parameter on the <code>/ws</code> upgrade that names the protocol.</p>
+</dd>
+<dt><a href="#ORCHESTRATION_PROTOCOL_HEADER">ORCHESTRATION_PROTOCOL_HEADER</a></dt>
+<dd><p>Header on orchestration HTTP routes that names the protocol.</p>
+</dd>
+<dt><a href="#OrchestrationV2ThreadBoundedSnapshot">OrchestrationV2ThreadBoundedSnapshot</a></dt>
+<dd><p>A bounded cold open: full control-plane arrays with a recent window of timeline rows.</p>
+</dd>
+<dt><a href="#OrchestrationV2ThreadHistoryPage">OrchestrationV2ThreadHistoryPage</a></dt>
+<dd><p>An older timeline page for progressive history. Rows are chronological.</p>
+</dd>
+<dt><a href="#OrchestrationV2ThreadTranscript">OrchestrationV2ThreadTranscript</a></dt>
+<dd><p>The thread&#39;s visible timeline in one read, for handing a conversation to another reader.</p>
+</dd>
+<dt><a href="#OrchestrationV2RuntimeRequest">OrchestrationV2RuntimeRequest</a></dt>
+<dd><p>An approval, question, or other request the provider raised and how it was answered.</p>
+</dd>
+<dt><a href="#OrchestrationV2TurnItem">OrchestrationV2TurnItem</a></dt>
+<dd><p>A turn item of any type, including a type this build does not know.</p>
+</dd>
+<dt><a href="#OrchestrationProjectShell">OrchestrationProjectShell</a></dt>
+<dd><p>Project summary shared by the shell and the application project APIs.</p>
+</dd>
+<dt><a href="#ProjectMutation">ProjectMutation</a></dt>
+<dd><p>What <code>projects.mutate</code> and <code>POST /api/projects/mutate</code> accept.</p>
+</dd>
+<dt><a href="#ModelSelection">ModelSelection</a></dt>
+<dd><p>The historical <code>{ provider, model }</code> shape still decodes; <code>instanceId</code> is the routing key.</p>
+</dd>
+<dt><a href="#ProviderUserInputAnswer">ProviderUserInputAnswer</a></dt>
+<dd><p>One question&#39;s answer: any JSON value, as the contracts allow. The provider
+adapters act on a single choice (a string), several choices (a string
+array), or Codex&#39;s <code>{ answers: string[] }</code>.</p>
+</dd>
+<dt><a href="#RpcErrorRecord">RpcErrorRecord</a></dt>
+<dd><p>Every tagged failure a registered RPC method declares. A failure with an
+unrecognised <code>_tag</code> decodes as <code>{ unknown: true, raw }</code>. Use
+<code>decodeRpcErrorRecord</code> to decode without ever failing.</p>
+</dd>
+<dt><a href="#TARGET_T3_CODE_VERSION">TARGET_T3_CODE_VERSION</a></dt>
+<dd><p>T3 Code release targeted by this library, independent of the library version.</p>
+</dd>
+<dt><a href="#AuthReviewWriteScope">AuthReviewWriteScope</a></dt>
+<dd><p>Retained for decoding existing credentials; grants no current RPC access.</p>
+</dd>
+</dl>
+
+## Functions
+
+<dl>
+<dt><a href="#isT3Error">isT3Error()</a></dt>
+<dd><p>Test whether a value belongs to the library error hierarchy.</p>
+<pre><code class="language-ts">export function isT3Error(value: unknown): value is T3Error;
+</code></pre>
+</dd>
+<dt><a href="#memoryCredentialStore">memoryCredentialStore()</a></dt>
+<dd><p>Create an isolated in-memory credential store.</p>
+<pre><code class="language-ts">export function memoryCredentialStore(initial: StoredCredentials = {}): CredentialStore;
+</code></pre>
+</dd>
+<dt><a href="#fileCredentialStore">fileCredentialStore()</a></dt>
+<dd><p>Create an atomic JSON credential store with 0600 files; the parent directory must exist.</p>
+<pre><code class="language-ts">export function fileCredentialStore(path: string): CredentialStore;
+</code></pre>
+</dd>
+<dt><a href="#watchAccess">watchAccess()</a></dt>
+<dd><p>Watch changes to access grants and authenticated clients.</p>
+<pre><code class="language-ts">export function watchAccess(
+  rpc: RpcClient&lt;RpcMethods&gt;,
+  options?: { readonly signal?: AbortSignal },
+): AsyncIterable&lt;DecodedStreamItem&lt;AuthAccessStreamEvent&gt;&gt;;
+</code></pre>
+</dd>
+<dt><a href="#applyThreadEvent">applyThreadEvent()</a></dt>
+<dd><p>Applies one event to the projection. Events for other threads and unknown events leave it unchanged.</p>
+<pre><code class="language-ts">export function applyThreadEvent(
+  projection: Projection,
+  event: OrchestrationV2DomainEvent,
+): Projection;
+</code></pre>
+</dd>
+<dt><a href="#pendingRequests">pendingRequests()</a></dt>
+<dd><p>Requests the provider raised that nobody has answered, oldest first.</p>
+<pre><code class="language-ts">export function pendingRequests(
+  projection: Pick&lt;OrchestrationV2ThreadProjection, &quot;runtimeRequests&quot; | &quot;turnItems&quot;&gt;,
+): PendingRequest[];
+</code></pre>
+</dd>
+<dt><a href="#runOutcome">runOutcome()</a></dt>
+<dd><p>The outcome of a settled run; <code>undefined</code> while the run is not terminal.</p>
+<pre><code class="language-ts">export function runOutcome(
+  projection: OrchestrationV2ThreadProjection,
+  run: OrchestrationV2Run,
+): TurnOutcome | undefined;
+</code></pre>
+</dd>
+<dt><a href="#assistantMessageForRun">assistantMessageForRun()</a></dt>
+<dd><p>The last assistant message of a run; a finished message is preferred over a streaming one.</p>
+<pre><code class="language-ts">export function assistantMessageForRun(
+  projection: Pick&lt;OrchestrationV2ThreadProjection, &quot;messages&quot;&gt;,
+  runId: RunId,
+): OrchestrationV2ConversationMessage | undefined;
+</code></pre>
+</dd>
+<dt><a href="#activeRun">activeRun()</a></dt>
+<dd><p>The run an interrupt targets: the highest-ordinal run that is preparing,
+starting, running, or waiting. A queued run has not started, so it is not
+the active run.</p>
+<pre><code class="language-ts">export function activeRun(
+  projection: Pick&lt;OrchestrationV2ThreadProjection, &quot;runs&quot;&gt;,
+): OrchestrationV2Run | undefined;
+</code></pre>
+</dd>
+<dt><a href="#threadPhase">threadPhase()</a></dt>
+<dd><p>Pure classification of a shell thread.</p>
+<pre><code class="language-ts">export function threadPhase(shell: OrchestrationV2ThreadShell): ThreadPhase;
+</code></pre>
+</dd>
+<dt><a href="#watchThread">watchThread()</a></dt>
+<dd><p>Watch a thread with replay, reconnection and derived run events.</p>
+<pre><code class="language-ts">export function watchThread(
+  rpc: ThreadWatchRpc,
+  threadId: ThreadId,
+  options: ThreadWatchOptions = {},
+): AsyncIterable&lt;ThreadWatchItem&gt;;
+</code></pre>
+</dd>
+<dt><a href="#grantedScopes">grantedScopes()</a></dt>
+<dd><p>Read granular permissions when present, otherwise the legacy scopes.</p>
+<pre><code class="language-ts">export function grantedScopes(response: {
+  readonly scopes?: readonly AuthGrantedScope[] | undefined;
+  readonly permissions?: readonly AuthGrantedScope[] | undefined;
+}): AuthGrantedScope[];
+</code></pre>
+</dd>
+<dt><a href="#consoleLogger">consoleLogger()</a></dt>
+<dd><p>Create a logger that writes prefixed messages to the Node console.</p>
+<pre><code class="language-ts">export function consoleLogger(prefix = &quot;t3code-client&quot;): Logger;
+</code></pre>
+</dd>
+<dt><a href="#isRunTerminalStatus">isRunTerminalStatus()</a></dt>
+<dd><p>Narrow a run status to a terminal status.</p>
+<pre><code class="language-ts">export function isRunTerminalStatus(status: string): status is OrchestrationV2RunTerminalStatus;
+</code></pre>
+</dd>
+<dt><a href="#isRunActiveStatus">isRunActiveStatus()</a></dt>
+<dd><p>Queued runs wait their turn; preparing, starting, running, and waiting runs hold the thread.</p>
+<pre><code class="language-ts">export function isRunActiveStatus(status: string): boolean;
+</code></pre>
+</dd>
+<dt><a href="#isTurnItemOfType">isTurnItemOfType()</a></dt>
+<dd><p>Narrow a known timeline item to the requested item type.</p>
+<pre><code class="language-ts">export function isTurnItemOfType&lt;const T extends OrchestrationV2TurnItemType&gt;(
+  item: OrchestrationV2TurnItem,
+  type: T,
+): item is OrchestrationV2TurnItemOfType&lt;T&gt;;
+</code></pre>
+</dd>
+<dt><a href="#isRpcErrorOfTag">isRpcErrorOfTag()</a></dt>
+<dd><p>Narrow a decoded RPC failure to a recognized tagged error.</p>
+<pre><code class="language-ts">export function isRpcErrorOfTag&lt;const Tag extends RpcErrorTag&gt;(
+  record: RpcErrorRecord,
+  tag: Tag,
+): record is RpcErrorOfTag&lt;Tag&gt;;
+</code></pre>
+</dd>
+<dt><a href="#hasScope">hasScope()</a></dt>
+<dd><p><code>granted</code> is what the server reported and may hold scopes this client does not know.</p>
+<pre><code class="language-ts">export function hasScope(
+  granted: readonly AuthGrantedScope[] | undefined,
+  required: AuthEnvironmentScope,
+): boolean;
+</code></pre>
+</dd>
+<dt><a href="#ensureScopes">ensureScopes()</a></dt>
+<dd><p>Require every named scope; throw T3AuthError for the first missing scope.</p>
+<pre><code class="language-ts">export function ensureScopes(
+  granted: readonly AuthGrantedScope[] | undefined,
+  required: readonly AuthEnvironmentScope[],
+  context = &quot;operation&quot;,
+): void;
+</code></pre>
+</dd>
+</dl>
+
+<a name="T3Client"></a>
+
+## T3Client
+
+Client composition root for HTTP, auth, RPC and server facades.
+
+**Kind**: global class
+
+- [T3Client](#T3Client)
+  - _instance_
+    - [.connect()](#T3Client+connect)
+    - [.close()](#T3Client+close)
+  - _static_
+    - [.create()](#T3Client.create)
+
+<a name="T3Client+connect"></a>
+
+### t3Client.connect()
+
+Optional eager connect; every RPC connects on demand otherwise.
+
+```ts
+connect(signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>T3Client</code>](#T3Client)  
+<a name="T3Client+close"></a>
+
+### t3Client.close()
+
+Stops reconnecting, fails everything in flight, and closes the socket.
+
+```ts
+close(): Promise<void>;
+```
+
+**Kind**: instance method of [<code>T3Client</code>](#T3Client)  
+<a name="T3Client.create"></a>
+
+### T3Client.create()
+
+Compose a client with lazy connections and the selected credential store.
+
+```ts
+static create(options: T3ClientOptions): T3Client;
+```
+
+**Kind**: static method of [<code>T3Client</code>](#T3Client)  
+<a name="T3Error"></a>
+
+## T3Error
+
+Base class for library failures with stable error codes.
+
+**Kind**: global class  
+<a name="T3HttpError"></a>
+
+## T3HttpError
+
+A non-2xx HTTP response that is not one of the more specific classes below.
+
+**Kind**: global class  
+<a name="T3AuthError"></a>
+
+## T3AuthError
+
+401 (auth_invalid) or 403 (insufficient_scope), from HTTP or detected locally.
+
+**Kind**: global class  
+<a name="T3AuthError.insufficientScope"></a>
+
+### T3AuthError.insufficientScope()
+
+A scope check that failed before any request was sent.
+
+```ts
+static insufficientScope(requiredScope: string, context: string): T3AuthError;
+```
+
+**Kind**: static method of [<code>T3AuthError</code>](#T3AuthError)  
+<a name="T3NotFoundError"></a>
+
+## T3NotFoundError
+
+404 from HTTP; `reason` names what was missing (for example `thread_not_found`).
+
+**Kind**: global class  
+<a name="T3RpcError"></a>
+
+## T3RpcError
+
+The server answered an RPC with a tagged failure (`Exit` → `Fail`).
+
+**Kind**: global class
+
+- [T3RpcError](#T3RpcError)
+  - [.tag](#T3RpcError+tag)
+  - [.detail](#T3RpcError+detail)
+  - [.record](#T3RpcError+record)
+  - [.is()](#T3RpcError+is)
+
+<a name="T3RpcError+tag"></a>
+
+### t3RpcError.tag
+
+The server error's `_tag`, for example `OrchestrationDispatchCommandError`.
+
+**Kind**: instance property of [<code>T3RpcError</code>](#T3RpcError)  
+<a name="T3RpcError+detail"></a>
+
+### t3RpcError.detail
+
+The whole error record as received.
+
+**Kind**: instance property of [<code>T3RpcError</code>](#T3RpcError)  
+<a name="T3RpcError+record"></a>
+
+### t3RpcError.record
+
+The error record decoded against the method's declared error schemas.
+`{ unknown: true, raw }` when the tag is not recognised or its fields do
+not match. Narrow it with `is`.
+
+**Kind**: instance property of [<code>T3RpcError</code>](#T3RpcError)  
+<a name="T3RpcError+is"></a>
+
+### t3RpcError.is()
+
+`true` when the failure is a recognised `tag` whose fields matched its schema.
+
+```ts
+is<const Tag extends RpcErrorTag>(
+    tag: Tag,
+  ): this is T3RpcError & { readonly record: RpcErrorOfTag<Tag> };
+```
+
+**Kind**: instance method of [<code>T3RpcError</code>](#T3RpcError)  
+<a name="T3RpcDefectError"></a>
+
+## T3RpcDefectError
+
+The server died while handling an RPC (`Exit` → `Die`), often a payload decode failure.
+
+**Kind**: global class  
+<a name="T3ConnectionError"></a>
+
+## T3ConnectionError
+
+The socket is not usable: it failed to open, closed, timed out, or spoke garbage.
+
+**Kind**: global class  
+<a name="T3DecodeError"></a>
+
+## T3DecodeError
+
+A server payload did not match the schema this library expects.
+
+**Kind**: global class
+
+- [T3DecodeError](#T3DecodeError)
+  - [.source](#T3DecodeError+source)
+  - [.raw](#T3DecodeError+raw)
+
+<a name="T3DecodeError+source"></a>
+
+### t3DecodeError.source
+
+Where the payload came from, for example `orchestration.subscribeThread` or `GET /api/orchestration/shell`.
+
+**Kind**: instance property of [<code>T3DecodeError</code>](#T3DecodeError)  
+<a name="T3DecodeError+raw"></a>
+
+### t3DecodeError.raw
+
+The payload that failed to decode, with credential-shaped values redacted.
+
+**Kind**: instance property of [<code>T3DecodeError</code>](#T3DecodeError)  
+<a name="T3PreconditionError"></a>
+
+## T3PreconditionError
+
+The caller asked for something this client can tell is wrong before talking to the server.
+
+**Kind**: global class  
+<a name="T3InterruptedError"></a>
+
+## T3InterruptedError
+
+A call or stream was cancelled by the caller (abort signal or early return).
+
+**Kind**: global class  
+<a name="T3TimeoutError"></a>
+
+## T3TimeoutError
+
+A caller-selected wait exceeded its time bound.
+
+**Kind**: global class  
+<a name="AuthClient"></a>
+
+## AuthClient
+
+Auth control plane and the sole owner of credential-store access.
+
+**Kind**: global class
+
+- [AuthClient](#AuthClient)
+  - [.credentialsVersion](#AuthClient+credentialsVersion)
+  - [.onCredentialsChange()](#AuthClient+onCredentialsChange)
+  - [.scopesSync()](#AuthClient+scopesSync)
+  - [.descriptor()](#AuthClient+descriptor)
+  - [.sessionState()](#AuthClient+sessionState)
+  - [.exchangePairingToken()](#AuthClient+exchangePairingToken)
+  - [.setAccessToken()](#AuthClient+setAccessToken)
+  - [.clearCredentials()](#AuthClient+clearCredentials)
+  - [.websocketTicket()](#AuthClient+websocketTicket)
+  - [.createPairingCredential()](#AuthClient+createPairingCredential)
+  - [.listPairingLinks()](#AuthClient+listPairingLinks)
+  - [.revokePairingLink()](#AuthClient+revokePairingLink)
+  - [.listClients()](#AuthClient+listClients)
+  - [.revokeClient()](#AuthClient+revokeClient)
+  - [.revokeOtherClients()](#AuthClient+revokeOtherClients)
+  - [.currentAccessToken()](#AuthClient+currentAccessToken)
+  - [.currentScopes()](#AuthClient+currentScopes)
+  - [.hasScope()](#AuthClient+hasScope)
+  - [.ensureScopes()](#AuthClient+ensureScopes)
+
+<a name="AuthClient+credentialsVersion"></a>
+
+### authClient.credentialsVersion
+
+Increments every time this client saves or clears a different credential.
+
+```ts
+get credentialsVersion(): number;
+```
+
+**Kind**: instance property of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+onCredentialsChange"></a>
+
+### authClient.onCredentialsChange()
+
+Called after every change to the stored credential made through this client.
+
+```ts
+onCredentialsChange(handler: () => void): () => void;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+scopesSync"></a>
+
+### authClient.scopesSync()
+
+Scopes of the last credential loaded or saved; `undefined` until one is known.
+
+```ts
+scopesSync(): AuthGrantedScopeType[] | undefined;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+descriptor"></a>
+
+### authClient.descriptor()
+
+Read the public environment descriptor without authentication.
+
+```ts
+descriptor(signal?: AbortSignal): Promise<ExecutionEnvironmentDescriptorType>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+sessionState"></a>
+
+### authClient.sessionState()
+
+Read the session state using the stored token when present.
+
+```ts
+sessionState(signal?: AbortSignal): Promise<AuthSessionStateType>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+exchangePairingToken"></a>
+
+### authClient.exchangePairingToken()
+
+Exchange a single-use pairing token and save the resulting credential.
+
+```ts
+async exchangePairingToken(
+    pairingToken: string,
+    options: ExchangePairingTokenOptions = {},
+  ): Promise<AuthAccessTokenResultType>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+setAccessToken"></a>
+
+### authClient.setAccessToken()
+
+Validate an issued token before saving its session metadata.
+
+```ts
+async setAccessToken(token: string): Promise<AuthSessionStateType>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+clearCredentials"></a>
+
+### authClient.clearCredentials()
+
+Forgets the stored credential.
+
+```ts
+async clearCredentials(): Promise<void>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+websocketTicket"></a>
+
+### authClient.websocketTicket()
+
+Issue a short-lived WebSocket ticket for the stored credential.
+
+```ts
+websocketTicket(signal?: AbortSignal): Promise<AuthWebSocketTicketResultType>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+createPairingCredential"></a>
+
+### authClient.createPairingCredential()
+
+Create a pairing credential with the requested scopes.
+
+```ts
+createPairingCredential(
+    input: AuthCreatePairingCredentialInputType,
+  ): Promise<AuthPairingCredentialResultType>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+listPairingLinks"></a>
+
+### authClient.listPairingLinks()
+
+List pairing links visible to this session.
+
+```ts
+listPairingLinks(): Promise<AuthPairingLinkType[]>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+revokePairingLink"></a>
+
+### authClient.revokePairingLink()
+
+Revoke a pairing link; return whether it was revoked.
+
+```ts
+async revokePairingLink(id: string): Promise<boolean>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+listClients"></a>
+
+### authClient.listClients()
+
+List authenticated client sessions.
+
+```ts
+listClients(): Promise<AuthClientSessionType[]>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+revokeClient"></a>
+
+### authClient.revokeClient()
+
+Revoke the selected client session.
+
+```ts
+async revokeClient(sessionId: AuthSessionId): Promise<boolean>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+revokeOtherClients"></a>
+
+### authClient.revokeOtherClients()
+
+Revoke other sessions; return the number revoked.
+
+```ts
+async revokeOtherClients(): Promise<number>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+currentAccessToken"></a>
+
+### authClient.currentAccessToken()
+
+Load the current bearer token through the credential store.
+
+```ts
+async currentAccessToken(): Promise<string | undefined>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+currentScopes"></a>
+
+### authClient.currentScopes()
+
+Load and return the scopes granted to the current credential.
+
+```ts
+async currentScopes(): Promise<AuthGrantedScopeType[] | undefined>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+hasScope"></a>
+
+### authClient.hasScope()
+
+Check whether the credential grants the requested scope.
+
+```ts
+async hasScope(scope: AuthEnvironmentScopeType): Promise<boolean>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+ensureScopes"></a>
+
+### authClient.ensureScopes()
+
+Throw T3AuthError when a required scope is missing.
+
+```ts
+async ensureScopes(required: AuthEnvironmentScopeType[]): Promise<void>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="ProjectsApi"></a>
+
+## ProjectsApi
+
+Project discovery, creation, mutations and files.
+
+**Kind**: global class
+
+- [ProjectsApi](#ProjectsApi)
+  - [.list()](#ProjectsApi+list)
+  - [.snapshot()](#ProjectsApi+snapshot)
+  - [.get()](#ProjectsApi+get)
+  - [.findByWorkspaceRoot()](#ProjectsApi+findByWorkspaceRoot)
+  - [.create()](#ProjectsApi+create)
+  - [.ensure()](#ProjectsApi+ensure)
+  - [.ensureScratch()](#ProjectsApi+ensureScratch)
+  - [.createNew()](#ProjectsApi+createNew)
+  - [.update()](#ProjectsApi+update)
+  - [.delete()](#ProjectsApi+delete)
+
+<a name="ProjectsApi+list"></a>
+
+### projectsApi.list()
+
+List active project summaries from the shell snapshot.
+
+```ts
+async list(signal?: AbortSignal): Promise<OrchestrationProjectShell[]>;
+```
+
+**Kind**: instance method of [<code>ProjectsApi</code>](#ProjectsApi)  
+<a name="ProjectsApi+snapshot"></a>
+
+### projectsApi.snapshot()
+
+The full project records over `GET /api/projects`.
+
+```ts
+snapshot(signal?: AbortSignal): Promise<ProjectSnapshot>;
+```
+
+**Kind**: instance method of [<code>ProjectsApi</code>](#ProjectsApi)  
+<a name="ProjectsApi+get"></a>
+
+### projectsApi.get()
+
+Find a project summary by id; return undefined when absent.
+
+```ts
+async get(
+    projectId: ProjectId,
+    signal?: AbortSignal,
+  ): Promise<OrchestrationProjectShell | undefined>;
+```
+
+**Kind**: instance method of [<code>ProjectsApi</code>](#ProjectsApi)  
+<a name="ProjectsApi+findByWorkspaceRoot"></a>
+
+### projectsApi.findByWorkspaceRoot()
+
+Find a project using its normalized absolute workspace root.
+
+```ts
+async findByWorkspaceRoot(
+    workspaceRoot: string,
+    signal?: AbortSignal,
+  ): Promise<OrchestrationProjectShell | undefined>;
+```
+
+**Kind**: instance method of [<code>ProjectsApi</code>](#ProjectsApi)  
+<a name="ProjectsApi+create"></a>
+
+### projectsApi.create()
+
+Create a project with a generated id unless the caller supplies one.
+
+```ts
+create(input: ProjectCreateInput, signal?: AbortSignal): Promise<Project>;
+```
+
+**Kind**: instance method of [<code>ProjectsApi</code>](#ProjectsApi)  
+<a name="ProjectsApi+ensure"></a>
+
+### projectsApi.ensure()
+
+Finds the project for `workspaceRoot` or creates it; renames it only when the title differs.
+
+```ts
+async ensure(
+    input: ProjectEnsureInput,
+    signal?: AbortSignal,
+  ): Promise<OrchestrationProjectShell>;
+```
+
+**Kind**: instance method of [<code>ProjectsApi</code>](#ProjectsApi)  
+<a name="ProjectsApi+ensureScratch"></a>
+
+### projectsApi.ensureScratch()
+
+Finds or creates the environment's Scratch project, rooted at
+`ServerConfig.scratchWorkspaceRoot`. Fails with
+`OrchestrationDispatchCommandError` when the server offers no Scratch folder.
+
+```ts
+ensureScratch(signal?: AbortSignal): Promise<ProjectEnsureScratchResult>;
+```
+
+**Kind**: instance method of [<code>ProjectsApi</code>](#ProjectsApi)  
+<a name="ProjectsApi+createNew"></a>
+
+### projectsApi.createNew()
+
+Creates a project from just a name: the server makes a folder under
+`ServerConfig.newProjectsRoot` with a first commit, then the project.
+`commitError` says why the commit failed; the project exists either way.
+
+```ts
+createNew(input: ProjectCreateNewInput, signal?: AbortSignal): Promise<ProjectCreateNewResult>;
+```
+
+**Kind**: instance method of [<code>ProjectsApi</code>](#ProjectsApi)  
+<a name="ProjectsApi+update"></a>
+
+### projectsApi.update()
+
+Update the selected project metadata.
+
+```ts
+update(projectId: ProjectId, patch: ProjectMetaUpdate, signal?: AbortSignal): Promise<Project>;
+```
+
+**Kind**: instance method of [<code>ProjectsApi</code>](#ProjectsApi)  
+<a name="ProjectsApi+delete"></a>
+
+### projectsApi.delete()
+
+Resolves when the project is gone, including when it never existed.
+
+```ts
+async delete(
+    projectId: ProjectId,
+    options: { readonly force?: boolean } = {},
+    signal?: AbortSignal,
+  ): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ProjectsApi</code>](#ProjectsApi)  
+<a name="ThreadsApi"></a>
+
+## ThreadsApi
+
+Thread lifecycle, history, runs and pending requests.
+
+**Kind**: global class
+
+- [ThreadsApi](#ThreadsApi)
+  - [.list()](#ThreadsApi+list)
+  - [.get()](#ThreadsApi+get)
+  - [.detail()](#ThreadsApi+detail)
+  - [.projection()](#ThreadsApi+projection)
+  - [.historyPage()](#ThreadsApi+historyPage)
+  - [.transcript()](#ThreadsApi+transcript)
+  - [.create()](#ThreadsApi+create)
+  - [.ensure()](#ThreadsApi+ensure)
+  - [.launch()](#ThreadsApi+launch)
+  - [.update()](#ThreadsApi+update)
+  - [.archive()](#ThreadsApi+archive)
+  - [.unarchive()](#ThreadsApi+unarchive)
+  - [.settle()](#ThreadsApi+settle)
+  - [.unsettle()](#ThreadsApi+unsettle)
+  - [.delete()](#ThreadsApi+delete)
+  - [.setRuntimeMode()](#ThreadsApi+setRuntimeMode)
+  - [.setInteractionMode()](#ThreadsApi+setInteractionMode)
+  - [.setModelSelection()](#ThreadsApi+setModelSelection)
+  - [.startTurn()](#ThreadsApi+startTurn)
+  - [.interrupt()](#ThreadsApi+interrupt)
+  - [.stop()](#ThreadsApi+stop)
+  - [.respondToApproval()](#ThreadsApi+respondToApproval)
+  - [.respondToUserInput()](#ThreadsApi+respondToUserInput)
+  - [.dismissUserInput()](#ThreadsApi+dismissUserInput)
+  - [.pendingRequests()](#ThreadsApi+pendingRequests)
+  - [.watch()](#ThreadsApi+watch)
+  - [.phase()](#ThreadsApi+phase)
+  - [.dispatch()](#ThreadsApi+dispatch)
+
+<a name="ThreadsApi+list"></a>
+
+### threadsApi.list()
+
+Active threads from the shell; with `includeArchived`, archived threads
+as well, read from the archived shell over RPC.
+
+```ts
+list(
+    options: ThreadListOptions = {},
+    signal?: AbortSignal,
+  ): Promise<OrchestrationV2ThreadShell[]>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+get"></a>
+
+### threadsApi.get()
+
+Active threads first; archived threads are consulted only when the id is not active.
+
+```ts
+get(threadId: ThreadId, signal?: AbortSignal): Promise<OrchestrationV2ThreadShell | undefined>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+detail"></a>
+
+### threadsApi.detail()
+
+The full thread over HTTP. Raises `T3NotFoundError` when the thread does not exist.
+
+```ts
+detail(threadId: ThreadId, signal?: AbortSignal): Promise<OrchestrationV2ThreadDetailSnapshot>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+projection"></a>
+
+### threadsApi.projection()
+
+The thread's projection over RPC, with a bounded timeline window.
+
+```ts
+projection(threadId: ThreadId, signal?: AbortSignal): Promise<OrchestrationV2ThreadProjection>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+historyPage"></a>
+
+### threadsApi.historyPage()
+
+An older timeline page for a bounded snapshot's `historyCursor`.
+`throughEntryId` extends the page until it reaches that entry; the
+`conversation` view keeps only conversation rows.
+
+```ts
+historyPage(
+    threadId: ThreadId,
+    cursor: string,
+    options: ThreadHistoryPageOptions = {},
+    signal?: AbortSignal,
+  ): Promise<OrchestrationV2ThreadHistoryPage>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+transcript"></a>
+
+### threadsApi.transcript()
+
+The thread's visible timeline in one HTTP read. Raises `T3NotFoundError`
+when the thread does not exist, and `T3HttpError` with reason
+`thread_transcript_too_large` when it exceeds the server's file attachment limit.
+
+```ts
+transcript(threadId: ThreadId, signal?: AbortSignal): Promise<OrchestrationV2ThreadTranscript>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+create"></a>
+
+### threadsApi.create()
+
+Create a thread with a generated id unless the caller supplies one.
+
+```ts
+async create(
+    input: ThreadCreateInput,
+    signal?: AbortSignal,
+  ): Promise<OrchestrationV2ThreadShell>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+ensure"></a>
+
+### threadsApi.ensure()
+
+Returns the existing thread for `threadId` untouched, or creates it.
+
+```ts
+async ensure(
+    input: ThreadCreateInput & { readonly threadId: ThreadId },
+    signal?: AbortSignal,
+  ): Promise<OrchestrationV2ThreadShell>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+launch"></a>
+
+### threadsApi.launch()
+
+Creates the thread, prepares its workspace, and starts the first run when a message is given.
+
+```ts
+launch(
+    input: ThreadLaunchInput,
+    signal?: AbortSignal,
+  ): Promise<OrchestrationV2ThreadLaunchResult>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+update"></a>
+
+### threadsApi.update()
+
+Update thread metadata.
+
+```ts
+async update(threadId: ThreadId, patch: ThreadMetaUpdate, signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+archive"></a>
+
+### threadsApi.archive()
+
+Resolves when the thread is archived, including when it is missing or already archived.
+
+```ts
+async archive(threadId: ThreadId, signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+unarchive"></a>
+
+### threadsApi.unarchive()
+
+Restore an archived thread.
+
+```ts
+async unarchive(threadId: ThreadId, signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+settle"></a>
+
+### threadsApi.settle()
+
+Mark a thread settled.
+
+```ts
+async settle(threadId: ThreadId, signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+unsettle"></a>
+
+### threadsApi.unsettle()
+
+Mark a thread unsettled.
+
+```ts
+async unsettle(threadId: ThreadId, signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+delete"></a>
+
+### threadsApi.delete()
+
+Resolves when the thread is gone, including when it never existed.
+
+```ts
+async delete(threadId: ThreadId, signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+setRuntimeMode"></a>
+
+### threadsApi.setRuntimeMode()
+
+Set the thread runtime mode.
+
+```ts
+async setRuntimeMode(
+    threadId: ThreadId,
+    runtimeMode: RuntimeMode,
+    signal?: AbortSignal,
+  ): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+setInteractionMode"></a>
+
+### threadsApi.setInteractionMode()
+
+Set the thread interaction mode.
+
+```ts
+async setInteractionMode(
+    threadId: ThreadId,
+    interactionMode: ProviderInteractionMode,
+    signal?: AbortSignal,
+  ): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+setModelSelection"></a>
+
+### threadsApi.setModelSelection()
+
+Set the provider instance and model for a thread.
+
+```ts
+async setModelSelection(
+    threadId: ThreadId,
+    modelSelection: ModelSelection,
+    signal?: AbortSignal,
+  ): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+startTurn"></a>
+
+### threadsApi.startTurn()
+
+Dispatches `message.dispatch` and returns a handle that follows the run it starts or joins.
+
+```ts
+startTurn(input: StartTurnInput): Promise<TurnHandle>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+interrupt"></a>
+
+### threadsApi.interrupt()
+
+Interrupts `runId`, or the thread's active run when omitted; nothing active is a no-op.
+
+```ts
+async interrupt(
+    threadId: ThreadId,
+    runId?: RunId,
+    options: InterruptOptions = {},
+    signal?: AbortSignal,
+  ): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+stop"></a>
+
+### threadsApi.stop()
+
+The Stop button: interrupts the active run and holds the queue. Nothing active is a no-op.
+
+```ts
+stop(threadId: ThreadId, signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+respondToApproval"></a>
+
+### threadsApi.respondToApproval()
+
+Answer a pending approval request.
+
+```ts
+async respondToApproval(input: ApprovalResponseInput, signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+respondToUserInput"></a>
+
+### threadsApi.respondToUserInput()
+
+Answer a pending user-input request.
+
+```ts
+async respondToUserInput(input: UserInputResponseInput, signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+dismissUserInput"></a>
+
+### threadsApi.dismissUserInput()
+
+Dismiss a pending user-input request.
+
+```ts
+async dismissUserInput(input: UserInputDismissInput, signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+pendingRequests"></a>
+
+### threadsApi.pendingRequests()
+
+Open approval and user-input requests, derived from the thread's projection.
+
+```ts
+async pendingRequests(threadId: ThreadId, signal?: AbortSignal): Promise<PendingRequest[]>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+watch"></a>
+
+### threadsApi.watch()
+
+Resumable live view; the projection is seeded from the HTTP detail when resuming.
+
+```ts
+watch(threadId: ThreadId, options: WatchOptions = {}): AsyncIterable<ThreadWatchItem>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+phase"></a>
+
+### threadsApi.phase()
+
+Derive the visible phase from a thread summary.
+
+```ts
+phase(thread: OrchestrationV2ThreadShell): ThreadPhase;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+dispatch"></a>
+
+### threadsApi.dispatch()
+
+Any orchestration command, validated locally and sent over the socket.
+
+```ts
+dispatch(command: OrchestrationV2Command, signal?: AbortSignal): Promise<DispatchResult>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ShellApi"></a>
+
+## ShellApi
+
+Live and archived cross-thread snapshots.
+
+**Kind**: global class
+
+- [ShellApi](#ShellApi)
+  - [.snapshot()](#ShellApi+snapshot)
+  - [.archivedSnapshot()](#ShellApi+archivedSnapshot)
+  - [.watch()](#ShellApi+watch)
+  - [.watchArchived()](#ShellApi+watchArchived)
+
+<a name="ShellApi+snapshot"></a>
+
+### shellApi.snapshot()
+
+Projects plus active and archived thread shells, over HTTP.
+
+```ts
+snapshot(signal?: AbortSignal): Promise<OrchestrationV2ShellSnapshot>;
+```
+
+**Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
+<a name="ShellApi+archivedSnapshot"></a>
+
+### shellApi.archivedSnapshot()
+
+Archived thread shells and projects, over RPC.
+
+```ts
+archivedSnapshot(signal?: AbortSignal): Promise<OrchestrationV2ArchivedShellSnapshot>;
+```
+
+**Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
+<a name="ShellApi+watch"></a>
+
+### shellApi.watch()
+
+Subscribes with `orchestration.subscribeShell`; resubscribes after a dropped socket.
+
+```ts
+watch(options: ShellWatchOptions = {}): AsyncIterable<ShellWatchItem>;
+```
+
+**Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
+<a name="ShellApi+watchArchived"></a>
+
+### shellApi.watchArchived()
+
+Archived threads as they change; a snapshot first, then updates. Not resumable: a drop restarts it.
+
+```ts
+watchArchived(
+    options: { readonly signal?: AbortSignal } = {},
+  ): AsyncIterable<ArchivedShellWatchItem>;
+```
+
+**Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
+<a name="ServerApi"></a>
+
+## ServerApi
+
+Server environment, configuration and providers.
+
+**Kind**: global class
+
+- [ServerApi](#ServerApi)
+  - [.probe()](#ServerApi+probe)
+  - [.getConfig()](#ServerApi+getConfig)
+  - [.getSettings()](#ServerApi+getSettings)
+  - [.refreshProviders()](#ServerApi+refreshProviders)
+  - [.watchConfig()](#ServerApi+watchConfig)
+  - [.watchLifecycle()](#ServerApi+watchLifecycle)
+  - [.environment()](#ServerApi+environment)
+  - [.providers()](#ServerApi+providers)
+  - [.findModel()](#ServerApi+findModel)
+
+<a name="ServerApi+probe"></a>
+
+### serverApi.probe()
+
+Probe server health through RPC.
+
+```ts
+async probe(signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
+<a name="ServerApi+getConfig"></a>
+
+### serverApi.getConfig()
+
+Read server configuration, including provider instances and models.
+
+```ts
+getConfig(signal?: AbortSignal): Promise<RpcSuccess<RpcMethods, "server.getConfig">>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
+<a name="ServerApi+getSettings"></a>
+
+### serverApi.getSettings()
+
+Read server settings.
+
+```ts
+getSettings(signal?: AbortSignal): Promise<RpcSuccess<RpcMethods, "server.getSettings">>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
+<a name="ServerApi+refreshProviders"></a>
+
+### serverApi.refreshProviders()
+
+Refresh the selected provider instances.
+
+```ts
+refreshProviders(
+    input: RpcPayload<RpcMethods, "server.refreshProviders"> = {},
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "server.refreshProviders">>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
+<a name="ServerApi+watchConfig"></a>
+
+### serverApi.watchConfig()
+
+Subscribe to configuration changes; decode failures remain stream items.
+
+```ts
+watchConfig(
+    options: WatchServerConfigOptions = {},
+  ): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "subscribeServerConfig">>>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
+<a name="ServerApi+watchLifecycle"></a>
+
+### serverApi.watchLifecycle()
+
+Subscribe to server lifecycle events.
+
+```ts
+watchLifecycle(
+    options: WatchServerLifecycleOptions = {},
+  ): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "subscribeServerLifecycle">>>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
+<a name="ServerApi+environment"></a>
+
+### serverApi.environment()
+
+Read the public environment descriptor over HTTP.
+
+```ts
+environment(signal?: AbortSignal): Promise<ExecutionEnvironmentDescriptorType>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
+<a name="ServerApi+providers"></a>
+
+### serverApi.providers()
+
+List configured provider instances.
+
+```ts
+async providers(signal?: AbortSignal): Promise<ServerProvider[]>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
+<a name="ServerApi+findModel"></a>
+
+### serverApi.findModel()
+
+Find a provider model by slug or alias; return undefined when absent.
+
+```ts
+async findModel(
+    instanceId: string,
+    model: string,
+  ): Promise<
+    { readonly provider: ServerProvider; readonly model: ServerProviderModel } | undefined
+  >;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
+<a name="VcsApi"></a>
+
+## VcsApi
+
+Repository references, worktrees and status.
+
+**Kind**: global class
+
+- [VcsApi](#VcsApi)
+  - [.listRefs()](#VcsApi+listRefs)
+  - [.status()](#VcsApi+status)
+  - [.createWorktree()](#VcsApi+createWorktree)
+  - [.removeWorktree()](#VcsApi+removeWorktree)
+  - [.createRef()](#VcsApi+createRef)
+  - [.switchRef()](#VcsApi+switchRef)
+  - [.watchStatus()](#VcsApi+watchStatus)
+
+<a name="VcsApi+listRefs"></a>
+
+### vcsApi.listRefs()
+
+List repository references.
+
+```ts
+listRefs(
+    input: RpcPayload<RpcMethods, "vcs.listRefs">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "vcs.listRefs">>;
+```
+
+**Kind**: instance method of [<code>VcsApi</code>](#VcsApi)  
+<a name="VcsApi+status"></a>
+
+### vcsApi.status()
+
+Refresh repository status.
+
+```ts
+status(
+    input: RpcPayload<RpcMethods, "vcs.refreshStatus">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "vcs.refreshStatus">>;
+```
+
+**Kind**: instance method of [<code>VcsApi</code>](#VcsApi)  
+<a name="VcsApi+createWorktree"></a>
+
+### vcsApi.createWorktree()
+
+Create a worktree through the server.
+
+```ts
+createWorktree(
+    input: RpcPayload<RpcMethods, "vcs.createWorktree">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "vcs.createWorktree">>;
+```
+
+**Kind**: instance method of [<code>VcsApi</code>](#VcsApi)  
+<a name="VcsApi+removeWorktree"></a>
+
+### vcsApi.removeWorktree()
+
+Remove a worktree through the server.
+
+```ts
+removeWorktree(
+    input: RpcPayload<RpcMethods, "vcs.removeWorktree">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "vcs.removeWorktree">>;
+```
+
+**Kind**: instance method of [<code>VcsApi</code>](#VcsApi)  
+<a name="VcsApi+createRef"></a>
+
+### vcsApi.createRef()
+
+Create a repository reference.
+
+```ts
+createRef(
+    input: RpcPayload<RpcMethods, "vcs.createRef">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "vcs.createRef">>;
+```
+
+**Kind**: instance method of [<code>VcsApi</code>](#VcsApi)  
+<a name="VcsApi+switchRef"></a>
+
+### vcsApi.switchRef()
+
+Switch the selected repository reference.
+
+```ts
+switchRef(
+    input: RpcPayload<RpcMethods, "vcs.switchRef">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "vcs.switchRef">>;
+```
+
+**Kind**: instance method of [<code>VcsApi</code>](#VcsApi)  
+<a name="VcsApi+watchStatus"></a>
+
+### vcsApi.watchStatus()
+
+Subscribe to repository status changes.
+
+```ts
+watchStatus(
+    input: RpcPayload<RpcMethods, "subscribeVcsStatus">,
+    options?: { readonly signal?: AbortSignal },
+  ): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "subscribeVcsStatus">>>;
+```
+
+**Kind**: instance method of [<code>VcsApi</code>](#VcsApi)  
+<a name="TerminalApi"></a>
+
+## TerminalApi
+
+Server terminal operations and event streams.
+
+**Kind**: global class
+
+- [TerminalApi](#TerminalApi)
+  - [.open()](#TerminalApi+open)
+  - [.attach()](#TerminalApi+attach)
+  - [.write()](#TerminalApi+write)
+  - [.resize()](#TerminalApi+resize)
+  - [.close()](#TerminalApi+close)
+  - [.watchEvents()](#TerminalApi+watchEvents)
+
+<a name="TerminalApi+open"></a>
+
+### terminalApi.open()
+
+Open a server terminal.
+
+```ts
+open(
+    input: RpcPayload<RpcMethods, "terminal.open">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "terminal.open">>;
+```
+
+**Kind**: instance method of [<code>TerminalApi</code>](#TerminalApi)  
+<a name="TerminalApi+attach"></a>
+
+### terminalApi.attach()
+
+Attach to a terminal output stream.
+
+```ts
+attach(
+    input: RpcPayload<RpcMethods, "terminal.attach">,
+    options?: { readonly signal?: AbortSignal },
+  ): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "terminal.attach">>>;
+```
+
+**Kind**: instance method of [<code>TerminalApi</code>](#TerminalApi)  
+<a name="TerminalApi+write"></a>
+
+### terminalApi.write()
+
+Write input to a server terminal.
+
+```ts
+write(
+    input: RpcPayload<RpcMethods, "terminal.write">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "terminal.write">>;
+```
+
+**Kind**: instance method of [<code>TerminalApi</code>](#TerminalApi)  
+<a name="TerminalApi+resize"></a>
+
+### terminalApi.resize()
+
+Resize a server terminal.
+
+```ts
+resize(
+    input: RpcPayload<RpcMethods, "terminal.resize">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "terminal.resize">>;
+```
+
+**Kind**: instance method of [<code>TerminalApi</code>](#TerminalApi)  
+<a name="TerminalApi+close"></a>
+
+### terminalApi.close()
+
+Close a server terminal.
+
+```ts
+close(
+    input: RpcPayload<RpcMethods, "terminal.close">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "terminal.close">>;
+```
+
+**Kind**: instance method of [<code>TerminalApi</code>](#TerminalApi)  
+<a name="TerminalApi+watchEvents"></a>
+
+### terminalApi.watchEvents()
+
+Subscribe to terminal lifecycle events.
+
+```ts
+watchEvents(options?: {
+    readonly signal?: AbortSignal;
+  }): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "subscribeTerminalEvents">>>;
+```
+
+**Kind**: instance method of [<code>TerminalApi</code>](#TerminalApi)  
+<a name="CommandDispatcher"></a>
+
+## CommandDispatcher
+
+Validated orchestration dispatch and bookkeeping ids.
+
+**Kind**: global class
+
+- [CommandDispatcher](#CommandDispatcher)
+  - [.newCommandId()](#CommandDispatcher+newCommandId)
+  - [.newMessageId()](#CommandDispatcher+newMessageId)
+  - [.newThreadId()](#CommandDispatcher+newThreadId)
+  - [.newProjectId()](#CommandDispatcher+newProjectId)
+  - [.now()](#CommandDispatcher+now)
+  - [.dispatch()](#CommandDispatcher+dispatch)
+
+<a name="CommandDispatcher+newCommandId"></a>
+
+### commandDispatcher.newCommandId()
+
+Command ids are attempt ids on the server, never idempotency keys: one per dispatch.
+
+```ts
+newCommandId(): CommandId;
+```
+
+**Kind**: instance method of [<code>CommandDispatcher</code>](#CommandDispatcher)  
+<a name="CommandDispatcher+newMessageId"></a>
+
+### commandDispatcher.newMessageId()
+
+Generate a message id.
+
+```ts
+newMessageId(): MessageId;
+```
+
+**Kind**: instance method of [<code>CommandDispatcher</code>](#CommandDispatcher)  
+<a name="CommandDispatcher+newThreadId"></a>
+
+### commandDispatcher.newThreadId()
+
+Generate a thread id.
+
+```ts
+newThreadId(): ThreadId;
+```
+
+**Kind**: instance method of [<code>CommandDispatcher</code>](#CommandDispatcher)  
+<a name="CommandDispatcher+newProjectId"></a>
+
+### commandDispatcher.newProjectId()
+
+Generate a project id.
+
+```ts
+newProjectId(): ProjectId;
+```
+
+**Kind**: instance method of [<code>CommandDispatcher</code>](#CommandDispatcher)  
+<a name="CommandDispatcher+now"></a>
+
+### commandDispatcher.now()
+
+Return the current timestamp in ISO format.
+
+```ts
+now(): string;
+```
+
+**Kind**: instance method of [<code>CommandDispatcher</code>](#CommandDispatcher)  
+<a name="CommandDispatcher+dispatch"></a>
+
+### commandDispatcher.dispatch()
+
+Validate and dispatch one orchestration command.
+
+```ts
+async dispatch(command: OrchestrationV2Command, signal?: AbortSignal): Promise<DispatchResult>;
+```
+
+**Kind**: instance method of [<code>CommandDispatcher</code>](#CommandDispatcher)  
+<a name="RpcClient"></a>
+
+## RpcClient
+
+Typed RPC calls and streams with scope checks.
+
+**Kind**: global class
+
+- [RpcClient](#RpcClient)
+  - [.connection](#RpcClient+connection)
+  - [.has()](#RpcClient+has)
+  - [.call()](#RpcClient+call)
+  - [.stream()](#RpcClient+stream)
+  - [.callRaw()](#RpcClient+callRaw)
+  - [.streamRaw()](#RpcClient+streamRaw)
+
+<a name="RpcClient+connection"></a>
+
+### rpcClient.connection
+
+The underlying RPC connection for lifecycle inspection.
+
+```ts
+get connection(): RpcConnection;
+```
+
+**Kind**: instance property of [<code>RpcClient</code>](#RpcClient)  
+<a name="RpcClient+has"></a>
+
+### rpcClient.has()
+
+`true` when the table has an entry for `method`.
+
+```ts
+has(method: string): method is keyof Table & string;
+```
+
+**Kind**: instance method of [<code>RpcClient</code>](#RpcClient)  
+<a name="RpcClient+call"></a>
+
+### rpcClient.call()
+
+Validate a typed unary payload and decode its result.
+
+```ts
+async call<M extends UnaryMethodName<Table>>(
+    method: M,
+    payload: RpcPayload<Table, M>,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<Table, M>>;
+```
+
+**Kind**: instance method of [<code>RpcClient</code>](#RpcClient)  
+<a name="RpcClient+stream"></a>
+
+### rpcClient.stream()
+
+Stream decoded values; malformed items are yielded as decode errors.
+
+```ts
+stream<M extends StreamMethodName<Table>>(
+    method: M,
+    payload: RpcPayload<Table, M>,
+    options?: RpcStreamOptions,
+  ): AsyncIterable<StreamItem<RpcSuccess<Table, M>>>;
+```
+
+**Kind**: instance method of [<code>RpcClient</code>](#RpcClient)  
+<a name="RpcClient+callRaw"></a>
+
+### rpcClient.callRaw()
+
+Any method by tag, no validation, no decoding.
+
+```ts
+callRaw(tag: string, payload: unknown, signal?: AbortSignal): Promise<unknown>;
+```
+
+**Kind**: instance method of [<code>RpcClient</code>](#RpcClient)  
+<a name="RpcClient+streamRaw"></a>
+
+### rpcClient.streamRaw()
+
+Stream an unregistered method without schema validation.
+
+```ts
+streamRaw(tag: string, payload: unknown, options?: RpcStreamOptions): AsyncIterable<unknown>;
+```
+
+**Kind**: instance method of [<code>RpcClient</code>](#RpcClient)  
+<a name="ProfileManager"></a>
+
+## ProfileManager
+
+Named server configuration shared by command-line and MCP consumers.
+
+**Kind**: global class
+
+- [ProfileManager](#ProfileManager)
+  - [.list()](#ProfileManager+list)
+  - [.getCurrent()](#ProfileManager+getCurrent)
+  - [.resolveProfile()](#ProfileManager+resolveProfile)
+  - [.resolve()](#ProfileManager+resolve)
+  - [.pair()](#ProfileManager+pair)
+  - [.setAccessToken()](#ProfileManager+setAccessToken)
+  - [.switch()](#ProfileManager+switch)
+  - [.logout()](#ProfileManager+logout)
+
+<a name="ProfileManager+list"></a>
+
+### profileManager.list()
+
+List configured servers without loading their credentials.
+
+```ts
+async list(): Promise<Profile[]>;
+```
+
+**Kind**: instance method of [<code>ProfileManager</code>](#ProfileManager)  
+<a name="ProfileManager+getCurrent"></a>
+
+### profileManager.getCurrent()
+
+Return the current profile, or undefined before one is selected.
+
+```ts
+async getCurrent(): Promise<Profile | undefined>;
+```
+
+**Kind**: instance method of [<code>ProfileManager</code>](#ProfileManager)  
+<a name="ProfileManager+resolveProfile"></a>
+
+### profileManager.resolveProfile()
+
+Resolve one exact named profile without applying flag or environment overrides.
+
+```ts
+async resolveProfile(name: string): Promise<ResolvedProfile>;
+```
+
+**Kind**: instance method of [<code>ProfileManager</code>](#ProfileManager)  
+<a name="ProfileManager+resolve"></a>
+
+### profileManager.resolve()
+
+Resolve flags, environment and current profile into connection options.
+
+```ts
+async resolve(options: ProfileResolveOptions = {}): Promise<ResolvedProfile>;
+```
+
+**Kind**: instance method of [<code>ProfileManager</code>](#ProfileManager)  
+<a name="ProfileManager+pair"></a>
+
+### profileManager.pair()
+
+Exchange a pairing token, then register its profile; first success selects current.
+
+```ts
+async pair(
+    profile: Profile,
+    pairingToken: string,
+    options?: ExchangePairingTokenOptions,
+  ): Promise<Profile>;
+```
+
+**Kind**: instance method of [<code>ProfileManager</code>](#ProfileManager)  
+<a name="ProfileManager+setAccessToken"></a>
+
+### profileManager.setAccessToken()
+
+Validate an issued session token, then register its profile.
+
+```ts
+async setAccessToken(profile: Profile, token: string): Promise<Profile>;
+```
+
+**Kind**: instance method of [<code>ProfileManager</code>](#ProfileManager)  
+<a name="ProfileManager+switch"></a>
+
+### profileManager.switch()
+
+Select an existing profile without changing its credentials.
+
+```ts
+async switch(name: string): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ProfileManager</code>](#ProfileManager)  
+<a name="ProfileManager+logout"></a>
+
+### profileManager.logout()
+
+Remove a profile and clear its local credential; does not revoke the server session.
+
+```ts
+async logout(name?: string): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ProfileManager</code>](#ProfileManager)  
+<a name="AuthEnvironmentScope"></a>
+
+## AuthEnvironmentScope
+
+Strict: validates the scopes a caller asks for.
+
+**Kind**: global constant  
+<a name="AuthLegacyScopes"></a>
+
+## AuthLegacyScopes
+
+The scopes clients released before granular permissions knew. Servers
+report `scopes` filtered to these and the full grant as `permissions`.
+
+**Kind**: global constant  
+<a name="threadId"></a>
+
+## threadId
+
+Brand a trusted string without validation. Use for ids this process generated or already decoded.
+
+**Kind**: global constant  
+<a name="ORCHESTRATION_PROTOCOL_VERSION"></a>
+
+## ORCHESTRATION\_PROTOCOL\_VERSION
+
+The orchestration wire protocol this client speaks; the server refuses others.
+
+**Kind**: global constant  
+<a name="ORCHESTRATION_PROTOCOL_QUERY_PARAM"></a>
+
+## ORCHESTRATION\_PROTOCOL\_QUERY\_PARAM
+
+Query parameter on the `/ws` upgrade that names the protocol.
+
+**Kind**: global constant  
+<a name="ORCHESTRATION_PROTOCOL_HEADER"></a>
+
+## ORCHESTRATION\_PROTOCOL\_HEADER
+
+Header on orchestration HTTP routes that names the protocol.
+
+**Kind**: global constant  
+<a name="OrchestrationV2ThreadBoundedSnapshot"></a>
+
+## OrchestrationV2ThreadBoundedSnapshot
+
+A bounded cold open: full control-plane arrays with a recent window of timeline rows.
+
+**Kind**: global constant  
+<a name="OrchestrationV2ThreadHistoryPage"></a>
+
+## OrchestrationV2ThreadHistoryPage
+
+An older timeline page for progressive history. Rows are chronological.
+
+**Kind**: global constant  
+<a name="OrchestrationV2ThreadTranscript"></a>
+
+## OrchestrationV2ThreadTranscript
+
+The thread's visible timeline in one read, for handing a conversation to another reader.
+
+**Kind**: global constant  
+<a name="OrchestrationV2RuntimeRequest"></a>
+
+## OrchestrationV2RuntimeRequest
+
+An approval, question, or other request the provider raised and how it was answered.
+
+**Kind**: global constant  
+<a name="OrchestrationV2TurnItem"></a>
+
+## OrchestrationV2TurnItem
+
+A turn item of any type, including a type this build does not know.
+
+**Kind**: global constant  
+<a name="OrchestrationProjectShell"></a>
+
+## OrchestrationProjectShell
+
+Project summary shared by the shell and the application project APIs.
+
+**Kind**: global constant  
+<a name="ProjectMutation"></a>
+
+## ProjectMutation
+
+What `projects.mutate` and `POST /api/projects/mutate` accept.
+
+**Kind**: global constant  
+<a name="ModelSelection"></a>
+
+## ModelSelection
+
+The historical `{ provider, model }` shape still decodes; `instanceId` is the routing key.
+
+**Kind**: global constant  
+<a name="ProviderUserInputAnswer"></a>
+
+## ProviderUserInputAnswer
+
+One question's answer: any JSON value, as the contracts allow. The provider
+adapters act on a single choice (a string), several choices (a string
+array), or Codex's `{ answers: string[] }`.
+
+**Kind**: global constant  
+<a name="RpcErrorRecord"></a>
+
+## RpcErrorRecord
+
+Every tagged failure a registered RPC method declares. A failure with an
+unrecognised `_tag` decodes as `{ unknown: true, raw }`. Use
+`decodeRpcErrorRecord` to decode without ever failing.
+
+**Kind**: global constant  
+<a name="TARGET_T3_CODE_VERSION"></a>
+
+## TARGET\_T3\_CODE\_VERSION
+
+T3 Code release targeted by this library, independent of the library version.
+
+**Kind**: global constant  
+<a name="AuthReviewWriteScope"></a>
+
+## AuthReviewWriteScope
+
+Retained for decoding existing credentials; grants no current RPC access.
+
+**Kind**: global constant  
+<a name="isT3Error"></a>
+
+## isT3Error()
+
+Test whether a value belongs to the library error hierarchy.
+
+```ts
+export function isT3Error(value: unknown): value is T3Error;
+```
+
+**Kind**: global function  
+<a name="memoryCredentialStore"></a>
+
+## memoryCredentialStore()
+
+Create an isolated in-memory credential store.
+
+```ts
+export function memoryCredentialStore(initial: StoredCredentials = {}): CredentialStore;
+```
+
+**Kind**: global function  
+<a name="fileCredentialStore"></a>
+
+## fileCredentialStore()
+
+Create an atomic JSON credential store with 0600 files; the parent directory must exist.
+
+```ts
+export function fileCredentialStore(path: string): CredentialStore;
+```
+
+**Kind**: global function  
+<a name="watchAccess"></a>
+
+## watchAccess()
+
+Watch changes to access grants and authenticated clients.
+
+```ts
+export function watchAccess(
+  rpc: RpcClient<RpcMethods>,
+  options?: { readonly signal?: AbortSignal },
+): AsyncIterable<DecodedStreamItem<AuthAccessStreamEvent>>;
+```
+
+**Kind**: global function  
+<a name="applyThreadEvent"></a>
+
+## applyThreadEvent()
+
+Applies one event to the projection. Events for other threads and unknown events leave it unchanged.
+
+```ts
+export function applyThreadEvent(
+  projection: Projection,
+  event: OrchestrationV2DomainEvent,
+): Projection;
+```
+
+**Kind**: global function  
+<a name="pendingRequests"></a>
+
+## pendingRequests()
+
+Requests the provider raised that nobody has answered, oldest first.
+
+```ts
+export function pendingRequests(
+  projection: Pick<OrchestrationV2ThreadProjection, "runtimeRequests" | "turnItems">,
+): PendingRequest[];
+```
+
+**Kind**: global function  
+<a name="runOutcome"></a>
+
+## runOutcome()
+
+The outcome of a settled run; `undefined` while the run is not terminal.
+
+```ts
+export function runOutcome(
+  projection: OrchestrationV2ThreadProjection,
+  run: OrchestrationV2Run,
+): TurnOutcome | undefined;
+```
+
+**Kind**: global function  
+<a name="assistantMessageForRun"></a>
+
+## assistantMessageForRun()
+
+The last assistant message of a run; a finished message is preferred over a streaming one.
+
+```ts
+export function assistantMessageForRun(
+  projection: Pick<OrchestrationV2ThreadProjection, "messages">,
+  runId: RunId,
+): OrchestrationV2ConversationMessage | undefined;
+```
+
+**Kind**: global function  
+<a name="activeRun"></a>
+
+## activeRun()
+
+The run an interrupt targets: the highest-ordinal run that is preparing,
+starting, running, or waiting. A queued run has not started, so it is not
+the active run.
+
+```ts
+export function activeRun(
+  projection: Pick<OrchestrationV2ThreadProjection, "runs">,
+): OrchestrationV2Run | undefined;
+```
+
+**Kind**: global function  
+<a name="threadPhase"></a>
+
+## threadPhase()
+
+Pure classification of a shell thread.
+
+```ts
+export function threadPhase(shell: OrchestrationV2ThreadShell): ThreadPhase;
+```
+
+**Kind**: global function  
+<a name="watchThread"></a>
+
+## watchThread()
+
+Watch a thread with replay, reconnection and derived run events.
+
+```ts
+export function watchThread(
+  rpc: ThreadWatchRpc,
+  threadId: ThreadId,
+  options: ThreadWatchOptions = {},
+): AsyncIterable<ThreadWatchItem>;
+```
+
+**Kind**: global function  
+<a name="grantedScopes"></a>
+
+## grantedScopes()
+
+Read granular permissions when present, otherwise the legacy scopes.
+
+```ts
+export function grantedScopes(response: {
+  readonly scopes?: readonly AuthGrantedScope[] | undefined;
+  readonly permissions?: readonly AuthGrantedScope[] | undefined;
+}): AuthGrantedScope[];
+```
+
+**Kind**: global function  
+<a name="consoleLogger"></a>
+
+## consoleLogger()
+
+Create a logger that writes prefixed messages to the Node console.
+
+```ts
+export function consoleLogger(prefix = "t3code-client"): Logger;
+```
+
+**Kind**: global function  
+<a name="isRunTerminalStatus"></a>
+
+## isRunTerminalStatus()
+
+Narrow a run status to a terminal status.
+
+```ts
+export function isRunTerminalStatus(status: string): status is OrchestrationV2RunTerminalStatus;
+```
+
+**Kind**: global function  
+<a name="isRunActiveStatus"></a>
+
+## isRunActiveStatus()
+
+Queued runs wait their turn; preparing, starting, running, and waiting runs hold the thread.
+
+```ts
+export function isRunActiveStatus(status: string): boolean;
+```
+
+**Kind**: global function  
+<a name="isTurnItemOfType"></a>
+
+## isTurnItemOfType()
+
+Narrow a known timeline item to the requested item type.
+
+```ts
+export function isTurnItemOfType<const T extends OrchestrationV2TurnItemType>(
+  item: OrchestrationV2TurnItem,
+  type: T,
+): item is OrchestrationV2TurnItemOfType<T>;
+```
+
+**Kind**: global function  
+<a name="isRpcErrorOfTag"></a>
+
+## isRpcErrorOfTag()
+
+Narrow a decoded RPC failure to a recognized tagged error.
+
+```ts
+export function isRpcErrorOfTag<const Tag extends RpcErrorTag>(
+  record: RpcErrorRecord,
+  tag: Tag,
+): record is RpcErrorOfTag<Tag>;
+```
+
+**Kind**: global function  
+<a name="hasScope"></a>
+
+## hasScope()
+
+`granted` is what the server reported and may hold scopes this client does not know.
+
+```ts
+export function hasScope(
+  granted: readonly AuthGrantedScope[] | undefined,
+  required: AuthEnvironmentScope,
+): boolean;
+```
+
+**Kind**: global function  
+<a name="ensureScopes"></a>
+
+## ensureScopes()
+
+Require every named scope; throw T3AuthError for the first missing scope.
+
+```ts
+export function ensureScopes(
+  granted: readonly AuthGrantedScope[] | undefined,
+  required: readonly AuthEnvironmentScope[],
+  context = "operation",
+): void;
+```
+
+**Kind**: global function
+
+## Profile and credential types
+
+```ts
+export interface CredentialStore {
+  /** Read the saved credential, or an empty object when absent. */
+  load(): Promise<StoredCredentials>;
+  /** Persist validated credential metadata. */
+  save(credentials: StoredCredentials): Promise<void>;
+  /** Forget the local credential without revoking the server session. */
+  clear(): Promise<void>;
+}
+
+export interface StoredCredentials {
+  accessToken?: string;
+  /** As granted by the server; may include a scope this client does not know. */
+  scopes?: AuthGrantedScopeType[];
+  expiresAt?: string;
+  sessionMethod?: ServerAuthSessionMethodType;
+}
+
+export interface ProfileManagerOptions {
+  readonly configDir?: string;
+  readonly credentialSource?: CredentialSource;
+  readonly clientOptions?: Omit<T3ClientOptions, "baseUrl" | "credentials" | "accessToken">;
+}
+
+export interface ProfileResolveOptions {
+  readonly server?: string;
+  readonly credentialsFile?: string;
+  readonly env?: NodeJS.ProcessEnv;
+}
+
+export interface ResolvedProfile {
+  readonly baseUrl: string;
+  readonly credentials: CredentialStore;
+  readonly profile?: Profile;
+  readonly sources: {
+    readonly server: "flag" | "environment" | "profile";
+    readonly credentials: "file" | "environment" | "profile" | "none";
+  };
+}
+
+export type CredentialSource = (
+  profile: Profile,
+  defaultCredentialPath: string,
+) => CredentialStore | Promise<CredentialStore>;
+
+export interface Profile {
+  readonly name: string;
+  readonly url: string;
+}
+
+export interface ProfileConfig {
+  servers: Record<string, { url: string }>;
+  current?: string;
+}
+```

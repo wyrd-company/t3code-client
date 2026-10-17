@@ -1,3 +1,7 @@
+# ---
+# relationships:
+#   implements: design
+# ---
 version: "3"
 
 tasks:
@@ -28,11 +32,18 @@ tasks:
   package:
     desc: Pack and verify runtime and declaration consumers
     cmds: [pnpm run package]
+  docs:
+    desc: Generate public library API reference with jsdoc-to-markdown
+    cmds: [pnpm run build, node scripts/reference.mjs]
+  docs:check:
+    desc: Verify generated public library API reference
+    cmds: [pnpm run build, node scripts/reference.mjs --check]
   check:
     desc: Library quality, tests and package checks
     cmds:
       - task: lint
       - task: typecheck
+      - task: docs:check
       - task: test
       - task: test:live
       - task: package

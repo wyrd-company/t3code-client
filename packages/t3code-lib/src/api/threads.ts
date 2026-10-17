@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 /**
  * ThreadsApi: thread lifecycle commands with server bookkeeping filled in,
  * idempotent `ensure` keyed by the caller's thread id, launches, request
@@ -68,6 +72,7 @@ export type ThreadMetaUpdate = ThreadMetadataUpdatePayload;
 
 export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
 
+/** Thread lifecycle, history, runs and pending requests. */
 export class ThreadsApi {
   readonly #commands: ThreadCommands;
 
@@ -131,6 +136,7 @@ export class ThreadsApi {
     return loadThreadTranscript(this.http, threadId, signal);
   }
 
+  /** Create a thread with a generated id unless the caller supplies one. */
   async create(
     input: ThreadCreateInput,
     signal?: AbortSignal,
@@ -164,6 +170,7 @@ export class ThreadsApi {
     );
   }
 
+  /** Update thread metadata. */
   async update(threadId: ThreadId, patch: ThreadMetaUpdate, signal?: AbortSignal): Promise<void> {
     await this.dispatch(
       {
@@ -185,14 +192,17 @@ export class ThreadsApi {
     );
   }
 
+  /** Restore an archived thread. */
   async unarchive(threadId: ThreadId, signal?: AbortSignal): Promise<void> {
     await this.dispatch(this.#commands.simple("thread.unarchive", threadId), signal);
   }
 
+  /** Mark a thread settled. */
   async settle(threadId: ThreadId, signal?: AbortSignal): Promise<void> {
     await this.dispatch(this.#commands.settle(threadId), signal);
   }
 
+  /** Mark a thread unsettled. */
   async unsettle(threadId: ThreadId, signal?: AbortSignal): Promise<void> {
     await this.dispatch(this.#commands.unsettle(threadId), signal);
   }
@@ -202,6 +212,7 @@ export class ThreadsApi {
     await this.#tolerant(this.#commands.simple("thread.delete", threadId), signal);
   }
 
+  /** Set the thread runtime mode. */
   async setRuntimeMode(
     threadId: ThreadId,
     runtimeMode: RuntimeMode,
@@ -210,6 +221,7 @@ export class ThreadsApi {
     await this.dispatch(this.#commands.setRuntimeMode(threadId, runtimeMode), signal);
   }
 
+  /** Set the thread interaction mode. */
   async setInteractionMode(
     threadId: ThreadId,
     interactionMode: ProviderInteractionMode,
@@ -218,6 +230,7 @@ export class ThreadsApi {
     await this.dispatch(this.#commands.setInteractionMode(threadId, interactionMode), signal);
   }
 
+  /** Set the provider instance and model for a thread. */
   async setModelSelection(
     threadId: ThreadId,
     modelSelection: ModelSelection,
@@ -257,14 +270,17 @@ export class ThreadsApi {
     return this.interrupt(threadId, undefined, { holdQueue: true }, signal);
   }
 
+  /** Answer a pending approval request. */
   async respondToApproval(input: ApprovalResponseInput, signal?: AbortSignal): Promise<void> {
     await this.dispatch(this.#commands.respondToApproval(input), signal);
   }
 
+  /** Answer a pending user-input request. */
   async respondToUserInput(input: UserInputResponseInput, signal?: AbortSignal): Promise<void> {
     await this.dispatch(this.#commands.respondToUserInput(input), signal);
   }
 
+  /** Dismiss a pending user-input request. */
   async dismissUserInput(input: UserInputDismissInput, signal?: AbortSignal): Promise<void> {
     await this.dispatch(this.#commands.dismissUserInput(input), signal);
   }
@@ -282,6 +298,7 @@ export class ThreadsApi {
     });
   }
 
+  /** Derive the visible phase from a thread summary. */
   phase(thread: OrchestrationV2ThreadShell): ThreadPhase {
     return threadPhase(thread);
   }

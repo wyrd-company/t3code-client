@@ -1,8 +1,13 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 import type { RpcClient } from "../rpc/client.ts";
 import type { RpcMethods } from "../rpc/registry.ts";
 import type { RpcPayload, RpcSuccess } from "../rpc/spec.ts";
 import { unwrapStreamItems, type DecodedStreamItem } from "./streamItems.ts";
 
+/** Server terminal operations and event streams. */
 export class TerminalApi {
   readonly rpc: RpcClient<RpcMethods>;
 
@@ -10,6 +15,7 @@ export class TerminalApi {
     this.rpc = rpc;
   }
 
+  /** Open a server terminal. */
   open(
     input: RpcPayload<RpcMethods, "terminal.open">,
     signal?: AbortSignal,
@@ -17,6 +23,7 @@ export class TerminalApi {
     return this.rpc.call("terminal.open", input, signal);
   }
 
+  /** Attach to a terminal output stream. */
   attach(
     input: RpcPayload<RpcMethods, "terminal.attach">,
     options?: { readonly signal?: AbortSignal },
@@ -24,6 +31,7 @@ export class TerminalApi {
     return unwrapStreamItems(this.rpc.stream("terminal.attach", input, options));
   }
 
+  /** Write input to a server terminal. */
   write(
     input: RpcPayload<RpcMethods, "terminal.write">,
     signal?: AbortSignal,
@@ -31,6 +39,7 @@ export class TerminalApi {
     return this.rpc.call("terminal.write", input, signal);
   }
 
+  /** Resize a server terminal. */
   resize(
     input: RpcPayload<RpcMethods, "terminal.resize">,
     signal?: AbortSignal,
@@ -38,6 +47,7 @@ export class TerminalApi {
     return this.rpc.call("terminal.resize", input, signal);
   }
 
+  /** Close a server terminal. */
   close(
     input: RpcPayload<RpcMethods, "terminal.close">,
     signal?: AbortSignal,
@@ -45,6 +55,7 @@ export class TerminalApi {
     return this.rpc.call("terminal.close", input, signal);
   }
 
+  /** Subscribe to terminal lifecycle events. */
   watchEvents(options?: {
     readonly signal?: AbortSignal;
   }): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "subscribeTerminalEvents">>> {

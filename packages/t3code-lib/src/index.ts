@@ -205,3 +205,12 @@ export type {
   RpcErrorOfTag,
 } from "./schemas/rpcErrors.ts";
 export { isRpcErrorOfTag } from "./schemas/rpcErrors.ts";
+export { TARGET_T3_CODE_VERSION } from "./version.ts";
+export {
+  ProfileManager,
+  type ProfileManagerOptions,
+  type ProfileResolveOptions,
+  type ResolvedProfile,
+  type CredentialSource,
+} from "./profiles/profileManager.ts";
+export type { Profile, ProfileConfig } from "./profiles/profileConfig.ts";

@@ -267,6 +267,7 @@ export type OrchestrationV2TurnItemOfType<T extends OrchestrationV2TurnItemType>
   { type: T }
 >;
 
+/** Narrow a known timeline item to the requested item type. */
 export function isTurnItemOfType<const T extends OrchestrationV2TurnItemType>(
   item: OrchestrationV2TurnItem,
   type: T,
