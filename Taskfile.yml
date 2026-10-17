@@ -46,6 +46,21 @@ tasks:
   release:test:
     desc: Test release boundaries without publishing
     cmds: [pnpm exec vp test run]
+  homebrew:test:
+    desc: Validate a temporary formula with local CLI/library tarballs
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_INSTALL_UPGRADE: "1"
+      HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK: "1"
+      HOMEBREW_NO_AUTOREMOVE: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+    cmds: [scripts/release/test-homebrew.sh]
+  docs:
+    desc: Generate published CLI pages and library reference
+    cmds: [{ task: "cli:docs" }]
+  demo:
+    desc: Record the CLI on a fresh pinned server
+    cmds: [{ task: "cli:demo" }]
   check:
     desc: All workspace gates before handoff
     cmds:
@@ -53,6 +68,7 @@ tasks:
       - task: lint
       - task: typecheck
       - task: lib:docs:check
+      - task: cli:docs:check
       - task: test
       - task: test:live
       - task: package

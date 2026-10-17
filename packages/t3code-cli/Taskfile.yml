@@ -36,6 +36,18 @@ tasks:
   package:
     desc: Pack CLI/library and verify installed executable
     cmds: [pnpm run package]
+  docs:
+    desc: Generate published command pages and public JSDoc library reference
+    cmds:
+      - task: :lib:docs
+      - node scripts/docs.mjs
+  docs:check:
+    desc: Verify generated published pages
+    cmds: [node scripts/docs.mjs --check]
+  demo:
+    desc: Record real CLI commands on a fresh pinned server with Luna
+    deps: [build]
+    cmds: [node scripts/demo.mjs]
   check:
     desc: All CLI gates
     cmds:

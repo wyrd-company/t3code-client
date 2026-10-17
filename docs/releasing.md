@@ -41,7 +41,8 @@ Manifests start at 0.0.0. No authoritative tags are made on an epic branch.
 and manifests, and create local-only baselines for missing zero-version units.
 These clones never push. The working repository's tags remain intact.
 
-Only at epic finalization, after Bob's UAT and default-branch merge, establish
+Only at staged epic finalization, after Bob's UAT, client default-branch merge
+and epic retrospective, establish
 authority on the merged main commit:
 
 ```bash
@@ -78,7 +79,8 @@ independent even when a single dispatch releases both.
 Release checks main, validates intents, runs the checks, saves the canonical
 plan and verifies the exact record set and public package identities. It
 recomputes and compares the plan immediately before apply. After apply it updates
-the pnpm lockfile, checks formatting, commits the projections and consumed
+the pnpm lockfile, builds both units and regenerates the CLI shrinkwrap with
+the applied package versions. It checks formatting, commits the projections and consumed
 intents, and creates records from the saved plan. The commit and selected records
 are pushed atomically. App credentials start the downstream Publish workflows.
 A concurrent main update makes the push fail; nothing is force-pushed.
@@ -98,7 +100,8 @@ no workspace, file or link dependencies. The scaffold owns shrinkwrap production
 from the built CLI and its resolved library dependency; `pnpm pack` must include
 it. CLI consumer verification installs the local library and CLI tarballs together
 and runs `t3c --version`, so it does not depend on first-publication ordering.
-The release-plumbing task verifies the final shrinkwrap and Homebrew handoff.
+The local Homebrew gate installs the matching library and CLI tarballs together;
+the public formula resolves the library through the registry.
 
 The package upload/download artifact is named `package-${github.ref_name}`;
 all jobs consume that same artifact. Publish checks tarball identity again,
@@ -147,3 +150,41 @@ and registry installation remain finalization gates.
 The App needs Contents write. Publish requires an Intentional release record
 whose commit is on main. A tag ruleset allowing only the App to create
 `t3code-lib@*` and `t3code-cli@*` records enforces that release authority.
+
+## Documentation and Homebrew finalization
+
+The CLI tag publishes `packages/t3code-cli/docs` through the wyrd.foo action.
+Only pages marked `docs: true` and assets listed in `docs.yml` are copied.
+`task docs` generates command, output, Dagu and library pages from their source
+contracts; the library reference uses public JSDoc through `task lib:docs`.
+`task demo` owns a fresh external server home, uses `gpt-6-luna` and clears
+`DISPLAY` and `WAYLAND_DISPLAY` before VHS. Ordinary live-test overrides remain
+available outside isolated demo/acceptance commands.
+
+First publication follows these gates:
+
+1. Bob tests and merges the client epic PR, then the epic retrospective completes.
+2. During staged finalization establish main baseline records, dispatch Release
+   for both units and publish both npm units. This first publication is
+   pre-approved; notify Bob through Pushover after it runs.
+3. Download the published CLI npm tarball. Regenerate the tap formula from those
+   exact bytes and the npm tarball URL; verify the URL and SHA256. The tap epic
+   PR receives a focused reviewer check of this regenerated formula delta.
+4. Return the epic to review for Bob alone to merge the tap epic PR, then clean up.
+
+The provisional 0.0.0 formula stays on the tap epic branch. It records an actual
+local pack checksum, not a published release checksum. Never merge it to tap
+main. Published tarball verification is a deferred finalization gate; local
+packing does not prove registry availability or provenance. Nothing else waits
+for the tap merge. `scripts/publish-homebrew-tap.sh` updates an explicit tap
+checkout and commits the generated formula; pushing is an explicit finalization
+step. It follows the tap publisher checkout/commit/push convention.
+
+`task homebrew:test` creates a temporary tap, installs local CLI/library archives,
+checks style/audit and runs the formula test, then removes only its formula/tap.
+It preserves an existing `t3c` installation by refusing to replace it. Every
+Homebrew install/test uses `HOMEBREW_NO_AUTO_UPDATE=1`,
+`HOMEBREW_NO_INSTALL_UPGRADE=1`,
+`HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1`, and
+`HOMEBREW_NO_AUTOREMOVE=1`, and `HOMEBREW_NO_INSTALL_CLEANUP=1`. Cleanup uses `brew uninstall` only; never autoremove,
+upgrade or remove existing dependency kegs to validate a local formula.

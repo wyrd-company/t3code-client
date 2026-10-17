@@ -131,3 +131,23 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: scripts/release/ensure-github-release.sh "$GITHUB_REF_NAME" "$RUNNER_TEMP/package"
+
+  docs:
+    name: Publish CLI and library documentation
+    needs: [build, npm]
+    if: startsWith(github.ref_name, 't3code-cli@')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Publish documentation
+        uses: wyrd-company/wyrd.foo/.github/actions/publish-docs@v1
+        with:
+          docs-dir: packages/t3code-cli/docs
+          app-id: ${{ secrets.WYRD_TOOLS_DOCS_PUBLISHER_APP_ID }}
+          private-key: ${{ secrets.WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY }}
