@@ -1,0 +1,43 @@
+// ---
+// relationships:
+//   verifies: releasing
+// ---
+import * as NodeFS from "node:fs";
+import { describe, expect, it } from "vite-plus/test";
+
+const publish = () =>
+  NodeFS.readFileSync(new URL("../../.github/workflows/publish.yml", import.meta.url), "utf8");
+const release = () =>
+  NodeFS.readFileSync(new URL("../../.github/workflows/release.yml", import.meta.url), "utf8");
+
+describe("workflow agreements", () => {
+  it("uses the same artifact identity and path across the upload and both downloads", () => {
+    const names = [
+      ...publish().matchAll(
+        /uses: actions\/(?:upload|download)-artifact@[^\n]*\n\s+with:\n\s+name: ([^\n]+)/g,
+      ),
+    ].map((match) => match[1]);
+    expect(names).toHaveLength(3);
+    expect(new Set(names).size).toBe(1);
+    expect(names[0]).toContain("github.ref_name");
+    const paths = [...publish().matchAll(/path: (\$\{\{ runner.temp \}\}\/package)/g)];
+    expect(paths).toHaveLength(3);
+  });
+  it("publishes only the two new unit tag families", () => {
+    const patterns = [...publish().matchAll(/^      - "([^"]+@\*)"$/gm)]
+      .map((match) => match[1])
+      .sort();
+    expect(patterns).toEqual(["t3code-cli@*", "t3code-lib@*"]);
+  });
+  it("uses one saved plan for validation, apply and record creation", () => {
+    const workflow = release();
+    const paths = [
+      ...workflow.matchAll(
+        /(?:verify-plan\.sh "\$EXPECTED_RECORDS"|apply-plan\.sh|intentional tag --plan) "([^"]+)"/g,
+      ),
+    ].map((match) => match[1]);
+    expect(paths).toHaveLength(3);
+    expect(new Set(paths).size).toBe(1);
+    expect(workflow).toContain(`intentional plan > "${paths[0]}"`);
+  });
+});

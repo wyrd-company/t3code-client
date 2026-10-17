@@ -15,9 +15,12 @@ concurrency:
 
 jobs:
   check:
-    name: Check
+    name: Check ${{ matrix.unit }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    strategy:
+      matrix:
+        unit: [t3code-lib, t3code-cli]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -33,27 +36,24 @@ jobs:
           cache: true
           run-install: true
 
-      - name: Check release intents
+      - name: Check release intents with ephemeral baselines
         uses: wyrd-company/intentional@25b97b64a994f6e3fb88d0e136ecb9f2589c384f # 0.1.6
         with:
-          command: check
+          command: status
           intentional-version: "0.1.6"
 
-      - name: Check
-        run: pnpm run check
-
-      - name: Typecheck
-        run: pnpm run typecheck
-
-      - name: Test
-        run: pnpm run test
-
-      # The live suite starts the pinned `t3` devDependency, so a server
-      # release that breaks the wire contract fails here.
-      - name: Test against the pinned T3 Code server
-        run: pnpm run test:live
-
-      - name: Check the package as a consumer sees it
+      - name: Check release foundation
         run: |
-          tarball="$(scripts/release/verify-package.sh "$RUNNER_TEMP/package")"
-          scripts/release/verify-consumer.sh "$tarball"
+          scripts/release/check-intents.sh
+          pnpm run check
+          pnpm exec tsc --noEmit
+          pnpm exec vp test run
+
+      - name: Check package
+        env:
+          UNIT: ${{ matrix.unit }}
+        run: |
+          pnpm --filter "@wyrd-company/$UNIT" run typecheck
+          pnpm --filter "@wyrd-company/$UNIT" run test
+          pnpm --filter "@wyrd-company/$UNIT" run test:live
+          pnpm --filter "@wyrd-company/$UNIT" run package

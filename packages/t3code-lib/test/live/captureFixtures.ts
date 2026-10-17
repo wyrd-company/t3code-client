@@ -67,7 +67,7 @@ try {
     threadId: SAMPLE_THREAD_ID,
     projectId: project.id,
     title: "Example thread",
-    modelSelection: { instanceId: "codex" as never, model: "gpt-5.6-luna" },
+    modelSelection: { instanceId: "codex" as never, model: "gpt-6-luna" },
     runtimeMode: "auto",
   });
   const read = async (path: string): Promise<Json> => {

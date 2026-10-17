@@ -6,9 +6,12 @@ set -euo pipefail
 
 tag="${1:?tag is required}"
 directory="${2:?package directory is required}"
-version="${tag#t3code-client@}"
+# shellcheck source=scripts/release/unit.sh
+source "$(dirname "$0")/unit.sh"
+release_unit "${tag%@*}"
+version="${tag#*@}"
 
-tarball="$directory/wyrd-company-t3code-client-$version.tgz"
+tarball="$directory/wyrd-company-$unit-$version.tgz"
 notes="$directory/release-notes.md"
 for file in "$tarball" "$notes"; do
   if [[ ! -f "$file" ]]; then

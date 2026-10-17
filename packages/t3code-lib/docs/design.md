@@ -9,7 +9,7 @@ relationships:
 
 # T3 Code client: technical design
 
-`@wyrd-company/t3code-client` is a TypeScript library that lets a Node program
+`@wyrd-company/t3code-lib` is a TypeScript library that lets a Node program
 drive a T3 Code server the way the T3 web and desktop clients do: create
 projects and threads, launch threads into worktrees, start runs, watch a
 thread live, answer approvals and questions, and manage the server's auth
@@ -230,7 +230,7 @@ keeps the project.
 ## Caller's view
 
 ```ts
-import { T3Client, memoryCredentialStore } from "@wyrd-company/t3code-client";
+import { T3Client, memoryCredentialStore } from "@wyrd-company/t3code-lib";
 
 const client = T3Client.create({
   baseUrl: "http://127.0.0.1:3979",

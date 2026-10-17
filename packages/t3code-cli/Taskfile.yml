@@ -1,0 +1,30 @@
+version: "3"
+
+tasks:
+  install:
+    desc: Reserved CLI install (scaffold pending)
+    cmds: ["pnpm install"]
+  build:
+    desc: Reserved CLI build (scaffold pending)
+    cmds: ["pnpm run build"]
+  fmt:
+    desc: Reserved CLI fmt (scaffold pending)
+    cmds: ["pnpm run fmt"]
+  lint:
+    desc: Reserved CLI lint (scaffold pending)
+    cmds: ["pnpm run lint"]
+  typecheck:
+    desc: Reserved CLI typecheck (scaffold pending)
+    cmds: ["pnpm run typecheck"]
+  test:
+    desc: Reserved CLI test (scaffold pending)
+    cmds: ["pnpm run test"]
+  test:live:
+    desc: Reserved CLI test:live (scaffold pending)
+    cmds: ["pnpm run test:live"]
+  package:
+    desc: Reserved CLI package (scaffold pending)
+    cmds: ["pnpm run package"]
+  check:
+    desc: Reserved CLI check (scaffold pending)
+    cmds: ["pnpm run check"]

@@ -85,7 +85,7 @@ export default async function setup(): Promise<(() => Promise<void>) | undefined
   if (process.env["T3_LIVE_URL"] && process.env["T3_LIVE_TOKEN"]) return undefined;
 
   const bin = serverBin();
-  const root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-client-live-"));
+  const root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-lib-live-"));
   const baseDir = NodePath.join(root, "home");
   const workspace = NodePath.join(root, "workspace");
   await NodeFSP.mkdir(workspace, { recursive: true });

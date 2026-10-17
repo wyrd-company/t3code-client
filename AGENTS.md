@@ -1,59 +1,33 @@
-# t3code-client
+# t3code-client workspace
 
-TypeScript client library for the stock T3 Code server, published to npmjs as
-`@wyrd-company/t3code-client`. Read `docs/design.md` before changing anything;
-it is the contract every module is built against. `docs/testing.md` explains
-unit and live tests, and `docs/releasing.md` explains releases.
+Read `packages/t3code-lib/docs/design.md` before changing library code. It is
+the library contract. Package guidance is in `packages/t3code-lib/AGENTS.md`.
+Read `docs/testing.md` and `docs/releasing.md` before changing automation.
 
 ## Layout
 
-- `src/schemas/` zod mirrors of upstream `packages/contracts/src`.
-- `src/wire/` the RPC envelope protocol.
-- `src/transport/` HTTP and WebSocket transports and the RPC connection.
-- `src/rpc/` the typed method registry and client.
-- `src/auth/` credential store and auth control plane client.
-- `src/api/` facades composed by `T3Client`.
-- `src/internal/` small helpers with no T3 knowledge.
-- `test/support/` fake server used by unit tests. `test/live/` real-server tests.
-- `scripts/release/` shell steps the release workflows run.
-
-## Reference source
-
-The library targets the T3 Code build pinned as the `t3` devDependency: the
-newest release on `main`, the newest nightly on a branch that prepares for
-the next upstream version. Upstream is `pingdotgg/t3code`; read the source at
-that build's tag (`vX.Y.Z` or `vX.Y.Z-nightly.YYYYMMDD.N`).
-`docs/releasing.md` describes an update. Contracts:
-`packages/contracts/src/*.ts`. Server RPC handlers: `apps/server/src/ws.ts`.
-Scope per method: `apps/server/src/auth/RpcAuthorization.ts`.
-
-The library tracks upstream. A capability upstream removes is removed here;
-a capability upstream adds is added here. Following upstream does not need
-separate approval.
+- `packages/t3code-lib`: npm `@wyrd-company/t3code-lib`, release unit `t3code-lib`.
+- `packages/t3code-cli`: reserved private npm `@wyrd-company/t3code-cli`, unit
+  `t3code-cli`, eventual binary `t3c`. Scaffold owns commander and implementation.
+- `scripts/release`: shared unit-aware pack, validation and publication steps.
+- `.intentional`: independent unit projections and one pre-0.1.0 intent per unit.
 
 ## Conventions
 
-The code follows upstream T3 Code's conventions so it reads like part of that
-codebase.
+Node >=22.16, pnpm 11, vite-plus 0.3.3 and TypeScript 7. ESM/NodeNext,
+`.ts` relative imports, `erasableSyntaxOnly`, camelCase files, colocated
+`vite-plus/test` tests, no `any`, files about 300 lines or less.
+Use generic example/test values. Follow Conventional Commits.
+Application code must not spawn CLIs. The CLI composes the library and does
+not implement wire protocol. Only build/test tools may spawn the test server.
+The pinned `t3` devDependency is 0.1.0; runtime code must not enforce a pinned
+server version. Preserve protocol 2 and the supported upstream capabilities.
 
-- ESM, `NodeNext` resolution. Relative imports end in `.ts`; the build
-  rewrites them to `.js`.
-- camelCase file names. Tests are colocated as `*.test.ts` and import from
-  `vite-plus/test`.
-- Node built-ins are namespace imports with canonical aliases:
-  `import * as NodePath from "node:path"`, `NodeFSP` for `node:fs/promises`.
-- No TypeScript-only runtime syntax (`erasableSyntaxOnly`): declare fields
-  instead of constructor parameter properties.
-- No file over about 300 lines. Split by concern, not by size alone.
-- Every object schema is `z.looseObject`. Growing literal sets use the
-  forward-compatible helpers in `src/schemas/common.ts`.
-- Every thrown error is a `T3Error` subclass from `src/errors.ts`.
-- No `any`. `unknown` at the edges, narrowed by schemas.
-- No shelling out from library code. Test harnesses may spawn the server.
-- Public API is exported only from `src/index.ts`.
-- Example and test values are generic: no real hostnames, users, or repos.
-- Commits follow Conventional Commits, as upstream does.
-- A change a consumer can notice carries an Intentional intent
-  (`intentional add`). Never edit the version in `package.json` or
-  `CHANGELOG.md` by hand.
-- Run `task check` before handing work back.
+Use `intentional add` for consumer changes; maintain the package's single
+pre-0.1.0 intent. Never hand-edit released versions or changelogs. Historical
+`t3code-client@*` tags and root CHANGELOG.md belong to the retired package.
+No authoritative baseline tags before epic finalization. `task check` uses a
+scratch repository for missing pre-release baselines, without tagging this repo.
+
+Run `task check` before handoff. Root verbs cover the workspace; `lib:*` and
+`cli:*` select a package. Reserved CLI verbs explicitly report their status.

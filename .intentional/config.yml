@@ -5,16 +5,29 @@ settings:
   pre-1-0-bump-mapping: component
 discovery:
   managed-paths:
-  - detector: npm-package
-    path: package.json
-    release-unit: t3code-client
+    - detector: npm-package
+      path: packages/t3code-lib/package.json
+      release-unit: t3code-lib
+    - detector: npm-package
+      path: packages/t3code-cli/package.json
+      release-unit: t3code-cli
 release-units:
-  t3code-client:
-    path: .
+  t3code-lib:
+    path: packages/t3code-lib
     projections:
-    - adapter: npm
-      file: package.json
-      mode: committed
+      - adapter: npm
+        file: package.json
+        mode: committed
+    tags:
+      primary:
+        role: primary
+        template: '{id}@{version}'
+  t3code-cli:
+    path: packages/t3code-cli
+    projections:
+      - adapter: npm
+        file: package.json
+        mode: committed
     tags:
       primary:
         role: primary

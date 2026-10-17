@@ -5,12 +5,25 @@
 set -euo pipefail
 
 tarball="$(realpath "${1:?tarball is required}")"
+unit="${2:-t3code-lib}"
+case "$unit" in
+  t3code-lib|t3code-cli) ;;
+  *) echo "Unknown release unit $unit." >&2; exit 1 ;;
+esac
 typescript="${CONSUMER_TYPESCRIPT:-typescript@5.9}"
 consumer="$(mktemp -d)"
 trap 'rm -rf "$consumer"' EXIT
 
 cd "$consumer"
 printf '{ "name": "consumer", "private": true, "type": "module" }\n' > package.json
+if [[ "$unit" == t3code-cli ]]; then
+  # The library tarball avoids relying on first-publication ordering.
+  library="$(realpath "${3:?CLI verification requires the library tarball}")"
+  npm install --silent --no-audit --no-fund "$library" "$tarball"
+  ./node_modules/.bin/t3c --version
+  echo "CLI consumer check passed for $(basename "$tarball")."
+  exit 0
+fi
 npm install --silent --no-audit --no-fund "$tarball" "$typescript" "@types/node@24"
 
 cat > index.ts <<'TS'
@@ -21,7 +34,7 @@ import {
   memoryCredentialStore,
   type OrchestrationV2TurnItem,
   type T3ClientOptions,
-} from "@wyrd-company/t3code-client";
+} from "@wyrd-company/t3code-lib";
 
 const options: T3ClientOptions = {
   baseUrl: "http://127.0.0.1:1",
@@ -45,7 +58,7 @@ for resolution in "NodeNext NodeNext" "ESNext Bundler"; do
 done
 
 node --input-type=module -e '
-  const library = await import("@wyrd-company/t3code-client");
+  const library = await import("@wyrd-company/t3code-lib");
   if (typeof library.T3Client?.create !== "function") throw new Error("T3Client.create is missing.");
 '
 echo "Consumer check passed for $(basename "$tarball")."
