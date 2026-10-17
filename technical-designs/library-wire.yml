@@ -1,0 +1,186 @@
+$schema: https://refinery.systems/ontology/technical-design
+title: T3 Code library — wire
+objective: Provide the stock T3 Code Node library contract for library-wire.
+relationships:
+  related-to:
+    - library
+  references:
+    - profiles
+    - testing
+    - releasing
+proposed-design:
+  high-level-overview: >-
+    The library implements stock T3 Code 0.1.0 and orchestration protocol 2.
+    Related library designs carry the wire, transport, auth, usage and facade
+    contracts. The package design.md points to this canonical design family.
+  wire-facts-verified-against-t-code: |
+    The server speaks orchestration protocol 2 and refuses other clients. The
+    `/ws` upgrade must carry `?orchestrationProtocol=2` (a 426 answers an upgrade
+    without it), and the orchestration HTTP routes must carry the header
+    `x-t3-orchestration-protocol: 2`. `ExecutionEnvironmentDescriptor.orchestrationProtocolVersion`
+    says which protocol a server speaks.
+
+    HTTP, all under one base URL:
+
+    | Method and path                                       | Auth                 | Notes                                                                                      |
+    | ----------------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------ |
+    | `GET /.well-known/t3/environment`                     | none                 | `ExecutionEnvironmentDescriptor`                                                           |
+    | `GET /api/auth/session`                               | optional bearer      | `AuthSessionState`; `authenticated:false` without a credential                             |
+    | `POST /oauth/token`                                   | none                 | form-encoded token exchange; pairing token is single use                                   |
+    | `POST /api/auth/websocket-ticket`                     | bearer               | `{ticket, expiresAt}`; ticket lives about five minutes                                     |
+    | `POST /api/auth/pairing-token`                        | bearer, access:write | body `{label?, scopes?}`; the credential is returned once                                  |
+    | `GET /api/auth/pairing-links`                         | bearer, access:read  |                                                                                            |
+    | `POST /api/auth/pairing-links/revoke`                 | bearer, access:write | `{id}` → `{revoked}`                                                                       |
+    | `GET /api/auth/clients`                               | bearer, access:read  | `AuthClientSession[]`                                                                      |
+    | `POST /api/auth/clients/revoke`                       | bearer, access:write | `{sessionId}` → `{revoked}`                                                                |
+    | `POST /api/auth/clients/revoke-others`                | bearer, access:write | `{revokedCount}`                                                                           |
+    | `GET /api/projects`                                   | bearer, orch:read    | `ProjectSnapshot`: every project record                                                    |
+    | `POST /api/projects/mutate`                           | bearer, orch:operate | `ProjectMutation` → `Project`                                                              |
+    | `GET /api/orchestration/shell`                        | bearer, orch:read    | `OrchestrationV2ShellSnapshot` (protocol header)                                           |
+    | `GET /api/orchestration/threads/:threadId`            | bearer, orch:read    | `OrchestrationV2ThreadDetailSnapshot`, the full projection; 404 `thread_not_found`         |
+    | `GET /api/orchestration/threads/:threadId/bounded`    | bearer, orch:read    | `OrchestrationV2ThreadBoundedSnapshot`: a recent window plus `historyCursor`               |
+    | `GET /api/orchestration/threads/:threadId/history`    | bearer, orch:read    | query `cursor`; `OrchestrationV2ThreadHistoryPage`; 400 `invalid_history_cursor`           |
+    | `GET /api/orchestration/threads/:threadId/transcript` | bearer, orch:read    | `OrchestrationV2ThreadTranscript`: the visible timeline; 400 `thread_transcript_too_large` |
+    | `POST /api/pull-requests/diff`                        | bearer               | out of scope for this version                                                              |
+
+    HTTP errors are JSON tagged records: `EnvironmentRequestInvalidError` (400),
+    `EnvironmentAuthInvalidError` (401), `EnvironmentScopeRequiredError` and
+    `EnvironmentOperationForbiddenError` (403), `EnvironmentResourceNotFoundError`
+    (404), `EnvironmentInternalError` (500). Each carries `code`, `reason` and
+    `traceId`. A scope error names the scope the request needs in
+    `requiredPermission` and its legacy parent in `requiredScope`.
+
+    Scopes are granular: `orchestration:read`, `orchestration:operate`,
+    `settings:write`, `providers:manage`, `environment:maintain`,
+    `preview:operate`, `diagnostics:read`, `terminal:read`, `terminal:operate`,
+    `filesystem:read`, `filesystem:write`, `source-control:write`, `access:read`,
+    `access:write`, `relay:read`, `relay:write`. `review:write` still decodes but
+    grants nothing. Session state, pairing links, and client sessions report the
+    whole grant in `permissions` and only the legacy vocabulary in `scopes`;
+    `grantedScopes()` reads whichever is present. A pairing credential may ask for
+    any grantable scope.
+
+    WebSocket at `GET /ws`. Authentication on the upgrade is either
+    `?wsTicket=<ticket>` or an `authorization: Bearer` header. Optional query
+    parameters `clientSurface=cli` and `clientAppVersion` label the connection in
+    the server's client list. Messages are JSON text, one envelope per frame (the
+    server may also send a JSON array of envelopes). Envelopes:
+
+    ```text
+    client → server
+      {"_tag":"Request","id":"<string>","tag":"<method>","payload":{...},"headers":[]}
+      {"_tag":"Ack","requestId":"<id>"}          after every Chunk, or the stream stalls
+      {"_tag":"Interrupt","requestId":"<id>"}    cancels a stream or call
+      {"_tag":"Ping"}                            every ~5 s; the server answers Pong
+      {"_tag":"Eof"}
+
+    server → client
+      {"_tag":"Chunk","requestId":"<id>","values":[...]}          one or more stream items
+      {"_tag":"Exit","requestId":"<id>","exit":{"_tag":"Success","value":...}}
+      {"_tag":"Exit","requestId":"<id>","exit":{"_tag":"Failure","cause":[
+            {"_tag":"Fail","error":{"_tag":"OrchestrationV2DispatchCommandError","message":"…"}}
+          | {"_tag":"Die","defect":"Missing key\n  at [\"runId\"]"}
+          | {"_tag":"Interrupt","fiberId":797} ]}}
+      {"_tag":"Defect","defect":...}             connection-level failure
+      {"_tag":"Pong"}
+    ```
+
+    `headers` is required on `Request`; omitting it makes the server close the
+    socket without a reason. A stream ends with an `Exit` (an `Interrupt` cause
+    after the client cancels). A payload the server cannot decode surfaces as a
+    `Die` with a string defect, so the client validates payloads before sending
+    to give a better error.
+
+    Orchestration RPC methods (`ORCHESTRATION_V2_WS_METHODS` in the contracts;
+    scope in `apps/server/src/auth/RpcAuthorization.ts`):
+
+    | Method                                   | Scope        | Payload → result                                                                                                                                      |
+    | ---------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+    | `orchestration.dispatchCommand`          | orch:operate | `OrchestrationV2Command` → `{sequence}`; fails `OrchestrationV2DispatchCommandError`                                                                  |
+    | `orchestration.launchThread`             | orch:operate | `OrchestrationV2ThreadLaunchInput` → `{threadId, projection, resumed}`                                                                                |
+    | `orchestration.getThreadProjection`      | orch:read    | `{threadId}` → `OrchestrationV2ThreadProjection` with a bounded timeline window                                                                       |
+    | `orchestration.getTurnItem`              | orch:read    | `{threadId, itemId}` → `{item}` with the full, size-bounded input and output                                                                          |
+    | `orchestration.getWorkflowScript`        | orch:read    | unchanged                                                                                                                                             |
+    | `orchestration.stopWorkflow`             | orch:operate | `{threadId, subagentId}` → nothing; fails `OrchestrationV2StopWorkflowError` with a `reason`                                                          |
+    | `orchestration.getTurnDiff`              | orch:read    | unchanged                                                                                                                                             |
+    | `orchestration.getFullThreadDiff`        | orch:read    | unchanged                                                                                                                                             |
+    | `orchestration.searchThreads`            | orch:read    | unchanged                                                                                                                                             |
+    | `orchestration.searchThread`             | orch:read    | `OrchestrationV2SearchThreadInput` → `OrchestrationV2SearchThreadResult`: one match and the navigation around it                                      |
+    | `orchestration.searchThreadStream`       | orch:read    | the same input → stream of results that converge; the last has `complete: true`                                                                       |
+    | `orchestration.getArchivedShellSnapshot` | orch:read    | `{}` → `OrchestrationV2ArchivedShellSnapshot`                                                                                                         |
+    | `orchestration.subscribeArchivedShell`   | orch:read    | stream of `OrchestrationV2ArchivedShellStreamItem`                                                                                                    |
+    | `orchestration.subscribeShell`           | orch:read    | `{afterSequence?, requestCompletionMarker?}` → stream of `OrchestrationV2ShellStreamItem`                                                             |
+    | `orchestration.subscribeThread`          | orch:read    | `{threadId, afterSequence?, requestCompletionMarker?, acceptBoundedSnapshot?, acceptCompactTurnItems?}` → stream of `OrchestrationV2ThreadStreamItem` |
+
+    Projects are not orchestration commands: `projects.mutate` (orch:operate)
+    takes a `ProjectMutation` (`project.create`, `project.update`,
+    `project.delete`) and answers with the `Project`; it fails with
+    `ProjectMutationError`, whose `cause` names a missing project. A create or
+    update that carries `scripts` also needs `settings:write`, because project
+    scripts run on the host. The shell stream reports projects as
+    `project.updated` and `project.removed`.
+
+    A workflow run is a subagent whose `workflow` field carries the provider's
+    replace-in-full view of the run: an append-only phase list and one entry
+    per agent. `orchestration.stopWorkflow` stops the run by that subagent; the
+    `subagent.stop` command stops one provider-native child while its run keeps
+    working. The server advertises thread find with `threadFind` and
+    `threadFindProgressive` in `ServerConfig`.
+
+    With `acceptCompactTurnItems`, a bounded snapshot may omit from
+    `projection.turnItems` the items its local visible rows already carry and
+    sets `turnItemsOmitLocalVisible: true`. `boundedSnapshotProjection` puts
+    them back; the thread watch does this before it yields the snapshot, so a
+    watch consumer always sees the whole list.
+
+    A thread stream starts with `{kind:"snapshot", snapshotSequence, projection}`
+    unless `afterSequence` is given, in which case persisted events after it are
+    replayed instead (the snapshot is still sent when the replay would be too
+    large or when nothing is newer). `requestCompletionMarker` puts a
+    `{kind:"synchronized"}` between catch-up and live delivery. Each event is
+    `{kind:"event", sequence, event}` where the event is an
+    `OrchestrationV2DomainEvent`: `id`, `threadId`, `occurredAt`, `type`, and a
+    `payload` that is the whole record the event changed (`thread.*` carry the
+    thread, `run.created`/`run.updated` a run, `turn-item.updated` a turn item,
+    `runtime-request.updated` a runtime request, `message.updated` a message,
+    and so on). Applying an event is an upsert by id; the T3 web client folds
+    events the same way. `thread.pull-request-link-updated` is the exception: its
+    payload is one `ThreadPullRequestLink`, which replaces the thread's link with
+    the same host, repository, and number. A thread without `pullRequests` reads
+    its `linkedPullRequest` as a one-link list first. Keys compare as upstream's
+    shared `threadPullRequests` keys them: host and repository case-insensitively,
+    with a Forgejo link's port and the Azure DevOps host forms folded in.
+
+    The transcript route answers with the thread's `visibleTurnItems`, its
+    `title`, and `updatedAt` in one read. It refuses a thread whose transcript is
+    larger than the server's file attachment limit.
+
+    `message.dispatch` carries `dispatchMode` and, optionally, `deliveryIntent`.
+    With `deliveryIntent: "auto"` the server resolves the mode against its
+    serialized thread state: a new run when nothing is active, otherwise steer
+    or queue by the provider's capabilities. The server links the message to its
+    run: the run's `userMessageId`, and the message record's `runId`. Run
+    statuses are `preparing`, `queued`, `starting`, `running`, `waiting`, and
+    the terminal `completed`, `interrupted`, `failed`, `cancelled`,
+    `rolled_back`. `run.interrupt` needs a `runId`; with `holdQueue` it is the
+    Stop button. The active run an interrupt targets is the highest-ordinal run
+    that is `preparing`, `starting`, `running`, or `waiting`; a queued run has
+    not started and is not interruptible. Commands carry `createdBy` and `creationSource` where they
+    create something; the server stamps `createdBy: "user"` on everything a
+    client dispatches.
+
+    The thread shell carries `status` (`idle` or the latest run's status),
+    `activeRunId`, `pendingRuntimeRequest`, and `latestVisibleMessage`, so a
+    list view needs no projection. The shell snapshot has `threads` and
+    `archivedThreads`, but the server fills `archivedThreads` only on the socket
+    snapshot; archived threads are read with
+    `orchestration.getArchivedShellSnapshot`, and `thread.updated` items for
+    them arrive on `orchestration.subscribeArchivedShell`.
+
+    `projects.ensureScratch` finds or creates the environment's Scratch project,
+    rooted at `ServerConfig.scratchWorkspaceRoot`; the server sends that field
+    only when its data directory is outside a Git checkout, and fails the call
+    otherwise. `projects.createNew` makes a folder under
+    `ServerConfig.newProjectsRoot` with a README, an icon and a first commit,
+    then creates the project; a failed commit is reported in `commitError` and
+    keeps the project.

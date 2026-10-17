@@ -1,0 +1,167 @@
+$schema: https://refinery.systems/ontology/technical-design
+title: T3 Code library — facades
+objective: Provide the stock T3 Code Node library contract for library-facades.
+relationships:
+  related-to:
+    - library
+  references:
+    - profiles
+    - testing
+    - releasing
+proposed-design:
+  high-level-overview: >-
+    The library implements stock T3 Code 0.1.0 and orchestration protocol 2.
+    Related library designs carry the wire, transport, auth, usage and facade
+    contracts. The package design.md points to this canonical design family.
+  api-facades: |
+    Facades hold no state beyond references to the transports. They validate
+    inputs with the schemas, fill server-required bookkeeping fields
+    (`commandId`, `messageId`, `createdBy`, `creationSource`) so callers never
+    hand-build a command, and translate stream items into domain items.
+
+    ```ts
+    export class ProjectsApi {
+      list(): Promise<OrchestrationProjectShell[]>                    // from the shell snapshot
+      snapshot(): Promise<ProjectSnapshot>                            // GET /api/projects: full records
+      get(projectId): Promise<OrchestrationProjectShell | undefined>
+      findByWorkspaceRoot(workspaceRoot: string): Promise<OrchestrationProjectShell | undefined>  // normalises trailing slashes
+      create(input: { projectId?; title; workspaceRoot; createWorkspaceRootIfMissing?; defaultModelSelection?; scripts? }): Promise<Project>
+      ensure(input: { workspaceRoot; title; createWorkspaceRootIfMissing? }): Promise<OrchestrationProjectShell>
+      update(projectId, patch: ProjectUpdatePayload): Promise<Project>
+      delete(projectId, options?: { force?: boolean }): Promise<void>  // idempotent: not found resolves
+      ensureScratch(): Promise<ProjectEnsureScratchResult>             // server finds or creates the Scratch project
+      createNew(input: { name: string }): Promise<ProjectCreateNewResult>  // server makes the folder, first commit, and project
+      files: { list, read, write, searchEntries, searchContents }      // thin typed RPC wrappers
+    }
+
+    export class ThreadsApi {
+      list(options?: { projectId?: ProjectId; includeArchived?: boolean }): Promise<OrchestrationV2ThreadShell[]>  // archived ones from the RPC archived shell
+      get(threadId): Promise<OrchestrationV2ThreadShell | undefined>  // active first, then the archived shell
+      detail(threadId): Promise<OrchestrationV2ThreadDetailSnapshot>  // HTTP, the full projection; T3NotFoundError
+      projection(threadId): Promise<OrchestrationV2ThreadProjection>  // RPC, bounded timeline window
+      historyPage(threadId, cursor, options?: { throughEntryId?; view?: "conversation" | "activity" }): Promise<OrchestrationV2ThreadHistoryPage>
+      transcript(threadId): Promise<OrchestrationV2ThreadTranscript>  // HTTP, the visible timeline; T3NotFoundError, T3HttpError thread_transcript_too_large
+      create(input: ThreadCreateInput): Promise<OrchestrationV2ThreadShell>   // caller may pass threadId; else generated
+      ensure(input: ThreadCreateInput & { threadId: ThreadId }): Promise<OrchestrationV2ThreadShell>   // exists → return as is
+      launch(input: ThreadLaunchInput): Promise<OrchestrationV2ThreadLaunchResult>  // thread + workspace + optional first message
+      update(threadId, patch: ThreadMetadataUpdatePayload): Promise<void>
+      archive / unarchive / settle / unsettle / delete (threadId): Promise<void>  // archive and delete idempotent
+      setRuntimeMode(threadId, mode) / setInteractionMode(threadId, mode) / setModelSelection(threadId, selection)
+      startTurn(input: StartTurnInput): Promise<TurnHandle>
+      interrupt(threadId, runId?, options?: { reason?; holdQueue? }): Promise<void>  // active run when runId omitted; no-op when idle
+      stop(threadId): Promise<void>                                                // interrupt + holdQueue
+      respondToApproval(input: { threadId; requestId; decision: ProviderApprovalDecision }): Promise<void>
+      respondToUserInput(input: { threadId; requestId; answers: Record<string, unknown>; attachmentsByQuestionId? }): Promise<void>
+      dismissUserInput(input: { threadId; requestId }): Promise<void>
+      pendingRequests(threadId): Promise<PendingRequest[]>                         // pending runtime requests joined with their turn items
+      watch(threadId, options?: WatchOptions): AsyncIterable<ThreadWatchItem>       // resumable live view
+      phase(thread: OrchestrationV2ThreadShell): ThreadPhase                        // pure; "waiting_for_approval" | "waiting_for_input" | "failed" | "starting" | "running" | "completed" | "idle"
+      dispatch(command: OrchestrationV2Command): Promise<DispatchResult>
+    }
+
+    export interface StartTurnInput { threadId: ThreadId; text: string; attachments?: ChatAttachment[]; context?: OrchestrationMessageContext;
+      modelSelection?: ModelSelection; runtimeMode?: RuntimeMode; interactionMode?: ProviderInteractionMode; titleSeed?: string;
+      delivery?: "auto" | "steer" | "restart" | "queue" | "start"; origin?: CreationOrigin; signal?: AbortSignal }
+
+    export interface TurnHandle {
+      readonly threadId: ThreadId
+      readonly messageId: MessageId
+      readonly commandId: CommandId
+      readonly sequence: number                          // dispatch receipt
+      readonly runId: RunId | undefined                  // once the server has linked the message to its run
+      events(): AsyncIterable<ThreadWatchItem>           // from first iteration until the run settles; nothing is buffered before that
+      readonly completion: Promise<TurnOutcome>          // resolves when the run that took this message reaches a terminal state
+      interrupt(): Promise<void>
+    }
+    export type TurnOutcome = { state: "completed" | "interrupted" | "failed" | "cancelled" | "rolled_back"; runId: RunId; run: OrchestrationV2Run;
+      assistantMessage?: OrchestrationV2ConversationMessage; error?: string; projection: OrchestrationV2ThreadProjection }
+
+    export type ThreadWatchItem =
+      | { kind: "snapshot"; snapshot: OrchestrationV2ThreadDetailSnapshot }
+      | { kind: "synchronized" }
+      | { kind: "event"; sequence: number; event: OrchestrationV2DomainEvent }
+      | { kind: "assistant-delta"; runId; itemId; messageId; text; delta; streaming }   // text so far; delta is what the update appended
+      | { kind: "approval-requested"; requestId; request: OrchestrationV2RuntimeRequest; item? }
+      | { kind: "user-input-requested"; requestId; request; item?; questions: OrchestrationV2UserInputQuestion[] }
+      | { kind: "request-resolved"; requestId }
+      | { kind: "turn-settled"; outcome: TurnOutcome }
+      | { kind: "decode-error"; error: T3DecodeError }
+      | { kind: "reconnected"; afterSequence: number }
+    ```
+
+    `startTurn` sets the thread's runtime and interaction modes first when the
+    caller names them, then dispatches `message.dispatch`. `delivery` chooses
+    how a busy thread takes the message: `auto` (the default), `steer`, and
+    `restart` ask for `start_immediately` with that `deliveryIntent`, so the
+    server resolves the mode against its own state; `queue` asks for
+    `queue_after_active`; `start` asks for `start_immediately` without an
+    intent.
+
+    `watch` subscribes with `orchestration.subscribeThread`; on socket loss it
+    resubscribes with `afterSequence` set to the last sequence seen and emits
+    `reconnected`. The snapshot frame seeds the derived items (pending requests)
+    so a consumer that joins late sees the current state first. Events whose
+    sequence is at or below the cursor are replay overlap and are skipped. The
+    tracker applies every known event to its projection and announces
+    `turn-settled` once per run when the run reaches a terminal status. Each
+    request is announced once. A user-input request's questions are on its
+    timeline item, which can arrive after the request, so the tracker announces a
+    user-input request when that item is in the projection.
+
+    Both thread and shell watches wait through transient first-connection failures
+    and retry subscriptions that disconnect before delivering an item, without an
+    attempt limit. Each connection attempt uses the transport's backoff. A watch
+    keeps its last cursor across the gap and filters replay overlap. Credential
+    rejections end the watch with the connection error; caller abort ends it quietly,
+    and `client.close()` ends it with a closed connection error. The transport's
+    connecting state determines whether a connection failure triggers a retry,
+    rather than its reason or the number of empty subscriptions, with one
+    exception: a `message_too_large` failure ends the watch with that error when
+    the subscription delivered nothing, because the server sends the same
+    snapshot on every attempt. A watch that was already live resubscribes, and
+    ends only if that fresh subscription fails the same way. A connection
+    error raised while the socket is open, including an HTTP detail failure while
+    seeding a resumed thread watch, ends the watch with that error.
+
+    The server links a message to its run: a new run's `userMessageId` names the
+    message that started it, and the message record's `runId` names the run that
+    took it, also when the message was steered into a run that was already
+    active. A `TurnHandle` follows the run either link names and settles when
+    that run reaches a terminal status; `assistantMessage` is the last assistant
+    message of that run, and `error` the failure recorded by the run's `error`
+    turn item. A message steered into an active run therefore settles with that
+    run's id, together with the message that started it.
+
+    ```ts
+    export class ShellApi {
+      snapshot(): Promise<OrchestrationV2ShellSnapshot>; // HTTP: projects, threads, archivedThreads
+      archivedSnapshot(): Promise<OrchestrationV2ArchivedShellSnapshot>; // RPC
+      watch(options?): AsyncIterable<ShellWatchItem>; // resumable like threads
+      watchArchived(options?): AsyncIterable<ArchivedShellWatchItem>;
+    }
+    export class ServerApi {
+      probe();
+      getConfig();
+      getSettings();
+      refreshProviders(input?);
+      watchConfig();
+      watchLifecycle();
+      environment();
+    }
+    export class VcsApi {
+      listRefs;
+      status;
+      createWorktree;
+      removeWorktree;
+      createRef;
+      switchRef;
+      watchStatus;
+    }
+    export class TerminalApi {
+      open;
+      attach(stream);
+      write;
+      resize;
+      close;
+    }
+    ```

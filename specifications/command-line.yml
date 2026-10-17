@@ -1,0 +1,27 @@
+$schema: https://refinery.systems/ontology/specification
+title: t3c command-line contract
+description: >-
+  t3c is a Node command-line interface to stock T3 Code. Its command surface is
+  assets/cli-surface.json; its execution, output and failure semantics are in
+  ../packages/t3code-cli/docs/command-contract.md and ../packages/t3code-cli/docs/output-contract.md. These assets form
+  one normative contract. The CLI composes @wyrd-company/t3code-lib for profiles,
+  auth, projects, thread launch, message dispatch, watches and interruption.
+format: cli
+validation-criteria: >-
+  Validate assets/cli-surface.json against the CLI Command Specification schema.
+  Validate this artifact against the specification type's required fields and
+  property schemas. Inspect command help against the native surface and exercise
+  golden paths and likely failure modes across the library boundary. Verify real
+  commands against the pinned stock T3 Code 0.1.0 server in a fresh task-specific
+  home outside Git, with gpt-6-luna subjects and operational live overrides cleared.
+  Verify Dagu stdin, final output, continuation, timeout and exit behavior with a
+  real custom harness. Workspace task check remains the repository handoff gate.
+relationships:
+  references:
+    - cli-surface
+    - command-contract
+    - output-contract
+    - harness
+    - library
+    - testing
+    - releasing

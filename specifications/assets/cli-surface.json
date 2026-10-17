@@ -1,0 +1,958 @@
+{
+  "$schema": "https://commonclischema.org/draft/2026-04/schema",
+  "relationships": {
+    "references": "t3c"
+  },
+  "tool": {
+    "name": "t3c",
+    "mode": "non-interactive",
+    "summary": "Drive stock T3 Code threads from Node and automation harnesses."
+  },
+  "global-options": [
+    {
+      "name": "server",
+      "flags": ["--server"],
+      "kind": "option",
+      "value": {
+        "type": "url"
+      },
+      "env-vars": ["T3_SERVER_URL"]
+    },
+    {
+      "name": "credentials",
+      "flags": ["--credentials"],
+      "kind": "option",
+      "value": {
+        "type": "file"
+      }
+    },
+    {
+      "name": "json",
+      "flags": ["--json"],
+      "kind": "flag"
+    },
+    {
+      "name": "log-level",
+      "flags": ["--log-level"],
+      "kind": "option",
+      "value": {
+        "type": "enum",
+        "values": ["silent", "error", "warn", "info", "debug"]
+      },
+      "default": "warn"
+    },
+    {
+      "name": "connect-timeout",
+      "flags": ["--connect-timeout"],
+      "kind": "option",
+      "value": {
+        "type": "duration"
+      },
+      "default": "30s"
+    },
+    {
+      "name": "version",
+      "flags": ["--version"],
+      "kind": "flag",
+      "description": "Print only the t3c package version."
+    }
+  ],
+  "commands": [
+    {
+      "name": "run",
+      "summary": "Dispatch a prompt and wait for its run.",
+      "positional-arguments": [
+        {
+          "name": "prompt",
+          "position": 0,
+          "required": false,
+          "value": {
+            "type": "string"
+          },
+          "conflicts-with": ["prompt-file"]
+        }
+      ],
+      "options": [
+        {
+          "name": "prompt-file",
+          "flags": ["--prompt-file"],
+          "kind": "option",
+          "value": {
+            "type": "file"
+          },
+          "description": "Read a file or stdin for the value -."
+        },
+        {
+          "name": "project",
+          "flags": ["--project"],
+          "kind": "option",
+          "value": {
+            "type": "string"
+          },
+          "conflicts-with": ["project-path"]
+        },
+        {
+          "name": "project-path",
+          "flags": ["--project-path"],
+          "kind": "option",
+          "value": {
+            "type": "directory"
+          },
+          "conflicts-with": ["project"]
+        },
+        {
+          "name": "provider",
+          "flags": ["--provider"],
+          "kind": "option",
+          "value": {
+            "type": "string"
+          },
+          "description": "Provider instance from the server catalog."
+        },
+        {
+          "name": "model",
+          "flags": ["--model"],
+          "kind": "option",
+          "value": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "mode",
+          "flags": ["--mode"],
+          "kind": "option",
+          "value": {
+            "type": "string"
+          },
+          "description": "Pass through the requested runtime mode."
+        },
+        {
+          "name": "title",
+          "flags": ["--title"],
+          "kind": "option",
+          "value": {
+            "type": "string"
+          }
+        },
+        {
+          "name": "worktree",
+          "flags": ["--worktree"],
+          "kind": "flag"
+        },
+        {
+          "name": "base-ref",
+          "flags": ["--base-ref"],
+          "kind": "option",
+          "value": {
+            "type": "string"
+          },
+          "requires": ["worktree"]
+        },
+        {
+          "name": "thread",
+          "flags": ["--thread"],
+          "kind": "option",
+          "value": {
+            "type": "string"
+          },
+          "description": "Continue an existing thread.",
+          "conflicts-with": ["project", "project-path", "worktree", "base-ref"]
+        },
+        {
+          "name": "timeout",
+          "flags": ["--timeout"],
+          "kind": "option",
+          "value": {
+            "type": "duration"
+          }
+        },
+        {
+          "name": "on-timeout",
+          "flags": ["--on-timeout"],
+          "kind": "option",
+          "value": {
+            "type": "enum",
+            "values": ["detach", "interrupt"]
+          },
+          "default": "interrupt"
+        },
+        {
+          "name": "on-request",
+          "flags": ["--on-request"],
+          "kind": "option",
+          "value": {
+            "type": "enum",
+            "values": ["wait"]
+          },
+          "description": "Keep waiting instead of the default fail-fast behavior."
+        },
+        {
+          "name": "approve",
+          "flags": ["--approve"],
+          "kind": "option",
+          "value": {
+            "type": "enum",
+            "values": ["accept", "reject"]
+          }
+        },
+        {
+          "name": "stream",
+          "flags": ["--stream"],
+          "kind": "flag"
+        }
+      ],
+      "groups": [
+        {
+          "name": "prompt-source",
+          "members": ["prompt", "prompt-file"],
+          "rule": "mutually-exclusive"
+        },
+        {
+          "name": "project-source",
+          "members": ["project", "project-path"],
+          "rule": "mutually-exclusive"
+        }
+      ],
+      "output": {
+        "modes": [
+          {
+            "name": "text",
+            "description": "Final assistant message on stdout; diagnostics and thread identity on stderr."
+          },
+          {
+            "name": "json",
+            "machine-readable": true,
+            "description": "One execution result object on stdout."
+          },
+          {
+            "name": "stream",
+            "description": "Assistant text deltas or JSON newline-delimited events."
+          }
+        ],
+        "exit-codes": [
+          {
+            "code": 0,
+            "meaning": "Completed."
+          },
+          {
+            "code": 1,
+            "meaning": "Unexpected CLI error."
+          },
+          {
+            "code": 2,
+            "meaning": "Usage error."
+          },
+          {
+            "code": 3,
+            "meaning": "Run failed or rolled back."
+          },
+          {
+            "code": 4,
+            "meaning": "Interrupted or cancelled",
+            "including by signal.": null
+          },
+          {
+            "code": 5,
+            "meaning": "Timed out and run still active; thread id reported."
+          },
+          {
+            "code": 6,
+            "meaning": "Timed out and CLI interrupted the run."
+          },
+          {
+            "code": 7,
+            "meaning": "Blocked on user input or approval."
+          },
+          {
+            "code": 8,
+            "meaning": "Server unreachable or connection lost."
+          },
+          {
+            "code": 9,
+            "meaning": "Credential rejected or scope missing."
+          },
+          {
+            "code": 10,
+            "meaning": "Thread",
+            "project or model not found.": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "thread",
+      "subcommands": [
+        {
+          "name": "start",
+          "summary": "Create a thread and run, then print the thread id.",
+          "positional-arguments": [
+            {
+              "name": "prompt",
+              "position": 0,
+              "required": false,
+              "value": {
+                "type": "string"
+              },
+              "conflicts-with": ["prompt-file"]
+            }
+          ],
+          "options": [
+            {
+              "name": "prompt-file",
+              "flags": ["--prompt-file"],
+              "kind": "option",
+              "value": {
+                "type": "file"
+              },
+              "description": "Read a file or stdin for the value -."
+            },
+            {
+              "name": "project",
+              "flags": ["--project"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "conflicts-with": ["project-path"]
+            },
+            {
+              "name": "project-path",
+              "flags": ["--project-path"],
+              "kind": "option",
+              "value": {
+                "type": "directory"
+              },
+              "conflicts-with": ["project"]
+            },
+            {
+              "name": "provider",
+              "flags": ["--provider"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "description": "Provider instance from the server catalog."
+            },
+            {
+              "name": "model",
+              "flags": ["--model"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "mode",
+              "flags": ["--mode"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "description": "Pass through the requested runtime mode."
+            },
+            {
+              "name": "title",
+              "flags": ["--title"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "worktree",
+              "flags": ["--worktree"],
+              "kind": "flag"
+            },
+            {
+              "name": "base-ref",
+              "flags": ["--base-ref"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "requires": ["worktree"]
+            },
+            {
+              "name": "thread",
+              "flags": ["--thread"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "description": "Continue an existing thread.",
+              "conflicts-with": ["project", "project-path", "worktree", "base-ref"]
+            },
+            {
+              "name": "timeout",
+              "flags": ["--timeout"],
+              "kind": "option",
+              "value": {
+                "type": "duration"
+              }
+            },
+            {
+              "name": "on-timeout",
+              "flags": ["--on-timeout"],
+              "kind": "option",
+              "value": {
+                "type": "enum",
+                "values": ["detach", "interrupt"]
+              },
+              "default": "interrupt"
+            },
+            {
+              "name": "on-request",
+              "flags": ["--on-request"],
+              "kind": "option",
+              "value": {
+                "type": "enum",
+                "values": ["wait"]
+              },
+              "description": "Keep waiting instead of the default fail-fast behavior."
+            },
+            {
+              "name": "approve",
+              "flags": ["--approve"],
+              "kind": "option",
+              "value": {
+                "type": "enum",
+                "values": ["accept", "reject"]
+              }
+            },
+            {
+              "name": "stream",
+              "flags": ["--stream"],
+              "kind": "flag"
+            },
+            {
+              "name": "wait",
+              "flags": ["--wait"],
+              "kind": "flag"
+            }
+          ],
+          "output": {
+            "modes": [
+              {
+                "name": "text",
+                "description": "Final assistant message on stdout; diagnostics and thread identity on stderr."
+              },
+              {
+                "name": "json",
+                "machine-readable": true,
+                "description": "One execution result object on stdout."
+              },
+              {
+                "name": "stream",
+                "description": "Assistant text deltas or JSON newline-delimited events."
+              }
+            ],
+            "exit-codes": [
+              {
+                "code": 0,
+                "meaning": "Completed."
+              },
+              {
+                "code": 1,
+                "meaning": "Unexpected CLI error."
+              },
+              {
+                "code": 2,
+                "meaning": "Usage error."
+              },
+              {
+                "code": 3,
+                "meaning": "Run failed or rolled back."
+              },
+              {
+                "code": 4,
+                "meaning": "Interrupted or cancelled",
+                "including by signal.": null
+              },
+              {
+                "code": 5,
+                "meaning": "Timed out and run still active; thread id reported."
+              },
+              {
+                "code": 6,
+                "meaning": "Timed out and CLI interrupted the run."
+              },
+              {
+                "code": 7,
+                "meaning": "Blocked on user input or approval."
+              },
+              {
+                "code": 8,
+                "meaning": "Server unreachable or connection lost."
+              },
+              {
+                "code": 9,
+                "meaning": "Credential rejected or scope missing."
+              },
+              {
+                "code": 10,
+                "meaning": "Thread",
+                "project or model not found.": null
+              }
+            ]
+          },
+          "groups": [
+            {
+              "name": "prompt-source",
+              "members": ["prompt", "prompt-file"],
+              "rule": "mutually-exclusive"
+            },
+            {
+              "name": "project-source",
+              "members": ["project", "project-path"],
+              "rule": "mutually-exclusive"
+            }
+          ]
+        },
+        {
+          "name": "send",
+          "summary": "Send a prompt to an existing thread.",
+          "positional-arguments": [
+            {
+              "name": "threadId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "prompt",
+              "position": 1,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "options": [
+            {
+              "name": "timeout",
+              "flags": ["--timeout"],
+              "kind": "option",
+              "value": {
+                "type": "duration"
+              }
+            },
+            {
+              "name": "on-timeout",
+              "flags": ["--on-timeout"],
+              "kind": "option",
+              "value": {
+                "type": "enum",
+                "values": ["detach", "interrupt"]
+              },
+              "default": "interrupt"
+            }
+          ],
+          "output": {
+            "modes": [
+              {
+                "name": "text",
+                "description": "Final assistant message on stdout; diagnostics and thread identity on stderr."
+              },
+              {
+                "name": "json",
+                "machine-readable": true,
+                "description": "One execution result object on stdout."
+              },
+              {
+                "name": "stream",
+                "description": "Assistant text deltas or JSON newline-delimited events."
+              }
+            ],
+            "exit-codes": [
+              {
+                "code": 0,
+                "meaning": "Completed."
+              },
+              {
+                "code": 1,
+                "meaning": "Unexpected CLI error."
+              },
+              {
+                "code": 2,
+                "meaning": "Usage error."
+              },
+              {
+                "code": 3,
+                "meaning": "Run failed or rolled back."
+              },
+              {
+                "code": 4,
+                "meaning": "Interrupted or cancelled",
+                "including by signal.": null
+              },
+              {
+                "code": 5,
+                "meaning": "Timed out and run still active; thread id reported."
+              },
+              {
+                "code": 6,
+                "meaning": "Timed out and CLI interrupted the run."
+              },
+              {
+                "code": 7,
+                "meaning": "Blocked on user input or approval."
+              },
+              {
+                "code": 8,
+                "meaning": "Server unreachable or connection lost."
+              },
+              {
+                "code": 9,
+                "meaning": "Credential rejected or scope missing."
+              },
+              {
+                "code": 10,
+                "meaning": "Thread",
+                "project or model not found.": null
+              }
+            ]
+          }
+        },
+        {
+          "name": "wait",
+          "summary": "Wait for the selected thread run.",
+          "positional-arguments": [
+            {
+              "name": "threadId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "options": [
+            {
+              "name": "timeout",
+              "flags": ["--timeout"],
+              "kind": "option",
+              "value": {
+                "type": "duration"
+              }
+            },
+            {
+              "name": "on-timeout",
+              "flags": ["--on-timeout"],
+              "kind": "option",
+              "value": {
+                "type": "enum",
+                "values": ["detach", "interrupt"]
+              },
+              "default": "detach"
+            }
+          ],
+          "output": {
+            "modes": [
+              {
+                "name": "text",
+                "description": "Final assistant message on stdout; diagnostics and thread identity on stderr."
+              },
+              {
+                "name": "json",
+                "machine-readable": true,
+                "description": "One execution result object on stdout."
+              },
+              {
+                "name": "stream",
+                "description": "Assistant text deltas or JSON newline-delimited events."
+              }
+            ],
+            "exit-codes": [
+              {
+                "code": 0,
+                "meaning": "Completed."
+              },
+              {
+                "code": 1,
+                "meaning": "Unexpected CLI error."
+              },
+              {
+                "code": 2,
+                "meaning": "Usage error."
+              },
+              {
+                "code": 3,
+                "meaning": "Run failed or rolled back."
+              },
+              {
+                "code": 4,
+                "meaning": "Interrupted or cancelled",
+                "including by signal.": null
+              },
+              {
+                "code": 5,
+                "meaning": "Timed out and run still active; thread id reported."
+              },
+              {
+                "code": 6,
+                "meaning": "Timed out and CLI interrupted the run."
+              },
+              {
+                "code": 7,
+                "meaning": "Blocked on user input or approval."
+              },
+              {
+                "code": 8,
+                "meaning": "Server unreachable or connection lost."
+              },
+              {
+                "code": 9,
+                "meaning": "Credential rejected or scope missing."
+              },
+              {
+                "code": 10,
+                "meaning": "Thread",
+                "project or model not found.": null
+              }
+            ]
+          }
+        },
+        {
+          "name": "read",
+          "summary": "Read the transcript with oversized-transcript detail fallback.",
+          "positional-arguments": [
+            {
+              "name": "threadId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "options": [
+            {
+              "name": "last",
+              "flags": ["--last"],
+              "kind": "flag",
+              "conflicts-with": ["full"]
+            },
+            {
+              "name": "full",
+              "flags": ["--full"],
+              "kind": "flag",
+              "conflicts-with": ["last"]
+            }
+          ]
+        },
+        {
+          "name": "list",
+          "summary": "List server threads."
+        },
+        {
+          "name": "interrupt",
+          "summary": "Interrupt the thread's active run with the library.",
+          "positional-arguments": [
+            {
+              "name": "threadId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "respond",
+          "summary": "Answer a user-input request or decide an approval.",
+          "positional-arguments": [
+            {
+              "name": "threadId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "options": [
+            {
+              "name": "request",
+              "flags": ["--request"],
+              "kind": "option",
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "answer",
+              "flags": ["--answer"],
+              "kind": "option",
+              "repeatable": true,
+              "value": {
+                "type": "string"
+              },
+              "description": "A question key and explicit value as k=v."
+            },
+            {
+              "name": "accept",
+              "flags": ["--accept"],
+              "kind": "flag"
+            },
+            {
+              "name": "reject",
+              "flags": ["--reject"],
+              "kind": "flag"
+            }
+          ],
+          "groups": [
+            {
+              "name": "response",
+              "members": ["answer", "accept", "reject"],
+              "rule": "exactly-one"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "project",
+      "subcommands": [
+        {
+          "name": "list",
+          "summary": "List projects."
+        },
+        {
+          "name": "ensure",
+          "summary": "Find or create the project for a workspace directory.",
+          "positional-arguments": [
+            {
+              "name": "dir",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "directory"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "auth",
+      "subcommands": [
+        {
+          "name": "pair",
+          "summary": "Validate and store a server profile credential.",
+          "positional-arguments": [
+            {
+              "name": "link",
+              "position": 0,
+              "required": false,
+              "value": {
+                "type": "url"
+              },
+              "description": "Pairing link with /pair#token= or ?token=."
+            }
+          ],
+          "options": [
+            {
+              "name": "pairing-token",
+              "flags": ["--pairing-token"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "requires": ["server"]
+            },
+            {
+              "name": "pairing-token-stdin",
+              "flags": ["--pairing-token-stdin"],
+              "kind": "flag",
+              "requires": ["server"]
+            },
+            {
+              "name": "token-stdin",
+              "flags": ["--token-stdin"],
+              "kind": "flag",
+              "requires": ["server"]
+            },
+            {
+              "name": "name",
+              "flags": ["--name"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "description": "Profile name; defaults to host."
+            }
+          ],
+          "groups": [
+            {
+              "name": "token-source",
+              "members": ["link", "pairing-token", "pairing-token-stdin", "token-stdin"],
+              "rule": "exactly-one"
+            }
+          ]
+        },
+        {
+          "name": "status",
+          "summary": "Probe every profile and report its metadata and current marker."
+        },
+        {
+          "name": "switch",
+          "summary": "Select the current profile.",
+          "positional-arguments": [
+            {
+              "name": "name",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "logout",
+          "summary": "Remove credentials for the named or current profile.",
+          "positional-arguments": [
+            {
+              "name": "name",
+              "position": 0,
+              "required": false,
+              "value": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "server",
+      "subcommands": [
+        {
+          "name": "info",
+          "summary": "Show environment descriptor",
+          "providers and models.": null
+        }
+      ]
+    },
+    {
+      "name": "version",
+      "summary": "Show CLI",
+      "library and target versions with an informational reachable-server verdict.": null
+    }
+  ],
+  "parsing-boundaries": [
+    {
+      "token": "--",
+      "behavior": "end-of-options",
+      "description": "Remaining tokens are positional input."
+    }
+  ],
+  "notes": [
+    "The companion t3c specification defines execution, output, auth, error and lifecycle semantics.",
+    "No command emits exit code 124."
+  ]
+}

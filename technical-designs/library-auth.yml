@@ -1,0 +1,73 @@
+$schema: https://refinery.systems/ontology/technical-design
+title: T3 Code library — auth
+objective: Provide the stock T3 Code Node library contract for library-auth.
+relationships:
+  related-to:
+    - library
+  references:
+    - profiles
+    - testing
+    - releasing
+proposed-design:
+  high-level-overview: >-
+    The library implements stock T3 Code 0.1.0 and orchestration protocol 2.
+    Related library designs carry the wire, transport, auth, usage and facade
+    contracts. The package design.md points to this canonical design family.
+  auth: |
+    ```ts
+    export interface StoredCredentials {
+      accessToken?: string;
+      scopes?: AuthGrantedScope[]; // KnownOr<AuthEnvironmentScope>: a newer server may grant a scope this client does not know
+      expiresAt?: string;
+      sessionMethod?: ServerAuthSessionMethod;
+    }
+    export interface CredentialStore {
+      load(): Promise<StoredCredentials>;
+      save(c: StoredCredentials): Promise<void>;
+      clear(): Promise<void>;
+    }
+    export function memoryCredentialStore(initial?: StoredCredentials): CredentialStore;
+    export function fileCredentialStore(path: string): CredentialStore; // JSON file, 0600
+
+    export class AuthClient {
+      descriptor(signal?): Promise<ExecutionEnvironmentDescriptor>;
+      sessionState(signal?): Promise<AuthSessionState>; // uses the stored token when present
+      exchangePairingToken(
+        pairingToken: string,
+        options?: {
+          scopes?: AuthEnvironmentScope[];
+          clientLabel?: string;
+          clientDeviceType?: AuthClientMetadataDeviceType;
+          clientOs?: string;
+        },
+      ): Promise<AuthAccessTokenResult>; // saves to the store
+      setAccessToken(token: string): Promise<AuthSessionState>; // validates via /api/auth/session, saves
+      clearCredentials(): Promise<void>;
+      websocketTicket(signal?): Promise<AuthWebSocketTicketResult>;
+      createPairingCredential(
+        input: AuthCreatePairingCredentialInput,
+      ): Promise<AuthPairingCredentialResult>;
+      listPairingLinks(): Promise<AuthPairingLink[]>;
+      revokePairingLink(id: string): Promise<boolean>;
+      listClients(): Promise<AuthClientSession[]>;
+      revokeClient(sessionId: AuthSessionId): Promise<boolean>;
+      revokeOtherClients(): Promise<number>;
+      watchAccess(options?): AsyncIterable<AuthAccessStreamEvent>; // subscribeAuthAccess over RPC
+      hasScope(scope: AuthEnvironmentScope): Promise<boolean>;
+      ensureScopes(required: AuthEnvironmentScope[]): Promise<void>; // throws T3AuthError with the missing scope
+      scopesSync(): AuthGrantedScope[] | undefined; // from the last credential loaded or saved; no store round trip
+      readonly credentialsVersion: number; // increments on every save or clear that changes the credential
+      onCredentialsChange(handler: () => void): () => void;
+    }
+    ```
+
+    `AuthClient` is the only module that reads or writes the credential store.
+    The HTTP and socket transports ask it for the current token through a
+    function, never the store directly. `AuthEnvironmentScope` stays a strict
+    enum for what a caller asks for (pairing credential scopes, exchange scopes,
+    `ensureScopes`); everything the server reports (session state, token
+    exchange, pairing links, client sessions) decodes as `AuthGrantedScope`, read
+    from `permissions` when the server sends it and from `scopes` otherwise.
+    `RpcClient` reads `scopesSync()` for its local scope check, and `T3Client`
+    calls `SocketTransport.reconnect()` on every credential change so the open
+    socket authenticates as the new session.

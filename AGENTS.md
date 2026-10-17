@@ -1,3 +1,12 @@
+---
+relationships:
+  references:
+    - command-line
+    - library
+    - testing
+    - releasing
+---
+
 # t3code-client workspace
 
 Read `packages/t3code-lib/docs/design.md` before changing library code. It is
@@ -20,6 +29,8 @@ Node >=22.16, pnpm 11, vite-plus 0.3.3 and TypeScript 7. ESM/NodeNext,
 Use generic example/test values. Follow Conventional Commits.
 Application code must not spawn CLIs. The CLI composes the library and does
 not implement wire protocol. Only build/test tools may spawn the test server.
+CLI command behavior is defined by `specifications/command-line.yml`; package
+`docs/design.md` files link to canonical `technical-designs/` artifacts.
 The pinned `t3` devDependency is 0.1.0; runtime code must not enforce a pinned
 server version. Preserve protocol 2 and the supported upstream capabilities.
 
