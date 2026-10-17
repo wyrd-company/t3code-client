@@ -1,5 +1,7 @@
 # @wyrd-company/t3code-cli
 
+![t3c runs a Luna conversation and lists the thread](docs/assets/demo.gif)
+
 `t3c` runs conversations on a stock T3 Code server from your terminal or
 an automation harness. Node >=22.16 is required.
 

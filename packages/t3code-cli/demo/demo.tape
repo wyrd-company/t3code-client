@@ -14,13 +14,13 @@ Sleep 300ms
 Show
 Type "t3c --version"
 Enter
-Wait+Line /\$ $/
+Wait+Line /\$$/
 Sleep 1s
-Type "t3c run 'Reply with a short greeting.' --model gpt-6-luna"
+Type "t3c run 'Reply with HELLO only.' --model gpt-6-luna"
 Enter
-Wait+Line@3m /\$ $/
+Wait+Line@3m /\$$/
 Sleep 3s
 Type "t3c thread list"
 Enter
-Wait+Line /\$ $/
+Wait+Line /\$$/
 Sleep 3s

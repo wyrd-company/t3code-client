@@ -56,6 +56,7 @@ jobs:
 
       - name: Check
         run: |
+          pnpm run build
           pnpm run check
           pnpm exec tsc --noEmit
           pnpm exec vp test run

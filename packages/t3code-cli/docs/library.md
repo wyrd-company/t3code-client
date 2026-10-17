@@ -23,6 +23,9 @@ TypeScript declarations ship with the package.
 <dt><a href="#T3Error">T3Error</a></dt>
 <dd><p>Base class for library failures with stable error codes.</p>
 </dd>
+<dt><a href="#T3StorageError">T3StorageError</a></dt>
+<dd><p>Local profile configuration or credential backend I/O failed.</p>
+</dd>
 <dt><a href="#T3HttpError">T3HttpError</a></dt>
 <dd><p>A non-2xx HTTP response that is not one of the more specific classes below.</p>
 </dd>
@@ -81,7 +84,9 @@ TypeScript declarations ship with the package.
 <dd><p>Typed RPC calls and streams with scope checks.</p>
 </dd>
 <dt><a href="#ProfileManager">ProfileManager</a></dt>
-<dd><p>Named server configuration shared by command-line and MCP consumers.</p>
+<dd><p>Named server configuration shared by command-line and MCP consumers.
+Config and credential I/O rejects with T3StorageError (code: storage);
+transport failures retain connection and rejected credentials retain auth_invalid.</p>
 </dd>
 </dl>
 
@@ -340,6 +345,13 @@ static create(options: T3ClientOptions): T3Client;
 ## T3Error
 
 Base class for library failures with stable error codes.
+
+**Kind**: global class  
+<a name="T3StorageError"></a>
+
+## T3StorageError
+
+Local profile configuration or credential backend I/O failed.
 
 **Kind**: global class  
 <a name="T3HttpError"></a>
@@ -1841,6 +1853,8 @@ streamRaw(tag: string, payload: unknown, options?: RpcStreamOptions): AsyncItera
 ## ProfileManager
 
 Named server configuration shared by command-line and MCP consumers.
+Config and credential I/O rejects with T3StorageError (code: storage);
+transport failures retain connection and rejected credentials retain auth_invalid.
 
 **Kind**: global class
 

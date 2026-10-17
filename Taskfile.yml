@@ -58,6 +58,9 @@ tasks:
   docs:
     desc: Generate published CLI pages and library reference
     cmds: [{ task: "cli:docs" }]
+  demo:check:
+    desc: Render and verify real demo commands without changing tracked assets
+    cmds: [{ task: "cli:demo:check" }]
   demo:
     desc: Record the CLI on a fresh pinned server
     cmds: [{ task: "cli:demo" }]
