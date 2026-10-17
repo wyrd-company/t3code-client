@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: output-contract
+//   implements: command-line
 // ---
 import {
   T3ConnectionError,

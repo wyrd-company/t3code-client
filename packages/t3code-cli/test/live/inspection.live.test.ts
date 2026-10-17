@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   verifies: command-contract
+//   verifies: command-line
 // ---
 import * as NodeChildProcess from "node:child_process";
 import * as NodeFSP from "node:fs/promises";

@@ -15,7 +15,7 @@ import { Output, emptyExecution } from "./output.ts";
 import type { CommandSurface } from "./registration.ts";
 const surface = JSON.parse(
   await NodeFSP.readFile(
-    new URL("../../../docs/specifications/assets/cli-surface.json", import.meta.url),
+    new URL("../../../docs/specifications/cli-surface.json", import.meta.url),
     "utf8",
   ),
 ) as CommandSurface;

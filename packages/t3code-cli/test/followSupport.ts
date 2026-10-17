@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   verifies: output-contract
+//   verifies: command-line
 // ---
 import { vi } from "vite-plus/test";
 import type { T3Client, ThreadWatchItem } from "@wyrd-company/t3code-lib";

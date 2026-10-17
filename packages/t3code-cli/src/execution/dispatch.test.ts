@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   verifies: command-contract
+//   verifies: command-line
 // ---
 import { afterEach, expect, it, vi } from "vite-plus/test";
 import {

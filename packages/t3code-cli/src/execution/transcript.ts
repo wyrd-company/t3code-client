@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: command-contract
+//   implements: command-line
 // ---
 import { T3HttpError, threadId as toThreadId, type T3Client } from "@wyrd-company/t3code-lib";
 

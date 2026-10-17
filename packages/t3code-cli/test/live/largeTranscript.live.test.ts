@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   verifies: command-contract
+//   verifies: command-line
 //   references: testing
 // ---
 import { randomUUID } from "node:crypto";

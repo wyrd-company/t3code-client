@@ -28,7 +28,7 @@ stderr. `--json` provides structured results; `--stream` emits incremental outpu
 
 Read [getting started](https://github.com/wyrd-company/t3code-client/blob/main/docs/index.md), [auth/profiles](https://github.com/wyrd-company/t3code-client/blob/main/docs/auth.md),
 [commands](https://github.com/wyrd-company/t3code-client/blob/main/docs/commands.md), [output and exit codes](https://github.com/wyrd-company/t3code-client/blob/main/docs/policy.md),
-[the Dagu harness](https://github.com/wyrd-company/t3code-client/blob/main/docs/dagu.md), and [the library API](https://github.com/wyrd-company/t3code-client/blob/main/docs/library.md).
+[the Dagu harness](https://github.com/wyrd-company/t3code-client/blob/main/docs/dagu.md), and [the library API](https://github.com/wyrd-company/t3code-client/blob/main/docs/library-reference.md).
 Use `t3c --help` or a command's `--help` for options.
 
 From the source workspace, `task docs` generates the user reference and

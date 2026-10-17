@@ -89,7 +89,7 @@ proposed-design:
     `task demo:check` repeats that real acceptance into an owned temporary GIF, so
     exact-head verification does not replace the committed recording. Normal live
     server overrides remain available outside isolated demo/acceptance commands.
-    `task docs` generates the public pages and reference; published navigation tests
+    `task docs` generates the library API source and published reference; published navigation tests
     verify their metadata, local links and registered GIF asset.
   consolidated-command-proof: |
     Agent acceptance spends provider credit and is explicit; ordinary `task check`
@@ -153,3 +153,37 @@ proposed-design:
     and removal of owned homes. Provider descendants created after readiness are
     outside that roster. This evidence does not establish exhaustive descendant
     cleanup.
+
+  dagu-fixture-verification: |
+    The [Dagu guide](../dagu.md#run-the-committed-fixtures) owns the consumer
+    invocation recipe for `scripts/dagu/verification.yaml` and
+    `scripts/dagu/continuation.yaml`: installed matching package consumer, existing
+    absolute project, explicit compatible server/environment prerequisites,
+    isolated Dagu home, validate/start/history commands and single-argument JSON
+    parameters. The fixtures remain byte-for-byte copies during verification.
+
+    Success supplies PROJECT, a stdin prompt and TIMEOUT. Continuation supplies
+    the same newly created THREAD, a new stdin prompt and TIMEOUT, without
+    project-path. Timeout uses the verification fixture with TIMEOUT 1s and the
+    sleep prompt. Default CLI interruption exits 6; the failed Dagu launcher exits
+    1 and the node error preserves `exit status 6`. This Dagu verification does
+    not prove detach exit 5. The separate command acceptance recipe covers that
+    boundary. No Dagu timeout policy is introduced.
+
+    Server setup and assertion automation are outside the committed Dagu
+    fixtures. Recorded verification uses an evidence-only launcher composing
+    the existing library live setup and server evidence machinery. It supplies
+    upstream-issued credentials in memory, runs an installed pack consumer and
+    uses its public library to assert model/project/prompt linkage, final answers,
+    same-thread continuation with distinct completed run identities, and a real
+    interrupted timeout run. The guide states these prerequisites and limits;
+    it does not claim a tracked bootstrap/assertion launcher.
+
+    Repeat evidence-only recipes only from fresh owned copies outside Git;
+    retained recipes write beside themselves. Verify the original evidence
+    closure before and after a copied run. Collect explicit sanitized command
+    and run records, not the whole Dagu home or generated key/secret files. A
+    finally block deletes owned subjects, closes the client, stops the owned
+    server and removes owned server/profile/project/Dagu roots. The readiness
+    roster has the lifecycle-evidence-scope limit above. Shared Dagu workflows,
+    services and operational server state are outside the verification boundary.

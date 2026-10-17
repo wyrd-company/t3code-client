@@ -17,31 +17,10 @@ function prose(text: string): string {
     .trim();
 }
 
-it("publishes every complete canonical semantic section in source order", () => {
-  for (const [source, page] of [
-    ["command-contract", "commands"],
-    ["output-contract", "policy"],
-    ["harness", "dagu"],
-  ]) {
-    const contract = JSON.parse(read(`specifications/assets/${source}.json`)) as {
-      title: string;
-      sections: { title: string; body: string }[];
-    };
-    const output = prose(read(`${page}.md`));
-    const body = contract.sections
-      .map((section) =>
-        section.title === "Overview" ? section.body : `## ${section.title}\n\n${section.body}`,
-      )
-      .join("\n\n");
-    expect(output).toContain(prose(`# ${contract.title}\n\n${body}`));
-    expect(output).toContain(`docs/specifications/assets/${source}.json; edit the source.`);
-  }
-});
-
 it("publishes the entire generated library reference with one canonical generator input", () => {
   const api = read("api.md").replace(/^---\n[\s\S]*?\n---\n/u, "");
-  expect(prose(read("library.md"))).toContain(prose(api));
-  expect(read("library.md")).toContain("from docs/api.md; edit the source.");
+  expect(prose(read("library-reference.md"))).toContain(prose(api));
+  expect(read("library-reference.md")).toContain("from docs/api.md; edit the source.");
 });
 
 it("builds and packs exactly the canonical root command surface", () => {
@@ -49,5 +28,5 @@ it("builds and packs exactly the canonical root command surface", () => {
     new URL("../../packages/t3code-cli/commandSurface.json", import.meta.url),
     "utf8",
   );
-  expect(JSON.parse(packed)).toEqual(JSON.parse(read("specifications/assets/cli-surface.json")));
+  expect(JSON.parse(packed)).toEqual(JSON.parse(read("specifications/cli-surface.json")));
 });

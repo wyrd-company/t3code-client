@@ -1,29 +1,26 @@
 $schema: https://refinery.systems/ontology/specification
 title: t3c command-line contract
 description: >-
-  t3c is a Node command-line interface to stock T3 Code. Its command surface is
-  assets/cli-surface.json; its execution, output and failure semantics are in
-  assets/command-contract.json, assets/output-contract.json and assets/harness.json. These assets form
-  one normative contract. The CLI composes @wyrd-company/t3code-lib for profiles,
-  auth, projects, thread launch, message dispatch, watches and interruption.
+  t3c is a Node command-line interface to stock T3 Code. The colocated native
+  asset cli-surface.json defines commands, arguments, options, constraint groups,
+  output modes and exit codes. Command and global notes define dispatch,
+  connection, profile, request, signal, deadline and failure behavior. The public
+  usage guides explain this contract. The CLI composes @wyrd-company/t3code-lib
+  for profiles, auth, projects, dispatch, watches and interruption.
 format: cli
 validation-criteria: >-
-  Validate assets/cli-surface.json against the CLI Command Specification schema.
-  Validate each semantic asset against assets/semantic-sections.schema.json and
-  compare its complete ordered sections with the generated public guide.
-  Validate this artifact against the specification type's required fields and
-  property schemas. Inspect command help against the native surface and exercise
-  golden paths and likely failure modes across the library boundary. Verify real
-  commands against the pinned stock T3 Code 0.1.0 server in a fresh task-specific
-  home outside Git, with gpt-6-luna subjects and operational live overrides cleared.
-  Verify Dagu stdin, final output, continuation, timeout and exit behavior with a
-  real custom harness. Workspace task check remains the repository handoff gate.
+  Validate cli-surface.json against the CLI Command Specification schema and
+  this artifact against the specification type's defined fields. Compare help
+  and command registration with the native input. Verify source-to-built surface
+  equality, supported golden paths and likely failures. Verify real commands
+  against stock T3 Code 0.1.0/protocol 2 in fresh external owned homes with
+  gpt-6-luna subjects and operational overrides cleared. Verify Dagu stdin,
+  continuation, output, timeout and exit behavior through the installed CLI.
+  Workspace task check is the handoff gate.
 relationships:
   references:
     - cli-surface
-    - command-contract
-    - output-contract
-    - harness
+    - cli-architecture
     - library
     - testing
     - releasing

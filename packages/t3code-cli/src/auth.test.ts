@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   verifies: command-contract
+//   verifies: command-line
 // ---
 import * as NodeFSP from "node:fs/promises";
 import * as NodePath from "node:path";

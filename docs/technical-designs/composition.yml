@@ -6,8 +6,6 @@ objective:
 relationships:
   references:
     - command-line
-    - command-contract
-    - output-contract
     - testing
     - releasing
 proposed-design:
@@ -18,7 +16,7 @@ proposed-design:
   command-surface: |
     `src/cli.ts` loads the generated canonical command surface and invokes `main`.
     `src/registration.ts` registers every leaf, positional argument and option from
-    `docs/specifications/assets/cli-surface.json`. Build copies that file to
+    `docs/specifications/cli-surface.json`. Build copies that file to
     `commandSurface.json` at the package root; the copy is generated and packed.
     Change the canonical asset when changing the contract. Do not edit its copy.
   handler-registration: |

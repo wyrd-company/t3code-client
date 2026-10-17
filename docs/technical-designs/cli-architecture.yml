@@ -9,17 +9,14 @@ relationships:
   references:
     - command-line
     - cli-surface
-    - command-contract
-    - output-contract
-    - harness
     - profiles
     - testing
     - releasing
 proposed-design:
   high-level-overview: >-
     @wyrd-company/t3code-cli exposes t3c on Node >=22.16. Commander parses the
-    command surface in docs/specifications/assets/cli-surface.json. The specification
-    at docs/specifications/command-line.yml and its semantic assets define behavior.
+    command surface in docs/specifications/cli-surface.json. The specification
+    at docs/specifications/command-line.yml and its colocated native command asset define behavior.
     @wyrd-company/t3code-lib owns profiles, credentials, auth, the protocol and
     project/thread facades. The CLI adapts arguments and environment to library
     inputs, follows run outcomes and maps them to output and exit codes.

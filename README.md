@@ -27,9 +27,10 @@ User guide: [getting started](docs/index.md),
 [command behavior](docs/commands.md),
 [output and exits](docs/policy.md),
 [Dagu](docs/dagu.md), and
-[library API](docs/library.md).
+[library API](docs/library-reference.md).
 
-`task docs` generates the public pages and JSDoc library reference.
+`task docs` generates the JSDoc library API and published reference.
+The public usage guides are authored in `docs/`.
 `task demo` records real commands with a fresh pinned server home and
 `gpt-6-luna`, writing `docs/assets/demo.gif`.
 

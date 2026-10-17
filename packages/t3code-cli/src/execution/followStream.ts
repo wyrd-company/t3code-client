@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: output-contract
+//   implements: command-line
 // ---
 import { isTurnItemOfType, type ThreadWatchItem } from "@wyrd-company/t3code-lib";
 import type { Output } from "../output.ts";

@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   verifies: command-contract
+//   verifies: command-line
 // ---
 import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
@@ -61,7 +61,7 @@ export async function authHarness() {
   }));
   const surface = JSON.parse(
     await NodeFSP.readFile(
-      new URL("../../../../docs/specifications/assets/cli-surface.json", import.meta.url),
+      new URL("../../../../docs/specifications/cli-surface.json", import.meta.url),
       "utf8",
     ),
   ) as CommandSurface;

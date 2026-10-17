@@ -14,8 +14,8 @@ relationships:
     - api
     - testing
     - releasing
-    - client
-    - shell
+    - packages/t3code-lib/src/client.ts
+    - packages/t3code-lib/src/api/shell.ts
     - socket
     - threadWatch
 proposed-design:

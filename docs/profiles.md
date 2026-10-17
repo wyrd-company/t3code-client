@@ -1,7 +1,12 @@
 ---
 relationships:
   implements: library
-  references: [api, credentialStore, authClient, profileManager, profileConfig]
+  references:
+    - api
+    - credentialStore
+    - authClient
+    - profileManager
+    - profileConfig
 ---
 
 # Shared server profiles

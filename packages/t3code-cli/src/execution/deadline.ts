@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: output-contract
+//   implements: command-line
 // ---
 /** Node clamps larger timer delays to one millisecond; preserve long durations. */
 export function invocationDeadline(

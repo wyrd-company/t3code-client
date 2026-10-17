@@ -17,7 +17,7 @@ it("publishes the complete CLI navigation and generated library page with unique
     "commands.md",
     "dagu.md",
     "index.md",
-    "library.md",
+    "library-reference.md",
     "policy.md",
   ]);
   const orders = published.map((name) => {
@@ -32,10 +32,10 @@ it("publishes the complete CLI navigation and generated library page with unique
     "commands.md": "3",
     "dagu.md": "5",
     "index.md": "1",
-    "library.md": "6",
+    "library-reference.md": "6",
     "policy.md": "4",
   });
-  expect(NodeFS.readFileSync(NodePath.join(root, "library.md"), "utf8")).toContain(
+  expect(NodeFS.readFileSync(NodePath.join(root, "library-reference.md"), "utf8")).toContain(
     "T3StorageError",
   );
 });

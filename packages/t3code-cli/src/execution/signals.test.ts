@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   verifies: output-contract
+//   verifies: command-line
 // ---
 import { expect, it, vi } from "vite-plus/test";
 import { followSignals } from "./signals.ts";

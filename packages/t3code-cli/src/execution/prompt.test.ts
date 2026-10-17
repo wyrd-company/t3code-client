@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   verifies: command-contract
+//   verifies: command-line
 // ---
 import { expect, it, vi } from "vite-plus/test";
 import { T3PreconditionError } from "@wyrd-company/t3code-lib";

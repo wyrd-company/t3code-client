@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   verifies: output-contract
+//   verifies: command-line
 // ---
 import * as NodeChildProcess from "node:child_process";
 import * as NodePath from "node:path";

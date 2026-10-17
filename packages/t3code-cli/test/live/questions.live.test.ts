@@ -1,7 +1,7 @@
 // ---
 // relationships:
-//   verifies: command-contract
-//   references: output-contract
+//   verifies: command-line
+//   references: command-line
 // ---
 import { expect, it } from "vite-plus/test";
 import { pendingRequests, providerInstanceId, type ThreadId } from "@wyrd-company/t3code-lib";

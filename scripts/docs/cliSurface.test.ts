@@ -15,7 +15,7 @@ type Command = {
 
 const surface = JSON.parse(
   NodeFS.readFileSync(
-    new URL("../../docs/specifications/assets/cli-surface.json", import.meta.url),
+    new URL("../../docs/specifications/cli-surface.json", import.meta.url),
     "utf8",
   ),
 ) as { commands: Command[] };

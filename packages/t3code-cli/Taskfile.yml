@@ -37,12 +37,12 @@ tasks:
     desc: Pack CLI/library and verify installed executable
     cmds: [pnpm run package]
   docs:
-    desc: Generate published command pages and public JSDoc library reference
+    desc: Generate the published library API projection from public JSDoc
     cmds:
       - task: :lib:docs
       - node scripts/docs.mjs
   docs:check:
-    desc: Verify generated published pages
+    desc: Verify the generated published library API
     cmds: [node scripts/docs.mjs --check]
   demo:check:
     desc: Verify a fresh real demo without changing the committed GIF

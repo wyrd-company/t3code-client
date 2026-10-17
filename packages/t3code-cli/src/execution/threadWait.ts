@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: command-contract
+//   implements: command-line
 // ---
 import { T3PreconditionError } from "@wyrd-company/t3code-lib";
 import type { InvocationHandler } from "../main.ts";

@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: output-contract
+//   implements: command-line
 // ---
 import { T3InterruptedError } from "@wyrd-company/t3code-lib";
 import type { Output } from "../output.ts";

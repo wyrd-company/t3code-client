@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   verifies: output-contract
+//   verifies: command-line
 // ---
 import { expect, it } from "vite-plus/test";
 import { T3DecodeError, schemas, type TurnHandle, runId } from "@wyrd-company/t3code-lib";

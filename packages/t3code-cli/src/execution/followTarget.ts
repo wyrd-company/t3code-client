@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: output-contract
+//   implements: command-line
 // ---
 import type { TurnHandle } from "@wyrd-company/t3code-lib";
 

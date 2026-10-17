@@ -145,8 +145,9 @@ proposed-design:
   documentation-and-homebrew-finalization: |
     The CLI tag publishes `docs` through the wyrd.foo action.
     Only pages marked `docs: true` and assets listed in `docs.yml` are copied.
-    `task docs` generates command, output, Dagu and library pages from their source
-    contracts; the library reference uses public JSDoc through `task lib:docs`.
+    `task docs` generates the library API source and published reference through
+    `task lib:docs` and the CLI projection. Command, output and Dagu usage pages
+    are authored guides to the canonical specification.
     `task demo` owns a fresh external server home, uses `gpt-6-luna` and clears
     `DISPLAY` and `WAYLAND_DISPLAY` before VHS. Ordinary live-test overrides remain
     available outside isolated demo/acceptance commands.

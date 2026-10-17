@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: output-contract
+//   implements: command-line
 // ---
 import { T3PreconditionError } from "@wyrd-company/t3code-lib";
 import { durationMs } from "../options.ts";
