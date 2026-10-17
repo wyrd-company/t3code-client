@@ -55,7 +55,10 @@ The JSON result reports the last observed state. Connection/auth failures while 
 interruption retain their mapped error and known thread/run identity.
 
 The first SIGTERM or SIGINT interrupts the run and exits `4`. A second signal
-exits immediately. Signal handlers retain the thread id for recovery and
+exits immediately. When the run is already terminal, the first signal aborts
+the remaining read and sends no interrupt. Exit `4` means the CLI was
+interrupted before it finished its work; the envelope's `state` carries what
+the run did. Signal handlers retain the thread id for recovery and
 close the client's local resources. Closing the client does not delete a
 thread or its history.
 

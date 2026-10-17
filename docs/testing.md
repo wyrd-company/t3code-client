@@ -45,8 +45,15 @@ built `version --json`, verifies source reporting and server/protocol/verdict,
 and runs a `gpt-6-luna` subject through the library when `T3_LIVE_AGENT=1`.
 The auth live suite exercises link/query/split-token and both stdin paths,
 exact named status, current selection, failed credentials and switch/logout.
-Its Luna subject uses the credential paired by the built CLI. Execution handlers
-can replace the library subject once `run` is implemented.
+Its Luna subject uses the credential paired by the built CLI. The inspection,
+wait and run suites drive the built `t3c` with `gpt-6-luna` subjects: project
+and server inspection, transcript reads, interrupt and approval responses;
+`thread wait` completion, detach, timeout interruption, signals, idle threads
+and pending requests; and every prompt source, Scratch and project-path
+selection, continuation, worktree launches, `thread start`, `thread send`,
+runtime mode reporting, approval decisions and pre-dispatch failures that
+leave no thread. Provider request states that a live subject cannot induce
+reliably use controlled fakes in unit tests.
 
 Sanitized console evidence names the external root, actual owned server home,
 profile home, override isolation, subject identity/state and cleanup. It never

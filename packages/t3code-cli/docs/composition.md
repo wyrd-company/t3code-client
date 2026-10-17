@@ -20,6 +20,21 @@ server paths. Each adds its handler map to the composition root. The scaffold
 owns registration, global options, version and the shared modules. Missing
 handlers fail explicitly; help registration does not prove implementation.
 
+`src/execution/index.ts` exports `executionHandlers` for run, thread, project
+and server paths. Inspection handlers live in `src/execution/inspection/`.
+`transcript.ts` reads the visible conversation through the transcript route,
+with the detail route only for `thread_transcript_too_large`. Run, `thread
+start` and `thread send` read one prompt source (`prompt.ts`), resolve project,
+provider, model and mode before any thread exists (`selection.ts`), then
+dispatch (`dispatch.ts`) and produce a `FollowTarget`. `followRun(invocation,
+target, policy)` follows that run, or the run `thread wait` captures, and
+returns the `ExecutionResult`; `followPolicy(options, defaultOnTimeout)` reads
+the timeout, request and approval flags. The follower owns the run deadline,
+the interrupt grace, pending-request policy, streaming and the final answer. It
+installs SIGINT/SIGTERM handlers only for its own window and removes them on
+every exit. The handler finishes output with the returned result and adds the
+runtime mode it sent.
+
 `Invocation` owns `profiles`, lazy `resolve()` and `client()`, `output`, elapsed
 start time, and operation `errorContext`. `client()` supplies a 30-second
 `openTimeoutMs`, or the selected `--connect-timeout`. Client resources close in
