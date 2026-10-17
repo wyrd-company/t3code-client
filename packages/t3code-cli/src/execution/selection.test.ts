@@ -48,6 +48,14 @@ it("resolves custom models and aliases without a built-in model list", () => {
     selectModel([provider()], { provider: "sample", model: "alias" }, null, undefined),
   ).toEqual({ instanceId: "sample", model: "custom" });
 });
+it("retains configured options when a default uses a model alias", () => {
+  const fallback = {
+    instanceId: providerInstanceId("sample"),
+    model: "alias",
+    options: [{ id: "effort", value: "low" }],
+  };
+  expect(selectModel([provider()], {}, fallback, null)).toEqual({ ...fallback, model: "custom" });
+});
 it("rejects ambiguous catalogs and never takes the first model", () => {
   expect(() => selectModel([provider(), provider("other")], {}, null, null)).toThrow(
     T3PreconditionError,
@@ -80,6 +88,7 @@ it.each([
   { thread: "t", projectPath: "/sample" },
   { thread: "t", baseRef: "main", worktree: true },
   { model: "" },
+  { projectPath: " " },
   { title: " " },
   { mode: "" },
 ])("rejects invalid flags before resource calls: %j", (options) => {

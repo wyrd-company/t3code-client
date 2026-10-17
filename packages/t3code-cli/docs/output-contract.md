@@ -21,6 +21,10 @@ Non-execution JSON uses `{data, exitCode, error?}`; `thread start` without
 Without `--stream`, `--json` prints exactly one object on stdout. Execution
 results contain `threadId`, `runId`, `state`, `assistantMessage`,
 `pendingRequests`, `exitCode` and `durationMs`, plus `error` on failure.
+Dispatch results also report `runtimeMode`, the mode sent by this invocation, or
+null when no mode was sent. Waiting on an existing run sends no mode. Nonwaiting
+`thread start` includes `runtimeMode` in `data`. The sent mode is printed on
+stderr only at `info` or `debug` log level.
 This execution envelope applies to `run`, `thread start --wait`, `thread send`
 and `thread wait`. Unavailable ids are null.
 `durationMs` is elapsed invocation time. Known thread/run identities remain

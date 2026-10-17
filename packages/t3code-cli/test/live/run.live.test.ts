@@ -7,13 +7,14 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { afterAll, beforeAll, expect, it } from "vite-plus/test";
-import { ProfileManager, T3Client, threadId } from "@wyrd-company/t3code-lib";
+import { ProfileManager, T3Client, threadId, type ProjectId } from "@wyrd-company/t3code-lib";
 
 let directory: string;
 let client: T3Client;
 let issuer: T3Client;
 let env: NodeJS.ProcessEnv;
 const ownedThreads = new Set<string>();
+const ownedProjects = new Set<ProjectId>();
 const records: Record<string, unknown>[] = [];
 function record(value: Record<string, unknown>) {
   records.push(value);
@@ -46,6 +47,7 @@ afterAll(async () => {
       await client.threads.interrupt(threadId(id), undefined, { holdQueue: true }).catch(() => {});
       await client.threads.delete(threadId(id)).catch(() => {});
     }
+    for (const id of ownedProjects) await client.projects.delete(id).catch(() => {});
   } finally {
     if (process.env["T3C_DISPATCH_EVIDENCE"])
       await NodeFSP.writeFile(
@@ -115,7 +117,7 @@ it.skipIf(!agent)("thread start exits once its server thread and linked run exis
     expect(run).toBeDefined();
     if (json)
       expect(JSON.parse(result.stdout)).toEqual({
-        data: { threadId: id, runId: run!.id },
+        data: { threadId: id, runId: run!.id, runtimeMode: expect.any(String) },
         exitCode: 0,
       });
     else expect(result.stdout).toBe(`${id}\n`);
@@ -139,14 +141,172 @@ it("pre-dispatch failures create no server thread", async () => {
     [["--prompt-file", NodePath.join(directory, "missing.txt")], "unreadable file", 1],
   ];
   for (const [flags, label, code] of cases) {
-    // File-only input is deliberately missing; other failures receive a prompt.
-    const args = flags.includes("--prompt-file")
-      ? ["thread", "start", ...flags, "--json"]
-      : ["thread", "start", "sample prompt", ...flags, "--json"];
-    const result = await cli(args);
-    expect(result.exit).toBe(code);
-    expect(JSON.parse(result.stdout)).toMatchObject({ data: null, exitCode: code });
-    record({ case: label, threadId: null, exit: code });
+    for (const path of [["run"], ["thread", "start"]]) {
+      // File-only input is deliberately missing; other failures receive a prompt.
+      const args = flags.includes("--prompt-file")
+        ? [...path, ...flags, "--json"]
+        : [...path, "sample prompt", ...flags, "--json"];
+      const result = await cli(args);
+      expect(result.exit).toBe(code);
+      expect(JSON.parse(result.stdout)).toMatchObject(
+        path[0] === "run"
+          ? { threadId: null, runId: null, exitCode: code }
+          : { data: null, exitCode: code },
+      );
+      record({ case: `${path.join(" ")} ${label}`, threadId: null, exit: code });
+    }
   }
   expect((await client.threads.list()).map((thread) => thread.id).sort()).toEqual(before);
+});
+const runCommand = ["run", ...selection];
+const startCommand = ["thread", "start", ...selection];
+async function execute(label: string, args: string[], signal = false) {
+  const result = await cli([...args, "--json"], "", signal);
+  expect(result.stdout.trim().split("\n")).toHaveLength(1);
+  const value = JSON.parse(result.stdout);
+  const { threadId, runId, state, runtimeMode } = value;
+  if (typeof threadId === "string") ownedThreads.add(threadId);
+  record({ case: label, threadId, runId, state, runtimeMode, exit: result.exit });
+  expect(value.exitCode).toBe(result.exit);
+  return value;
+}
+
+it.skipIf(!agent)("run reads positional, stdin and files with clean output", async () => {
+  const file = NodePath.join(directory, "prompt.txt");
+  const prompt = "Reply SAMPLE only.";
+  await NodeFSP.writeFile(file, prompt);
+  const scratch = await client.projects.ensureScratch();
+  for (const [flags, input, json] of [
+    [[prompt], "", false],
+    [[], prompt, false],
+    [["--prompt-file", file], "", false],
+    [[prompt], "", true],
+    [["--prompt-file", "-"], prompt, true],
+  ] as const) {
+    const result = await cli([...runCommand, ...flags, ...(json ? ["--json"] : [])], input);
+    expect(result.exit).toBe(0);
+    let id: string;
+    if (json) {
+      expect(result.stdout.trim().split("\n")).toHaveLength(1);
+      const value = JSON.parse(result.stdout);
+      expect(value).toMatchObject({ state: "completed", assistantMessage: "SAMPLE", exitCode: 0 });
+      id = value.threadId;
+    } else {
+      expect(result.stdout).toBe("SAMPLE\n");
+      id = /Thread: ([^\n]+)/.exec(result.stderr)![1]!;
+    }
+    ownedThreads.add(id);
+    expect(result.stderr).toContain(`Thread: ${id}\n`);
+    const projection = await client.threads.projection(threadId(id));
+    expect(projection.thread.projectId).toBe(scratch.projectId);
+    const run = projection.runs[0]!;
+    record({
+      case: `run ${flags.join(" ")} json=${json}`,
+      threadId: id,
+      runId: run.id,
+      state: run.status,
+      exit: result.exit,
+    });
+  }
+});
+
+it.skipIf(!agent)("run continuation and send follow linked runs on one thread", async () => {
+  const first = await execute("first run", [...runCommand, "Reply SAMPLE only."]);
+  const next = await execute("continuation", [
+    ...runCommand,
+    "Reply NEXT only.",
+    "--thread",
+    first.threadId,
+  ]);
+  expect(first.exitCode).toBe(0);
+  expect(next.exitCode).toBe(0);
+  expect(next.threadId).toBe(first.threadId);
+  expect(next.runId).not.toBe(first.runId);
+  expect(next.assistantMessage).toBe("NEXT");
+  const sent = await execute("send", ["thread", "send", first.threadId, "Reply SENT only."]);
+  expect(sent).toMatchObject({
+    threadId: first.threadId,
+    assistantMessage: "SENT",
+    state: "completed",
+    exitCode: 0,
+  });
+  expect(sent.runId).not.toBe(next.runId);
+  expect((await client.threads.projection(threadId(first.threadId))).runs).toHaveLength(3);
+});
+
+it.skipIf(!agent)("thread start --wait uses project-path and run output", async () => {
+  const root = NodePath.join(directory, "sample-workspace");
+  await NodeFSP.mkdir(root);
+  const value = await execute("start wait project-path", [
+    ...startCommand,
+    "Reply SAMPLE only.",
+    "--project-path",
+    root,
+    "--wait",
+  ]);
+  expect(value).toMatchObject({ assistantMessage: "SAMPLE", state: "completed", exitCode: 0 });
+  const projection = await client.threads.projection(threadId(value.threadId));
+  ownedProjects.add(projection.thread.projectId);
+  expect((await client.projects.get(projection.thread.projectId))?.workspaceRoot).toBe(root);
+  expect(projection.thread.worktreePath).toBeNull();
+});
+
+it.skipIf(!agent)("run prepares a worktree from the supplied base ref", async () => {
+  const root = NodePath.join(directory, "sample-repository");
+  await NodeFSP.mkdir(root);
+  const author = ["-c", "user.name=Sample", "-c", "user.email=sample@example.invalid"];
+  for (const args of [
+    ["init", "--initial-branch=sample-base"],
+    [...author, "commit", "--allow-empty", "-m", "Initial commit"],
+  ])
+    NodeChildProcess.execFileSync("git", args, { cwd: root, stdio: "ignore" });
+  const args = [
+    "Reply SAMPLE only.",
+    "--project-path",
+    root,
+    "--worktree",
+    "--base-ref",
+    "sample-base",
+  ];
+  const value = await execute("worktree base ref", [...runCommand, ...args]);
+  expect(value).toMatchObject({ assistantMessage: "SAMPLE", state: "completed", exitCode: 0 });
+  const projection = await client.threads.projection(threadId(value.threadId));
+  expect(projection.thread.worktreePath).toBeTruthy();
+  expect(projection.thread.worktreePath).not.toBe(root);
+  ownedProjects.add(projection.thread.projectId);
+  expect(projection.runs[0]!.id).toBe(value.runId);
+  await issuer.vcs.removeWorktree({
+    cwd: root,
+    path: projection.thread.worktreePath!,
+    force: true,
+  });
+});
+
+it.skipIf(!agent)("run applies timeout interrupt/detach and SIGTERM policies", async () => {
+  const prompt = "Run the shell command sleep 20, then reply SAMPLE only.";
+  for (const [policy, expected] of [
+    [undefined, 6],
+    ["detach", 5],
+  ] as const) {
+    const args = [
+      ...runCommand,
+      prompt,
+      "--timeout",
+      "1s",
+      ...(policy ? ["--on-timeout", policy] : []),
+    ];
+    const value = await execute(policy ?? "default interrupt", args);
+    expect(value.exitCode).toBe(expected);
+    expect(value.threadId).toBeTruthy();
+    expect(value.runId).toBeTruthy();
+    const projection = await client.threads.projection(threadId(value.threadId));
+    const run = projection.runs.find((candidate) => candidate.id === value.runId);
+    expect(run).toBeDefined();
+    if (policy === "detach")
+      expect(["preparing", "queued", "starting", "running", "waiting"]).toContain(run!.status);
+    await client.threads.interrupt(threadId(value.threadId), undefined, { holdQueue: true });
+  }
+  const signalled = await execute("SIGTERM run", [...runCommand, prompt], true);
+  expect(signalled.exitCode).toBe(4);
+  expect(signalled.threadId).toBeTruthy();
 });

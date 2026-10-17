@@ -60,7 +60,9 @@ its model from the live server catalog, including custom models. An omitted
 provider or model uses the selected project default, then the server-advertised
 default. An ambiguous selection exits `2`; an unavailable model exits `10`. `--title`
 supplies the thread title. `--mode` passes through the requested runtime mode;
-the CLI supplies no permissive default.
+new threads use explicit `--mode`, then the server-advertised
+`settings.defaultRuntimeMode`, then the library default when the server advertises
+no mode. Continuation sends a mode only when `--mode` is supplied.
 
 `--worktree` launches through `threads.launch` with the new-worktree workspace
 strategy. `--base-ref` supplies its base ref and requires `--worktree`. The

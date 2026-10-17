@@ -6,7 +6,7 @@ import type { Invocation } from "../context.ts";
 import type { InvocationHandler } from "../main.ts";
 import { emptyExecution, type ExecutionResult } from "../output.ts";
 import { exitCodeFor, failureFor } from "../errors.ts";
-import { dispatchPrompt, dispatchedRunId } from "./dispatch.ts";
+import { dispatchPrompt, dispatchedRunId, type DispatchTarget } from "./dispatch.ts";
 import type { FollowPolicy, FollowTarget } from "./followTarget.ts";
 import { readPrompt } from "./prompt.ts";
 import { validateDispatchOptions, type DispatchOptions } from "./selection.ts";
@@ -37,18 +37,29 @@ export function dispatchHandler(
     const follow = waiting ? await follower() : undefined;
     // Parse policy before any mutation so invalid policies cannot create a thread.
     const policy = follow?.followPolicy(options, "interrupt");
-    let target: FollowTarget | undefined;
+    let target: DispatchTarget | undefined;
     try {
       target = await dispatchPrompt(invocation, text, dispatchOptions, (known) => {
         target = known;
       });
       invocation.output.progress(`Thread: ${target.threadId}`);
+      if (
+        target.runtimeMode !== null &&
+        (options["logLevel"] === "info" || options["logLevel"] === "debug")
+      )
+        invocation.output.progress(`Runtime mode: ${target.runtimeMode}`);
       if (follow !== undefined && policy !== undefined) {
-        invocation.output.finish(await follow.followRun(invocation, target, policy));
+        invocation.output.finish({
+          ...(await follow.followRun(invocation, target, policy)),
+          runtimeMode: target.runtimeMode,
+        });
       } else {
         const runId = await dispatchedRunId(target);
         invocation.output.finish(
-          { data: { threadId: target.threadId, runId }, exitCode: 0 },
+          {
+            data: { threadId: target.threadId, runId, runtimeMode: target.runtimeMode },
+            exitCode: 0,
+          },
           target.threadId,
         );
       }
@@ -59,16 +70,18 @@ export function dispatchHandler(
       };
       const threadId = target?.threadId ?? null;
       const runId = target?.turn?.runId ?? target?.runId ?? null;
+      const runtimeMode = target?.runtimeMode ?? null;
       if (waiting)
         invocation.output.finish({
           ...emptyExecution(Date.now() - invocation.startedAt),
           threadId,
           runId,
+          runtimeMode,
           ...failure,
         });
       else
         invocation.output.finish({
-          data: threadId === null ? null : { threadId, runId },
+          data: threadId === null ? null : { threadId, runId, runtimeMode },
           ...failure,
         });
     }

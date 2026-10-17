@@ -53,6 +53,7 @@ export function validateDispatchOptions(options: DispatchOptions): void {
     throw new T3PreconditionError("Continuation retains the existing workspace.");
   for (const value of [
     options.project,
+    options.projectPath,
     options.provider,
     options.model,
     options.mode,
@@ -124,7 +125,7 @@ export function selectModel(
     instanceId: provider.instanceId,
     model: candidate.slug,
     ...(fallback?.instanceId === provider.instanceId &&
-    fallback.model === candidate.slug &&
+    (fallback.model === candidate.slug || candidate.aliases?.includes(fallback.model)) &&
     fallback.options !== undefined
       ? { options: fallback.options }
       : {}),

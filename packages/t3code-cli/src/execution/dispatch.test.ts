@@ -51,7 +51,7 @@ function setup() {
     scopes: ["orchestration:read", "orchestration:operate"],
   } as Awaited<ReturnType<typeof client.auth.sessionState>>);
   const config = vi.spyOn(client.server, "getConfig").mockResolvedValue({
-    settings: {},
+    settings: { defaultRuntimeMode: "configured-mode" },
     providers: [
       {
         instanceId: "sample-provider",
@@ -61,7 +61,8 @@ function setup() {
         models: [{ slug: "sample-model" }, { slug: "custom-model", isCustom: true }],
       },
     ],
-  } as Awaited<ReturnType<typeof client.server.getConfig>>);
+  } as unknown as Awaited<ReturnType<typeof client.server.getConfig>>);
+  const settings = vi.spyOn(client.server, "getSettings").mockResolvedValue({});
   const getProject = vi.spyOn(client.projects, "get").mockResolvedValue(project);
   vi.spyOn(client.projects, "ensureScratch").mockResolvedValue({ projectId: project.id });
   const getThread = vi.spyOn(client.threads, "get").mockResolvedValue(existing);
@@ -82,6 +83,7 @@ function setup() {
     existing,
     session,
     config,
+    settings,
     getProject,
     getThread,
     create,
@@ -101,6 +103,7 @@ it("creates at project root and starts exactly one server-linked turn without su
     modelSelection: fixture.project.defaultModelSelection,
   });
   expect(fixture.create.mock.calls[0]![0]).not.toHaveProperty("runtimeMode");
+  expect(target.runtimeMode).toBeNull();
   expect(fixture.start).toHaveBeenCalledExactlyOnceWith({
     threadId: fixture.existing.id,
     text: "sample prompt",
@@ -108,6 +111,20 @@ it("creates at project root and starts exactly one server-linked turn without su
   expect(target.turn).toBe(fixture.turn);
   expect(fixture.launch).not.toHaveBeenCalled();
 });
+it.each([
+  [{ mode: "future-mode" }, "approval-required", "future-mode"],
+  [{}, "approval-required", "approval-required"],
+] as const)(
+  "new threads send explicit mode or server default: %j",
+  async (options, advertised, expected) => {
+    const f = setup();
+    f.settings.mockResolvedValue({ defaultRuntimeMode: advertised });
+    const target = await dispatchPrompt(f.invocation, "prompt", options);
+    expect(f.settings).toHaveBeenCalledOnce();
+    expect(f.create.mock.calls[0]![0]).toHaveProperty("runtimeMode", expected);
+    expect(target.runtimeMode).toBe(expected);
+  },
+);
 it("continuation retains project/workspace and applies selected model, mode and title", async () => {
   const fixture = setup();
   const target = await dispatchPrompt(fixture.invocation, "next prompt", {
@@ -138,6 +155,7 @@ it("unqualified continuation preserves the existing model and mode", async () =>
     text: "next prompt",
   });
   expect(fixture.update).not.toHaveBeenCalled();
+  expect(fixture.settings).not.toHaveBeenCalled();
 });
 it.each([undefined, "sample-base"])(
   "launches worktree with initial message and exact linked run (base %j)",
@@ -154,7 +172,11 @@ it.each([undefined, "sample-base"])(
       worktree: true,
       ...(baseRef === undefined ? {} : { baseRef }),
     });
-    expect(target).toEqual({ threadId: fixture.existing.id, runId: "linked-worktree-run" });
+    expect(target).toEqual({
+      threadId: fixture.existing.id,
+      runId: "linked-worktree-run",
+      runtimeMode: null,
+    });
     expect(fixture.launch.mock.calls[0]![0]).toMatchObject({
       workspace: { type: "worktree", baseRef: baseRef ?? "HEAD" },
       initialMessage: { text: "worktree prompt" },
@@ -209,6 +231,21 @@ it("maps resource and scope preflight errors by library class", async () => {
   >);
   await expect(dispatchPrompt(f.invocation, "prompt", {})).rejects.toBeInstanceOf(T3AuthError);
 });
+it("does not report a mode as sent when continuation metadata update fails first", async () => {
+  const f = setup();
+  f.update.mockRejectedValue(new Error("sample failure"));
+  const known: import("./dispatch.ts").DispatchTarget[] = [];
+  await expect(
+    dispatchPrompt(
+      f.invocation,
+      "prompt",
+      { thread: f.existing.id, title: "Sample", mode: "future-mode" },
+      (target) => known.push(target),
+    ),
+  ).rejects.toThrow();
+  expect(f.start).not.toHaveBeenCalled();
+  expect(known.at(-1)?.runtimeMode).toBeNull();
+});
 it("retains known identity and never retries an ambiguous launch", async () => {
   const f = setup();
   f.launch.mockRejectedValue(new T3ConnectionError("closed", "sample"));
@@ -220,6 +257,15 @@ it("retains known identity and never retries an ambiguous launch", async () => {
   expect(known[0]?.threadId).toBeTruthy();
 });
 it("nonwaiting start observes the TurnHandle's linked run rather than active/latest run", async () => {
+  expect(await dispatchedRunId({ threadId: "sample-thread", runId: "already-linked" })).toBe(
+    "already-linked",
+  );
+  expect(
+    await dispatchedRunId({
+      threadId: "sample-thread",
+      turn: { runId: runId("turn-linked") } as TurnHandle,
+    }),
+  ).toBe("turn-linked");
   let linked: ReturnType<typeof runId> | undefined;
   const turn = {
     get runId() {
