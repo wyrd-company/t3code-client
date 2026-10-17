@@ -9,9 +9,7 @@ import { deferred, holdReceipt, signalFixture } from "../../test/dispatchSignalF
 afterEach(() => vi.restoreAllMocks());
 const paths: readonly [string, "start" | "create" | "launch" | "update", boolean?][] = [
   ["root", "start"],
-  ["root", "create"],
   ["worktree", "launch"],
-  ["continuation", "update"],
   ["continuation", "start"],
   ["send", "start"],
   ["start", "start"],

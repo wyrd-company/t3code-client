@@ -84,13 +84,15 @@ export async function dispatchPrompt(
   const runtimeMode = sentMode ?? null;
   const mode = sentMode === undefined ? {} : { runtimeMode: sentMode };
   if (signals?.interrupted) throw new T3InterruptedError("Operation interrupted.");
-  // Past this boundary, retain every mutation receipt and its linked run.
+  // Retain each sent mutation receipt; a signal prevents the next mutation.
   invocation.errorContext = "dispatch";
   if (existing !== undefined) {
     let target: DispatchTarget = { threadId: existing.id, runtimeMode: null };
     remember(target);
-    if (options.title !== undefined)
+    if (options.title !== undefined) {
       await client.threads.update(existing.id, { title: options.title });
+      if (signals?.interrupted) throw new T3InterruptedError("Operation interrupted.");
+    }
     target = { ...target, runtimeMode };
     remember(target);
     const turn = await client.threads.startTurn({
@@ -135,6 +137,7 @@ export async function dispatchPrompt(
   // preparation; startTurn supplies the server-linked TurnHandle.
   const created = await client.threads.create(creation);
   remember({ threadId: created.id, runtimeMode });
+  if (signals?.interrupted) throw new T3InterruptedError("Operation interrupted.");
   const turn = await client.threads.startTurn({ threadId: created.id, text });
   const target = { threadId: created.id, turn, runtimeMode };
   remember(target);
