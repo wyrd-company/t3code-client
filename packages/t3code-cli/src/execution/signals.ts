@@ -5,7 +5,9 @@
 import { T3InterruptedError } from "@wyrd-company/t3code-lib";
 import type { Output } from "../output.ts";
 
-/** Installed only while a command follows a run. */
+export type SignalScope = ReturnType<typeof followSignals>;
+
+/** One invocation owns the scope from preflight through following. */
 export function followSignals(output: Output): {
   first: Promise<"signal">;
   readonly interrupted: boolean;

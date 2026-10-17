@@ -5,12 +5,14 @@
 import * as NodeCrypto from "node:crypto";
 import {
   T3AuthError,
+  T3InterruptedError,
   T3PreconditionError,
   ensureScopes,
   grantedScopes,
   schemas,
   threadId,
 } from "@wyrd-company/t3code-lib";
+import type { SignalScope } from "./signals.ts";
 import type { Invocation } from "../context.ts";
 import type { FollowTarget } from "./followTarget.ts";
 import {
@@ -34,11 +36,14 @@ export async function dispatchPrompt(
   text: string,
   options: DispatchOptions,
   remember: (target: DispatchTarget) => void = () => {},
+  signals?: SignalScope,
 ): Promise<DispatchTarget> {
   validateDispatchOptions(options);
-  const client = await invocation.client();
+  const preflight = <T>(operation: Promise<T>): Promise<T> =>
+    signals === undefined ? operation : signals.until(operation);
+  const client = await preflight(invocation.client());
   invocation.errorContext = "connection";
-  const session = await client.auth.sessionState();
+  const session = await preflight(client.auth.sessionState());
   if (!session.authenticated)
     throw new T3AuthError("Authentication required.", {
       code: "auth_invalid",
@@ -48,16 +53,19 @@ export async function dispatchPrompt(
       body: undefined,
     });
   ensureScopes(grantedScopes(session), ["orchestration:read", "orchestration:operate"]);
-  const config = await client.server.getConfig();
+  const config = await preflight(client.server.getConfig());
   const existing =
-    options.thread === undefined ? undefined : await client.threads.get(threadId(options.thread));
+    options.thread === undefined
+      ? undefined
+      : await preflight(client.threads.get(threadId(options.thread)));
   if (options.thread !== undefined && !existing) throw missingResource("thread");
   const project =
     existing === undefined
-      ? await selectProject(client, options)
-      : await client.projects.get(existing.projectId);
+      ? await preflight(selectProject(client, options))
+      : await preflight(client.projects.get(existing.projectId));
   if (!project) throw missingResource("project");
-  const settings = existing === undefined ? await client.server.getSettings() : config.settings;
+  const settings =
+    existing === undefined ? await preflight(client.server.getSettings()) : config.settings;
   const modelSelection = selectModel(
     config.providers,
     options,
@@ -75,6 +83,8 @@ export async function dispatchPrompt(
   const sentMode = options.mode ?? serverMode;
   const runtimeMode = sentMode ?? null;
   const mode = sentMode === undefined ? {} : { runtimeMode: sentMode };
+  if (signals?.interrupted) throw new T3InterruptedError("Operation interrupted.");
+  // Past this boundary, retain every mutation receipt and its linked run.
   invocation.errorContext = "dispatch";
   if (existing !== undefined) {
     let target: DispatchTarget = { threadId: existing.id, runtimeMode: null };

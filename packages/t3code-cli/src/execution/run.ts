@@ -2,6 +2,8 @@
 // relationships:
 //   implements: command-line
 // ---
+import { T3InterruptedError, threadId, runId } from "@wyrd-company/t3code-lib";
+import { followSignals, type SignalScope } from "./signals.ts";
 import type { Invocation } from "../context.ts";
 import type { InvocationHandler } from "../main.ts";
 import { emptyExecution, type ExecutionResult } from "../output.ts";
@@ -16,6 +18,7 @@ export interface Follower {
     invocation: Invocation,
     target: FollowTarget,
     policy: FollowPolicy,
+    scope?: SignalScope,
   ): Promise<ExecutionResult>;
   followPolicy(
     options: Record<string, unknown>,
@@ -31,12 +34,8 @@ export function dispatchHandler(
   return async (args, command, invocation) => {
     const options = command.optsWithGlobals<DispatchOptions & Record<string, unknown>>();
     const dispatchOptions = kind === "send" ? { ...options, thread: args[0]! } : options;
-    validateDispatchOptions(dispatchOptions);
-    const text = await readPrompt(kind === "send" ? args[1] : args[0], options.promptFile);
+    const signals = followSignals(invocation.output);
     const waiting = kind !== "start" || options.wait === true;
-    const follow = waiting ? await follower() : undefined;
-    // Parse policy before any mutation so invalid policies cannot create a thread.
-    const policy = follow?.followPolicy(options, "interrupt");
     let target: DispatchTarget | undefined;
     let reported = false;
     function reportTarget(known: DispatchTarget) {
@@ -52,20 +51,55 @@ export function dispatchHandler(
         invocation.output.progress(`Runtime mode: ${known.runtimeMode}`);
     }
     try {
-      target = await dispatchPrompt(invocation, text, dispatchOptions, (known) => {
-        target = known;
-      });
+      validateDispatchOptions(dispatchOptions);
+      const text = await signals.until(
+        readPrompt(
+          kind === "send" ? args[1] : args[0],
+          options.promptFile,
+          undefined,
+          signals.signal,
+        ),
+      );
+      const follow = waiting ? await signals.until(follower()) : undefined;
+      // Parse policy before any mutation so invalid policies cannot create a thread.
+      const policy = follow?.followPolicy(options, "interrupt");
+      target = await dispatchPrompt(
+        invocation,
+        text,
+        dispatchOptions,
+        (known) => {
+          target = known;
+        },
+        signals,
+      );
+      // A waiting command normally lets the follower observe the handle's stream.
+      // If cancelled during dispatch, retain the acknowledgement and exact run link.
+      let linked: string | undefined;
+      if (!waiting || signals.interrupted) {
+        linked = await dispatchedRunId(target);
+        target = { ...target, runId: linked };
+        if (signals.interrupted) {
+          reportTarget(target);
+          invocation.output.progress(`Run: ${linked}`);
+          const client = await invocation.client();
+          invocation.errorContext = "run-interrupt";
+          await client.threads.interrupt(threadId(target.threadId), runId(linked), {
+            holdQueue: true,
+          });
+          throw new T3InterruptedError("Operation interrupted.");
+        }
+      }
       if (follow !== undefined && policy !== undefined) {
-        // The follower registers signals and reports the thread before its first await.
+        // The follower shares this scope and reports the thread before its first await.
         reported = true;
         reportMode(target);
         invocation.output.finish({
-          ...(await follow.followRun(invocation, target, policy)),
+          ...(await follow.followRun(invocation, target, policy, signals)),
           runtimeMode: target.runtimeMode,
         });
       } else {
         reportTarget(target);
-        const runId = await dispatchedRunId(target);
+        const runId = linked;
         invocation.output.finish(
           {
             data: { threadId: target.threadId, runId, runtimeMode: target.runtimeMode },
@@ -75,9 +109,10 @@ export function dispatchHandler(
         );
       }
     } catch (error) {
+      if (target === undefined && !signals.interrupted) throw error;
       if (target !== undefined && !reported) reportTarget(target);
       const failure = {
-        exitCode: exitCodeFor(error, invocation.errorContext),
+        exitCode: signals.interrupted ? 4 : exitCodeFor(error, invocation.errorContext),
         error: failureFor(error, invocation.errorContext),
       };
       const threadId = target?.threadId ?? null;
@@ -96,6 +131,8 @@ export function dispatchHandler(
           data: threadId === null ? null : { threadId, runId, runtimeMode },
           ...failure,
         });
+    } finally {
+      signals.close();
     }
   };
 }
