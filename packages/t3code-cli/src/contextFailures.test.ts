@@ -2,12 +2,12 @@
 // relationships:
 //   verifies: command-line
 // ---
+import * as NodeCrypto from "node:crypto";
 import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 import {
-  fileCredentialStore,
   memoryCredentialStore,
   ProfileManager,
   T3Client,
@@ -62,26 +62,23 @@ function expectFailure(
   expect(actual.errors).toEqual([`t3c: ${message}\n`]);
 }
 
-// Isolated real storage controls: auth's storage-error change can update this expectation.
-const storageCode = "connection";
+// Real profile storage: config and credential I/O fail as library T3StorageError (storage => 1).
 it.each(["resolve", "load", "save", "clear"] as const)(
-  "reader maps real %s I/O failure to local exit 1",
+  "reader maps real %s storage failure to local exit 1",
   async (operation) => {
     const dir = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3c-context-"));
-    const originalResolve = ProfileManager.prototype.resolve;
-    const profiles = new ProfileManager({ configDir: dir });
-    const badPath = NodePath.join(dir, "config.json");
-    await NodeFSP.mkdir(badPath);
-    const store = fileCredentialStore(badPath);
-    vi.spyOn(ProfileManager.prototype, "resolve").mockImplementation(() =>
-      operation === "resolve"
-        ? originalResolve.call(profiles, { env: {} })
-        : Promise.resolve({
-            baseUrl: "http://127.0.0.1:1",
-            credentials: store,
-            sources: { server: "flag", credentials: "file" },
-          }),
-    );
+    vi.stubEnv("T3C_CONFIG_HOME", dir);
+    vi.stubEnv("T3_SERVER_URL", "");
+    vi.stubEnv("T3_TOKEN", "");
+    if (operation === "resolve") await NodeFSP.mkdir(NodePath.join(dir, "config.json"));
+    else {
+      await NodeFSP.writeFile(
+        NodePath.join(dir, "config.json"),
+        JSON.stringify({ servers: { sample: { url: "http://127.0.0.1:1" } }, current: "sample" }),
+      );
+      const key = NodeCrypto.createHash("sha256").update("sample").digest("hex");
+      await NodeFSP.mkdir(NodePath.join(dir, "credentials", `${key}.json`), { recursive: true });
+    }
     const create = vi.spyOn(T3Client, "create");
     let context: string | undefined;
     try {
@@ -100,8 +97,9 @@ it.each(["resolve", "load", "save", "clear"] as const)(
         }
       });
       expect(context, "failure selects local context").toBe("local");
-      expectFailure(actual, 1, storageCode, "Command failed.");
+      expectFailure(actual, 1, "storage", "Command failed.");
     } finally {
+      vi.unstubAllEnvs();
       await NodeFSP.rm(dir, { recursive: true, force: true });
     }
   },
@@ -191,4 +189,36 @@ it("reader retries client creation after failure without resolving profiles agai
   expect(resolve).toHaveBeenCalledTimes(1);
   expect(create).toHaveBeenCalledTimes(2);
   expectFailure(actual, 5, "timeout", "Timed out; run remains active.");
+});
+
+it("closes a client whose creation is still in flight at close", async () => {
+  let release: (() => void) | undefined;
+  vi.spyOn(ProfileManager.prototype, "resolve").mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        release = () =>
+          resolve({
+            baseUrl: "http://127.0.0.1:1",
+            credentials: memoryCredentialStore(),
+            sources: { server: "flag", credentials: "none" },
+          });
+      }),
+  );
+  const originalCreate = T3Client.create;
+  const closes: unknown[] = [];
+  const create = vi.spyOn(T3Client, "create").mockImplementation((options) => {
+    const client = originalCreate(options);
+    closes.push(vi.spyOn(client, "close"));
+    return client;
+  });
+  const { createInvocation } = await import("./context.ts");
+  const { Output } = await import("./output.ts");
+  const invocation = createInvocation({}, new Output({ stdout: () => {}, stderr: () => {} }));
+  const pending = invocation.client();
+  const closing = invocation.close();
+  release!();
+  await pending;
+  await closing;
+  expect(create).toHaveBeenCalledTimes(1);
+  expect(closes[0]).toHaveBeenCalledTimes(1);
 });
