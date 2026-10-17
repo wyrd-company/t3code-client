@@ -18,6 +18,12 @@ The default config is `$XDG_CONFIG_HOME/t3c/config.json`, or
 `T3C_CONFIG_HOME` selects the t3c directory directly. An explicit constructor
 `configDir` overrides both environment locations.
 
+Empty or whitespace-only environment values are unset. This rule applies to
+`T3C_CONFIG_HOME`, `XDG_CONFIG_HOME`, `T3_SERVER_URL` and `T3_TOKEN`: config
+selection falls through to XDG/home, and server/credential selection falls
+through to the remaining flag or profile input. Nonblank environment values
+are preserved as supplied. Explicit flags keep their existing input semantics.
+
 ```json
 {
   "servers": {

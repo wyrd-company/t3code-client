@@ -10,6 +10,7 @@ import {
   type CredentialStore,
 } from "../auth/credentialStore.ts";
 import { T3ConnectionError, T3Error, T3NotFoundError, T3PreconditionError } from "../errors.ts";
+import { environmentValue } from "./environment.ts";
 import {
   configDirectory,
   credentialPath,
@@ -102,7 +103,8 @@ export class ProfileManager {
   /** Resolve flags, environment and current profile into connection options. */
   async resolve(options: ProfileResolveOptions = {}): Promise<ResolvedProfile> {
     const env = options.env ?? process.env;
-    const explicit = options.server ?? env["T3_SERVER_URL"];
+    const environmentServer = environmentValue(env, "T3_SERVER_URL");
+    const explicit = options.server ?? environmentServer;
     const config = await loadConfig(this.configDir);
     const current = config.current === undefined ? undefined : profileNamed(config, config.current);
     const baseUrl = explicit === undefined ? current?.url : serverUrl(explicit);
@@ -115,7 +117,7 @@ export class ProfileManager {
             .map(([name, server]) => ({ name, url: server.url }))
             .find((candidate) => serverUrl(candidate.url) === baseUrl);
     const path = options.credentialsFile;
-    const token = env["T3_TOKEN"];
+    const token = environmentValue(env, "T3_TOKEN");
     const credentials =
       path !== undefined
         ? fileCredentialStore(path)
@@ -132,7 +134,7 @@ export class ProfileManager {
         server:
           options.server !== undefined
             ? "flag"
-            : env["T3_SERVER_URL"] !== undefined
+            : environmentServer !== undefined
               ? "environment"
               : "profile",
         credentials:

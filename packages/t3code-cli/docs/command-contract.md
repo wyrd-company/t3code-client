@@ -23,6 +23,9 @@ The library's `ProfileManager` resolves connection inputs. Server selection is
 store. `T3_TOKEN` alone uses the current profile's URL. Overrides apply to the
 invocation. The profile module is shared with other library consumers.
 
+Environment inputs follow the [library configuration contract](../../t3code-lib/docs/profiles.md#configuration),
+including its blank-value handling.
+
 The configuration root is `T3C_CONFIG_HOME`, then `$XDG_CONFIG_HOME/t3c`,
 then `~/.config/t3c`. `config.json` holds named servers and `current`. Each profile has its own
 0600 credential file in `credentials/`. The secret-free config is written
