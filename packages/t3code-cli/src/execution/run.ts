@@ -38,16 +38,21 @@ export function dispatchHandler(
     // Parse policy before any mutation so invalid policies cannot create a thread.
     const policy = follow?.followPolicy(options, "interrupt");
     let target: DispatchTarget | undefined;
+    let reported = false;
+    function reportTarget(known: DispatchTarget) {
+      invocation.output.progress(`Thread: ${known.threadId}`);
+      if (
+        known.runtimeMode !== null &&
+        (options["logLevel"] === "info" || options["logLevel"] === "debug")
+      )
+        invocation.output.progress(`Runtime mode: ${known.runtimeMode}`);
+      reported = true;
+    }
     try {
       target = await dispatchPrompt(invocation, text, dispatchOptions, (known) => {
         target = known;
       });
-      invocation.output.progress(`Thread: ${target.threadId}`);
-      if (
-        target.runtimeMode !== null &&
-        (options["logLevel"] === "info" || options["logLevel"] === "debug")
-      )
-        invocation.output.progress(`Runtime mode: ${target.runtimeMode}`);
+      reportTarget(target);
       if (follow !== undefined && policy !== undefined) {
         invocation.output.finish({
           ...(await follow.followRun(invocation, target, policy)),
@@ -64,6 +69,7 @@ export function dispatchHandler(
         );
       }
     } catch (error) {
+      if (target !== undefined && !reported) reportTarget(target);
       const failure = {
         exitCode: exitCodeFor(error, invocation.errorContext),
         error: failureFor(error, invocation.errorContext),

@@ -149,6 +149,16 @@ it.each([false, true])(
     expect(dispatchPrompt).toHaveBeenCalledOnce();
   },
 );
+it("prints recovery identity when dispatch fails after the server may have created a thread", async () => {
+  const f = setup();
+  vi.mocked(dispatchPrompt).mockImplementation(async (_invocation, _text, _options, remember) => {
+    remember?.(f.target);
+    throw new Error("sample failure");
+  });
+  await dispatchHandler("run", f.follower)(["prompt"], f.command, f.invocation);
+  expect(f.stdout).toEqual([]);
+  expect(f.stderr.join("")).toBe("Thread: sample-thread\nt3c: Command failed.\n");
+});
 it("retains the sent mode when following fails", async () => {
   const f = setup({ json: true });
   vi.mocked(dispatchPrompt).mockResolvedValue({ ...f.target, runtimeMode: "future-mode" });
