@@ -15,6 +15,8 @@ import { exitCodeFor, exitCodeForState, failureFor } from "../errors.ts";
 import type { ExecutionResult } from "../output.ts";
 import type { FollowPolicy, FollowTarget } from "./followTarget.ts";
 import { FollowObservation } from "./followObservation.ts";
+import { FollowStream } from "./followStream.ts";
+import { invocationDeadline } from "./deadline.ts";
 import { followSignals } from "./signals.ts";
 import { readConversation, lastAssistantMessage } from "./transcript.ts";
 export { followPolicy } from "./followPolicy.ts";
@@ -31,7 +33,8 @@ export async function followRun(
   const result = observation.result;
   const controller = new AbortController();
   const signals = followSignals(invocation.output);
-  let deadlineTimer: ReturnType<typeof setTimeout> | undefined;
+  const stream = new FollowStream(invocation.output);
+  let cancelDeadline: (() => void) | undefined;
   let graceTimer: ReturnType<typeof setTimeout> | undefined;
   let stopping = false;
   let iterator: AsyncIterator<ThreadWatchItem> | undefined;
@@ -51,8 +54,7 @@ export async function followRun(
       for await (const item of events) {
         if (controller.signal.aborted) break;
         observation.observe(item);
-        if (item.kind === "assistant-delta" && item.runId === result.runId)
-          invocation.output.delta(item.delta);
+        stream.observe(item, result.runId);
         if (item.kind === "reconnected") invocation.output.event({ type: "reconnected" });
         if (observation.outcome || result.state === "idle") return "terminal";
         if (stopping) continue;
@@ -90,9 +92,8 @@ export async function followRun(
     if (policy.timeoutMs !== undefined)
       racers.push(
         new Promise((resolve) => {
-          deadlineTimer = setTimeout(
-            () => resolve("deadline"),
-            Math.max(0, policy.timeoutMs! - (Date.now() - invocation.startedAt)),
+          cancelDeadline = invocationDeadline(invocation.startedAt, policy.timeoutMs!, () =>
+            resolve("deadline"),
           );
         }),
       );
@@ -151,7 +152,7 @@ export async function followRun(
   } finally {
     controller.abort();
     void iterator?.return?.();
-    clearTimeout(deadlineTimer);
+    cancelDeadline?.();
     clearTimeout(graceTimer);
     signals.close();
     result.durationMs = Date.now() - invocation.startedAt;

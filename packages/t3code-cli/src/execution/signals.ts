@@ -17,8 +17,11 @@ export function followSignals(output: Output): {
   });
   const onSignal = () => {
     if (received) {
-      output.progress("t3c: Operation interrupted.");
-      process.exit(4);
+      try {
+        output.progress("t3c: Operation interrupted.");
+      } finally {
+        process.exit(4);
+      }
     }
     received = true;
     notify("signal");
