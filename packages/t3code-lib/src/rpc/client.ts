@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 /**
  * RpcClient: typed `call` and `stream` over an RpcConnection, driven by a
  * method table. Payloads are validated before they are sent, success values
@@ -29,6 +33,7 @@ export interface RpcClientOptions {
   readonly logger?: Logger;
 }
 
+/** Typed RPC calls and streams with scope checks. */
 export class RpcClient<Table extends RpcMethodTable> {
   readonly #connection: RpcConnection;
   readonly #table: Table;
@@ -42,6 +47,7 @@ export class RpcClient<Table extends RpcMethodTable> {
     this.#logger = options.logger ?? noopLogger;
   }
 
+  /** The underlying RPC connection for lifecycle inspection. */
   get connection(): RpcConnection {
     return this.#connection;
   }
@@ -51,6 +57,7 @@ export class RpcClient<Table extends RpcMethodTable> {
     return Object.hasOwn(this.#table, method);
   }
 
+  /** Validate a typed unary payload and decode its result. */
   async call<M extends UnaryMethodName<Table>>(
     method: M,
     payload: RpcPayload<Table, M>,
@@ -64,6 +71,7 @@ export class RpcClient<Table extends RpcMethodTable> {
     return result.data as RpcSuccess<Table, M>;
   }
 
+  /** Stream decoded values; malformed items are yielded as decode errors. */
   stream<M extends StreamMethodName<Table>>(
     method: M,
     payload: RpcPayload<Table, M>,
@@ -101,6 +109,7 @@ export class RpcClient<Table extends RpcMethodTable> {
     return this.#connection.call(tag, payload, signal);
   }
 
+  /** Stream an unregistered method without schema validation. */
   streamRaw(tag: string, payload: unknown, options?: RpcStreamOptions): AsyncIterable<unknown> {
     return this.#connection.stream(tag, payload, options);
   }

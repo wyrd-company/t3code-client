@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 /**
  * ProjectsApi: projects as the shell snapshot sees them, idempotent `ensure`
  * keyed by the normalised workspace root, mutations through
@@ -51,13 +55,19 @@ export interface ProjectEnsureInput {
 export type ProjectMetaUpdate = ProjectUpdatePayload;
 
 export interface ProjectFilesApi {
+  /** List active project summaries from the shell snapshot. */
+  /** List workspace entries. */
   list(input: ProjectListEntriesInput, signal?: AbortSignal): Promise<ProjectListEntriesResult>;
+  /** Read a workspace file. */
   read(input: ProjectReadFileInput, signal?: AbortSignal): Promise<ProjectReadFileResult>;
+  /** Write a workspace file. */
   write(input: ProjectWriteFileInput, signal?: AbortSignal): Promise<ProjectWriteFileResult>;
+  /** Search workspace entry names. */
   searchEntries(
     input: ProjectSearchEntriesInput,
     signal?: AbortSignal,
   ): Promise<ProjectSearchEntriesResult>;
+  /** Search workspace file contents. */
   searchContents(
     input: ProjectSearchContentsInput,
     signal?: AbortSignal,
@@ -70,6 +80,7 @@ export function normalizeWorkspaceRoot(workspaceRoot: string): string {
   return NodePath.resolve(trimmed.length === 0 ? "/" : trimmed);
 }
 
+/** Project discovery, creation, mutations and files. */
 export class ProjectsApi {
   readonly files: ProjectFilesApi;
 
@@ -90,6 +101,7 @@ export class ProjectsApi {
     };
   }
 
+  /** List active project summaries from the shell snapshot. */
   async list(signal?: AbortSignal): Promise<OrchestrationProjectShell[]> {
     return (await loadShellSnapshot(this.http, signal)).projects;
   }
@@ -105,6 +117,7 @@ export class ProjectsApi {
     });
   }
 
+  /** Find a project summary by id; return undefined when absent. */
   async get(
     projectId: ProjectId,
     signal?: AbortSignal,
@@ -112,6 +125,7 @@ export class ProjectsApi {
     return (await this.list(signal)).find((project) => project.id === projectId);
   }
 
+  /** Find a project using its normalized absolute workspace root. */
   async findByWorkspaceRoot(
     workspaceRoot: string,
     signal?: AbortSignal,
@@ -122,6 +136,7 @@ export class ProjectsApi {
     );
   }
 
+  /** Create a project with a generated id unless the caller supplies one. */
   create(input: ProjectCreateInput, signal?: AbortSignal): Promise<Project> {
     return this.rpc.call(
       "projects.mutate",
@@ -172,6 +187,7 @@ export class ProjectsApi {
     return this.rpc.call("projects.createNew", input, signal);
   }
 
+  /** Update the selected project metadata. */
   update(projectId: ProjectId, patch: ProjectMetaUpdate, signal?: AbortSignal): Promise<Project> {
     return this.rpc.call(
       "projects.mutate",

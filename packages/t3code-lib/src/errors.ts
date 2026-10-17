@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 /**
  * One error strategy for the whole library: every failure raised to a caller
  * is a `T3Error` with a stable `code`. Callers switch on `code` (or use
@@ -26,6 +30,7 @@ export type T3ErrorCode =
   | "interrupted"
   | "timeout";
 
+/** Base class for library failures with stable error codes. */
 export abstract class T3Error extends Error {
   abstract readonly code: T3ErrorCode;
 
@@ -224,10 +229,12 @@ export class T3InterruptedError extends T3Error {
   readonly code = "interrupted" as const;
 }
 
+/** A caller-selected wait exceeded its time bound. */
 export class T3TimeoutError extends T3Error {
   readonly code = "timeout" as const;
 }
 
+/** Test whether a value belongs to the library error hierarchy. */
 export function isT3Error(value: unknown): value is T3Error {
   return value instanceof T3Error;
 }

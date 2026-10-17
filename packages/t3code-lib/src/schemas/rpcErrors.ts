@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 /**
  * The tagged failures the server's RPC methods declare in their `error`
  * schemas (`packages/contracts/src/rpc.ts`), as they arrive in an `Exit`
@@ -237,6 +241,7 @@ export function decodeRpcErrorRecord(
   return decoded.success ? decoded.data : { unknown: true, raw: { ...raw } };
 }
 
+/** Narrow a decoded RPC failure to a recognized tagged error. */
 export function isRpcErrorOfTag<const Tag extends RpcErrorTag>(
   record: RpcErrorRecord,
   tag: Tag,

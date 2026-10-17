@@ -57,6 +57,7 @@ export function loadShellSnapshot(
   });
 }
 
+/** Live and archived cross-thread snapshots. */
 export class ShellApi {
   readonly http: HttpTransport;
   readonly rpc: RpcClient<RpcMethods>;

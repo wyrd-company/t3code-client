@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 /**
  * CommandDispatcher: the one path every facade uses to send an orchestration
  * command. It validates the command against `OrchestrationV2Command` and
@@ -28,6 +32,7 @@ export interface CommandDispatcherOptions {
   readonly ids?: () => string;
 }
 
+/** Validated orchestration dispatch and bookkeeping ids. */
 export class CommandDispatcher {
   readonly #rpc: RpcClient<RpcMethods>;
   readonly #clock: Clock;
@@ -44,22 +49,27 @@ export class CommandDispatcher {
     return commandId(this.#ids());
   }
 
+  /** Generate a message id. */
   newMessageId(): MessageId {
     return messageId(this.#ids());
   }
 
+  /** Generate a thread id. */
   newThreadId(): ThreadId {
     return threadId(this.#ids());
   }
 
+  /** Generate a project id. */
   newProjectId(): ProjectId {
     return projectId(this.#ids());
   }
 
+  /** Return the current timestamp in ISO format. */
   now(): string {
     return nowIso(this.#clock);
   }
 
+  /** Validate and dispatch one orchestration command. */
   async dispatch(command: OrchestrationV2Command, signal?: AbortSignal): Promise<DispatchResult> {
     const parsed = OrchestrationV2Command.safeParse(command);
     if (!parsed.success) {

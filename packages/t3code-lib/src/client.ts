@@ -56,6 +56,7 @@ export interface T3ClientOptions {
   readonly socketAuth?: "ticket" | "bearer-header";
 }
 
+/** Client composition root for HTTP, auth, RPC and server facades. */
 export class T3Client {
   readonly auth: AuthClient;
   readonly server: ServerApi;
@@ -125,6 +126,7 @@ export class T3Client {
     this.terminal = new TerminalApi(this.rpc);
   }
 
+  /** Compose a client with lazy connections and the selected credential store. */
   static create(options: T3ClientOptions): T3Client {
     return new T3Client(options);
   }

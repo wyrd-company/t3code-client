@@ -51,6 +51,7 @@ export const OrchestrationV2RunStatus = forwardCompatibleLiteral([
 ]);
 export type OrchestrationV2RunStatus = z.infer<typeof OrchestrationV2RunStatus>;
 
+/** Narrow a run status to a terminal status. */
 export function isRunTerminalStatus(status: string): status is OrchestrationV2RunTerminalStatus {
   return (RUN_TERMINAL_STATUSES as readonly string[]).includes(status);
 }

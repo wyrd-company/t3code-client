@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 import { T3AuthError } from "../errors.ts";
 import type { AuthEnvironmentScope, AuthGrantedScope } from "../schemas/auth.ts";
 
@@ -35,6 +39,7 @@ export function hasScope(
   return granted?.includes(required) ?? false;
 }
 
+/** Require every named scope; throw T3AuthError for the first missing scope. */
 export function ensureScopes(
   granted: readonly AuthGrantedScope[] | undefined,
   required: readonly AuthEnvironmentScope[],

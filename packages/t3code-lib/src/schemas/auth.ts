@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 import { z } from "zod";
 
 import {
@@ -121,6 +125,7 @@ const authScopeResponseFields = {
   permissions: z.array(AuthGrantedScope).optional(),
 } as const;
 
+/** Read granular permissions when present, otherwise the legacy scopes. */
 export function grantedScopes(response: {
   readonly scopes?: readonly AuthGrantedScope[] | undefined;
   readonly permissions?: readonly AuthGrantedScope[] | undefined;

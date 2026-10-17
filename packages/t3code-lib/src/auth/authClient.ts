@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 /**
  * AuthClient: the auth control plane over HTTP, and the only module that
  * reads or writes the credential store. It keeps an in-memory copy of the
@@ -49,6 +53,7 @@ export interface ExchangePairingTokenOptions {
 const BooleanRevoked = z.looseObject({ revoked: z.boolean() });
 const RevokedCount = z.looseObject({ revokedCount: z.number() });
 
+/** Auth control plane and the sole owner of credential-store access. */
 export class AuthClient {
   #cached: StoredCredentials | undefined;
   #version = 0;
@@ -81,6 +86,7 @@ export class AuthClient {
     return scopes === undefined ? undefined : [...scopes];
   }
 
+  /** Read the public environment descriptor without authentication. */
   descriptor(signal?: AbortSignal): Promise<ExecutionEnvironmentDescriptorType> {
     return this.http.request({
       method: "GET",
@@ -91,6 +97,7 @@ export class AuthClient {
     });
   }
 
+  /** Read the session state using the stored token when present. */
   sessionState(signal?: AbortSignal): Promise<AuthSessionStateType> {
     return this.http.request({
       method: "GET",
@@ -101,6 +108,7 @@ export class AuthClient {
     });
   }
 
+  /** Exchange a single-use pairing token and save the resulting credential. */
   async exchangePairingToken(
     pairingToken: string,
     options: ExchangePairingTokenOptions = {},
@@ -137,6 +145,7 @@ export class AuthClient {
     return result;
   }
 
+  /** Validate an issued token before saving its session metadata. */
   async setAccessToken(token: string): Promise<AuthSessionStateType> {
     if (token.trim().length === 0) throw new T3PreconditionError("token must not be empty.");
     const state = await this.http.requestWithAccessToken(
@@ -168,6 +177,7 @@ export class AuthClient {
     this.#remember({});
   }
 
+  /** Issue a short-lived WebSocket ticket for the stored credential. */
   websocketTicket(signal?: AbortSignal): Promise<AuthWebSocketTicketResultType> {
     return this.http.request({
       method: "POST",
@@ -178,6 +188,7 @@ export class AuthClient {
     });
   }
 
+  /** Create a pairing credential with the requested scopes. */
   createPairingCredential(
     input: AuthCreatePairingCredentialInputType,
   ): Promise<AuthPairingCredentialResultType> {
@@ -191,6 +202,7 @@ export class AuthClient {
     });
   }
 
+  /** List pairing links visible to this session. */
   listPairingLinks(): Promise<AuthPairingLinkType[]> {
     return this.http.request({
       method: "GET",
@@ -200,6 +212,7 @@ export class AuthClient {
     });
   }
 
+  /** Revoke a pairing link; return whether it was revoked. */
   async revokePairingLink(id: string): Promise<boolean> {
     const result = await this.http.request({
       method: "POST",
@@ -211,6 +224,7 @@ export class AuthClient {
     return result.revoked;
   }
 
+  /** List authenticated client sessions. */
   listClients(): Promise<AuthClientSessionType[]> {
     return this.http.request({
       method: "GET",
@@ -220,6 +234,7 @@ export class AuthClient {
     });
   }
 
+  /** Revoke the selected client session. */
   async revokeClient(sessionId: AuthSessionId): Promise<boolean> {
     const result = await this.http.request({
       method: "POST",
@@ -231,6 +246,7 @@ export class AuthClient {
     return result.revoked;
   }
 
+  /** Revoke other sessions; return the number revoked. */
   async revokeOtherClients(): Promise<number> {
     const result = await this.http.request({
       method: "POST",
@@ -241,19 +257,23 @@ export class AuthClient {
     return result.revokedCount;
   }
 
+  /** Load the current bearer token through the credential store. */
   async currentAccessToken(): Promise<string | undefined> {
     return (await this.#load()).accessToken;
   }
 
+  /** Load and return the scopes granted to the current credential. */
   async currentScopes(): Promise<AuthGrantedScopeType[] | undefined> {
     await this.#load();
     return this.scopesSync();
   }
 
+  /** Check whether the credential grants the requested scope. */
   async hasScope(scope: AuthEnvironmentScopeType): Promise<boolean> {
     return includesScope(await this.currentScopes(), scope);
   }
 
+  /** Throw T3AuthError when a required scope is missing. */
   async ensureScopes(required: AuthEnvironmentScopeType[]): Promise<void> {
     requireScopes(await this.currentScopes(), required, "authenticated operation");
   }

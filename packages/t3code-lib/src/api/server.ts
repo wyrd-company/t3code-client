@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 import type { RpcClient } from "../rpc/client.ts";
 import type { RpcMethods } from "../rpc/registry.ts";
 import type { RpcPayload, RpcSuccess } from "../rpc/spec.ts";
@@ -19,6 +23,7 @@ export interface WatchServerLifecycleOptions {
   readonly signal?: AbortSignal;
 }
 
+/** Server environment, configuration and providers. */
 export class ServerApi {
   readonly rpc: RpcClient<RpcMethods>;
   readonly http: HttpTransport;
@@ -28,18 +33,22 @@ export class ServerApi {
     this.http = http;
   }
 
+  /** Probe server health through RPC. */
   async probe(signal?: AbortSignal): Promise<void> {
     await this.rpc.call("server.probe", {}, signal);
   }
 
+  /** Read server configuration, including provider instances and models. */
   getConfig(signal?: AbortSignal): Promise<RpcSuccess<RpcMethods, "server.getConfig">> {
     return this.rpc.call("server.getConfig", {}, signal);
   }
 
+  /** Read server settings. */
   getSettings(signal?: AbortSignal): Promise<RpcSuccess<RpcMethods, "server.getSettings">> {
     return this.rpc.call("server.getSettings", {}, signal);
   }
 
+  /** Refresh the selected provider instances. */
   refreshProviders(
     input: RpcPayload<RpcMethods, "server.refreshProviders"> = {},
     signal?: AbortSignal,
@@ -47,6 +56,7 @@ export class ServerApi {
     return this.rpc.call("server.refreshProviders", input, signal);
   }
 
+  /** Subscribe to configuration changes; decode failures remain stream items. */
   watchConfig(
     options: WatchServerConfigOptions = {},
   ): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "subscribeServerConfig">>> {
@@ -63,6 +73,7 @@ export class ServerApi {
     );
   }
 
+  /** Subscribe to server lifecycle events. */
   watchLifecycle(
     options: WatchServerLifecycleOptions = {},
   ): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "subscribeServerLifecycle">>> {
@@ -75,6 +86,7 @@ export class ServerApi {
     );
   }
 
+  /** Read the public environment descriptor over HTTP. */
   environment(signal?: AbortSignal): Promise<ExecutionEnvironmentDescriptorType> {
     return this.http.request({
       method: "GET",
@@ -85,10 +97,12 @@ export class ServerApi {
     });
   }
 
+  /** List configured provider instances. */
   async providers(signal?: AbortSignal): Promise<ServerProvider[]> {
     return (await this.getConfig(signal)).providers;
   }
 
+  /** Find a provider model by slug or alias; return undefined when absent. */
   async findModel(
     instanceId: string,
     model: string,

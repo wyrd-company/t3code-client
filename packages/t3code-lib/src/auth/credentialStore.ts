@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: design
+// ---
 import * as NodeCrypto from "node:crypto";
 import * as NodeFSP from "node:fs/promises";
 import * as NodePath from "node:path";
@@ -21,8 +25,11 @@ export interface StoredCredentials {
 }
 
 export interface CredentialStore {
+  /** Read the saved credential, or an empty object when absent. */
   load(): Promise<StoredCredentials>;
+  /** Persist validated credential metadata. */
   save(credentials: StoredCredentials): Promise<void>;
+  /** Forget the local credential without revoking the server session. */
   clear(): Promise<void>;
 }
 
@@ -33,6 +40,7 @@ const StoredCredentialsSchema = z.looseObject({
   sessionMethod: ServerAuthSessionMethod.optional(),
 });
 
+/** Create an isolated in-memory credential store. */
 export function memoryCredentialStore(initial: StoredCredentials = {}): CredentialStore {
   let current = clone(initial);
   return {
@@ -48,6 +56,7 @@ export function memoryCredentialStore(initial: StoredCredentials = {}): Credenti
   };
 }
 
+/** Create an atomic JSON credential store with 0600 files; the parent directory must exist. */
 export function fileCredentialStore(path: string): CredentialStore {
   return {
     async load() {
@@ -61,10 +70,12 @@ export function fileCredentialStore(path: string): CredentialStore {
       let raw: unknown;
       try {
         raw = JSON.parse(text) as unknown;
-      } catch (cause) {
-        const result = StoredCredentialsSchema.safeParse(text);
-        if (!result.success) throw new T3DecodeError(`credential file ${path}`, result.error, text);
-        throw storageError("parse", path, cause);
+      } catch {
+        throw new T3DecodeError(
+          `credential file ${path}`,
+          new z.ZodError([{ code: "custom", path: [], message: "Invalid credential JSON." }]),
+          "[redacted]",
+        );
       }
       const result = StoredCredentialsSchema.safeParse(raw);
       if (!result.success) throw new T3DecodeError(`credential file ${path}`, result.error, raw);
