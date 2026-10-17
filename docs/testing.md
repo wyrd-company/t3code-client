@@ -7,8 +7,8 @@ relationships:
 
 `task check` runs release-intent validation, workspace formatting/linting,
 typechecks, unit tests, pinned-server live tests and local pack/consumer checks.
-`task lib:check` runs library gates; `task cli:check` reports the reserved scaffold.
-CLI placeholder checks pass but do not count as implementation evidence.
+`task lib:check` runs library gates; `task cli:check` runs the CLI build, lint, typecheck, unit, live and package gates.
+Registered placeholder commands do not count as implementation evidence.
 
 Library source, colocated tests, fixture data, fake server and live harness
 are in `packages/t3code-lib`. See [library testing](../packages/t3code-lib/docs/testing.md)
@@ -28,3 +28,29 @@ are retained. No tags are created in the working repository. CI uses this same
 step. After finalization, authoritative annotated baseline records supply the
 version history. Tag/main ancestry and registry provenance still require the
 finalization release jobs.
+
+## CLI isolated acceptance
+
+`task cli:acceptance` builds the library and CLI, then starts the pinned stock
+server through the shared library live setup. Its fresh `/tmp/t3c-acceptance-*`
+root is outside Git even if the caller's TMPDIR is inside a checkout. It clears
+inherited `T3_LIVE_URL`, `T3_LIVE_TOKEN`, server/home/workspace/keep overrides and
+ordinary server/token overrides before setup. This clearing applies only to the
+isolated acceptance process. Ordinary `task lib:test:live` and `task cli:test:live`
+retain intentional `T3_LIVE_URL`/`T3_LIVE_TOKEN` external-server selection.
+
+The setup issues an upstream session credential; the CLI live test uses the
+library to create a pairing credential and pair a fresh profile. It runs the
+built `version --json`, verifies source reporting and server/protocol/verdict,
+and runs a `gpt-6-luna` subject through the library when `T3_LIVE_AGENT=1`.
+Auth handlers can replace that bootstrap once implemented; execution handlers
+can replace the library subject once `run` is implemented.
+
+Sanitized console evidence names the external root, actual owned server home,
+profile home, override isolation, subject identity/state and cleanup. It never
+prints tokens. The live harness stops its owned server; acceptance removes its
+owned temporary root. The user's Codex auth remains in its existing home and is
+not read by tests. Only owned processes and homes are removed.
+
+See [CLI composition](../packages/t3code-cli/docs/composition.md) for handler,
+output, error context, shrinkwrap and Taskfile ownership interfaces.
