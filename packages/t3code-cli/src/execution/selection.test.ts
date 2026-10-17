@@ -70,15 +70,23 @@ it.each([{ provider: "missing" }, { model: "missing" }, { provider: "sample", mo
     expect(() => selectModel([provider()], options, null, null)).toThrow(T3NotFoundError);
   },
 );
+it.each([{ enabled: false }, { availability: "unavailable" }])(
+  "rejects unavailable provider %j",
+  (override) => {
+    expect(() => selectModel([{ ...provider(), ...override }], {}, null, null)).toThrow(
+      T3NotFoundError,
+    );
+  },
+);
 it.each([
-  { enabled: false },
-  { installed: false },
-  { availability: "unavailable" },
+  { status: "error" },
+  { installed: false, availability: "available" },
   { status: "disabled" },
-])("rejects unavailable provider %j", (override) => {
-  expect(() => selectModel([{ ...provider(), ...override }], {}, null, null)).toThrow(
-    T3NotFoundError,
-  );
+])("keeps selectable providers despite diagnostic fields: %j", (diagnostics) => {
+  expect(selectModel([{ ...provider(), ...diagnostics }], {}, null, null)).toEqual({
+    instanceId: "sample",
+    model: "standard",
+  });
 });
 it.each([
   { project: "p", projectPath: "/sample" },

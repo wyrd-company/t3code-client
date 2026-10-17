@@ -114,12 +114,9 @@ export function selectModel(
   }
   if (matches.length !== 1) throw new T3PreconditionError("Model selection is ambiguous.");
   const { provider, candidate } = matches[0]!;
-  if (
-    !provider.enabled ||
-    !provider.installed ||
-    provider.availability === "unavailable" ||
-    provider.status === "disabled"
-  )
+  // Upstream apps/web/src/providerInstances.ts: isSelectableProviderInstanceEntry.
+  // Installation and probe status are diagnostics, not selection restrictions.
+  if (!provider.enabled || provider.availability === "unavailable")
     throw missingResource("provider");
   return {
     instanceId: provider.instanceId,
