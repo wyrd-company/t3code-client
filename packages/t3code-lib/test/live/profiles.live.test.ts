@@ -14,16 +14,17 @@ it("composes profiles, issued-token import, pairing and resolved auth against th
   );
   const url = process.env["T3_LIVE_URL"]!;
   const token = process.env["T3_LIVE_TOKEN"]!;
+  const suppliedUrl = `${url}/sample?sample=value#sample`;
   const profiles = new ProfileManager({ configDir: directory });
   const issuer = T3Client.create({ baseUrl: url, accessToken: token });
   try {
-    await profiles.setAccessToken({ name: "issued", url }, token);
+    await profiles.setAccessToken({ name: "issued", url: suppliedUrl }, token);
     const credential = await issuer.auth.createPairingCredential({
       label: "sample-profile",
       scopes: ["orchestration:read", "orchestration:operate"],
     });
-    await profiles.pair({ name: "paired", url }, credential.credential);
-    expect((await profiles.getCurrent())?.name).toBe("issued");
+    await profiles.pair({ name: "paired", url: suppliedUrl }, credential.credential);
+    expect(await profiles.getCurrent()).toEqual({ name: "issued", url });
     await profiles.switch("paired");
     const client = T3Client.create(await profiles.resolve({ env: {} }));
     try {

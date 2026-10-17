@@ -45,9 +45,7 @@ export function serverUrl(input: string): string {
   try {
     const url = new URL(input);
     if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error();
-    return url.pathname === "/" && url.search === "" && url.hash === ""
-      ? url.href.slice(0, -1)
-      : url.href;
+    return url.origin;
   } catch {
     throw new T3PreconditionError("Server URL must be an absolute HTTP or HTTPS URL.");
   }
@@ -81,8 +79,7 @@ export async function loadConfig(directory: string): Promise<ProfileConfig> {
     const server = z.looseObject({ url: z.string().min(1) }).safeParse(rawServer);
     if (name.length === 0 || !server.success)
       throw new T3PreconditionError("Profile configuration has an invalid server.");
-    serverUrl(server.data.url);
-    servers[name] = server.data;
+    servers[name] = { ...server.data, url: serverUrl(server.data.url) };
   }
   const { current, ...rest } = parsed.data;
   const config: ProfileConfig = { ...rest, servers, ...(current === undefined ? {} : { current }) };
