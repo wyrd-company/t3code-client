@@ -34,8 +34,9 @@ export function createInvocation(
   profiles = new ProfileManager(),
   clientAppVersion?: string,
 ): Invocation {
-  let connection: ResolvedProfile | undefined;
+  let connection: Promise<ResolvedProfile> | undefined;
   let client: T3Client | undefined;
+  let clientPending: Promise<T3Client> | undefined;
   const invocation: Invocation = {
     options,
     output,
@@ -44,63 +45,75 @@ export function createInvocation(
     errorContext: "local",
     async resolve() {
       if (connection !== undefined) return connection;
-      const previousContext = invocation.errorContext;
-      invocation.errorContext = "local";
-      connection = await profiles.resolve({
-        ...(options.server === undefined ? {} : { server: options.server }),
-        ...(options.credentials === undefined ? {} : { credentialsFile: options.credentials }),
-      });
-      invocation.errorContext = previousContext;
+      connection = profiles
+        .resolve({
+          ...(options.server === undefined ? {} : { server: options.server }),
+          ...(options.credentials === undefined ? {} : { credentialsFile: options.credentials }),
+        })
+        .catch((error: unknown) => {
+          invocation.errorContext = "local";
+          connection = undefined;
+          throw error;
+        });
       return connection;
     },
     async client() {
       if (client !== undefined) return client;
-      const resolved = await invocation.resolve();
-      client = T3Client.create({
-        ...resolved,
-        credentials: {
-          async load() {
-            try {
-              return await resolved.credentials.load();
-            } catch (error) {
-              invocation.errorContext = "local";
-              throw error;
-            }
-          },
-          async save(value) {
-            try {
-              await resolved.credentials.save(value);
-            } catch (error) {
-              invocation.errorContext = "local";
-              throw error;
-            }
-          },
-          async clear() {
-            try {
-              await resolved.credentials.clear();
-            } catch (error) {
-              invocation.errorContext = "local";
-              throw error;
-            }
-          },
-        },
-        clientLabel: "t3c",
-        ...(clientAppVersion === undefined ? {} : { clientAppVersion }),
-        openTimeoutMs: durationMs(options.connectTimeout ?? "30s"),
-        logger: {
-          debug: () => diagnostic("debug"),
-          info: () => diagnostic("info"),
-          warn: () => diagnostic("warn"),
-          error: () => diagnostic("error"),
-        },
+      if (clientPending !== undefined) return clientPending;
+      clientPending = initializeClient().catch((error: unknown) => {
+        invocation.errorContext = "local";
+        clientPending = undefined;
+        throw error;
       });
-      if (invocation.errorContext === "local") invocation.errorContext = "connection";
-      return client;
+      return clientPending;
     },
     async close() {
       await client?.close();
     },
   };
+  async function initializeClient(): Promise<T3Client> {
+    const resolved = await invocation.resolve();
+    client = T3Client.create({
+      ...resolved,
+      credentials: {
+        async load() {
+          try {
+            return await resolved.credentials.load();
+          } catch (error) {
+            invocation.errorContext = "local";
+            throw error;
+          }
+        },
+        async save(value) {
+          try {
+            await resolved.credentials.save(value);
+          } catch (error) {
+            invocation.errorContext = "local";
+            throw error;
+          }
+        },
+        async clear() {
+          try {
+            await resolved.credentials.clear();
+          } catch (error) {
+            invocation.errorContext = "local";
+            throw error;
+          }
+        },
+      },
+      clientLabel: "t3c",
+      ...(clientAppVersion === undefined ? {} : { clientAppVersion }),
+      openTimeoutMs: durationMs(options.connectTimeout ?? "30s"),
+      logger: {
+        debug: () => diagnostic("debug"),
+        info: () => diagnostic("info"),
+        warn: () => diagnostic("warn"),
+        error: () => diagnostic("error"),
+      },
+    });
+    if (invocation.errorContext === "local") invocation.errorContext = "connection";
+    return client;
+  }
   const levels = ["silent", "error", "warn", "info", "debug"];
   function diagnostic(level: string) {
     // Transport log payloads can contain caller/server data. Emit level only.
