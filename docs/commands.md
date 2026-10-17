@@ -11,6 +11,9 @@ relationships:
 
 # Command behavior
 
+The [CLI specification](https://github.com/wyrd-company/t3code-client/blob/main/docs/specifications/command-line.yml)
+and its native command asset define the command contract. This guide explains its use.
+
 The [native command surface](https://github.com/wyrd-company/t3code-client/blob/main/docs/specifications/cli-surface.json) defines
 commands, positional arguments, options and input relationships. This guide
 explains their use. `t3c` runs on Node >=22.16. Startup checks the Node minimum

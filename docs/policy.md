@@ -11,6 +11,9 @@ relationships:
 
 # Execution, output and failures
 
+The [CLI specification](https://github.com/wyrd-company/t3code-client/blob/main/docs/specifications/command-line.yml)
+and its native command asset define the command contract. This guide explains its use.
+
 ## Output
 
 In text execution mode stdout contains only the assistant message. Progress,
