@@ -11,6 +11,14 @@ export async function verifyServerEvidence(directory: string) {
   const names = await NodeFSP.readdir(directory);
   const ready = names.filter((name) => name.endsWith("-ready.json"));
   assert(ready.length > 0, "No owned server evidence.");
+  assert.deepEqual(
+    names
+      .filter((name) => name.endsWith("-started.json"))
+      .map((name) => name.replace("-started.json", ""))
+      .sort(),
+    ready.map((name) => name.replace("-ready.json", "")).sort(),
+    "Every started server must have ready and cleanup evidence.",
+  );
   for (const name of ready) {
     const read = async (phase: string) =>
       JSON.parse(
