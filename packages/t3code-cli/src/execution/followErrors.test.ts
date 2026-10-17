@@ -3,8 +3,19 @@
 //   verifies: output-contract
 // ---
 import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
-import { T3AuthError, T3ConnectionError } from "@wyrd-company/t3code-lib";
 import {
+  T3AuthError,
+  T3ConnectionError,
+  type TurnHandle,
+  type TurnOutcome,
+  runOutcome,
+  threadId,
+  runId,
+  messageId,
+  commandId,
+} from "@wyrd-company/t3code-lib";
+import {
+  makeProjection,
   makeRun,
   makeRuntimeRequest,
   ids,
@@ -137,4 +148,76 @@ it("selects the latest run when none is active and honors an explicit run", asyn
       exitCode: explicit ? 3 : 0,
     });
   }
+});
+
+it("does not mutate a detached result when the turn completes later", async () => {
+  const s = setup();
+  let complete: (outcome: TurnOutcome) => void = () => {};
+  const completion = new Promise<TurnOutcome>((resolve) => {
+    complete = resolve;
+  });
+  const turn: TurnHandle = {
+    threadId: threadId(ids.threadId),
+    runId: runId(ids.runId),
+    messageId: messageId("m"),
+    commandId: commandId("c"),
+    sequence: 0,
+    events: () => s.feed.iterator,
+    completion,
+    interrupt: vi.fn(),
+  };
+  const promise = followRun(s.invocation, { ...target, turn }, { ...policy, timeoutMs: 1 });
+  s.snapshot();
+  await flush();
+  await vi.advanceTimersByTimeAsync(1);
+  const result = await promise;
+  const projection = makeProjection({ runs: [makeRun({ status: "completed" })] });
+  complete(runOutcome(projection, projection.runs[0]!)!);
+  await flush();
+  expect(result).toMatchObject({ exitCode: 5, state: "running" });
+});
+
+it("retains the newly linked turn run id on a completion failure", async () => {
+  const s = setup();
+  let linked: ReturnType<typeof runId> | undefined;
+  let fail: (error: unknown) => void = () => {};
+  const completion = new Promise<TurnOutcome>((_, reject) => {
+    fail = reject;
+  });
+  const turn: TurnHandle = {
+    threadId: threadId(ids.threadId),
+    get runId() {
+      return linked;
+    },
+    messageId: messageId("m"),
+    commandId: commandId("c"),
+    sequence: 0,
+    events: () => s.feed.iterator,
+    completion,
+    interrupt: vi.fn(),
+  };
+  const promise = followRun(s.invocation, { ...target, turn }, policy);
+  s.snapshot();
+  await flush();
+  linked = runId(ids.runId);
+  fail(new T3ConnectionError("closed", "sample"));
+  expect(await promise).toMatchObject({ exitCode: 8, runId: ids.runId, threadId: ids.threadId });
+});
+
+it("preserves deadlines longer than the Node timer limit", async () => {
+  const s = setup();
+  const timeoutMs = 30 * 24 * 3_600_000;
+  const timer = vi.spyOn(globalThis, "setTimeout");
+  const promise = followRun(s.invocation, target, { ...policy, timeoutMs });
+  let done = false;
+  void promise.then(() => {
+    done = true;
+  });
+  s.snapshot();
+  await flush();
+  expect(timer).toHaveBeenLastCalledWith(expect.any(Function), 2_147_483_647);
+  await vi.advanceTimersByTimeAsync(2_147_483_648);
+  expect(done).toBe(false);
+  await vi.advanceTimersByTimeAsync(timeoutMs - 2_147_483_648);
+  expect(await promise).toMatchObject({ exitCode: 5, durationMs: timeoutMs });
 });

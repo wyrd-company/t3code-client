@@ -103,3 +103,21 @@ it("reports pending questions in JSON without printing them on stderr", async ()
   });
   expect(s.stderr.join("")).not.toContain("Proceed?");
 });
+
+it("never sends an approval decision for a user-input request", async () => {
+  const s = setup();
+  const promise = followRun(s.invocation, target, {
+    ...policy,
+    approve: "accept",
+    onRequest: "wait",
+    timeoutMs: 1,
+  });
+  s.snapshot({
+    runtimeRequests: [makeRuntimeRequest("input-1", { kind: "user_input" })],
+    turnItems: [items.userInputRequest("input-1")],
+  });
+  await flush();
+  expect(s.respondToApproval).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(1);
+  expect((await promise).exitCode).toBe(5);
+});
