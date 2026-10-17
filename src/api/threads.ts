@@ -1,38 +1,33 @@
 /**
  * ThreadsApi: thread lifecycle commands with server bookkeeping filled in,
- * idempotent `ensure` keyed by the caller's thread id, launches, projection
- * reads over HTTP and RPC, request responses, turns, and the resumable live
- * watch.
+ * idempotent `ensure` keyed by the caller's thread id, launches, request
+ * responses, turns, and the resumable live watch. Reads live in
+ * `threadReads.ts`.
  */
 import { T3PreconditionError, T3RpcError } from "../errors.ts";
 import type { RpcClient } from "../rpc/client.ts";
 import type { RpcMethods } from "../rpc/registry.ts";
-import type { ProjectId, RunId, ThreadId } from "../schemas/common.ts";
+import type { RunId, ThreadId } from "../schemas/common.ts";
 import type { OrchestrationV2Command } from "../schemas/orchestration/commands.ts";
 import type { ThreadMetadataUpdatePayload } from "../schemas/orchestration/commands/thread.ts";
-import type { ChatAttachment } from "../schemas/orchestration/attachments.ts";
-import type { OrchestrationMessageContext } from "../schemas/orchestration/messageContext.ts";
 import type {
   ModelSelection,
   ProviderInteractionMode,
   RuntimeMode,
 } from "../schemas/orchestration/model.ts";
-import {
+import type {
   OrchestrationV2ThreadDetailSnapshot,
   OrchestrationV2ThreadHistoryPage,
-  type OrchestrationV2ThreadProjection,
+  OrchestrationV2ThreadProjection,
   OrchestrationV2ThreadTranscript,
 } from "../schemas/orchestration/projection.ts";
-import type { OrchestrationV2ThreadLaunchWorkspaceStrategy } from "../schemas/orchestration/runs.ts";
 import type { OrchestrationV2ThreadShell } from "../schemas/orchestration/shell.ts";
 import type {
   DispatchResult,
-  OrchestrationV2ThreadLaunchInput,
   OrchestrationV2ThreadLaunchResult,
 } from "../schemas/orchestration/stream.ts";
 import type { HttpTransport } from "../transport/http.ts";
 import { isMissingResourceError, type CommandDispatcher } from "./dispatch.ts";
-import { loadShellSnapshot, orchestrationHttpHeaders } from "./shell.ts";
 import {
   ThreadCommands,
   type ApprovalResponseInput,
@@ -40,62 +35,36 @@ import {
   type UserInputDismissInput,
   type UserInputResponseInput,
 } from "./threadCommands.ts";
+import {
+  threadCreateCommand,
+  threadLaunchPayload,
+  type ThreadCreateInput,
+  type ThreadLaunchInput,
+} from "./threadCreation.ts";
 import { activeRun } from "./threadDerived.ts";
+import {
+  findThread,
+  listThreads,
+  loadThreadDetail,
+  loadThreadHistoryPage,
+  loadThreadTranscript,
+  type ThreadHistoryPageOptions,
+  type ThreadListOptions,
+} from "./threadReads.ts";
 import {
   pendingRequests,
   threadPhase,
   type PendingRequest,
   type ThreadPhase,
 } from "./threadProjection.ts";
-import { creationFields, startThreadTurn } from "./threadTurnStart.ts";
+import { startThreadTurn } from "./threadTurnStart.ts";
 import { watchThread, type ThreadWatchItem, type ThreadWatchOptions } from "./threadWatch.ts";
-import type { CreationOrigin, StartTurnInput, TurnHandle } from "./turns.ts";
+import type { StartTurnInput, TurnHandle } from "./turns.ts";
 
-export interface ThreadCreateInput {
-  readonly threadId?: ThreadId;
-  readonly projectId: ProjectId;
-  readonly title: string;
-  readonly modelSelection: ModelSelection;
-  /** Defaults to "full-access", the server's default. */
-  readonly runtimeMode?: RuntimeMode;
-  readonly interactionMode?: ProviderInteractionMode;
-  readonly branch?: string | null;
-  readonly worktreePath?: string | null;
-  readonly origin?: CreationOrigin;
-}
-
-/** `threads.launch`: create (or reuse) a thread, prepare its workspace, and optionally send a first message. */
-export interface ThreadLaunchInput {
-  readonly threadId?: ThreadId;
-  /** Return the existing thread for `threadId` instead of failing. */
-  readonly reuseExistingThread?: boolean;
-  readonly projectId: ProjectId;
-  readonly title: string;
-  readonly generateTitle?: boolean;
-  readonly modelSelection: ModelSelection;
-  readonly runtimeMode?: RuntimeMode;
-  readonly interactionMode?: ProviderInteractionMode;
-  /** `root`, an existing worktree, or a new worktree from a base ref. */
-  readonly workspace: OrchestrationV2ThreadLaunchWorkspaceStrategy;
-  readonly initialMessage?: {
-    readonly text: string;
-    readonly context?: OrchestrationMessageContext;
-    readonly attachments?: ChatAttachment[];
-  };
-  readonly creationSource?: OrchestrationV2ThreadLaunchInput["creationSource"];
-}
+export type { ThreadCreateInput, ThreadLaunchInput } from "./threadCreation.ts";
+export type { ThreadHistoryPageOptions, ThreadListOptions } from "./threadReads.ts";
 
 export type ThreadMetaUpdate = ThreadMetadataUpdatePayload;
-
-export interface ThreadListOptions {
-  readonly projectId?: ProjectId;
-  readonly includeArchived?: boolean;
-}
-
-export interface ThreadHistoryPageOptions {
-  readonly throughEntryId?: string;
-  readonly view?: "conversation" | "activity";
-}
 
 export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
 
@@ -115,56 +84,23 @@ export class ThreadsApi {
 
   /**
    * Active threads from the shell; with `includeArchived`, archived threads
-   * as well. The HTTP shell lists only active threads, so archived ones come
-   * from the archived shell over RPC.
+   * as well, read from the archived shell over RPC.
    */
-  async list(
+  list(
     options: ThreadListOptions = {},
     signal?: AbortSignal,
   ): Promise<OrchestrationV2ThreadShell[]> {
-    const shell = await loadShellSnapshot(this.http, signal);
-    const threads = [...shell.threads];
-    if (options.includeArchived) {
-      const known = new Set(threads.map((thread) => thread.id));
-      for (const thread of await this.#archived(shell, signal)) {
-        if (!known.has(thread.id)) threads.push(thread);
-      }
-    }
-    return options.projectId === undefined
-      ? threads
-      : threads.filter((thread) => thread.projectId === options.projectId);
+    return listThreads(this.http, this.rpc, options, signal);
   }
 
   /** Active threads first; archived threads are consulted only when the id is not active. */
-  async get(
-    threadId: ThreadId,
-    signal?: AbortSignal,
-  ): Promise<OrchestrationV2ThreadShell | undefined> {
-    const shell = await loadShellSnapshot(this.http, signal);
-    const active = shell.threads.find((thread) => thread.id === threadId);
-    if (active) return active;
-    return (await this.#archived(shell, signal)).find((thread) => thread.id === threadId);
-  }
-
-  async #archived(
-    shell: { readonly archivedThreads: readonly OrchestrationV2ThreadShell[] },
-    signal?: AbortSignal,
-  ): Promise<OrchestrationV2ThreadShell[]> {
-    if (shell.archivedThreads.length > 0) return [...shell.archivedThreads];
-    const archived = await this.rpc.call("orchestration.getArchivedShellSnapshot", {}, signal);
-    return [...archived.threads];
+  get(threadId: ThreadId, signal?: AbortSignal): Promise<OrchestrationV2ThreadShell | undefined> {
+    return findThread(this.http, this.rpc, threadId, signal);
   }
 
   /** The full thread over HTTP. Raises `T3NotFoundError` when the thread does not exist. */
   detail(threadId: ThreadId, signal?: AbortSignal): Promise<OrchestrationV2ThreadDetailSnapshot> {
-    return this.http.request({
-      method: "GET",
-      path: `/api/orchestration/threads/${encodeURIComponent(threadId)}`,
-      auth: "required",
-      headers: orchestrationHttpHeaders,
-      decode: OrchestrationV2ThreadDetailSnapshot,
-      ...(signal === undefined ? {} : { signal }),
-    });
+    return loadThreadDetail(this.http, threadId, signal);
   }
 
   /** The thread's projection over RPC, with a bounded timeline window. */
@@ -183,15 +119,7 @@ export class ThreadsApi {
     options: ThreadHistoryPageOptions = {},
     signal?: AbortSignal,
   ): Promise<OrchestrationV2ThreadHistoryPage> {
-    return this.http.request({
-      method: "GET",
-      path: `/api/orchestration/threads/${encodeURIComponent(threadId)}/history`,
-      query: { cursor, ...options },
-      auth: "required",
-      headers: orchestrationHttpHeaders,
-      decode: OrchestrationV2ThreadHistoryPage,
-      ...(signal === undefined ? {} : { signal }),
-    });
+    return loadThreadHistoryPage(this.http, threadId, cursor, options, signal);
   }
 
   /**
@@ -200,14 +128,7 @@ export class ThreadsApi {
    * `thread_transcript_too_large` when it exceeds the server's file attachment limit.
    */
   transcript(threadId: ThreadId, signal?: AbortSignal): Promise<OrchestrationV2ThreadTranscript> {
-    return this.http.request({
-      method: "GET",
-      path: `/api/orchestration/threads/${encodeURIComponent(threadId)}/transcript`,
-      auth: "required",
-      headers: orchestrationHttpHeaders,
-      decode: OrchestrationV2ThreadTranscript,
-      ...(signal === undefined ? {} : { signal }),
-    });
+    return loadThreadTranscript(this.http, threadId, signal);
   }
 
   async create(
@@ -215,22 +136,7 @@ export class ThreadsApi {
     signal?: AbortSignal,
   ): Promise<OrchestrationV2ThreadShell> {
     const threadId = input.threadId ?? this.dispatcher.newThreadId();
-    await this.dispatch(
-      {
-        type: "thread.create",
-        ...creationFields(input.origin),
-        commandId: this.dispatcher.newCommandId(),
-        threadId,
-        projectId: input.projectId,
-        title: input.title,
-        modelSelection: input.modelSelection,
-        runtimeMode: input.runtimeMode ?? "full-access",
-        interactionMode: input.interactionMode ?? "default",
-        branch: input.branch ?? null,
-        worktreePath: input.worktreePath ?? null,
-      },
-      signal,
-    );
+    await this.dispatch(threadCreateCommand(this.dispatcher, threadId, input), signal);
     const created = await this.get(threadId, signal);
     if (!created) {
       throw new T3PreconditionError(`Thread ${threadId} was created but is not in the shell.`);
@@ -251,25 +157,11 @@ export class ThreadsApi {
     input: ThreadLaunchInput,
     signal?: AbortSignal,
   ): Promise<OrchestrationV2ThreadLaunchResult> {
-    const { workspace, initialMessage, runtimeMode, interactionMode, ...rest } = input;
-    const payload: OrchestrationV2ThreadLaunchInput = {
-      ...rest,
-      commandId: this.dispatcher.newCommandId(),
-      runtimeMode: runtimeMode ?? "full-access",
-      interactionMode: interactionMode ?? "default",
-      workspaceStrategy: workspace,
-      ...(initialMessage === undefined
-        ? {}
-        : {
-            initialMessage: {
-              messageId: this.dispatcher.newMessageId(),
-              text: initialMessage.text,
-              ...(initialMessage.context === undefined ? {} : { context: initialMessage.context }),
-              attachments: initialMessage.attachments ?? [],
-            },
-          }),
-    };
-    return this.rpc.call("orchestration.launchThread", payload, signal);
+    return this.rpc.call(
+      "orchestration.launchThread",
+      threadLaunchPayload(this.dispatcher, input),
+      signal,
+    );
   }
 
   async update(threadId: ThreadId, patch: ThreadMetaUpdate, signal?: AbortSignal): Promise<void> {
