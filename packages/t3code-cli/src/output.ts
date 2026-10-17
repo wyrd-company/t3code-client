@@ -12,6 +12,8 @@ export interface ExecutionResult {
   threadId: string | null;
   runId: string | null;
   state: string;
+  /** Mode sent by this invocation; null when no mode was sent. */
+  runtimeMode?: string | null;
   assistantMessage: string | null;
   pendingRequests: readonly unknown[];
   exitCode: ExitCode;
@@ -71,6 +73,7 @@ export function emptyExecution(durationMs: number): ExecutionResult {
     threadId: null,
     runId: null,
     state: "unknown",
+    runtimeMode: null,
     assistantMessage: null,
     pendingRequests: [],
     exitCode: 0,

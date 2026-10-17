@@ -8,6 +8,7 @@ import {
   T3PreconditionError,
   ensureScopes,
   grantedScopes,
+  schemas,
   threadId,
 } from "@wyrd-company/t3code-lib";
 import type { Invocation } from "../context.ts";
@@ -20,6 +21,10 @@ import {
   type DispatchOptions,
 } from "./selection.ts";
 
+export interface DispatchTarget extends FollowTarget {
+  readonly runtimeMode: string | null;
+}
+
 /** The project's current checkout when no explicit base ref is supplied. */
 export const defaultWorktreeBaseRef = "HEAD";
 
@@ -28,8 +33,8 @@ export async function dispatchPrompt(
   invocation: Invocation,
   text: string,
   options: DispatchOptions,
-  remember: (target: FollowTarget) => void = () => {},
-): Promise<FollowTarget> {
+  remember: (target: DispatchTarget) => void = () => {},
+): Promise<DispatchTarget> {
   validateDispatchOptions(options);
   const client = await invocation.client();
   invocation.errorContext = "connection";
@@ -52,19 +57,32 @@ export async function dispatchPrompt(
       ? await selectProject(client, options)
       : await client.projects.get(existing.projectId);
   if (!project) throw missingResource("project");
+  const settings = existing === undefined ? await client.server.getSettings() : config.settings;
   const modelSelection = selectModel(
     config.providers,
     options,
     existing?.modelSelection ?? project.defaultModelSelection,
-    config.settings["defaultModelSelection"],
+    settings["defaultModelSelection"],
   );
-  const mode = options.mode === undefined ? {} : { runtimeMode: options.mode };
+  const advertisedMode =
+    options.mode === undefined && existing === undefined
+      ? settings["defaultRuntimeMode"]
+      : undefined;
+  const serverMode =
+    advertisedMode == null
+      ? undefined
+      : schemas.orchestrationModel.RuntimeMode.parse(advertisedMode);
+  const sentMode = options.mode ?? serverMode;
+  const runtimeMode = sentMode ?? null;
+  const mode = sentMode === undefined ? {} : { runtimeMode: sentMode };
   invocation.errorContext = "dispatch";
   if (existing !== undefined) {
-    const target = { threadId: existing.id };
+    let target: DispatchTarget = { threadId: existing.id, runtimeMode: null };
     remember(target);
     if (options.title !== undefined)
       await client.threads.update(existing.id, { title: options.title });
+    target = { ...target, runtimeMode };
+    remember(target);
     const turn = await client.threads.startTurn({
       threadId: existing.id,
       text,
@@ -76,7 +94,7 @@ export async function dispatchPrompt(
     return followed;
   }
   const id = threadId(NodeCrypto.randomUUID());
-  remember({ threadId: id });
+  remember({ threadId: id, runtimeMode });
   const creation = {
     threadId: id,
     projectId: project.id,
@@ -90,7 +108,7 @@ export async function dispatchPrompt(
       workspace: { type: "worktree", baseRef: options.baseRef ?? defaultWorktreeBaseRef },
       initialMessage: { text },
     });
-    remember({ threadId: launched.threadId });
+    remember({ threadId: launched.threadId, runtimeMode });
     // A fresh launch owns its initial user message. Follow the server's link,
     // never a run ordinal or a guess about the thread's active run.
     const message = launched.projection.messages.find((candidate) => candidate.role === "user");
@@ -99,16 +117,16 @@ export async function dispatchPrompt(
       launched.projection.runs.find((run) => run.userMessageId === message?.id)?.id;
     if (linkedRun === undefined || linkedRun === null)
       throw new T3PreconditionError("Launch returned no linked run.");
-    const target = { threadId: launched.threadId, runId: linkedRun };
+    const target = { threadId: launched.threadId, runId: linkedRun, runtimeMode };
     remember(target);
     return target;
   }
   // Root creation binds the selected project root without asynchronous workspace
   // preparation; startTurn supplies the server-linked TurnHandle.
   const created = await client.threads.create(creation);
-  remember({ threadId: created.id });
+  remember({ threadId: created.id, runtimeMode });
   const turn = await client.threads.startTurn({ threadId: created.id, text });
-  const target = { threadId: created.id, turn };
+  const target = { threadId: created.id, turn, runtimeMode };
   remember(target);
   return target;
 }

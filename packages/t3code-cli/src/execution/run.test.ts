@@ -31,7 +31,11 @@ function setup(options: Record<string, unknown> = {}) {
   );
   const command = new Command();
   for (const [key, value] of Object.entries(options)) command.setOptionValue(key, value);
-  const target = { threadId: "sample-thread", turn: { runId: runId("linked-run") } as TurnHandle };
+  const target = {
+    threadId: "sample-thread",
+    runtimeMode: null,
+    turn: { runId: runId("linked-run") } as TurnHandle,
+  };
   const result = {
     ...emptyExecution(10),
     threadId: target.threadId,
@@ -94,12 +98,31 @@ it.each([false, true])(
     expect(dispatchedRunId).toHaveBeenCalledExactlyOnceWith(f.target);
     if (json)
       expect(JSON.parse(f.stdout.join(""))).toEqual({
-        data: { threadId: "sample-thread", runId: "linked-run" },
+        data: { threadId: "sample-thread", runId: "linked-run", runtimeMode: null },
         exitCode: 0,
       });
     else expect(f.stdout.join("")).toBe("sample-thread\n");
   },
 );
+it.each([undefined, "silent", "error", "warn", "info", "debug"])(
+  "reports the sent mode in JSON and selected progress levels: %j",
+  async (logLevel) => {
+    const f = setup({ json: true, logLevel });
+    const target = { ...f.target, runtimeMode: "future-mode" };
+    vi.mocked(dispatchPrompt).mockResolvedValue(target);
+    await dispatchHandler("run", f.follower)(["prompt"], f.command, f.invocation);
+    expect(JSON.parse(f.stdout.join(""))).toMatchObject({ runtimeMode: "future-mode" });
+    expect(f.stderr.join("").includes("Runtime mode: future-mode\n")).toBe(
+      logLevel === "info" || logLevel === "debug",
+    );
+  },
+);
+it("nonwaiting start reports the mode sent in its data", async () => {
+  const f = setup({ json: true });
+  vi.mocked(dispatchPrompt).mockResolvedValue({ ...f.target, runtimeMode: "future-mode" });
+  await threadStartHandler(f.follower)(["prompt"], f.command, f.invocation);
+  expect(JSON.parse(f.stdout.join(""))).toMatchObject({ data: { runtimeMode: "future-mode" } });
+});
 it("thread send takes its own positional prompt and default interrupt policy", async () => {
   const f = setup();
   await threadSendHandler(f.follower)(["sample-thread", "next prompt"], f.command, f.invocation);
@@ -126,6 +149,18 @@ it.each([false, true])(
     expect(dispatchPrompt).toHaveBeenCalledOnce();
   },
 );
+it("retains the sent mode when following fails", async () => {
+  const f = setup({ json: true });
+  vi.mocked(dispatchPrompt).mockResolvedValue({ ...f.target, runtimeMode: "future-mode" });
+  f.followRun.mockRejectedValue(new Error("sample failure"));
+  await dispatchHandler("run", f.follower)(["prompt"], f.command, f.invocation);
+  expect(JSON.parse(f.stdout.join(""))).toMatchObject({
+    threadId: "sample-thread",
+    runId: "linked-run",
+    runtimeMode: "future-mode",
+    exitCode: 1,
+  });
+});
 it("rejects invalid policy before dispatch", async () => {
   const f = setup();
   f.followPolicy.mockImplementation(() => {
