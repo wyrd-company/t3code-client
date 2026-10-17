@@ -73,6 +73,7 @@ jobs:
         env:
           UNIT: ${{ matrix.unit }}
         run: |
+          pnpm --filter "@wyrd-company/$UNIT..." run build
           pnpm --filter "@wyrd-company/$UNIT" run typecheck
           pnpm --filter "@wyrd-company/$UNIT" run test
           pnpm --filter "@wyrd-company/$UNIT" run test:live
