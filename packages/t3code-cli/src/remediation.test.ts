@@ -166,12 +166,10 @@ it.each([[], ["thread"], ["auth"], ["project"], ["server"]].map((args) => ({ arg
 );
 
 it("uses local context for a failed first resolution even inside a run deadline", async () => {
-  const { ProfileManager, T3ConnectionError } = await import("@wyrd-company/t3code-lib");
+  const { ProfileManager, T3StorageError } = await import("@wyrd-company/t3code-lib");
   const { exitCodeFor } = await import("./errors.ts");
   const profiles = new ProfileManager();
-  vi.spyOn(profiles, "resolve").mockRejectedValue(
-    new T3ConnectionError("open_failed", "sample storage failure"),
-  );
+  vi.spyOn(profiles, "resolve").mockRejectedValue(new T3StorageError("sample storage failure"));
   const invocation = createInvocation({}, new Output(capture().sink), profiles);
   invocation.errorContext = "run-detach";
   try {

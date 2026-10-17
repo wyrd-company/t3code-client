@@ -9,7 +9,14 @@ import {
   memoryCredentialStore,
   type CredentialStore,
 } from "../auth/credentialStore.ts";
-import { T3ConnectionError, T3Error, T3NotFoundError, T3PreconditionError } from "../errors.ts";
+import {
+  T3StorageError,
+  T3ConnectionError,
+  T3Error,
+  T3NotFoundError,
+  T3PreconditionError,
+} from "../errors.ts";
+import { profileStore } from "./profileStorage.ts";
 import { environmentValue } from "./environment.ts";
 import {
   configDirectory,
@@ -53,7 +60,11 @@ export interface ResolvedProfile {
   };
 }
 
-/** Named server configuration shared by command-line and MCP consumers. */
+/**
+ * Named server configuration shared by command-line and MCP consumers.
+ * Config and credential I/O rejects with T3StorageError (code: storage);
+ * transport failures retain connection and rejected credentials retain auth_invalid.
+ */
 export class ProfileManager {
   readonly configDir: string;
   readonly #source: CredentialSource;
@@ -120,7 +131,7 @@ export class ProfileManager {
     const token = environmentValue(env, "T3_TOKEN");
     const credentials =
       path !== undefined
-        ? fileCredentialStore(path)
+        ? profileStore(fileCredentialStore(path), path)
         : token !== undefined
           ? memoryCredentialStore({ accessToken: token })
           : profile === undefined
@@ -222,11 +233,14 @@ export class ProfileManager {
   }
 
   async #store(profile: Profile): Promise<CredentialStore> {
+    const path = credentialPath(this.configDir, profile.name);
     try {
-      return await this.#source(profile, credentialPath(this.configDir, profile.name));
+      return profileStore(await this.#source(profile, path), path);
     } catch (cause) {
-      if (cause instanceof T3Error) throw cause;
-      throw new T3ConnectionError("open_failed", "Could not select the profile credential store.");
+      if (cause instanceof T3Error && !(cause instanceof T3ConnectionError)) throw cause;
+      throw new T3StorageError(`Could not select the profile credential store at ${path}.`, {
+        cause,
+      });
     }
   }
 }

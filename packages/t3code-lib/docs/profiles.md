@@ -45,7 +45,9 @@ serialized by the caller.
 Missing config means no profiles. Invalid JSON, an invalid config shape, an
 invalid server URL, or a current name absent from `servers` raises
 `T3PreconditionError` (`code: "precondition"`). File access and config writes
-raise `T3ConnectionError` (`code: "connection"`, `reason: "open_failed"`).
+raise `T3StorageError` (`code: "storage"`) with the original cause and storage path.
+Profile credential backend I/O failures use the same storage code; transport
+failures retain `connection` and rejected credentials retain `auth_invalid`.
 Config errors do not include config contents. Invalid credential JSON or schema
 raises `T3DecodeError` (`code: "decode"`); credential-shaped values are redacted,
 and malformed JSON is withheld entirely. Missing credential files load as an

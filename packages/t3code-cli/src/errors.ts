@@ -4,6 +4,7 @@
 // ---
 import {
   T3AuthError,
+  T3Error,
   T3ConnectionError,
   T3InterruptedError,
   T3NotFoundError,
@@ -24,11 +25,12 @@ export interface CliFailure {
 
 /** Context describes the operation that failed, never inferred from error prose. */
 export function exitCodeFor(error: unknown, context: ErrorContext = "connection"): ExitCode {
+  if (error instanceof T3Error && error.code === "storage") return 1;
   if (error instanceof T3PreconditionError) return 2;
   if (error instanceof T3AuthError) return 9;
   if (error instanceof T3NotFoundError) return 10;
   if (error instanceof T3InterruptedError) return 4;
-  if (error instanceof T3ConnectionError) return context === "local" ? 1 : 8;
+  if (error instanceof T3ConnectionError) return 8;
   if (error instanceof T3TimeoutError) {
     if (context === "run-detach") return 5;
     if (context === "run-interrupt") return 6;

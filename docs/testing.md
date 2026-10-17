@@ -43,7 +43,9 @@ The setup issues an upstream session credential; the CLI live test uses the
 library to create a pairing credential and pair a fresh profile. It runs the
 built `version --json`, verifies source reporting and server/protocol/verdict,
 and runs a `gpt-6-luna` subject through the library when `T3_LIVE_AGENT=1`.
-Auth handlers can replace that bootstrap once implemented; execution handlers
+The auth live suite exercises link/query/split-token and both stdin paths,
+exact named status, current selection, failed credentials and switch/logout.
+Its Luna subject uses the credential paired by the built CLI. Execution handlers
 can replace the library subject once `run` is implemented.
 
 Sanitized console evidence names the external root, actual owned server home,

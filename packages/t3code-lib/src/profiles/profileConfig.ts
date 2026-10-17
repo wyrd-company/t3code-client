@@ -7,7 +7,7 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { z } from "zod";
-import { T3ConnectionError, T3PreconditionError } from "../errors.ts";
+import { T3StorageError, T3PreconditionError } from "../errors.ts";
 import { environmentValue } from "./environment.ts";
 
 /** A named server; credentials are stored separately. */
@@ -65,7 +65,7 @@ export async function loadConfig(directory: string): Promise<ProfileConfig> {
     text = await NodeFSP.readFile(NodePath.join(directory, "config.json"), "utf8");
   } catch (cause) {
     if (isMissing(cause)) return { servers: {} };
-    throw configIoError("read");
+    throw configIoError("read", directory, cause);
   }
   let raw: unknown;
   try {
@@ -98,17 +98,17 @@ export async function saveConfig(directory: string, config: ProfileConfig): Prom
     });
     await NodeFSP.chmod(temporary, 0o644);
     await NodeFSP.rename(temporary, NodePath.join(directory, "config.json"));
-  } catch {
+  } catch (cause) {
     await NodeFSP.unlink(temporary).catch(() => undefined);
-    throw configIoError("write");
+    throw configIoError("write", directory, cause);
   }
 }
 
 export async function prepareCredentials(directory: string): Promise<void> {
   try {
     await NodeFSP.mkdir(NodePath.join(directory, "credentials"), { recursive: true });
-  } catch {
-    throw configIoError("create credential directory");
+  } catch (cause) {
+    throw configIoError("create credential directory", directory, cause);
   }
 }
 
@@ -116,6 +116,8 @@ function isMissing(cause: unknown): boolean {
   return typeof cause === "object" && cause !== null && "code" in cause && cause.code === "ENOENT";
 }
 
-function configIoError(action: string): T3ConnectionError {
-  return new T3ConnectionError("open_failed", `Could not ${action} profile configuration.`);
+function configIoError(action: string, directory: string, cause: unknown): T3StorageError {
+  return new T3StorageError(`Could not ${action} profile configuration in ${directory}.`, {
+    cause,
+  });
 }

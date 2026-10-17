@@ -10,16 +10,22 @@ if (major < 22 || (major === 22 && minor < 16)) {
   process.exitCode = 2;
 } else {
   const NodeFS = await import("node:fs");
+  const { authHandlers } = await import("./auth.ts");
   const { main } = await import("./main.ts");
   const surface = JSON.parse(
     NodeFS.readFileSync(new URL("../commandSurface.json", import.meta.url), "utf8"),
   ) as import("./registration.ts").CommandSurface;
-  process.exitCode = await main(process.argv.slice(2), surface, {
-    stdout: (text) => {
-      process.stdout.write(text);
+  process.exitCode = await main(
+    process.argv.slice(2),
+    surface,
+    {
+      stdout: (text) => {
+        process.stdout.write(text);
+      },
+      stderr: (text) => {
+        process.stderr.write(text);
+      },
     },
-    stderr: (text) => {
-      process.stderr.write(text);
-    },
-  });
+    authHandlers,
+  );
 }
