@@ -55,8 +55,10 @@ It resolves credentials in this order: explicit `credentialsFile`, `T3_TOKEN`,
 then the selected profile's store. `T3_TOKEN` alone uses the current server.
 Overrides never update saved profiles or their credentials.
 
-An explicit server URL matches stored profiles after URL-parser normalization
-(host casing, default ports and trailing root slash). The first matching profile
+Profile URLs are normalized to their HTTP or HTTPS origin before storage and
+matching: lowercase scheme and host, no default port or trailing slash, and no
+path, query or fragment. URL user information is not stored. An explicit server
+URL matches stored profiles using that normalized origin. The first matching profile
 supplies stored credentials. An unmatched server uses an empty in-memory store
 unless credentials are overridden. It never inherits credentials from a
 different server. A caller can supply both a server URL and a credential source

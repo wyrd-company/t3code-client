@@ -262,12 +262,6 @@ describe("profile resolution", () => {
     ).toBe("first-token");
   });
 
-  it("preserves non-root URL paths during resolution", async () => {
-    expect(
-      (await manager().resolve({ server: "https://server.example/base/", env: {} })).baseUrl,
-    ).toBe("https://server.example/base/");
-  });
-
   it("keeps explicit credential-file failures typed without falling back to a profile", async () => {
     const profiles = await registerTwo();
     const path = NodePath.join(directory, "override.json");
