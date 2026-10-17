@@ -41,3 +41,35 @@ describe("workflow agreements", () => {
     expect(workflow).toContain(`intentional plan > "${paths[0]}"`);
   });
 });
+
+describe("release foundation wiring", () => {
+  it("runs shared checks once before the package matrix", () => {
+    const ci = NodeFS.readFileSync(
+      new URL("../../.github/workflows/ci.yml", import.meta.url),
+      "utf8",
+    );
+    const [foundation, matrix] = ci.split("  check:");
+    expect(foundation).toContain("  release-foundation:");
+    expect(foundation).not.toContain("matrix:");
+    for (const command of [
+      "scripts/release/check-intents.sh",
+      "pnpm run check",
+      "pnpm exec tsc --noEmit",
+      "pnpm exec vp test run",
+    ]) {
+      expect(ci.split(command)).toHaveLength(2);
+      expect(foundation).toContain(command);
+    }
+    expect(foundation).toContain("name: Show Intentional status");
+    expect(matrix).toContain("needs: release-foundation");
+    expect(matrix).toContain("unit: [t3code-lib, t3code-cli]");
+  });
+  it("checks package readiness before applying the saved release plan", () => {
+    const workflow = release();
+    const readiness = workflow.indexOf(
+      'scripts/release/verify-readiness.sh "$RUNNER_TEMP/release-plan.json"',
+    );
+    expect(readiness).toBeGreaterThan(0);
+    expect(readiness).toBeLessThan(workflow.indexOf("scripts/release/apply-plan.sh"));
+  });
+});
