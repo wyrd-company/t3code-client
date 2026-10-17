@@ -41,24 +41,30 @@ export function dispatchHandler(
     let reported = false;
     function reportTarget(known: DispatchTarget) {
       invocation.output.progress(`Thread: ${known.threadId}`);
+      reported = true;
+      reportMode(known);
+    }
+    function reportMode(known: DispatchTarget) {
       if (
         known.runtimeMode !== null &&
         (options["logLevel"] === "info" || options["logLevel"] === "debug")
       )
         invocation.output.progress(`Runtime mode: ${known.runtimeMode}`);
-      reported = true;
     }
     try {
       target = await dispatchPrompt(invocation, text, dispatchOptions, (known) => {
         target = known;
       });
-      reportTarget(target);
       if (follow !== undefined && policy !== undefined) {
+        // The follower registers signals and reports the thread before its first await.
+        reported = true;
+        reportMode(target);
         invocation.output.finish({
           ...(await follow.followRun(invocation, target, policy)),
           runtimeMode: target.runtimeMode,
         });
       } else {
+        reportTarget(target);
         const runId = await dispatchedRunId(target);
         invocation.output.finish(
           {

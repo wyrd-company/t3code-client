@@ -73,7 +73,6 @@ export function emptyExecution(durationMs: number): ExecutionResult {
     threadId: null,
     runId: null,
     state: "unknown",
-    runtimeMode: null,
     assistantMessage: null,
     pendingRequests: [],
     exitCode: 0,

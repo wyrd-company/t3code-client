@@ -44,7 +44,10 @@ function setup(options: Record<string, unknown> = {}) {
     assistantMessage: "SAMPLE",
   };
   const policy = { onTimeout: "interrupt", onRequest: "fail" } as const;
-  const followRun = vi.fn(async () => result);
+  const followRun = vi.fn(async () => {
+    invocation.output.progress(`Thread: ${target.threadId}`);
+    return result;
+  });
   const followPolicy = vi.fn(() => policy);
   const follower = vi.fn(async () => ({ followRun, followPolicy }));
   vi.mocked(readPrompt).mockResolvedValue("prompt text");
@@ -77,7 +80,7 @@ it.each(["run", "start", "send"] as const)(
       "interrupt",
     );
     expect(f.followRun).toHaveBeenCalledExactlyOnceWith(f.invocation, f.target, f.policy);
-    expect(JSON.parse(f.stdout.join(""))).toEqual(f.result);
+    expect(JSON.parse(f.stdout.join(""))).toEqual({ ...f.result, runtimeMode: null });
     expect(f.stdout.join("").trim().split("\n")).toHaveLength(1);
     expect(f.stderr.join("")).toBe("Thread: sample-thread\n");
     if (kind === "send")
