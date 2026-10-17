@@ -8,6 +8,7 @@ import { expect, it } from "vite-plus/test";
 import { T3Client } from "../../src/client.ts";
 import { ProviderInstanceId } from "../../src/schemas/common.ts";
 import type { WebSocketConstructor } from "../../src/internal/websocket.ts";
+import { decodeServerFrame } from "../../src/wire/envelope.ts";
 
 const ownedHome = process.env["T3_LIVE_HOME"];
 const enabled = process.env["T3_LIVE_AGENT"] === "1" && Boolean(ownedHome);
@@ -26,9 +27,8 @@ it.skipIf(!enabled)(
       constructor(url: string, options?: ClientOptions) {
         super(url, options);
         this.on("message", (data) => {
-          const frame = JSON.parse(data.toString());
-          for (const message of Array.isArray(frame) ? frame : [frame]) {
-            if (message._tag === "Exit" && message.exit?._tag === "Success") {
+          for (const message of decodeServerFrame(data.toString())) {
+            if (message._tag === "Exit" && message.exit._tag === "Success") {
               successes.push(message.exit.value);
             }
           }
