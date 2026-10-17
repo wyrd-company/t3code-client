@@ -26,9 +26,11 @@ start time, and operation `errorContext`. `client()` supplies a 30-second
 `main`'s finally path. Credential-store failures retain local context; transport
 failures use connection context. Set context for dispatch and run deadline
 operations so the common mapping remains method-specific. Successful profile
-resolution restores the caller context. Cached resolution/client access preserves
-it. First client creation changes the initial local context to connection and
-retains any handler-selected dispatch/deadline context. Failed profile resolution
+resolution and cached resolution/client access preserve the caller context.
+Overlapping first calls share one in-flight initialization per method. Failed
+initialization clears its cached promise so a later call can retry. First client
+creation changes the initial local context to connection and retains any
+handler-selected dispatch/deadline context. Failed profile resolution
 or credential backend operations select local context for that failure. Exact named profile
 lookup maps not_found to 10; switch/logout preconditions map to 2.
 
