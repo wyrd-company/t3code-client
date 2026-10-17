@@ -68,7 +68,8 @@ export function createInvocation(
       return clientPending;
     },
     async close() {
-      await client?.close();
+      // A creation still in flight yields a client that must close too.
+      await (client ?? (await clientPending?.catch(() => undefined)))?.close();
     },
   };
   async function initializeClient(): Promise<T3Client> {

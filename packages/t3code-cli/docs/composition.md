@@ -23,8 +23,10 @@ handlers fail explicitly; help registration does not prove implementation.
 `Invocation` owns `profiles`, lazy `resolve()` and `client()`, `output`, elapsed
 start time, and operation `errorContext`. `client()` supplies a 30-second
 `openTimeoutMs`, or the selected `--connect-timeout`. Client resources close in
-`main`'s finally path. Credential-store failures retain local context; transport
-failures use connection context. Set context for dispatch and run deadline
+`main`'s finally path, including a client whose creation is still in flight.
+The common mapping branches on library codes: profile config and credential
+storage failures are `storage` (exit 1) and transport failures are `connection`
+(exit 8) in any context. Set context for dispatch and run deadline
 operations so the common mapping remains method-specific. Successful profile
 resolution and cached resolution/client access preserve the caller context.
 Overlapping first calls share one in-flight initialization per method. Failed
