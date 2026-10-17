@@ -1,6 +1,6 @@
 # t3code-client
 
-![t3c runs a Luna conversation and lists the thread](docs/assets/demo.gif)
+![t3c pairs a profile, starts and waits for a thread, and lists projects](docs/assets/demo.gif)
 
 A pnpm workspace for stock T3 Code 0.1.0, orchestration protocol 2.
 
