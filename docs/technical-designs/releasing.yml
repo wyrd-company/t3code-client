@@ -118,7 +118,7 @@ proposed-design:
        auth scopes and HTTP routes between the two tags. Update library schemas
        and the typed registry. Methods outside the library design's scope stay
        reachable through `rpc.callRaw` and `rpc.streamRaw`.
-    3. Capture library fixtures again (see [testing](../../packages/t3code-lib/docs/testing.md))
+    3. Capture library fixtures again (see [testing](library-testing.yml))
        and run `task lib:test:live`.
     4. Update the build named in the library design and the package intent.
   recovery-and-verification: |

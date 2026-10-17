@@ -11,7 +11,7 @@ relationships:
 
 Read `docs/technical-designs/library.yml` before changing library code. It is
 the library contract. Package guidance is in `packages/t3code-lib/AGENTS.md`.
-Read `docs/testing.md` and `docs/technical-designs/releasing.yml` before changing automation.
+Read `docs/technical-designs/testing.yml` and `docs/technical-designs/releasing.yml` before changing automation.
 
 ## Layout
 
