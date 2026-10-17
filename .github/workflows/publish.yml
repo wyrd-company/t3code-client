@@ -1,6 +1,6 @@
 name: Publish
 
-# An annotated `t3code-lib@X.Y.Z` release record starts publication. Every
+# Annotated `t3code-lib@X.Y.Z` and `t3code-cli@X.Y.Z` records start publication. Every
 # job is safe to rerun: an npm version or GitHub Release that already exists
 # is verified instead of recreated.
 

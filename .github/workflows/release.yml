@@ -69,14 +69,7 @@ jobs:
         run: |
           intentional plan > "$RUNNER_TEMP/release-plan.json"
           scripts/release/verify-plan.sh "$EXPECTED_RECORDS" "$RUNNER_TEMP/release-plan.json"
-          while IFS= read -r unit; do
-            node --input-type=module - "$unit" <<'JS'
-          import * as fs from 'node:fs';
-          const unit = process.argv[2];
-          const manifest = JSON.parse(fs.readFileSync(`packages/${unit}/package.json`, 'utf8'));
-          if (manifest.name !== `@wyrd-company/${unit}` || manifest.private) throw new Error(`Unit ${unit} is not ready to publish.`);
-          JS
-          done < <(jq -r '.tags[].release_unit' "$RUNNER_TEMP/release-plan.json")
+          scripts/release/verify-readiness.sh "$RUNNER_TEMP/release-plan.json"
 
       - name: Apply the verified release
         run: |
