@@ -4,7 +4,7 @@ import { defineConfig } from "vite-plus";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    include: ["scripts/**/*.test.ts"],
     testTimeout: 15_000,
   },
   staged: {
@@ -12,10 +12,11 @@ export default defineConfig({
   },
   fmt: {
     ignorePatterns: [
-      ".t3-live",
+      "**/.t3-live/**",
       ".intentional/**",
+      ".tmp/**",
       "CHANGELOG.md",
-      "dist",
+      "**/dist/**",
       "node_modules",
       "pnpm-lock.yaml",
       "*.tsbuildinfo",
@@ -23,7 +24,13 @@ export default defineConfig({
     sortPackageJson: {},
   },
   lint: {
-    ignorePatterns: [".t3-live", "dist", "node_modules", "pnpm-lock.yaml", "*.tsbuildinfo"],
+    ignorePatterns: [
+      "**/.t3-live/**",
+      "**/dist/**",
+      "node_modules",
+      "pnpm-lock.yaml",
+      "*.tsbuildinfo",
+    ],
     plugins: ["eslint", "oxc", "unicorn", "typescript"],
     categories: {
       correctness: "warn",

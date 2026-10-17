@@ -1,39 +1,30 @@
-# Testing
+---
+relationships:
+  references: testing
+---
 
-## Unit tests
+# Workspace testing
 
-`pnpm run test` runs `src/**/*.test.ts`. The tests use
-`test/support/fakeServer.ts`, an in-process `ws` server plus a fake `fetch`
-that speak the same envelope protocol and HTTP routes as T3 Code. No network.
+`task check` runs release-intent validation, workspace formatting/linting,
+typechecks, unit tests, pinned-server live tests and local pack/consumer checks.
+`task lib:check` runs library gates; `task cli:check` reports the reserved scaffold.
+CLI placeholder checks pass but do not count as implementation evidence.
 
-`test/fixtures/` holds payloads captured from the targeted server with the
-client itself (environment descriptor, server config, shell snapshot, thread
-detail), with paths, names, and provider accounts replaced by generic values
-and the server's skill and command listings emptied. `task fixtures` captures
-them again (`test/live/captureFixtures.ts`). The server reads this machine's
-provider logins, so review the result for anything identifying before
-committing it. The schema tests decode them, so a fixture
-captured from a newer server shows where the schemas have to change.
+Library source, colocated tests, fixture data, fake server and live harness
+are in `packages/t3code-lib`. See [library testing](../packages/t3code-lib/docs/testing.md)
+for the full recipe and environment variables. Root `task fixtures` delegates
+to that package. Every automatic live run gets a fresh temporary server home;
+never point test overrides at the operational server. Agent turns are opt-in;
+use `gpt-6-luna` for test subjects.
 
-## Live tests
+`task release:test` checks release selection, tag/manifest agreement, package
+contents, private package refusal and shrinkwrap handoff using disposable
+repositories and fake publication commands. It never publishes or pushes tags.
+`actionlint` and `shellcheck scripts/release/*.sh` validate workflows and scripts.
 
-`pnpm run test:live` runs `test/live/**` against a real server.
-`test/live/globalSetup.ts` starts the `t3` devDependency on a free loopback
-port with its own data directory, issues a bearer token, and stops the server
-when the run ends. The `t3` version is the server build this library targets,
-so the live suite is the check that the client still matches it.
-
-| Variable          | Meaning                                                             |
-| ----------------- | ------------------------------------------------------------------- |
-| `T3_LIVE_URL`     | base URL of a server to use instead of starting one                 |
-| `T3_LIVE_TOKEN`   | bearer token for that server (`t3 auth session issue`)              |
-| `T3_LIVE_KEEP=1`  | keep the started server's data directory and log after the run      |
-| `T3_LIVE_MODEL`   | optional, default `gpt-5.6-luna` on provider instance `codex`       |
-| `T3_LIVE_AGENT=1` | also run tests that start a real agent turn (spends credit)         |
-| `T3_LIVE_QUEUED`  | with `T3_LIVE_AGENT=1`, run the two-message steer-or-queue scenario |
-
-Set both `T3_LIVE_URL` and `T3_LIVE_TOKEN` to test against a server you run
-yourself; nothing is started then.
-
-The agent tests need a configured provider on the server. They never run in
-continuous integration.
+Before initial publication, `task intents` validates a scratch Git repository
+with local-only 0.0.0 baselines for new units. Existing baseline/release tags
+are retained. No tags are created in the working repository. CI uses this same
+step. After finalization, authoritative annotated baseline records supply the
+version history. Tag/main ancestry and registry provenance still require the
+finalization release jobs.

@@ -1,15 +1,13 @@
 name: Release
 
-# A plain `X.Y.Z` tag on the tip of main asks for a release. The tag names the
-# version; Intentional must compute the same version from the pending intents
-# or nothing happens. On agreement this workflow applies the intents, commits
-# the result to main, and pushes the annotated `t3code-client@X.Y.Z` release
-# record, which starts the Publish workflow.
-
+# The expected set is a guard against applying an unrelated pending unit.
 on:
-  push:
-    tags:
-      - "[0-9]+.[0-9]+.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      expected-records:
+        description: "Exact space-separated records, e.g. t3code-lib@0.1.0 t3code-cli@0.1.0"
+        required: true
+        type: string
 
 permissions: {}
 
@@ -20,6 +18,7 @@ concurrency:
 jobs:
   release:
     name: Apply and tag the release
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -42,19 +41,6 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
 
-      - name: Require the tag to name the tip of main
-        env:
-          VERSION: ${{ github.ref_name }}
-        run: |
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::Release tag $VERSION is not plain X.Y.Z."
-            exit 1
-          fi
-          if [[ "$(git rev-parse HEAD)" != "$GITHUB_SHA" ]]; then
-            echo "::error::Tag $VERSION names $GITHUB_SHA, but main is at $(git rev-parse HEAD). Tag the tip of main."
-            exit 1
-          fi
-
       - name: Setup Vite+
         uses: voidzero-dev/setup-vp@3754dd7dbdb32bd8f6d28b6043de13ad3a75f21f # v1.21.1
         with:
@@ -71,38 +57,43 @@ jobs:
       - name: Check
         run: |
           pnpm run check
+          pnpm exec tsc --noEmit
+          pnpm exec vp test run
           pnpm run typecheck
           pnpm run test
           pnpm run test:live
 
       - name: Plan the release
         env:
-          VERSION: ${{ github.ref_name }}
+          EXPECTED_RECORDS: ${{ inputs.expected-records }}
         run: |
-          plan="$RUNNER_TEMP/release-plan.json"
-          intentional plan > "$plan"
-          planned="$(jq -r '[.tags[] | select(.release_unit == "t3code-client") | .name] | join(" ")' "$plan")"
-          if [[ "$planned" != "t3code-client@$VERSION" ]]; then
-            echo "::error::Tag $VERSION asks for t3code-client@$VERSION, but the pending intents plan '${planned:-no release}'."
-            exit 1
-          fi
-          jq . "$plan"
+          intentional plan > "$RUNNER_TEMP/release-plan.json"
+          scripts/release/verify-plan.sh "$EXPECTED_RECORDS" "$RUNNER_TEMP/release-plan.json"
+          while IFS= read -r unit; do
+            node --input-type=module - "$unit" <<'JS'
+          import * as fs from 'node:fs';
+          const unit = process.argv[2];
+          const manifest = JSON.parse(fs.readFileSync(`packages/${unit}/package.json`, 'utf8'));
+          if (manifest.name !== `@wyrd-company/${unit}` || manifest.private) throw new Error(`Unit ${unit} is not ready to publish.`);
+          JS
+          done < <(jq -r '.tags[].release_unit' "$RUNNER_TEMP/release-plan.json")
 
-      - name: Apply the release
+      - name: Apply the verified release
         run: |
-          intentional apply
+          scripts/release/apply-plan.sh "$RUNNER_TEMP/release-plan.json"
+          pnpm install --lockfile-only
           pnpm run fmt:check
 
       - name: Commit and tag the release
         env:
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          VERSION: ${{ github.ref_name }}
         run: |
           user_id="$(gh api "/users/${APP_SLUG}[bot]" --jq .id)"
           git config user.name "${APP_SLUG}[bot]"
           git config user.email "${user_id}+${APP_SLUG}[bot]@users.noreply.github.com"
           git add --all
-          git commit -m "chore(release): t3code-client $VERSION"
+          git commit -m "chore(release): apply independent package versions"
           intentional tag --plan "$RUNNER_TEMP/release-plan.json"
-          git push --atomic origin HEAD:main "refs/tags/t3code-client@$VERSION"
+          mapfile -t records < <(jq -r '.tags[].name | "refs/tags/" + .' "$RUNNER_TEMP/release-plan.json")
+          git push --atomic origin HEAD:main "${records[@]}"

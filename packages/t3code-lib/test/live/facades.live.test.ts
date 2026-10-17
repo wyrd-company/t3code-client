@@ -21,7 +21,7 @@ import { threadId, type ProjectId, type ThreadId } from "../../src/schemas/commo
 
 const baseUrl = process.env["T3_LIVE_URL"];
 const token = process.env["T3_LIVE_TOKEN"];
-const model = process.env["T3_LIVE_MODEL"] ?? "gpt-5.6-luna";
+const model = process.env["T3_LIVE_MODEL"] ?? "gpt-6-luna";
 const enabled = Boolean(baseUrl) && Boolean(token);
 const agent = process.env["T3_LIVE_AGENT"] === "1";
 /** Run the two-turn queued scenario instead of the single turn (two agent turns, not three). */

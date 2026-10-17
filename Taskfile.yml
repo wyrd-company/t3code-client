@@ -1,47 +1,51 @@
 version: "3"
 
+includes:
+  lib:
+    taskfile: packages/t3code-lib/Taskfile.yml
+    dir: packages/t3code-lib
+  cli:
+    taskfile: packages/t3code-cli/Taskfile.yml
+    dir: packages/t3code-cli
+
 tasks:
   install:
-    desc: Install dependencies
+    desc: Install all workspace dependencies
     cmds: [pnpm install]
-
   build:
-    desc: Compile the library to dist/
+    desc: Build workspace packages (CLI reserved)
     cmds: [pnpm run build]
-
   fmt:
-    desc: Format every file
+    desc: Format the workspace
     cmds: [pnpm run fmt]
-
   lint:
-    desc: Check formatting and lint rules
+    desc: Check workspace formatting and lint
     cmds: [pnpm run check]
-
   typecheck:
-    desc: Type-check sources, tests, and configuration
-    cmds: [pnpm run typecheck]
-
+    desc: Type-check packages and release automation
+    cmds: [pnpm exec tsc --noEmit, pnpm run typecheck]
   test:
-    desc: Run unit tests (no server needed)
-    cmds: [pnpm run test]
-
+    desc: Run package and release automation tests
+    cmds: [pnpm run test, { task: "release:test" }]
   test:live:
-    desc: Run live tests against the pinned T3 Code server (see docs/testing.md)
+    desc: Test the pinned server with an isolated temporary home
     cmds: [pnpm run test:live]
-
   fixtures:
-    desc: Capture test/fixtures from the T3 Code server build the library targets
-    cmds: [node test/live/captureFixtures.ts]
-
+    desc: Capture sanitized library fixtures from the targeted server
+    cmds: [{ task: "lib:fixtures" }]
   package:
-    desc: Pack the package and check it as a consumer sees it
-    cmds:
-      - scripts/release/verify-consumer.sh "$(scripts/release/verify-package.sh)"
-
+    desc: Pack packages and verify consumer installation (CLI reserved)
+    cmds: [pnpm run package]
+  intents:
+    desc: Validate intents with ephemeral baselines outside this repository
+    cmds: [scripts/release/check-intents.sh]
+  release:test:
+    desc: Test release boundaries without publishing
+    cmds: [pnpm exec vp test run]
   check:
-    desc: Everything a change must pass before handoff
+    desc: All workspace gates before handoff (CLI implementation reserved)
     cmds:
-      - intentional check
+      - task: intents
       - task: lint
       - task: typecheck
       - task: test

@@ -1,0 +1,21 @@
+{
+  "name": "@wyrd-company/t3code-cli",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Reserved t3c command-line package; implementation belongs to the CLI scaffold.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "node -e \"console.log('Reserved CLI build: scaffold pending.')\"",
+    "fmt": "node -e \"console.log('Reserved CLI fmt: scaffold pending.')\"",
+    "lint": "node -e \"console.log('Reserved CLI lint: scaffold pending.')\"",
+    "typecheck": "node -e \"console.log('Reserved CLI typecheck: scaffold pending.')\"",
+    "test": "node -e \"console.log('Reserved CLI test: scaffold pending.')\"",
+    "test:live": "node -e \"console.log('Reserved CLI test:live: scaffold pending.')\"",
+    "package": "node -e \"console.log('Reserved CLI package: scaffold pending.')\"",
+    "check": "node -e \"console.log('Reserved CLI check: scaffold pending.')\""
+  },
+  "engines": {
+    "node": ">=22.16"
+  }
+}

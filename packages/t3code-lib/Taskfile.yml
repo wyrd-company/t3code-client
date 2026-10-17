@@ -1,0 +1,38 @@
+version: "3"
+
+tasks:
+  install:
+    desc: Install workspace dependencies
+    cmds: [pnpm install]
+  build:
+    desc: Compile the library to dist/
+    cmds: [pnpm run build]
+  fmt:
+    desc: Format the library
+    cmds: [pnpm run fmt]
+  lint:
+    desc: Check library format and lint
+    cmds: [pnpm run check]
+  typecheck:
+    desc: Type-check sources, tests and configuration
+    cmds: [pnpm run typecheck]
+  test:
+    desc: Run library unit tests
+    cmds: [pnpm run test]
+  test:live:
+    desc: Test the pinned server in a fresh temporary home
+    cmds: [pnpm run test:live]
+  fixtures:
+    desc: Capture sanitized test/fixtures
+    cmds: [node test/live/captureFixtures.ts]
+  package:
+    desc: Pack and verify runtime and declaration consumers
+    cmds: [pnpm run package]
+  check:
+    desc: Library quality, tests and package checks
+    cmds:
+      - task: lint
+      - task: typecheck
+      - task: test
+      - task: test:live
+      - task: package

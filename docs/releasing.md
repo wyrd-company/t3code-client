@@ -1,89 +1,149 @@
+---
+relationships:
+  references:
+    - testing
+    - design
+---
+
 # Releasing
 
-Versions come from [Intentional](https://github.com/wyrd-company/intentional).
-A change a consumer can notice carries an intent, written with
-`intentional add` and committed with the change:
+[Intentional](https://github.com/wyrd-company/intentional) owns versions,
+changelogs, intents and annotated release records. The root package is private.
+The independent units are:
+
+| Unit         | Manifest                           | npm name                   | Record             |
+| ------------ | ---------------------------------- | -------------------------- | ------------------ |
+| `t3code-lib` | `packages/t3code-lib/package.json` | `@wyrd-company/t3code-lib` | `t3code-lib@X.Y.Z` |
+| `t3code-cli` | `packages/t3code-cli/package.json` | `@wyrd-company/t3code-cli` | `t3code-cli@X.Y.Z` |
+
+The root CHANGELOG.md and `t3code-client@*` tags are historical records for the
+retired package. Keep them intact. Bob owns deprecation of the old npm name.
+
+## Intents
+
+Each package has exactly one minor intent before its initial 0.1.0 release.
+Update that intent's message with the package's complete outcome rather than
+adding an intent for each implementation task. Author it through Intentional:
 
 ```bash
-intentional add --release-unit t3code-client:minor --message "Describe the change for the changelog."
+intentional add --release-unit t3code-lib:minor --message "Describe the library outcome."
+intentional add --release-unit t3code-cli:minor --message "Describe the CLI outcome."
 ```
 
-Before 1.0.0 the bump names map directly onto version components: `minor`
-for new capability or a breaking change, `patch` for fixes.
+For later releases, an intent accompanies each consumer-visible change.
+Before 1.0.0, bump names map directly onto version components: `minor` for a
+new capability or breaking change and `patch` for a fix.
+
+## Baseline and first release
+
+Manifests start at 0.0.0. No authoritative tags are made on an epic branch.
+`task intents` and CI use a disposable clone, overlay the current configuration
+and manifests, and create local-only baselines for missing zero-version units.
+These clones never push. The working repository's tags remain intact.
+
+Only at epic finalization, after Bob's UAT and default-branch merge, establish
+authority on the merged main commit:
+
+```bash
+intentional tag --baseline --dry-run
+intentional tag --baseline
+git push --atomic origin refs/tags/t3code-lib@0.0.0 refs/tags/t3code-cli@0.0.0
+intentional status
+intentional check
+intentional plan > release-plan.json
+```
+
+Each minor intent computes 0.1.0. Baseline records do not start publication.
+The CLI scaffold removes `private` and supplies its executable, build, tests,
+license, README and npm shrinkwrap before finalization. Private placeholders
+cannot be packed or released. First publication is pre-approved only at that
+finalization boundary.
 
 ## Cutting a release
 
-1. Run `intentional status` on an up-to-date `main` and read the computed
-   version.
-2. Tag the tip of `main` with that version and push the tag:
+On up-to-date main, inspect `intentional status` and `intentional plan`.
+Run `task check`, then dispatch **Release** with the exact expected record set:
 
-   ```bash
-   git tag 0.2.0
-   git push origin 0.2.0
-   ```
+```bash
+gh workflow run release.yml --ref main \
+  -f 'expected-records=t3code-lib@0.1.0 t3code-cli@0.1.0'
+```
 
-The **Release** workflow checks that the tag is the tip of `main` and that the
-pending intents compute the same version, runs the full check, applies the
-intents (version, changelog, intent removal), commits
-`chore(release): t3code-client X.Y.Z` to `main`, and pushes the annotated
-`t3code-client@X.Y.Z` release record. The commit and the record are pushed
-together or not at all.
+Intentional applies the whole pending plan. It has no per-unit apply switch.
+Release compares the entire planned record set against the expected set and
+fails on any difference. To release only one unit, only that unit may be pending;
+name only its record. No unrelated unit is bumped implicitly. Versions are
+independent even when a single dispatch releases both.
 
-The **Publish** workflow starts from that record. It verifies the record
-against `package.json`, runs the full check again, packs once, publishes the
-tarball to npmjs with provenance, and creates the GitHub Release with the
-tarball and the changelog section as notes.
+Release checks main, validates intents, runs the checks, saves the canonical
+plan and verifies the exact record set and public package identities. It
+recomputes and compares the plan immediately before apply. After apply it updates
+the pnpm lockfile, checks formatting, commits the projections and consumed
+intents, and creates records from the saved plan. The commit and selected records
+are pushed atomically. App credentials start the downstream Publish workflows.
+A concurrent main update makes the push fail; nothing is force-pushed.
+
+## Publication
+
+**Publish** responds to either unit's annotated record. It verifies the record
+identity, version, annotation, checked-out head and main ancestry. It checks
+and packs only the selected unit. A library tarball contains compiled JavaScript
+and declarations, LICENSE and README, with no source or tests. The consumer gate
+checks runtime imports and TypeScript NodeNext and Bundler resolution using
+TypeScript 5.9. Public imports are the package root and `./package.json`.
+
+The CLI tarball contains `dist/cli.js` and `npm-shrinkwrap.json`. The shrinkwrap
+must match the package identity/version and contain registry resolutions, with
+no workspace, file or link dependencies. The scaffold owns shrinkwrap production
+from the built CLI and its resolved library dependency; `pnpm pack` must include
+it. CLI consumer verification installs the local library and CLI tarballs together
+and runs `t3c --version`, so it does not depend on first-publication ordering.
+The release-plumbing task verifies the final shrinkwrap and Homebrew handoff.
+
+The package upload/download artifact is named `package-${github.ref_name}`;
+all jobs consume that same artifact. Publish checks tarball identity again,
+publishes with npm provenance, and creates the GitHub Release with the same
+tarball and the package's changelog section. A rerun verifies an existing npm
+integrity value and GitHub asset bytes instead of replacing them.
 
 ## Tracking T3 Code
 
-The `t3` devDependency names the upstream build the library targets. On
-`main` it is the newest release, published under the `latest` dist-tag and
-tagged `vX.Y.Z`. Work for the next upstream version happens on a
-preparation branch that targets the newest nightly, which upstream cuts from
-`main` several times a day, publishes under the `nightly` dist-tag, and
-tags `vX.Y.Z-nightly.YYYYMMDD.N`. When upstream releases that version, the
-branch moves to the release and merges into `main`.
+The library pins the `t3` devDependency. Main targets the newest release;
+a preparation branch targets the newest nightly. Upstream release tags are
+`vX.Y.Z`; nightly tags are `vX.Y.Z-nightly.YYYYMMDD.N`.
 
-An update moves to the newest build of the branch's dist-tag:
+1. Read `npm view t3 dist-tags`, update the library's devDependency and install.
+   Keep only the target build's `minimumReleaseAgeExclude` entries in the root
+   `pnpm-workspace.yaml`.
+2. Compare upstream contracts (`packages/contracts/src`), server RPC handlers,
+   auth scopes and HTTP routes between the two tags. Update library schemas
+   and the typed registry. Methods outside the library design's scope stay
+   reachable through `rpc.callRaw` and `rpc.streamRaw`.
+3. Capture library fixtures again (see [testing](../packages/t3code-lib/docs/testing.md))
+   and run `task lib:test:live`.
+4. Update the build named in the library design and the package intent.
 
-1. Read the version with `npm view t3 dist-tags`, set the `t3`
-   devDependency to that version, and install. pnpm adds the version to
-   `minimumReleaseAgeExclude` in `pnpm-workspace.yaml`; remove the entries
-   for the previous version.
-2. Compare the upstream contracts (`packages/contracts/src`), the server's
-   RPC handlers and scopes, and its HTTP routes between the tags of the two
-   builds. Update the schemas in `src/schemas/` to match: what upstream adds
-   is added, what it removes is removed. Type a new RPC method in
-   `src/rpc/methods/`; methods in the areas `docs/design.md` lists as out of
-   scope stay reachable through `rpc.callRaw` and `rpc.streamRaw`.
-3. Capture the fixtures in `test/fixtures/` again from the new server (see
-   `docs/testing.md`) and run `pnpm run test:live`.
-4. Update the build named in `docs/design.md` and add an intent.
+## Recovery and verification
 
-## Recovery
+- Release failed before its atomic push: fix main and dispatch again with the
+  reviewed expected record set. No request tag needs deletion.
+- Publish failed: rerun Publish for the same record. Existing artifacts must
+  match; different bytes fail.
+- Missing baseline at a nonzero version: stop and recover authoritative history.
+  The ephemeral baseline check accepts only missing zero-version units.
 
-- **Release failed before the push.** Nothing reached the repository. Fix the
-  cause on `main`, delete the version tag (`git push origin :refs/tags/X.Y.Z`),
-  and tag again.
-- **Publish failed.** Rerun the Publish workflow. An npm version or GitHub
-  Release that already exists is verified, not recreated.
+`task release:test`, `actionlint` and `shellcheck -x scripts/release/*.sh` validate
+local release boundaries. Actual main/tag events, npm provenance, GitHub assets
+and registry installation remain finalization gates.
 
 ## Repository setup
 
-| Secret                    | Used by | Purpose                                                   |
-| ------------------------- | ------- | --------------------------------------------------------- |
-| `WYRD_CI_APP_ID`          | Release | GitHub App that pushes the release commit and record      |
-| `WYRD_CI_APP_PRIVATE_KEY` | Release | Key for that App                                          |
-| `NPM_TOKEN`               | Publish | npmjs automation token with publish rights on the package |
+| Secret                    | Used by | Purpose                                |
+| ------------------------- | ------- | -------------------------------------- |
+| `WYRD_CI_APP_ID`          | Release | GitHub App pushing commits and records |
+| `WYRD_CI_APP_PRIVATE_KEY` | Release | App key                                |
+| `NPM_TOKEN`               | Publish | npm automation token for both packages |
 
-The App needs Contents write on this repository. Pushes made with the workflow
-token start no workflows, which is why the release record is pushed with the
-App.
-
-Publish accepts only an Intentional release record whose commit is on `main`.
-A tag ruleset that lets only the App create `t3code-client@*` tags closes the
-remaining gap: anyone who can push tags can otherwise push a record by hand.
-
-The first release needs the baseline record `t3code-client@0.0.0` on `main`,
-created once with `intentional tag --baseline` after the Intentional
-configuration is merged.
+The App needs Contents write. Publish requires an Intentional release record
+whose commit is on main. A tag ruleset allowing only the App to create
+`t3code-lib@*` and `t3code-cli@*` records enforces that release authority.

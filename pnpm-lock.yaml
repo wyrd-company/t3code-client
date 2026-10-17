@@ -7,6 +7,20 @@ settings:
 importers:
 
   .:
+    devDependencies:
+      '@types/node':
+        specifier: 24.12.4
+        version: 24.12.4
+      typescript:
+        specifier: 7.0.2
+        version: 7.0.2
+      vite-plus:
+        specifier: 0.3.3
+        version: 0.3.3(@types/node@24.12.4)(typescript@7.0.2)
+
+  packages/t3code-cli: {}
+
+  packages/t3code-lib:
     dependencies:
       zod:
         specifier: ^4.6.5
