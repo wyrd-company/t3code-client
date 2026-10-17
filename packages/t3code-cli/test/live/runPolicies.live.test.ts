@@ -12,6 +12,7 @@ import {
   client,
   directory,
   execute,
+  issuer,
   ownedProjects,
   record,
   runCommand,
@@ -44,7 +45,7 @@ it.skipIf(!agent)("run prepares a worktree from the supplied base ref", async ()
     expect(projection.thread.worktreePath).not.toBe(root);
     ownedProjects.add(projection.thread.projectId);
     expect(projection.runs[0]!.id).toBe(value.runId);
-    await client.vcs.removeWorktree({
+    await issuer.vcs.removeWorktree({
       cwd: root,
       path: projection.thread.worktreePath!,
       force: true,
