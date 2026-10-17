@@ -72,7 +72,11 @@ export const orchestrationMethods = {
   }),
   "orchestration.stopWorkflow": defineMethod({
     payload: OrchestrationV2StopWorkflowInput,
-    success: z.void(),
+    // Effect's JSON codec encodes Schema.Void as null; callers still receive void.
+    success: z
+      .null()
+      .or(z.void())
+      .transform((): void => undefined),
     stream: false,
     scope: operate,
   }),

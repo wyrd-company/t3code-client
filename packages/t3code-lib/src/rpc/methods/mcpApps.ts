@@ -36,7 +36,11 @@ export const mcpAppsMethods = {
   }),
   "mcpApps.updateModelContext": defineMethod({
     payload: McpAppUpdateModelContextInput,
-    success: z.void(),
+    // Effect's JSON codec encodes Schema.Void as null; callers still receive void.
+    success: z
+      .null()
+      .or(z.void())
+      .transform((): void => undefined),
     stream: false,
     scope: "orchestration:operate",
   }),

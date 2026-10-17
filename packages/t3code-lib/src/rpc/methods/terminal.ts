@@ -30,19 +30,31 @@ export const terminalMethods = {
   }),
   "terminal.write": defineMethod({
     payload: TerminalWriteInput,
-    success: z.void(),
+    // Effect's JSON codec encodes Schema.Void as null; callers still receive void.
+    success: z
+      .null()
+      .or(z.void())
+      .transform((): void => undefined),
     stream: false,
     scope: "terminal:operate",
   }),
   "terminal.resize": defineMethod({
     payload: TerminalResizeInput,
-    success: z.void(),
+    // Effect's JSON codec encodes Schema.Void as null; callers still receive void.
+    success: z
+      .null()
+      .or(z.void())
+      .transform((): void => undefined),
     stream: false,
     scope: "terminal:operate",
   }),
   "terminal.close": defineMethod({
     payload: TerminalCloseInput,
-    success: z.void(),
+    // Effect's JSON codec encodes Schema.Void as null; callers still receive void.
+    success: z
+      .null()
+      .or(z.void())
+      .transform((): void => undefined),
     stream: false,
     scope: "terminal:operate",
   }),
