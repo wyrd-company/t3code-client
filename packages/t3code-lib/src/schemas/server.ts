@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 import { z } from "zod";
 import { ServerAuthDescriptor } from "./auth.ts";

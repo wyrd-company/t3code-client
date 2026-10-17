@@ -18,8 +18,8 @@ relationships:
 proposed-design:
   high-level-overview: >-
     @wyrd-company/t3code-cli exposes t3c on Node >=22.16. Commander parses the
-    command surface in specifications/assets/cli-surface.json. The specification
-    at specifications/command-line.yml and its prose assets define behavior.
+    command surface in docs/specifications/assets/cli-surface.json. The specification
+    at docs/specifications/command-line.yml and its semantic assets define behavior.
     @wyrd-company/t3code-lib owns profiles, credentials, auth, the protocol and
     project/thread facades. The CLI adapts arguments and environment to library
     inputs, follows run outcomes and maps them to output and exit codes.
@@ -63,7 +63,7 @@ proposed-design:
     ships dist/cli.js and npm-shrinkwrap.json with registry resolutions. Local
     consumer validation installs both package tarballs together. npm publication
     uses provenance. The t3c Homebrew formula depends on node and consumes the
-    release tarball. CLI docs are published from packages/t3code-cli/docs through
+    release tarball. CLI docs are published from docs through
     wyrd-company/wyrd.foo/.github/actions/publish-docs@v1 on t3code-cli@ tags.
     docs.yml and pages include the generated library reference and demo.gif;
     Taskfile targets generate the reference with jsdoc-to-markdown and render the

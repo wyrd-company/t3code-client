@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /** Conversation messages, notifications, plans, and questions of `orchestrationV2.ts`. */
 import { z } from "zod";

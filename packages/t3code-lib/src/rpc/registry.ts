@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 import { orchestrationMethods } from "./methods/orchestration.ts";
 import { serverMethods } from "./methods/server.ts";

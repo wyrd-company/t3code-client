@@ -1,0 +1,24 @@
+$schema: https://refinery.systems/ontology/technical-design
+title: Generated public documentation projections
+objective: Generate complete user reference pages from public library exports and canonical command
+  semantics with freshness checks.
+relationships:
+  references:
+    - command-line
+    - library
+    - profiles
+    - releasing
+proposed-design:
+  high-level-overview: Root docs contains six ordered published guide pages, a generated library
+    API reference, public profile guidance and structured internal artifacts. Published pages project
+    canonical semantic assets; internal artifacts are outside public navigation.
+  library-reference: |
+    Generate the [public API reference](../api.md) with `task lib:docs` and verify it
+    with `task lib:docs:check`. The generator uses `jsdoc-to-markdown` on compiled
+    JavaScript and adds signatures from the public TypeScript source. The
+    `typescript-api` development alias supplies the 5.9 compiler API for documentation;
+    the build and typecheck toolchain remains TypeScript 7.
+  guide-projections: task docs invokes cli:docs, which invokes lib:docs before projecting command,
+    output, harness and library pages. task check runs lib:docs:check and cli:docs:check. docs.yml
+    registers the existing demo GIF. The documentation Publish job consumes docs/ on CLI release
+    tags.

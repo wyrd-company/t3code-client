@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 import * as NodeCrypto from "node:crypto";
 import * as NodeFSP from "node:fs/promises";

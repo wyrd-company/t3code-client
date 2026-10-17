@@ -1,12 +1,12 @@
 ---
 relationships:
-  references: [design, profiles]
+  references: [library, profiles]
 ---
 
 # Library API reference
 
 Generated with `task lib:docs`. Import public symbols from `@wyrd-company/t3code-lib`.
-See [profiles](profiles.md) for configuration and [design](design.md) for the library contract.
+See [profiles](profiles.md) for configuration and [design](technical-designs/library.yml) for the library contract.
 TypeScript declarations ship with the package.
 
 ## Classes

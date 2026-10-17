@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /**
  * ProjectsApi: projects as the shell snapshot sees them, idempotent `ensure`

@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /** Optional logging seam. The default logger discards everything. */
 export interface Logger {

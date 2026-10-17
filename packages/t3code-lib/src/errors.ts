@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /**
  * One error strategy for the whole library: every failure raised to a caller

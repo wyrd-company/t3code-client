@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /**
  * AuthClient: the auth control plane over HTTP, and the only module that

@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 import * as NodeFS from "node:fs";
 import { describe, expect, it } from "vite-plus/test";

@@ -46,7 +46,7 @@ try {
     JSON.stringify({ actualServer: versionResult.data.server, operationalOverridesCleared: true }),
   );
   await NodeFSP.mkdir(`${root}/bin`);
-  await NodeFSP.mkdir(new URL("../docs/assets/", import.meta.url), { recursive: true });
+  await NodeFSP.mkdir(new URL("../../../docs/assets/", import.meta.url), { recursive: true });
   await NodeFSP.writeFile(
     `${root}/bin/t3c`,
     `#!/usr/bin/env node

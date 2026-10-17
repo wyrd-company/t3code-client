@@ -13,7 +13,7 @@ proposed-design:
   high-level-overview: >-
     The library implements stock T3 Code 0.1.0 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade
-    contracts. The package design.md points to this canonical design family.
+    contracts. The library architecture links the canonical design family.
   auth: |
     ```ts
     export interface StoredCredentials {

@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /**
  * ThreadsApi: thread lifecycle commands with server bookkeeping filled in,

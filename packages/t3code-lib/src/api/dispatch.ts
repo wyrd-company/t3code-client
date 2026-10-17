@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /**
  * CommandDispatcher: the one path every facade uses to send an orchestration

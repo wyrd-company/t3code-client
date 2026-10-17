@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /**
  * RpcConnection: request/response correlation over a SocketTransport. One

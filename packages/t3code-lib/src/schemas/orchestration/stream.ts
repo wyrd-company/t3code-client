@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /** Inputs and outputs of the `orchestration.*` RPC methods, and the thread stream items. */
 import { z } from "zod";

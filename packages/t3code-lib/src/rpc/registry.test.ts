@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 import { describe, expect, expectTypeOf, it } from "vite-plus/test";
 import { rpcMethods, type RpcMethods, type RpcMethodName } from "./registry.ts";

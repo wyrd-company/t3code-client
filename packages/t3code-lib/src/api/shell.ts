@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /**
  * ShellApi: the lightweight cross-thread view (projects and thread shells,

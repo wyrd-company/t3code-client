@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /** Mirrors `packages/contracts/src/chatAttachment.ts`. */
 import { z } from "zod";

@@ -80,7 +80,7 @@ describe("distribution workflow agreements", () => {
     expect(job).toContain("needs: [build, npm]");
     expect(job).toContain("if: startsWith(github.ref_name, 't3code-cli@')");
     expect(job).toContain("wyrd-company/wyrd.foo/.github/actions/publish-docs@v1");
-    expect(job).toContain("docs-dir: packages/t3code-cli/docs");
+    expect(job).toContain("docs-dir: docs");
     expect(job).toContain("secrets.WYRD_TOOLS_DOCS_PUBLISHER_APP_ID");
     expect(job).toContain("secrets.WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY");
   });

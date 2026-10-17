@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /** Messages, queue, runtime requests, and rollback commands of `OrchestrationV2Command`. */
 import { z } from "zod";

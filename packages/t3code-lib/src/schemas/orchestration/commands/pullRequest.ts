@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /** Pull-request link commands of `OrchestrationV2Command`. */
 import { z } from "zod";

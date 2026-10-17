@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 import { describe, expect, it } from "vite-plus/test";
 import { ids, items, makeProjection } from "../../../test/support/threadFixtures.ts";

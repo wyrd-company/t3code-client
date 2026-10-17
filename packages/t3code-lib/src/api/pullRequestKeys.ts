@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 /**
  * Pull request link identity, as upstream's `@t3tools/shared`

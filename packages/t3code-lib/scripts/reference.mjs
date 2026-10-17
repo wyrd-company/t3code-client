@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: design
+//   implements: library
 // ---
 import * as NodeChildProcess from "node:child_process";
 import * as NodeFSP from "node:fs/promises";
@@ -87,7 +87,7 @@ for (const [id] of signatures) {
 }
 const reference = await jsdoc2md.render({ data: publicData });
 const types = `\n## Profile and credential types\n\n\`\`\`ts\n${profileTypes.join("\n\n")}\n\`\`\`\n`;
-const header = `---\nrelationships:\n  references: [design, profiles]\n---\n\n# Library API reference\n\nGenerated with \`task lib:docs\`. Import public symbols from \`@wyrd-company/t3code-lib\`.\nSee [profiles](profiles.md) for configuration and [design](design.md) for the library contract.\nTypeScript declarations ship with the package.\n\n`;
+const header = `---\nrelationships:\n  references: [library, profiles]\n---\n\n# Library API reference\n\nGenerated with \`task lib:docs\`. Import public symbols from \`@wyrd-company/t3code-lib\`.\nSee [profiles](profiles.md) for configuration and [design](technical-designs/library.yml) for the library contract.\nTypeScript declarations ship with the package.\n\n`;
 const output = NodeChildProcess.execFileSync(
   "pnpm",
   ["exec", "vp", "fmt", "--stdin-filepath=docs/api.md"],
@@ -98,7 +98,7 @@ const output = NodeChildProcess.execFileSync(
     stdio: ["pipe", "pipe", "inherit"],
   },
 );
-const destination = NodePath.join(root, "docs/api.md");
+const destination = NodePath.resolve(root, "../../docs/api.md");
 if (process.argv.includes("--check")) {
   if ((await NodeFSP.readFile(destination, "utf8")) !== output) {
     throw new Error("Library reference differs; run task lib:docs.");
