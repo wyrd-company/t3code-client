@@ -5,7 +5,7 @@
 import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
-import { expect, it } from "vite-plus/test";
+import { expect, it, vi } from "vite-plus/test";
 import { ProfileManager, T3Client, providerInstanceId } from "../../src/index.ts";
 
 it("composes profiles, issued-token import, pairing and resolved auth against the pinned server", async () => {
@@ -15,9 +15,12 @@ it("composes profiles, issued-token import, pairing and resolved auth against th
   const url = process.env["T3_LIVE_URL"]!;
   const token = process.env["T3_LIVE_TOKEN"]!;
   const suppliedUrl = `${url}/sample?sample=value#sample`;
-  const profiles = new ProfileManager({ configDir: directory });
+  vi.stubEnv("T3C_CONFIG_HOME", " \t ");
+  vi.stubEnv("XDG_CONFIG_HOME", directory);
+  const profiles = new ProfileManager();
   const issuer = T3Client.create({ baseUrl: url, accessToken: token });
   try {
+    expect(profiles.configDir).toBe(NodePath.join(directory, "t3c"));
     await profiles.setAccessToken({ name: "issued", url: suppliedUrl }, token);
     const credential = await issuer.auth.createPairingCredential({
       label: "sample-profile",
@@ -26,7 +29,9 @@ it("composes profiles, issued-token import, pairing and resolved auth against th
     await profiles.pair({ name: "paired", url: suppliedUrl }, credential.credential);
     expect(await profiles.getCurrent()).toEqual({ name: "issued", url });
     await profiles.switch("paired");
-    const client = T3Client.create(await profiles.resolve({ env: {} }));
+    const connection = await profiles.resolve({ env: { T3_SERVER_URL: " \t ", T3_TOKEN: "" } });
+    expect(connection.sources).toEqual({ server: "profile", credentials: "profile" });
+    const client = T3Client.create(connection);
     try {
       expect((await client.auth.sessionState()).authenticated).toBe(true);
       expect(await client.auth.hasScope("orchestration:read")).toBe(true);
@@ -62,6 +67,7 @@ it("composes profiles, issued-token import, pairing and resolved auth against th
     expect((await profiles.list()).map((profile) => profile.name)).toEqual(["issued"]);
   } finally {
     await issuer.close();
+    vi.unstubAllEnvs();
     await NodeFSP.rm(directory, { recursive: true, force: true });
   }
 });

@@ -7,7 +7,7 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { expect, it } from "vite-plus/test";
 import { ProfileManager } from "./profileManager.ts";
-import { serverUrl } from "./profileConfig.ts";
+import { configDirectory, serverUrl } from "./profileConfig.ts";
 
 it.each([
   "HTTPS://server.example",
@@ -73,3 +73,19 @@ it("stores normalized origins and applies them when reading and resolving profil
     await NodeFSP.rm(directory, { recursive: true, force: true });
   }
 });
+
+it.each(["", " \t "])("uses XDG config home when T3C_CONFIG_HOME is blank: %j", (blank) => {
+  const xdg = NodePath.join(NodeOS.tmpdir(), "sample-xdg");
+  expect(configDirectory({ T3C_CONFIG_HOME: blank, XDG_CONFIG_HOME: xdg })).toBe(
+    NodePath.join(xdg, "t3c"),
+  );
+});
+
+it.each(["", " \t "])(
+  "uses default config home when T3C_CONFIG_HOME is blank and XDG absent: %j",
+  (blank) => {
+    expect(configDirectory({ T3C_CONFIG_HOME: blank })).toBe(
+      NodePath.join(NodeOS.homedir(), ".config/t3c"),
+    );
+  },
+);

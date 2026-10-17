@@ -8,6 +8,7 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { z } from "zod";
 import { T3ConnectionError, T3PreconditionError } from "../errors.ts";
+import { environmentValue } from "./environment.ts";
 
 /** A named server; credentials are stored separately. */
 export interface Profile {
@@ -29,9 +30,9 @@ const Config = z.looseObject({
 });
 
 export function configDirectory(env: NodeJS.ProcessEnv = process.env): string {
-  const override = env["T3C_CONFIG_HOME"];
+  const override = environmentValue(env, "T3C_CONFIG_HOME");
   if (override !== undefined) return NodePath.resolve(override);
-  const xdg = env["XDG_CONFIG_HOME"];
+  const xdg = environmentValue(env, "XDG_CONFIG_HOME");
   const base = xdg && NodePath.isAbsolute(xdg) ? xdg : NodePath.join(NodeOS.homedir(), ".config");
   return NodePath.join(base, "t3c");
 }
