@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   verifies: output-contract
+//   verifies: command-line
 // ---
 import { randomUUID } from "node:crypto";
 import { expect, it } from "vite-plus/test";

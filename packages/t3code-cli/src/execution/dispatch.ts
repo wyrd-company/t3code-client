@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: command-contract
+//   implements: command-line
 // ---
 import * as NodeCrypto from "node:crypto";
 import {

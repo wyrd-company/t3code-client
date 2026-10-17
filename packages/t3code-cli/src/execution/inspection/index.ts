@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: command-contract
+//   implements: command-line
 // ---
 import * as NodePath from "node:path";
 import { T3PreconditionError, threadId } from "@wyrd-company/t3code-lib";

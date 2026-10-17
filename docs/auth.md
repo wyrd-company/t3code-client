@@ -3,7 +3,9 @@ docs: true
 title: Auth and profiles
 order: 2
 relationships:
-  references: [command-line, command-contract, profiles, output-contract]
+  references:
+    - command-line
+    - profiles
 ---
 
 # Connect to servers

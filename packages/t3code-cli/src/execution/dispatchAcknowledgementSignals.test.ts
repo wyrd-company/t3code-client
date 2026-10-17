@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   verifies: output-contract
+//   verifies: command-line
 // ---
 import { afterEach, expect, it, vi } from "vite-plus/test";
 import { T3ConnectionError } from "@wyrd-company/t3code-lib";

@@ -56,7 +56,7 @@ tasks:
       HOMEBREW_NO_INSTALL_CLEANUP: "1"
     cmds: [scripts/release/test-homebrew.sh]
   docs:
-    desc: Generate published CLI pages and library reference
+    desc: Generate the published library API reference
     cmds: [{ task: "cli:docs" }]
   demo:check:
     desc: Render and verify real demo commands without changing tracked assets

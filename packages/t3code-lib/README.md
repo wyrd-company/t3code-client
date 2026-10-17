@@ -1,6 +1,6 @@
 ---
 relationships:
-  references: design
+  references: library
 ---
 
 # @wyrd-company/t3code-lib

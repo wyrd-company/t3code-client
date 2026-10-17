@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: command-contract
+//   implements: command-line
 //   references: profiles
 // ---
 import { T3Client, type ResolvedProfile, grantedScopes } from "@wyrd-company/t3code-lib";

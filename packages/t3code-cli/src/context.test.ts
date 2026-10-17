@@ -40,7 +40,7 @@ it("passes the default and selected connection timeout and client version to the
 it("reports a clear minimum Node error before loading command behavior", async () => {
   const surface = JSON.parse(
     await NodeFSP.readFile(
-      new URL("../../../docs/specifications/assets/cli-surface.json", import.meta.url),
+      new URL("../../../docs/specifications/cli-surface.json", import.meta.url),
       "utf8",
     ),
   ) as CommandSurface;
@@ -119,7 +119,7 @@ it.each(["", " \t "])(
   async (blank) => {
     const surface = JSON.parse(
       await NodeFSP.readFile(
-        new URL("../../../docs/specifications/assets/cli-surface.json", import.meta.url),
+        new URL("../../../docs/specifications/cli-surface.json", import.meta.url),
         "utf8",
       ),
     ) as CommandSurface;

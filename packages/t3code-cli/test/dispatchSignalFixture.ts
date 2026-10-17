@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   verifies: output-contract
+//   verifies: command-line
 // ---
 import * as NodeFSP from "node:fs/promises";
 import { vi } from "vite-plus/test";
@@ -88,7 +88,7 @@ export async function signalFixture(path = "root", waiting = true) {
   const interrupt = vi.spyOn(client.threads, "interrupt").mockResolvedValue();
   const surface = JSON.parse(
     await NodeFSP.readFile(
-      new URL("../../../docs/specifications/assets/cli-surface.json", import.meta.url),
+      new URL("../../../docs/specifications/cli-surface.json", import.meta.url),
       "utf8",
     ),
   ) as CommandSurface;

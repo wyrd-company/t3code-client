@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   verifies: command-contract
+//   verifies: command-line
 // ---
 import { afterEach, expect, it, vi } from "vite-plus/test";
 import { T3Client, T3HttpError, T3NotFoundError, threadId } from "@wyrd-company/t3code-lib";

@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: command-contract
+//   implements: command-line
 // ---
 import * as NodeFSP from "node:fs/promises";
 import * as NodeReadline from "node:readline/promises";

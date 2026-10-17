@@ -11,7 +11,7 @@ relationships:
 
 `t3c` is the Node command-line consumer of `@wyrd-company/t3code-lib`.
 Read [the specification](../../docs/specifications/command-line.yml) and
-[the design](../../docs/technical-designs/command-line.yml) before changing command behavior. Read
+[the design](../../docs/technical-designs/cli-architecture.yml) before changing command behavior. Read
 [workspace testing](../../docs/technical-designs/testing.yml) and
 [workspace releases](../../docs/technical-designs/releasing.yml) before changing automation.
 
@@ -49,4 +49,4 @@ Read [the specification](../../docs/specifications/command-line.yml) and
 - The CLI package contains `dist/cli.js` and a registry-resolved `npm-shrinkwrap.json`.
   Local consumer checks install the library and CLI tarballs together.
 
-The [Dagu harness contract](../../docs/specifications/assets/harness.json) defines stdin, output and continuation.
+The [Dagu harness guide](../../docs/dagu.md) explains stdin, output and continuation; the specification defines CLI behavior.

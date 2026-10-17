@@ -1,7 +1,7 @@
 {
   "$schema": "https://commonclischema.org/draft/2026-04/schema",
   "relationships": {
-    "references": "t3c"
+    "references": ["command-line", "cli-architecture"]
   },
   "tool": {
     "name": "t3c",
@@ -276,7 +276,22 @@
             "meaning": "Thread, project or model not found."
           }
         ]
-      }
+      },
+      "notes": [
+        "run and thread start read exactly one prompt source: a positional prompt, --prompt-file <file>, --prompt-file -, or stdin when neither is supplied. A positional prompt conflicts with --prompt-file even when a supplied value is blank. The file form reads the file as text; - selects stdin. Interactive prompts require a TTY. Non-TTY execution consumes the explicit input and reports missing required inputs as usage errors.",
+        "--project <id> selects an existing project. --project-path <dir> resolves or ensures that workspace's project through the library. They are mutually exclusive. With neither supplied, the CLI uses the server Scratch project through projects.ensureScratch. --provider identifies a provider instance and --model selects its model from the live server catalog, including custom models. An omitted provider or model uses the selected project default, then the server-advertised default. An ambiguous selection exits 2; an unavailable model exits 10. --title supplies the thread title. --mode passes through the requested runtime mode; new threads use explicit --mode, then the server-advertised settings.defaultRuntimeMode, then the library default when the server advertises no mode. Continuation sends a mode only when --mode is supplied.",
+        "--worktree launches through threads.launch with the new-worktree workspace strategy. --base-ref supplies its base ref and requires --worktree. The server prepares the workspace. Without --base-ref, the base is the project's current checkout (HEAD). Root launches use the selected project's root. --thread <id> continues an existing conversation and dispatches a new prompt through threads.startTurn, retaining the existing thread identity. The library resolves delivery against active server state and links the message to its run. The CLI follows that linked run, rather than guessing the next run id. Continuation retains the thread's workspace and project, applies supplied provider/model/mode/title, and rejects project/worktree relocation flags with exit 2.",
+        "run creates or continues the thread, sends the prompt, waits and prints the final assistant message. thread start accepts the same inputs and exits once the thread and run exist, printing the thread id. thread start --wait uses run behavior, including its timeout and output policies. thread send <threadId> <prompt> dispatches to the existing thread; --timeout bounds its wait. thread wait <threadId> waits for that thread's run and accepts --timeout and --on-timeout. It captures the active run at invocation, or the latest run when none is active. An idle thread that has never run reports idle, a null run id and exit 0.",
+        "run has no default run timeout. --timeout bounds waiting on run, thread wait and thread send. --on-timeout detach|interrupt defaults to interrupt for run and thread send, and detach for thread wait.",
+        "Detach leaves the run active, reports the thread id and exits 5. Interrupt calls the library interrupt with holdQueue, waits up to five seconds after the interrupt request for terminal state and exits 6 whether or not terminal confirmation arrives. The JSON result reports the last observed state. Connection/auth failures while requesting interruption retain their mapped error and known thread/run identity.",
+        "One SIGTERM/SIGINT scope spans prompt reading, preflight, dispatch and following for run, thread start (with or without --wait) and thread send. During preflight, the first signal exits 4, creates no thread or run and reports null identities (data: null for nonwaiting thread start). Once a mutation is sent, the CLI retains its acknowledgement without aborting or retrying that request. After a signal, it sends no further mutation in the dispatch pipeline. A thread creation or title update links no run: after its acknowledgement the CLI exits 4, reports the known thread identity with a null run id, and sends no interrupt. For a run-linking mutation (startTurn or launch), the CLI waits for the linked run through the existing handle, interrupts that exact run with holdQueue, and exits 4 with the thread and run identities on stderr and in the envelope. An acknowledgement or link failure exits 4 with the known thread identity and the failure in error. A second signal exits immediately, including while a receipt or run link is pending.",
+        "During following, the first signal interrupts the run and exits 4. When the run is already terminal, the first signal aborts the remaining read and sends no interrupt. Exit 4 means the CLI was interrupted before it finished its work; the envelope's state carries what the run did. Signal handlers retain the thread id for recovery and close the client's local resources. Closing the client does not delete a thread or its history.",
+        "Pending user-input or approval requests during run fail fast by default: exit 7, print human-readable questions with request ids on stderr in text mode or in pendingRequests in JSON mode, and leave the thread open. --on-request wait keeps waiting until the run timeout, when one is present. --approve accept|reject applies the selected decision only to approval requests. User-input questions are never auto-answered. Interactive prompts are gated on a TTY; non-TTY harness execution follows the specified policy.",
+        "The Dagu custom harness starts one t3c run process, supplies its prompt on stdin, and consumes the final assistant message on stdout. Progress and thread identity go to stderr. The exit code preserves run, request, transport and credential outcomes; 124 belongs to Dagu.",
+        "Dagu supplies T3_TOKEN and T3_SERVER_URL through masked secrets. The CLI resolves these through the library profile module. An explicit --server or --credentials overrides the corresponding environment input. T3_TOKEN alone uses the current profile's server. The process uses the same profile and credential contract as other library consumers.",
+        "Pushback continues the existing conversation with t3c run --thread <id> and a new stdin prompt. Thread ids emitted on stderr remain available when the process detaches, times out, blocks on a request, or loses its connection.",
+        "Without --timeout, run waits without a run deadline. The Dagu timeout and the CLI run timeout are separate controls. CLI timeout interruption uses the library's interrupt operation with holdQueue; Dagu can also terminate the process with a signal. A signal reports exit 4 and the first signal requests interruption. User-input requests require explicit responses through thread respond; an automated harness does not invent answers."
+      ]
     },
     {
       "name": "thread",
@@ -806,6 +821,11 @@
             }
           ]
         }
+      ],
+      "notes": [
+        "thread read <threadId> reads the full transcript by default. --last selects the last assistant message and --full selects the full transcript; the flags are mutually exclusive. When the transcript route refuses an oversized transcript with thread_transcript_too_large, the CLI reads the library's detail route and derives the equivalent visible conversation. Other read failures retain their mapped errors. thread list lists server thread summaries.",
+        "thread interrupt <threadId> requests interruption through the library. thread respond <threadId> --request <id> supplies exactly one response kind: repeatable --answer k=v for user-input question answers, --accept or --reject for approvals. The CLI uses library response methods; it does not construct RPC envelopes. Request ids and question keys come from the server. A user-input response is explicit; approval policy never supplies question answers.",
+        "project list lists projects. project ensure <dir> resolves or creates the workspace project through projects.ensure. Paths refer to the server workspace. server info prints the environment descriptor and the live providers/models."
       ]
     },
     {
@@ -920,6 +940,11 @@
             }
           ]
         }
+      ],
+      "notes": [
+        "auth pair [link] exchanges a single-use pairing token or validates an issued session token before storing it. A link carries /pair#token=... or ?token=. Split inputs use --server URL with exactly one of --pairing-token T, --pairing-token-stdin, or --token-stdin. The last form imports an already issued session token; the others exchange a pairing token. --name overrides the default profile name, the server host. Repeated calls add named servers; the first validated pair becomes current; later additions preserve current.",
+        "Token issuance uses upstream t3 auth session issue --ttl 30d --token-only, t3 auth pairing create, or t3 pair. The CLI consumes their credentials through the library's native APIs.",
+        "auth status reports every profile's URL, label, scopes, expiry and current marker and probes each server's /.well-known/t3/environment. It returns non-zero when the current profile fails, while retaining the other results. Saved profiles use exact named resolution without overrides. The effective flag/environment/current selection is probed separately and reports its URL and server/credential sources. With an override, the exit follows that effective probe; otherwise it follows current. No current and no override exits 0. The environment descriptor supplies reachability and label; session state supplies authentication, scopes and expiry. A supplied past expiry reports expired; rejection without expiry reports auth_invalid. Text output lists a table with the current profile marked and an effective-selection source line. JSON data contains profiles, current and effective, including each probe's reachable, authenticated, label, scopes, expiresAt and optional error. auth switch <name> selects the current profile. auth logout [name] uses the named profile, or the current profile when the name is omitted. Logging out the current profile clears current without selecting another profile."
       ]
     },
     {
@@ -933,7 +958,10 @@
     },
     {
       "name": "version",
-      "summary": "Show CLI, library and target versions with an informational reachable-server verdict."
+      "summary": "Show CLI, library and target versions with an informational reachable-server verdict.",
+      "notes": [
+        "version prints CLI version, library version and TARGET_T3_CODE_VERSION. When a server is reachable it also prints server version, protocol and a match, newer or older version verdict. The verdict is informational and does not gate execution. --version prints only t3c <cli-version>; a 0.1.0 release prints t3c 0.1.0. Library and CLI version independently."
+      ]
     }
   ],
   "parsing-boundaries": [
@@ -944,7 +972,34 @@
     }
   ],
   "notes": [
+    "No command emits exit code 124.",
     "The companion t3c specification defines execution, output, auth, error and lifecycle semantics.",
-    "No command emits exit code 124."
+    "The native command surface defines commands, positional arguments, options and input relationships. These native fields and notes define their behavior. t3c runs on Node >=22.16. Startup checks the Node minimum and prints a clear error when it is unmet. Argument parsing uses commander. The target server is stock T3 Code 0.1.0 with orchestration protocol 2.",
+    "The library's ProfileManager resolves connection inputs. Server selection is --server, then T3_SERVER_URL, then the current profile. Credentials are --credentials <file>, then T3_TOKEN, then the selected profile's credential store. T3_TOKEN alone uses the current profile's URL. Overrides apply to the invocation. The profile module is shared with other library consumers.",
+    "Environment inputs follow the library configuration contract, including its blank-value handling.",
+    "The configuration root is T3C_CONFIG_HOME, then $XDG_CONFIG_HOME/t3c, then ~/.config/t3c. config.json holds named servers and current. Each profile has its own 0600 credential file in credentials/. The secret-free config is written atomically with mode 0644. URL matching uses the normalized server origin. Resolution reports which flag, environment or profile source won. An explicit URL without a matching profile uses empty in-memory credentials unless overridden. CredentialSource is the library seam for a caller-supplied store. The default source uses fileCredentialStore. See the library profile contract.",
+    "Durations are positive numbers with an optional ms, s, m or h suffix. A bare number is seconds. --log-level accepts silent, error, warn, info or debug, and defaults to warn.",
+    "--connect-timeout maps to library openTimeoutMs and defaults to 30 seconds. The CLI reports a failed connection as exit 8. This connection control is separate from the run deadline supplied through --timeout.",
+    "In text execution mode stdout contains only the assistant message. Progress, thread id and warnings go to stderr. A failure ends stderr with one short error line; Dagu displays the last 1024 bytes. Diagnostic output redacts credentials. Successful thread start without --wait prints the thread id as its result. Inspection, auth and version commands print their requested information. Non-execution JSON uses {data, exitCode, error?}; thread start without --wait places its thread/run ids in data.",
+    "Without --stream, --json prints exactly one object on stdout. Execution results contain threadId, runId, state, assistantMessage, pendingRequests, exitCode and durationMs, plus error on failure. Dispatch results also report runtimeMode, the mode sent by this invocation, or null when no mode was sent. Waiting on an existing run sends no mode. Nonwaiting thread start includes runtimeMode in data. The sent mode is printed on stderr only at info or debug log level. This execution envelope applies to run, thread start --wait, thread send and thread wait. Unavailable ids are null. durationMs is elapsed invocation time. Known thread/run identities remain available on failures after dispatch. Pre-dispatch failures carry no created thread identity. The object reports the actual observed state, including an active run at detach and pending requests at exit 7.",
+    "--stream writes assistant deltas in text mode and newline-delimited events in JSON mode. JSON streaming is the explicit exception to the one-object output contract. Stream consumers receive the final execution result with its exit code. Text streaming does not append a duplicate copy of the final answer.",
+    "The final answer source is the turn outcome's assistant message. When it is absent, the CLI falls back to the last assistant item in the transcript. Oversized-transcript fallback uses the detail route as defined in command behavior.",
+    "The CLI never emits 124. Failures 2, 8, 9 and 10 detected before dispatch create no thread. Errors after launch preserve any created thread id; a failed command is not evidence that no thread exists. The CLI does not retry a launch blindly after an ambiguous transport failure.",
+    "The CLI branches on library error classes, stable codes and typed records, rather than message text. The library uses T3StorageError (storage) for profile/config and credential backend I/O, and T3DecodeError for malformed stored credentials. These failures exit 1; server transport T3ConnectionError (connection) exits 8. Configuration and input checks precede dispatch; server reachability, authentication, required scopes and explicitly selected resources are resolved before a new thread is launched.",
+    "Bad command, flag, duration, conflicting/present blank input; commander validation or caller-input T3PreconditionError; 2; no dispatch",
+    "Missing connection/current profile, unknown switch/logout profile, invalid URL or malformed profile config; profile-operation T3PreconditionError; 2; no dispatch",
+    "Unreadable prompt/config/credential file or failed config/credential persistence; profile/config T3StorageError (storage), credential-file T3DecodeError, or CLI file error; 1; preserve any existing profile/thread identity",
+    "Rejected or expired token, denied grant; T3AuthError, auth_invalid or insufficient_scope; typed auth failure; 9; include required scope when available",
+    "Missing selected thread/project/model; T3NotFoundError or typed resource-not-found RPC result; 10",
+    "Network, failed open, closed/lost connection, unusable protocol; T3ConnectionError; 8",
+    "Connect deadline; transport open_failed or connection-wait T3TimeoutError; 8",
+    "Run deadline; CLI run deadline or run-wait T3TimeoutError; 5 for detach; 6 after interruption",
+    "Caller cancellation or signal; T3InterruptedError or observed interrupted/cancelled outcome; 4",
+    "Failed or rolled-back execution; TurnOutcome.state; 3",
+    "Pending question or approval; pending runtime request; 7 unless the requested policy resolves it or keeps waiting",
+    "Typed dispatch refusal; T3RpcError; 9/10 for typed auth/resource failures; 3 for execution failure; 1 for unclassified dispatch failure",
+    "Server HTTP failure, malformed response, RPC defect; T3HttpError, T3DecodeError, T3RpcDefectError; 1 unless a specific mapping above applies",
+    "Unexpected local failure; CLI error boundary; 1",
+    "A transport failure after dispatch leaves the server outcome unknown and exits 8 with known identities. A watch decode error is reported through library stream semantics; an unusable result fails through the CLI error boundary. auth status retains every profile's result. Its exit follows the effective selection when a flag or environment override is supplied, otherwise the current profile. No current and no override exits 0. Profile config and credential I/O errors use the library storage code and exit 1; connection errors exit 8. Errors never print stored token contents."
   ]
 }

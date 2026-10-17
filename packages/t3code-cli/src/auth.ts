@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   implements: command-contract
+//   implements: command-line
 //   references: profiles
 // ---
 import type { InvocationHandler } from "./main.ts";
