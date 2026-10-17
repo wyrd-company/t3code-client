@@ -64,7 +64,8 @@ the CLI supplies no permissive default.
 
 `--worktree` launches through `threads.launch` with the new-worktree workspace
 strategy. `--base-ref` supplies its base ref and requires `--worktree`. The
-server prepares the workspace. Root launches use the selected project's root.
+server prepares the workspace. Without `--base-ref`, the base is the project's
+current checkout (`HEAD`). Root launches use the selected project's root.
 `--thread <id>` continues an existing conversation and dispatches a new prompt
 through `threads.startTurn`, retaining the existing thread identity. The
 library resolves delivery against active server state and links the message to
