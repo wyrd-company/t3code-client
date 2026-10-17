@@ -378,6 +378,8 @@ src/
     server.ts               getConfig, probe, watchConfig, watchLifecycle
     projects.ts             list, get, snapshot, create, update, delete, ensure, ensureScratch, createNew, files
     threads.ts              list, get, detail, projection, historyPage, transcript, create, ensure, launch, update, archive, delete, startTurn, interrupt, stop, respond*, watch
+    threadReads.ts          shell lookups with the archived fallback; detail, history page, transcript routes
+    threadCreation.ts       create and launch inputs and payloads
     threadCommands.ts       command builders
     threadTurnStart.ts      startTurn: modes, message.dispatch, delivery
     turns.ts                TurnHandle: events(), completion, derived from a thread watch
