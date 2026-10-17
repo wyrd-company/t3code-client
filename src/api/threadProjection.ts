@@ -17,6 +17,7 @@ import {
 } from "../schemas/orchestration/events.ts";
 import type { OrchestrationV2ThreadProjection } from "../schemas/orchestration/projection.ts";
 import type { ThreadPullRequestLink } from "../schemas/orchestration/pullRequest.ts";
+import { pullRequestKeysEqual, threadPullRequestsOf } from "./pullRequestKeys.ts";
 
 export {
   assistantMessageForRun,
@@ -139,13 +140,9 @@ function replaceLink(
   thread: Projection["thread"],
   updated: ThreadPullRequestLink,
 ): ThreadPullRequestLink[] {
-  const key = pullRequestKey(updated);
-  return (thread.pullRequests ?? []).map((link) => (pullRequestKey(link) === key ? updated : link));
-}
-
-/** Host and repository compare case-insensitively, as upstream keys them. */
-function pullRequestKey(link: ThreadPullRequestLink): string {
-  return `${link.host.trim().toLowerCase()}/${link.repository.trim().toLowerCase()}#${link.number}`;
+  return threadPullRequestsOf(thread).map((link) =>
+    pullRequestKeysEqual(link, updated) ? updated : link,
+  );
 }
 
 /** Compile-time check that every known event type has a branch above. */

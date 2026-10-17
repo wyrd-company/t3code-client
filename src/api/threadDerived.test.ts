@@ -125,16 +125,27 @@ describe("runOutcome and assistantMessageForRun", () => {
 });
 
 describe("activeRun", () => {
-  it("is the newest run that is not terminal", () => {
+  it("is the highest-ordinal run that has started and is not terminal", () => {
     const projection = makeProjection({
       runs: [
         makeRun({ id: "run-1", status: "completed" }),
-        makeRun({ id: "run-2", ordinal: 2, status: "queued" }),
         makeRun({ id: "run-3", ordinal: 3, status: "waiting" }),
+        makeRun({ id: "run-2", ordinal: 2, status: "running" }),
         makeRun({ id: "run-4", ordinal: 4, status: "cancelled" }),
       ],
     });
     expect(activeRun(projection)?.id).toBe("run-3");
+  });
+
+  it("skips a queued run behind the running one", () => {
+    const projection = makeProjection({
+      runs: [
+        makeRun({ id: "run-1", ordinal: 1, status: "running" }),
+        makeRun({ id: "run-2", ordinal: 2, status: "queued" }),
+      ],
+    });
+    expect(activeRun(projection)?.id).toBe("run-1");
+    expect(activeRun(makeProjection({ runs: [makeRun({ status: "queued" })] }))).toBeUndefined();
     expect(
       activeRun(makeProjection({ runs: [makeRun({ status: "rolled_back" })] })),
     ).toBeUndefined();

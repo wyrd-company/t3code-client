@@ -188,7 +188,10 @@ thread, `run.created`/`run.updated` a run, `turn-item.updated` a turn item,
 and so on). Applying an event is an upsert by id; the T3 web client folds
 events the same way. `thread.pull-request-link-updated` is the exception: its
 payload is one `ThreadPullRequestLink`, which replaces the thread's link with
-the same host, repository, and number.
+the same host, repository, and number. A thread without `pullRequests` reads
+its `linkedPullRequest` as a one-link list first. Keys compare as upstream's
+shared `threadPullRequests` keys them: host and repository case-insensitively,
+with a Forgejo link's port and the Azure DevOps host forms folded in.
 
 The transcript route answers with the thread's `visibleTurnItems`, its
 `title`, and `updatedAt` in one read. It refuses a thread whose transcript is
@@ -202,7 +205,9 @@ run: the run's `userMessageId`, and the message record's `runId`. Run
 statuses are `preparing`, `queued`, `starting`, `running`, `waiting`, and
 the terminal `completed`, `interrupted`, `failed`, `cancelled`,
 `rolled_back`. `run.interrupt` needs a `runId`; with `holdQueue` it is the
-Stop button. Commands carry `createdBy` and `creationSource` where they
+Stop button. The active run an interrupt targets is the highest-ordinal run
+that is `preparing`, `starting`, `running`, or `waiting`; a queued run has
+not started and is not interruptible. Commands carry `createdBy` and `creationSource` where they
 create something; the server stamps `createdBy: "user"` on everything a
 client dispatches.
 
@@ -381,6 +386,7 @@ src/
     watchRetry.ts           when a thread or shell watch resubscribes after a failure
     threadTracker.ts        projection state plus derived items
     threadProjection.ts     applyThreadEvent (upsert rules)
+    pullRequestKeys.ts      pull request link identity and the legacy single link
     threadDerived.ts        pendingRequests, runOutcome, activeRun, threadPhase
     shell.ts                snapshot, archivedSnapshot, watch, watchArchived
     vcs.ts                  listRefs, status, createWorktree, removeWorktree, createRef, switchRef
@@ -820,7 +826,10 @@ resubscribes with `afterSequence` set to the last sequence seen and emits
 so a consumer that joins late sees the current state first. Events whose
 sequence is at or below the cursor are replay overlap and are skipped. The
 tracker applies every known event to its projection and announces
-`turn-settled` once per run when the run reaches a terminal status.
+`turn-settled` once per run when the run reaches a terminal status. Each
+request is announced once. A user-input request's questions are on its
+timeline item, which can arrive after the request, so the tracker announces a
+user-input request when that item is in the projection.
 
 Both thread and shell watches wait through transient first-connection failures
 and retry subscriptions that disconnect before delivering an item, without an
