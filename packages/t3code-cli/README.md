@@ -33,5 +33,5 @@ Use `t3c --help` or a command's `--help` for options.
 
 From the source workspace, `task docs` generates the user reference and
 `task demo` records `docs/assets/demo.gif` against a fresh pinned server using
-`gpt-6-luna`. See workspace [testing](https://github.com/wyrd-company/t3code-client/blob/main/docs/testing.md) and
+`gpt-6-luna`. See workspace [testing](https://github.com/wyrd-company/t3code-client/blob/main/docs/technical-designs/testing.yml) and
 [release gates](https://github.com/wyrd-company/t3code-client/blob/main/docs/technical-designs/releasing.yml).

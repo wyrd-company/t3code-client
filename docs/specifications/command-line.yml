@@ -9,6 +9,8 @@ description: >-
 format: cli
 validation-criteria: >-
   Validate assets/cli-surface.json against the CLI Command Specification schema.
+  Validate each semantic asset against assets/semantic-sections.schema.json and
+  compare its complete ordered sections with the generated public guide.
   Validate this artifact against the specification type's required fields and
   property schemas. Inspect command help against the native surface and exercise
   golden paths and likely failure modes across the library boundary. Verify real

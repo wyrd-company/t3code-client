@@ -10,7 +10,7 @@ relationships:
 
 TypeScript client library for the stock T3 Code server, published to npmjs as
 `@wyrd-company/t3code-lib`. Read `../../docs/technical-designs/library.yml` before changing anything;
-it is the contract every module is built against. `docs/testing.md` explains
+it is the contract every module is built against. `../../docs/technical-designs/library-testing.yml` explains
 unit and live tests, and `../../docs/technical-designs/releasing.yml` explains releases.
 
 ## Layout

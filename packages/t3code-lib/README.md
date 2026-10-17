@@ -25,7 +25,7 @@ latest T3 Code release; the version it is tested against is the `t3` entry in
 `devDependencies`.
 
 See [library architecture](https://github.com/wyrd-company/t3code-client/blob/main/docs/technical-designs/library.yml) for the architecture and
-[`docs/testing.md`](docs/testing.md) for tests.
+[library verification](https://github.com/wyrd-company/t3code-client/blob/main/docs/technical-designs/library-testing.yml) for tests.
 
 ## Install
 
@@ -226,7 +226,7 @@ pnpm install
 pnpm run check        # format and lint
 pnpm run typecheck
 pnpm run test         # unit tests, no server needed
-pnpm run test:live    # starts the pinned t3 server, see docs/testing.md
+pnpm run test:live    # starts the pinned t3 server, see docs/technical-designs/library-testing.yml
 task check            # all of the above
 ```
 

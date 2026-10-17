@@ -2,7 +2,7 @@
 relationships:
   references:
     - command-line
-    - command-line
+    - composition
     - testing
     - releasing
 ---
@@ -12,7 +12,7 @@ relationships:
 `t3c` is the Node command-line consumer of `@wyrd-company/t3code-lib`.
 Read [the specification](../../docs/specifications/command-line.yml) and
 [the design](../../docs/technical-designs/command-line.yml) before changing command behavior. Read
-[workspace testing](../../docs/testing.md) and
+[workspace testing](../../docs/technical-designs/testing.yml) and
 [workspace releases](../../docs/technical-designs/releasing.yml) before changing automation.
 
 ## Boundaries

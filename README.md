@@ -37,7 +37,7 @@ Root verbs run the workspace. Package Taskfiles supply the same verbs:
 `install`, `build`, `fmt`, `lint`, `typecheck`, `test`, `test:live`, `package`,
 and `check`. Registered CLI commands without implementations fail explicitly.
 
-See [testing](docs/testing.md), [releasing](docs/technical-designs/releasing.yml), and the
+See [testing](docs/technical-designs/testing.yml), [releasing](docs/technical-designs/releasing.yml), and the
 [library design](docs/technical-designs/library.yml).
 
 ## License

@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   verifies: design
+//   verifies: library
 // ---
 /**
  * Facade round trip against a real T3 Code server, reached through

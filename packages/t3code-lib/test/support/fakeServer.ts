@@ -1,6 +1,6 @@
 // ---
 // relationships:
-//   references: design
+//   references: library
 // ---
 /**
  * FakeT3Server: an in-process stand-in for the T3 Code server. It speaks the
