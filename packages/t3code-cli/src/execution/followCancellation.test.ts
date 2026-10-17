@@ -51,6 +51,7 @@ it.each(["SIGINT", "SIGTERM"] as const)(
       await flush();
       expect(readConversation).toHaveBeenCalledTimes(1);
       process.emit(signalName);
+      expect(readSignal?.aborted).toBe(true);
       await flush();
       expect(finished).toBe(true);
       expect(readSignal?.aborted).toBe(true);
@@ -101,7 +102,7 @@ it("exits 4 even when a terminal transcript read ignores abort", async () => {
   }
 });
 
-it("cancels waiting for client acquisition with known ids", async () => {
+it("retains a signal during client acquisition and interrupts when the facade is ready", async () => {
   const s = setup();
   let release: () => void = () => {};
   vi.mocked(s.invocation.client).mockImplementationOnce(
@@ -121,6 +122,9 @@ it("cancels waiting for client acquisition with known ids", async () => {
     await flush();
     process.emit("SIGTERM");
     await flush();
+    expect(finished).toBe(false);
+    release();
+    await flush();
     expect(finished).toBe(true);
     expect(await promise).toMatchObject({
       exitCode: 4,
@@ -128,10 +132,13 @@ it("cancels waiting for client acquisition with known ids", async () => {
       threadId: ids.threadId,
       runId: ids.runId,
     });
-    expect(s.interrupt).not.toHaveBeenCalled();
+    expect(s.interrupt).toHaveBeenCalledExactlyOnceWith(ids.threadId, ids.runId, {
+      holdQueue: true,
+    });
     expect([process.listenerCount("SIGINT"), process.listenerCount("SIGTERM")]).toEqual(listeners);
   } finally {
     release();
+    s.snapshot({ runs: [makeRun({ status: "interrupted" })] });
     await promise;
   }
 });
@@ -159,6 +166,7 @@ it("aborts a pending approval response and interrupts the active run with holdQu
     await flush();
     expect(s.respondToApproval).toHaveBeenCalledTimes(1);
     process.emit("SIGINT");
+    expect(responseSignal?.aborted).toBe(true);
     await vi.advanceTimersByTimeAsync(0);
     expect(finished).toBe(true);
     expect(responseSignal?.aborted).toBe(true);
@@ -168,6 +176,7 @@ it("aborts a pending approval response and interrupts the active run with holdQu
     });
   } finally {
     release();
+    s.snapshot({ runs: [makeRun({ status: "interrupted" })] });
     await promise;
   }
 });
@@ -208,6 +217,7 @@ it("cancels a held deadline interrupt request without issuing a second interrupt
     expect(vi.getTimerCount()).toBe(0);
   } finally {
     release();
+    s.snapshot({ runs: [makeRun({ status: "interrupted" })] });
     await promise;
   }
 });
@@ -219,14 +229,24 @@ it("cancels deadline grace immediately on the first signal and keeps the last st
     timeoutMs: 1,
     onTimeout: "interrupt",
   });
-  s.snapshot();
-  await flush();
-  await vi.advanceTimersByTimeAsync(1);
-  process.emit("SIGINT");
-  await flush();
-  expect(await promise).toMatchObject({ exitCode: 4, state: "running", durationMs: 1 });
-  expect(s.interrupt).toHaveBeenCalledTimes(1);
-  expect(vi.getTimerCount()).toBe(0);
+  let finished = false;
+  void promise.then(() => {
+    finished = true;
+  });
+  try {
+    s.snapshot();
+    await flush();
+    await vi.advanceTimersByTimeAsync(1);
+    process.emit("SIGINT");
+    await flush();
+    expect(finished).toBe(true);
+    expect(await promise).toMatchObject({ exitCode: 4, state: "running", durationMs: 1 });
+    expect(s.interrupt).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+  } finally {
+    s.snapshot({ runs: [makeRun({ status: "interrupted" })] });
+    await promise;
+  }
 });
 
 it("aborts an in-flight approval response when the invocation detaches", async () => {
@@ -248,6 +268,7 @@ it("aborts an in-flight approval response when the invocation detaches", async (
     expect(responseSignal?.aborted).toBe(true);
   } finally {
     release();
+    s.snapshot({ runs: [makeRun({ status: "interrupted" })] });
     await promise;
   }
 });

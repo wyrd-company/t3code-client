@@ -42,8 +42,18 @@ export async function followRun(
   let iterator: AsyncIterator<ThreadWatchItem> | undefined;
   invocation.output.progress(`Thread: ${target.threadId}`);
   try {
-    const client = await signals.until(invocation.client());
     const id = threadId(target.threadId);
+    const acquiring = invocation.client();
+    interruptForSignal = async () => {
+      // Client acquisition has no abort input. Retain cancellation until a facade can interrupt.
+      const client = await acquiring;
+      invocation.errorContext = "run-interrupt";
+      const selected = target.turn?.runId ?? result.runId;
+      await client.threads.interrupt(id, selected === null ? undefined : runId(selected), {
+        holdQueue: true,
+      });
+    };
+    const client = await signals.until(acquiring);
     const answered = new Set<string>();
     const source = target.turn?.events() ?? client.threads.watch(id, { signal: controller.signal });
     iterator = source[Symbol.asyncIterator]();
