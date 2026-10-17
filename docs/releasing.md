@@ -177,7 +177,8 @@ local pack checksum, not a published release checksum. Never merge it to tap
 main. Published tarball verification is a deferred finalization gate; local
 packing does not prove registry availability or provenance. Nothing else waits
 for the tap merge. `scripts/publish-homebrew-tap.sh` updates an explicit tap
-checkout and commits the generated formula; pushing is an explicit finalization
+checkout, compares the downloaded bytes before writing the formula, and commits
+the generated formula; pushing is an explicit finalization
 step. It follows the tap publisher checkout/commit/push convention.
 
 `task homebrew:test` creates a temporary tap, installs local CLI/library archives,
