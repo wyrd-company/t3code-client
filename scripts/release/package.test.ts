@@ -5,7 +5,7 @@
 import * as NodeFS from "node:fs";
 import * as NodeChildProcess from "node:child_process";
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { fake, fixture, manifest, run, tarball } from "./testSupport.ts";
+import { fake, fixture, manifest, run, tarball, write } from "./testSupport.ts";
 
 const roots: string[] = [];
 afterEach(() => {
@@ -15,7 +15,15 @@ function setup(unit = "t3code-lib", files: Record<string, string> = {}) {
   const root = fixture();
   roots.push(root);
   manifest(root, unit);
-  tarball(root, unit, files);
+  const surface = JSON.stringify({
+    tool: { name: "sample", mode: "non-interactive" },
+    commands: [{ name: "run" }],
+  });
+  if (unit === "t3code-cli") write(root, "docs/specifications/cli-surface.json", surface);
+  tarball(root, unit, {
+    ...(unit === "t3code-cli" ? { "commandSurface.json": surface } : {}),
+    ...files,
+  });
   const env = fake(root, "pnpm", "exit 0");
   return { root, env };
 }
@@ -100,6 +108,35 @@ describe("package boundary", () => {
       }),
     });
     expect(run(root, "verify-package.sh", ["t3code-cli", root], env).status).toBe(0);
+  });
+  it("rejects a packed CLI command surface that differs from the complete canonical source", () => {
+    const { root, env } = setup("t3code-cli", {
+      "dist/cli.js": "#!/usr/bin/env node",
+      "npm-shrinkwrap.json": JSON.stringify({
+        name: "@wyrd-company/t3code-cli",
+        version: "0.1.0",
+        packages: {},
+      }),
+      "commandSurface.json": JSON.stringify({ commands: [] }),
+    });
+    const result = run(root, "verify-package.sh", ["t3code-cli", root], env);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("Packed CLI command surface differs from canonical source.");
+  });
+  it("requires the command surface inside the CLI tarball", () => {
+    const { root, env } = setup("t3code-cli", {
+      "dist/cli.js": "#!/usr/bin/env node",
+      "npm-shrinkwrap.json": JSON.stringify({
+        name: "@wyrd-company/t3code-cli",
+        version: "0.1.0",
+        packages: {},
+      }),
+    });
+    NodeFS.unlinkSync(`${root}/archive/package/commandSurface.json`);
+    tarball(root, "t3code-cli");
+    const result = run(root, "verify-package.sh", ["t3code-cli", root], env);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("Package is missing package/commandSurface.json.");
   });
   it("refuses a publication tarball with a different version or private flag", () => {
     for (const override of [{ version: "0.2.0" }, { private: true }]) {

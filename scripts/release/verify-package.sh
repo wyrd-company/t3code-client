@@ -23,7 +23,7 @@ required=(package/package.json package/LICENSE package/README.md)
 if [[ "$unit" == t3code-lib ]]; then
   required+=(package/dist/index.js package/dist/index.d.ts)
 else
-  required+=(package/dist/cli.js package/npm-shrinkwrap.json)
+  required+=(package/dist/cli.js package/npm-shrinkwrap.json package/commandSurface.json)
 fi
 for file in "${required[@]}"; do
   if ! grep -qx "$file" <<<"$files"; then
@@ -36,6 +36,13 @@ if grep -E '^package/(src|test)/|\.test\.(js|d\.ts)$' <<<"$files" >&2; then
   exit 1
 fi
 if [[ "$unit" == t3code-cli ]]; then
+  tar -xOf "$tarball" package/commandSurface.json | node --input-type=module -e '
+    import assert from "node:assert/strict";
+    import * as fs from "node:fs";
+    const packed = JSON.parse(fs.readFileSync(0, "utf8"));
+    const canonical = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+    assert.deepEqual(packed, canonical, "Packed CLI command surface differs from canonical source.");
+  ' "$root/docs/specifications/cli-surface.json"
   tar -xOf "$tarball" package/npm-shrinkwrap.json | node --input-type=module -e '
     let input = "";
     for await (const chunk of process.stdin) input += chunk;
