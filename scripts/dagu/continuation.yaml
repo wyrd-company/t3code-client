@@ -1,0 +1,33 @@
+# ---
+# relationships:
+#   verifies: command-line
+# ---
+# Continuation retains the thread workspace; do not pass project-path.
+# Run under an isolated Dagu home with the packed consumer's bin directory on PATH.
+# The test launcher supplies these environment secret references in memory.
+type: graph
+params:
+  - THREAD: ""
+  - PROMPT: "Reply SAMPLE only."
+  - TIMEOUT: "120s"
+secrets:
+  - name: T3_TOKEN
+    provider: env
+    key: SAMPLE_T3_TOKEN
+  - name: T3_SERVER_URL
+    provider: env
+    key: SAMPLE_T3_SERVER_URL
+harnesses:
+  sample:
+    binary: t3c
+    prefix_args: [run]
+    prompt_mode: stdin
+steps:
+  - id: subject
+    action: harness.run
+    with:
+      provider: sample
+      model: gpt-6-luna
+      thread: "${params.THREAD}"
+      timeout: "${params.TIMEOUT}"
+      prompt: "${params.PROMPT}"
