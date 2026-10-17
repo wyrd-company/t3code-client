@@ -62,6 +62,26 @@ it("requires matching lifecycle identities, native process absence and home remo
       await expect(verifyServerEvidence(root)).rejects.toThrow();
       await write(phase, phases[phase]);
     }
+    await write("ready", { ...phases.ready, platform: "darwin", ownedProcesses: [] });
+    await write("stopped", { ...phases.stopped, ownedProcesses: [] });
+    await expect(verifyServerEvidence(root)).rejects.toThrow();
+    await write("ready", phases.ready);
+    await write("stopped", phases.stopped);
+    // Both snapshots can agree on an incomplete roster; require the native server too.
+    await write("ready", { ...phases.ready, ownedProcesses: [identities[0]] });
+    await write("stopped", {
+      ...phases.stopped,
+      ownedProcesses: [{ ...identities[0], absent: true }],
+    });
+    await expect(verifyServerEvidence(root)).rejects.toThrow("Native server identity missing");
+    await write("ready", phases.ready);
+    await write("stopped", phases.stopped);
+    await NodeFSP.writeFile(
+      NodePath.join(root, "orphan-started.json"),
+      JSON.stringify({ pid: 999 }),
+    );
+    await expect(verifyServerEvidence(root)).rejects.toThrow();
+    await NodeFSP.rm(NodePath.join(root, "orphan-started.json"));
     await NodeFSP.rm(NodePath.join(root, "sample-stopped.json"));
     await expect(verifyServerEvidence(root)).rejects.toThrow();
     await NodeFSP.rm(NodePath.join(root, "sample-ready.json"));
