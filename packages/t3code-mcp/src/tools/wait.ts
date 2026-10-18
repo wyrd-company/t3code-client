@@ -29,8 +29,8 @@ export async function waitForThreads(input: WaitInput, context: ToolContext): Pr
   const combined = AbortSignal.any([signal, controller.signal]);
   const views: (
     | ReturnType<typeof projectionView>
-    | { server: string; threadId: string; settled: false; status: "unknown" }
-  )[] = refs.map((ref) => ({ ...ref, settled: false, status: "unknown" }));
+    | { server: string; threadId: string; done: false; status: "unknown" }
+  )[] = refs.map((ref) => ({ ...ref, done: false, status: "unknown" }));
   let finish!: (timedOut: boolean) => void;
   let fail!: (error: unknown) => void;
   const completed = new Promise<boolean>((resolve, reject) => {
@@ -59,7 +59,7 @@ export async function waitForThreads(input: WaitInput, context: ToolContext): Pr
         projection = applyThreadEvent(projection, item.event);
       if (!projection) continue;
       views[index] = projectionView(ref.server, projection);
-      const states = views.map((view) => view.settled);
+      const states = views.map((view) => view.done);
       if (input.until === "all" ? states.every(Boolean) : states.some(Boolean)) finish(false);
     }
     if (!combined.aborted)
@@ -87,7 +87,7 @@ export async function waitForThreads(input: WaitInput, context: ToolContext): Pr
 export const waitTools = [
   tool(
     "thread_wait",
-    "Wait across threads on one or more servers until any/all have a terminal latest run or pending request. threads contains {server,threadId}; server may use the configured default. until defaults to all. timeoutMs defaults to 45000, maximum 600000. Timeout returns timedOut:true without interrupting work; call again. Cancellation ends only this wait. Progress is sent every 15s when requested. Read results with thread_read or answer pending requests.",
+    "Wait across threads on one or more servers until any/all return done:true (terminal latest run or pending request). threads contains {server,threadId}; server may use the configured default. until defaults to all. timeoutMs defaults to 45000, maximum 600000. Timeout returns timedOut:true without interrupting work; call again. Cancellation ends only this wait. Progress is sent every 15s when requested. Read results with thread_read or answer pending requests.",
     true,
     {
       server: serverArg,

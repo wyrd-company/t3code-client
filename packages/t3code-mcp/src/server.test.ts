@@ -3,6 +3,7 @@
 //   verifies: mcp
 // ---
 import { afterEach, expect, it, vi } from "vite-plus/test";
+import { T3HttpError, T3RpcError } from "@wyrd-company/t3code-lib";
 import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
 import { harness, projection } from "../test/support/fakes.ts";
@@ -12,8 +13,11 @@ afterEach(async () => {
   vi.useRealTimers();
   await Promise.all(closers.splice(0).map((close) => close()));
 });
-async function connected(state = projection()) {
-  const h = harness({}, state);
+async function connected(
+  state = projection(),
+  env: NodeJS.ProcessEnv = { SAMPLE_TOKEN: "sample-credential" },
+) {
+  const h = harness({}, state, env);
   const server = createServer(h.registry);
   const client = new Client({ name: "sample-client", version: "0.0.0" });
   const [clientWire, serverWire] = InMemoryTransport.createLinkedPair();
@@ -73,3 +77,44 @@ it("propagates SDK request cancellation to upstream watches", async () => {
   await cancelled;
   await vi.waitFor(() => expect(h.threads.watch.mock.calls[0]![1].signal.aborted).toBe(true));
 });
+
+it.each(["http", "rpc"])(
+  "redacts configured and shaped credentials from %s MCP errors",
+  async (kind) => {
+    const h = await connected(projection(), {
+      SAMPLE_TOKEN: "sample-credential",
+      PEER_TOKEN: "sample-peer-credential",
+    });
+    h.registry.config.servers["beta"] = { url: "https://other.example", tokenEnv: "PEER_TOKEN" };
+    const text =
+      "Echo sample-credential sample-peer-credential Bearer sample-bearer access_token=sample-token apiKey: sample-key";
+    h.threads.detail.mockRejectedValue(
+      kind === "http"
+        ? new T3HttpError(text, {
+            status: 500,
+            method: "GET",
+            path: "/sample",
+            body: { reason: text },
+          })
+        : new T3RpcError("sample", { _tag: "unknown", message: text }),
+    );
+    const result = await h.client.callTool({
+      name: "thread_read",
+      arguments: { server: "alpha", threadId: "thread-1" },
+    });
+    expect(result.isError).toBe(true);
+    const serialized = JSON.stringify(result);
+    for (const secret of [
+      "sample-credential",
+      "sample-peer-credential",
+      "sample-bearer",
+      "sample-token",
+      "sample-key",
+    ])
+      expect(serialized).not.toContain(secret);
+    expect(serialized).toContain("[redacted]");
+    expect(JSON.parse((result.content as { text: string }[])[0]!.text)).toEqual(
+      result.structuredContent,
+    );
+  },
+);

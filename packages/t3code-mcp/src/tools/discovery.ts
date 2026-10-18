@@ -4,12 +4,49 @@
 // ---
 import { z } from "zod";
 import { runtimeModes } from "../config/schema.ts";
-import { toToolError } from "../errors.ts";
+import { ToolError } from "../errors.ts";
+import type { Registry } from "../servers/registry.ts";
 import { tool, serverArg, pageArgs, page } from "./spec.ts";
+export const PROBE_DEADLINE_MS = 5000;
+async function probe(registry: Registry, server: string, signal: AbortSignal) {
+  const controller = new AbortController();
+  const combined = AbortSignal.any([signal, controller.signal]);
+  let abort!: () => void;
+  const cancelled = new Promise<never>((_, reject) => {
+    abort = () => reject(combined.reason);
+    combined.addEventListener("abort", abort, { once: true });
+    if (combined.aborted) abort();
+  });
+  const timeout = setTimeout(
+    () =>
+      controller.abort(
+        new ToolError("server_unreachable", "Server probe exceeded the 5 s deadline."),
+      ),
+    PROBE_DEADLINE_MS,
+  );
+  try {
+    return await Promise.race([
+      (async () => {
+        const client = await registry.client(server, "server_list");
+        combined.throwIfAborted();
+        const [environment] = await Promise.all([
+          client.server.environment(combined),
+          client.server.getConfig(combined),
+        ]);
+        return environment;
+      })(),
+      cancelled,
+    ]);
+  } finally {
+    clearTimeout(timeout);
+    combined.removeEventListener("abort", abort);
+    controller.abort();
+  }
+}
 export const discoveryTools = [
   tool(
     "server_list",
-    "List configured servers. With probe:true, check each server's reachability, version and environment independently. Start cross-server dispatch here, then use server_capabilities.",
+    "List configured servers. With probe:true, check each server's reachability, version and environment independently with a 5 s per-server deadline. Start cross-server dispatch here, then use server_capabilities.",
     true,
     { probe: z.boolean().default(false) },
     async (args, { registry, signal }) => ({
@@ -18,14 +55,10 @@ export const discoveryTools = [
           const base = { server, ...("profile" in entry ? { profile: entry.profile } : {}) };
           if (!args.probe) return base;
           try {
-            const client = await registry.client(server, "server_list");
-            const [environment] = await Promise.all([
-              client.server.environment(signal),
-              client.server.getConfig(signal),
-            ]);
+            const environment = await probe(registry, server, signal);
             return { ...base, reachable: true, version: environment.serverVersion, environment };
           } catch (error) {
-            const failure = toToolError(error);
+            const failure = await registry.error(error);
             return {
               ...base,
               reachable: false,

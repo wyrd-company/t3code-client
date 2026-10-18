@@ -68,7 +68,9 @@ proposed-design:
 
     A config file may also define a server by URL with a token taken from a
     named environment variable. This serves plugin and CI installs that have no
-    profile directory. The file never contains a token.
+    profile directory. The file never contains a token. Server URLs are HTTP(S)
+    origins: no userinfo, non-root path, query or fragment. Token environment
+    values are trimmed before use.
 
     ```json
     {
@@ -94,7 +96,8 @@ proposed-design:
 
     Clients open lazily on a server's first call and close when the MCP session
     ends. The library reconnects a dropped socket. A failed open does not stop
-    other servers.
+    other servers. Probes have a 5 s per-server deadline covering client acquisition
+    and upstream reads; expiry reports unreachable with a deadline reason.
   configuration-precedence: |
     Flags override environment variables, which override the config file.
 
@@ -124,7 +127,11 @@ proposed-design:
     `allowTools` and `denyTools` apply the same matching at call time and fail
     with `tool_denied`. Per-server `maxRuntimeMode` refuses launches and sends
     that request a broader runtime mode (`runtime_mode_denied`); a launch
-    without a runtime mode on such a server uses the cap. Mode breadth order:
+    without a runtime mode on such a server uses the cap. Every capped send
+    supplies an explicit runtime mode: a requested mode within the cap, otherwise
+    the observed thread mode bounded to the cap. The library sets mode and sends
+    the message as two commands, so a concurrent peer can change mode between them.
+    Mode breadth order:
     `approval-required` < `auto-accept-edits` < `auto` < `full-access`.
 
     `t3code-mcp tools` prints the exposed set for the resolved configuration.
@@ -142,7 +149,7 @@ proposed-design:
     | `thread_read`             | yes       | thread state and a paginated timeline (`messages` or `activity` view)        |
     | `thread_launch`           | no        | create a thread with an optional first message and workspace strategy        |
     | `thread_send`             | no        | send a message: `auto`, `queue`, `steer` or `restart`                        |
-    | `thread_wait`             | yes       | wait for one or more threads, on any servers, until `any` or `all` settle     |
+    | `thread_wait`             | yes       | wait for one or more threads, on any servers, until `any` or `all` are done     |
     | `thread_interrupt`        | no        | interrupt the active or named run                                            |
     | `thread_update`           | no        | `rename`, `settle`, `unsettle`, `archive` or `unarchive`                     |
     | `pending_request_list`    | yes       | open questions and approvals of a thread                                     |
@@ -169,14 +176,18 @@ proposed-design:
 
     `thread_wait` returns when the condition holds or `timeoutMs` elapses
     (default 45 s so it returns inside Codex's default 60 s tool timeout,
-    maximum 10 min). A thread counts as settled when its latest run is terminal
-    or it has a pending request. A timeout does not interrupt work. When the
+    maximum 10 min). `done` is true when the latest run is terminal or the thread
+    has a pending request; an idle thread with no request has `done: false`.
+    `settled` always represents T3 Code's user/auto settle marker, independently
+    of `done`, in list, read, launch and wait results. A timeout does not interrupt
+    work. When the
     request carries a progress token, the tool sends a progress notification
     every 15 s. Cancellation of the MCP request ends the wait.
 
     `thread_read` reads the transcript through the library and falls back to the
     detail route as t3c does. Item text over `maxCharsPerItem` (default 4000) is
-    cut, and the result says so with the item id.
+    cut recursively across all payload strings except ids, type, status and
+    timestamps, and the result says so with the item id.
 
     Results are compact JSON in both `structuredContent` and one text block.
     Each result names its `server`. Thread references are `{server, threadId}`.
@@ -196,8 +207,9 @@ proposed-design:
     | `runtime_mode_denied` | requested runtime mode exceeds the server's cap         |
     | `upstream_error`      | any other library or server failure                     |
 
-    Messages never contain credentials; library errors pass through the
-    library's redaction.
+    Every forwarded error message redacts the configured token values of all
+    servers and bearer/token-shaped values locally. If a configured credential
+    cannot be loaded for redaction, upstream message text is withheld.
   command-line: |
     ```text
     t3code-mcp [serve] [options]          run the stdio MCP server (default)
@@ -214,7 +226,9 @@ proposed-design:
     and `.mcp.json`, which runs `node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js`. The
     Wyrd agent marketplace lists it with an npm source. The Codex plugin lives in
     the marketplace repository and runs the published package through `npx` at
-    a pinned version. Both use the server key `t3code-mcp` and read servers from
+    a pinned version. A committed Intentional JSON projection keeps the Claude
+    plugin manifest version equal to the npm package version. Both use the server
+    key `t3code-mcp` and read servers from
     t3c profiles or `T3CODE_MCP_CONFIG`.
   testing: |
     - Unit tests (`vp test`) cover config resolution, tool policy, view shaping

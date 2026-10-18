@@ -2,7 +2,7 @@
 // relationships:
 //   implements: mcp
 // ---
-import type { ThreadLaunchInput } from "@wyrd-company/t3code-lib";
+import type { ThreadLaunchInput, ProjectId } from "@wyrd-company/t3code-lib";
 import type { Registry, ServerClient } from "../servers/registry.ts";
 import { projectionView } from "../views/thread.ts";
 // Serialize concurrent retries in this MCP session. The server owns the
@@ -12,11 +12,15 @@ export async function launchOnce(
   registry: Registry,
   server: string,
   client: ServerClient,
-  input: ThreadLaunchInput,
+  input: Omit<ThreadLaunchInput, "projectId">,
+  resolveProject: () => Promise<ProjectId>,
   signal: AbortSignal,
 ): Promise<object> {
   if (input.threadId === undefined) {
-    const result = await client.threads.launch(input, signal);
+    const result = await client.threads.launch(
+      { ...input, projectId: await resolveProject() },
+      signal,
+    );
     return { ...projectionView(server, result.projection), resumed: result.resumed };
   }
   const key = JSON.stringify([server, input.threadId]);
@@ -43,7 +47,10 @@ export async function launchOnce(
     // Upstream reuseExistingThread claims an existing EMPTY thread; it is not
     // an upsert and cannot replay an initial message. Create with our stable id.
     try {
-      const result = await client.threads.launch(input, signal);
+      const result = await client.threads.launch(
+        { ...input, projectId: await resolveProject() },
+        signal,
+      );
       return { ...projectionView(server, result.projection), resumed: result.resumed };
     } catch (error) {
       if (signal.aborted) throw error;

@@ -35,7 +35,16 @@ export interface ProjectionView {
   status: string;
   runId: string | null;
   settled: boolean;
+  done: boolean;
   pendingRequests: object[];
+}
+function isSettled(
+  thread: Pick<OrchestrationV2ThreadShell, "settledOverride" | "settledAt">,
+): boolean {
+  return (
+    thread.settledOverride === "settled" ||
+    (thread.settledOverride !== "active" && thread.settledAt !== null)
+  );
 }
 export function threadView(server: string, thread: OrchestrationV2ThreadShell): ThreadView {
   return {
@@ -48,9 +57,7 @@ export function threadView(server: string, thread: OrchestrationV2ThreadShell): 
     latestRunId: thread.latestRunId,
     runtimeMode: thread.runtimeMode,
     modelSelection: thread.modelSelection,
-    settled:
-      thread.settledOverride === "settled" ||
-      (thread.settledOverride !== "active" && thread.settledAt !== null),
+    settled: isSettled(thread),
     archived: thread.archivedAt !== null,
     updatedAt: thread.updatedAt,
     branch: thread.branch,
@@ -82,7 +89,8 @@ export function projectionView(
     title: projection.thread.title,
     status: latest?.status ?? "idle",
     runId: latest?.id ?? null,
-    settled: pending.length > 0 || (latest !== undefined && isRunTerminalStatus(latest.status)),
+    settled: isSettled(projection.thread),
+    done: pending.length > 0 || (latest !== undefined && isRunTerminalStatus(latest.status)),
     pendingRequests: pending.map(requestView),
   };
 }
@@ -100,11 +108,8 @@ export function trimItem(
   if (value === null || typeof value !== "object") return { value, truncated: false };
   let truncated = false;
   const entries = Object.entries(value).map(([key, entry]) => {
-    const textField =
-      /^(text|markdown|explanation|input|output|prompt|message|summary|diffStr|oldStr|newStr|result|arguments|detail|command|question|description)$/.test(
-        key,
-      );
-    const cut = trimItem(entry, maxChars, Array.isArray(value) ? text : textField);
+    const identityField = /^(?:id|type|status|.*Id|.*Ids|.*At|timestamp)$/.test(key);
+    const cut = trimItem(entry, maxChars, Array.isArray(value) ? text : !identityField);
     truncated ||= cut.truncated;
     return [key, cut.value] as const;
   });

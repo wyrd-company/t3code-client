@@ -45,7 +45,7 @@ export const readTools = [
   ),
   tool(
     "thread_read",
-    "Read thread state, pending requests and a chronological paginated timeline. view:messages returns user/assistant text; activity includes tool and other rows. Long item text is cut at maxCharsPerItem (default 4000), with truncatedItemIds. Use after thread_wait to read the answer.",
+    "Read thread state (done is terminal latest run or pending request; settled is the user/auto marker), pending requests and a chronological paginated timeline. view:messages returns user/assistant text; activity includes tool and other rows. Payload strings are cut recursively except identity fields at maxCharsPerItem (default 4000), with truncatedItemIds. Use after thread_wait to read the answer.",
     true,
     {
       ...threadArgs,

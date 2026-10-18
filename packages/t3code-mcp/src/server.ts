@@ -6,7 +6,6 @@ import { McpServer, type CallToolResult } from "@modelcontextprotocol/server";
 import * as NodeModule from "node:module";
 import type { Registry } from "./servers/registry.ts";
 import { exposed } from "./policy/policy.ts";
-import { toToolError } from "./errors.ts";
 import { discoveryTools } from "./tools/discovery.ts";
 import { readTools } from "./tools/reads.ts";
 import { dispatchTools } from "./tools/dispatch.ts";
@@ -23,7 +22,7 @@ export const allTools = [
   ...waitTools,
 ];
 export const INSTRUCTIONS =
-  "Dispatch and communicate with threads on other T3 Code servers. Flow: server_list → server_capabilities → thread_launch → thread_wait → thread_read / pending_request_respond / thread_send. Name a server on each call when several are configured. Use explicit modelSelection from capabilities and retain clientRequestId for launch retries. A wait timeout leaves work running: wait again. A pending request settles a wait; answer it and wait again. Sends are not idempotent; read before retrying after a lost response.";
+  "Dispatch and communicate with threads on other T3 Code servers. Flow: server_list → server_capabilities → thread_launch → thread_wait → thread_read / pending_request_respond / thread_send. Name a server on each call when several are configured. Use explicit modelSelection from capabilities and retain clientRequestId for launch retries. A wait timeout leaves work running: wait again. A pending request satisfies a wait; answer it and wait again. Sends are not idempotent; read before retrying after a lost response.";
 export function jsonResult(value: object, isError = false): CallToolResult {
   return {
     content: [{ type: "text", text: JSON.stringify(value) }],
@@ -68,14 +67,14 @@ export function createServer(registry: Registry): McpServer {
                         params: {
                           progressToken: token,
                           progress: elapsedMs / 1000,
-                          message: "Waiting for threads to settle.",
+                          message: "Waiting for threads to report done.",
                         },
                       }),
                   }),
             }),
           );
         } catch (error) {
-          const failure = toToolError(error);
+          const failure = await registry.error(error);
           return jsonResult({ error: { code: failure.code, message: failure.message } }, true);
         }
       },

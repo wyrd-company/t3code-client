@@ -10,7 +10,7 @@ import {
   type T3ClientOptions,
 } from "@wyrd-company/t3code-lib";
 import type { McpConfig } from "../config/schema.ts";
-import { ToolError } from "../errors.ts";
+import { ToolError, toToolError } from "../errors.ts";
 import { assertAllowed } from "../policy/policy.ts";
 
 /** The tool seam is the public library facade; no protocol knowledge belongs here. */
@@ -19,6 +19,7 @@ export interface Registry {
   readonly config: McpConfig;
   resolve(server?: string): string;
   client(server: string, tool: string): Promise<ServerClient>;
+  error(error: unknown): Promise<ToolError>;
   close(): Promise<void>;
 }
 export class ServerRegistry implements Registry {
@@ -82,7 +83,27 @@ export class ServerRegistry implements Registry {
     const token = this.#env[key];
     if (!token?.trim())
       throw new ToolError("auth_invalid", "Configured token environment variable is unset.");
-    return token;
+    return token.trim();
+  }
+  async error(error: unknown): Promise<ToolError> {
+    try {
+      // Collect all configured credentials, including peers that have not opened.
+      const tokens = await Promise.all(
+        Object.entries(this.config.servers).map(async ([name, entry]) =>
+          "url" in entry
+            ? (this.#env[entry.tokenEnv]?.trim() ?? "")
+            : ((
+                await (
+                  await this.#profiles.resolveProfile(entry.profile ?? name)
+                ).credentials.load()
+              ).accessToken ?? ""),
+        ),
+      );
+      return toToolError(error, tokens);
+    } catch {
+      // Without a complete credential set, do not forward upstream text.
+      return new ToolError(toToolError(error).code, "The upstream operation failed.");
+    }
   }
   async close(): Promise<void> {
     this.#closed = true;

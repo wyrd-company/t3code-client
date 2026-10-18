@@ -49,7 +49,8 @@ Profile storage follows `T3C_CONFIG_HOME`, then XDG/home, as in t3c.
 An empty server entry selects the profile of the same name. A `profile` entry
 selects a different saved name. A URL entry requires `tokenEnv`: the named
 environment variable supplies an issued access token. Config files cannot
-contain tokens. URL credentials are rejected. Tools cannot change servers or
+contain tokens. URLs must be HTTP(S) origins with no userinfo, non-root path,
+query or fragment. Token environment values are trimmed. Tools cannot change servers or
 credentials. One server's failed connection does not prevent access to another.
 Clients open on first use and close when the MCP session ends.
 
@@ -65,10 +66,16 @@ wildcards cannot enable it. Read-only still removes it.
 Per-server allow and deny lists apply at call time. Deny wins and returns
 `tool_denied`. A `maxRuntimeMode` cap orders modes as `approval-required`,
 `auto-accept-edits`, `auto`, `full-access`. A launch without a mode uses the cap.
-A send without a mode checks the thread's current mode. A broader requested or
-inherited mode returns `runtime_mode_denied` before dispatch.
+Every capped send supplies an explicit mode: the requested mode within the cap,
+or the thread's observed mode bounded to the cap. A broader requested mode returns
+`runtime_mode_denied` before dispatch. The library sets mode and sends the message
+as separate commands; a concurrent peer can change mode between them.
 
 ```sh
 t3code-mcp tools --read-only
 t3code-mcp serve --server beta --allow-tools 'server_*,thread_*' --deny-tools thread_interrupt
 ```
+
+`server_list` with `probe:true` and `servers --probe` use a 5 second per-server
+probe deadline, including client acquisition and upstream reads. A deadline reports
+that server as `reachable:false` with a reason. Other servers remain independent.

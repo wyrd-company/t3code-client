@@ -21,7 +21,8 @@ export function cleanEnv(home: string): Record<string, string> {
     ...Object.fromEntries(
       Object.entries(process.env).filter(
         (entry): entry is [string, string] =>
-          entry[1] !== undefined && !/^(CLAUDE|CODEX_|AI_AGENT|T3_|T3CODE_|XDG_)/.test(entry[0]),
+          entry[1] !== undefined &&
+          ["PATH", "TMPDIR", "LANG", "LC_ALL", "LC_CTYPE"].includes(entry[0]),
       ),
     ),
     HOME: home,

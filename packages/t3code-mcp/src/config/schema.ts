@@ -22,7 +22,16 @@ const serverEntry = z.union([
   z.strictObject({
     url: z.url().refine((value) => {
       const url = new URL(value);
-      return ["http:", "https:"].includes(url.protocol) && !url.username && !url.password;
+      return (
+        ["http:", "https:"].includes(url.protocol) &&
+        !url.username &&
+        !url.password &&
+        url.pathname === "/" &&
+        !url.search &&
+        !url.hash &&
+        !value.includes("?") &&
+        !value.includes("#")
+      );
     }),
     tokenEnv: z.string().regex(/^[A-Za-z_][A-Za-z0-9_]*$/),
   }),
