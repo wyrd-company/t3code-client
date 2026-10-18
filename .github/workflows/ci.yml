@@ -34,10 +34,10 @@ jobs:
           run-install: true
 
       - name: Show Intentional status
-        uses: wyrd-company/intentional@25b97b64a994f6e3fb88d0e136ecb9f2589c384f # 0.1.6
+        uses: wyrd-company/intentional@1af42a8aadb58ee7e0a96eaf78ab515b4d5707c2 # 0.1.7
         with:
           command: status
-          intentional-version: "0.1.6"
+          intentional-version: "0.1.7"
 
       - name: Check release foundation
         run: |
