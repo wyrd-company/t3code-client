@@ -11,6 +11,7 @@ it.each(["open", "environment", "config"])(
   "bounds a hung %s while probing healthy peers",
   async (stage) => {
     vi.useFakeTimers();
+    expect(PROBE_DEADLINE_MS).toBe(5000);
     const healthy = fakeClient();
     const hung = fakeClient();
     const never = () => new Promise<never>(() => {});
