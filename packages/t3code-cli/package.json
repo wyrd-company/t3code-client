@@ -1,6 +1,6 @@
 {
   "name": "@wyrd-company/t3code-cli",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Node command-line client for stock T3 Code.",
   "homepage": "https://github.com/wyrd-company/t3code-client/tree/main/packages/t3code-cli#readme",
   "bugs": {
