@@ -10,6 +10,12 @@ import * as NodeUtil from "node:util";
 import { expect, it } from "vite-plus/test";
 
 const execFile = NodeUtil.promisify(NodeChildProcess.execFile);
+function childEnv(root: string): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...process.env, HOME: root, T3C_CONFIG_HOME: root };
+  delete env["NO_COLOR"];
+  delete env["FORCE_COLOR"];
+  return env;
+}
 
 it.each(["flag", "stdin"])("withholds pairing response text for a %s token", async (source) => {
   const root = await NodeFSP.mkdtemp("/tmp/mcp-pair-");
@@ -34,7 +40,7 @@ it.each(["flag", "stdin"])("withholds pairing response text for a %s token", asy
         `http://127.0.0.1:${address.port}`,
         ...(source === "flag" ? ["--token", pairing] : []),
       ],
-      { env: { ...process.env, HOME: root, T3C_CONFIG_HOME: root, SAMPLE_TOKEN: configured } },
+      { env: { ...childEnv(root), SAMPLE_TOKEN: configured } },
     );
     let stdout = "";
     let stderr = "";
@@ -92,7 +98,7 @@ it("exits servers --probe after a hung profile acquisition reaches its deadline"
     const result = await execFile(
       process.execPath,
       ["--import", loader, "dist/cli.js", "servers", "--probe", "--config", config],
-      { env: { ...process.env, HOME: root, T3C_CONFIG_HOME: root }, timeout: 8000 },
+      { env: childEnv(root), timeout: 8000 },
     );
     expect(JSON.parse(result.stdout)).toMatchObject({
       servers: [
