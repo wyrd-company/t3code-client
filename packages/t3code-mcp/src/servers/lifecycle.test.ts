@@ -46,13 +46,24 @@ it("evicts timed out acquisitions and retries without joining the old open", asy
     profiles: { resolveProfile },
     create: () => fake.client,
   });
-  const first = expect(registry.client("alpha", "thread_read")).rejects.toThrow("5 s deadline");
-  expect(SERVER_DEADLINE_MS).toBe(5000);
-  await vi.advanceTimersByTimeAsync(SERVER_DEADLINE_MS);
-  await first;
-  resolveProfile.mockImplementation(async () => connection());
-  expect(await registry.client("alpha", "thread_read")).toBe(fake.client);
-  await registry.close();
+  let failure: unknown;
+  const first = registry.client("alpha", "thread_read").catch((error: unknown) => {
+    failure = error;
+  });
+  try {
+    expect(SERVER_DEADLINE_MS).toBe(5000);
+    await vi.advanceTimersByTimeAsync(SERVER_DEADLINE_MS);
+    expect(failure).toMatchObject({
+      code: "server_unreachable",
+      message: "Server acquisition exceeded the 5 s deadline.",
+    });
+    await first;
+    resolveProfile.mockImplementation(async () => connection());
+    expect(await registry.client("alpha", "thread_read")).toBe(fake.client);
+  } finally {
+    await registry.close();
+    await first;
+  }
   expect(fake.close).toHaveBeenCalledTimes(1);
   expect(vi.getTimerCount()).toBe(0);
 });
