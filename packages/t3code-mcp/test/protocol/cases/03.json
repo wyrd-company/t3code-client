@@ -1,0 +1,16 @@
+{
+  "name": "allow deny glob filters",
+  "flags": [
+    "--allow-tools",
+    "thread_*,server_*",
+    "--deny-tools",
+    "thread_send,thread_launch,thread_update,thread_interrupt"
+  ],
+  "expectedTools": [
+    "server_list",
+    "server_capabilities",
+    "thread_list",
+    "thread_read",
+    "thread_wait"
+  ]
+}

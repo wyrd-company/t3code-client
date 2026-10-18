@@ -53,7 +53,7 @@ jobs:
     timeout-minutes: 15
     strategy:
       matrix:
-        unit: [t3code-lib, t3code-cli]
+        unit: [t3code-lib, t3code-cli, t3code-mcp]
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -77,4 +77,5 @@ jobs:
           pnpm --filter "@wyrd-company/$UNIT" run typecheck
           pnpm --filter "@wyrd-company/$UNIT" run test
           pnpm --filter "@wyrd-company/$UNIT" run test:live
+          pnpm --filter "@wyrd-company/$UNIT" --if-present run test:protocol
           pnpm --filter "@wyrd-company/$UNIT" run package

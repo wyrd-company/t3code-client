@@ -1,0 +1,5 @@
+{
+  "name": "explicit approval opt-in",
+  "flags": ["--allow-tools", "server_list,approval_respond"],
+  "expectedTools": ["server_list", "approval_respond"]
+}

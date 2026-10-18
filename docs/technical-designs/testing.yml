@@ -8,6 +8,7 @@ relationships:
     - library
     - command-line
     - composition
+    - mcp
     - releasing
     - library-testing
 proposed-design:
@@ -18,6 +19,7 @@ proposed-design:
   quality-gates: |
     `task check` runs release-intent validation, workspace formatting/linting,
     typechecks, unit tests, pinned-server live tests and local pack/consumer checks.
+    `task mcp:check` runs MCP static, unit, protocol, two-server live and package gates;
     `task lib:check` runs library gates; `task cli:check` runs the CLI build, lint, typecheck, unit, live and package gates.
     Registered placeholder commands do not count as implementation evidence.
 
@@ -217,3 +219,22 @@ proposed-design:
     server and removes owned server/profile/project/Dagu roots. The readiness
     roster has the lifecycle-evidence-scope limit above. Shared Dagu workflows,
     services and operational server state are outside the verification boundary.
+  mcp-verification: |
+    `task mcp:test:protocol` builds the stdio server and runs declarative cases
+    through the official MCP client. The deterministic MIT response validator
+    and regression cases are vendored from r-huijts/mcp-server-tester at
+    1a6d95de73e0c0fe118ef15132bc2e921437d723; no LLM generator is included.
+    Cases verify initialization, exposed tool sets, JSON schemas and error results.
+    The reusable runner also checks the live pair.
+
+    `task mcp:test:live` starts two pinned t3 0.1.0 servers with distinct HOME,
+    data and workspace directories under /tmp, issues access tokens, and connects
+    a built MCP process through tokenEnv config. Discovery, project ensure, idle
+    launch reuse, metadata updates, errors and protocol cases need no agent turns.
+    With T3_LIVE_AGENT=1, gpt-6-luna runs on both servers, multi-server waits and
+    follow-up messages complete, and an agent on the first server dispatches to
+    the second through its registered t3code-mcp tools. Tests independently read
+    the remote thread to verify its answer. Required provider authentication is
+    copied into temporary homes; operational MCP registrations are excluded.
+    Owned process groups are stopped and owned temporary directories removed in
+    teardown, including partial startup failures. No operational server is selected.

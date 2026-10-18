@@ -1,0 +1,69 @@
+{
+  "name": "default tool discovery and stable error envelopes",
+  "expectedTools": [
+    "server_list",
+    "server_capabilities",
+    "project_list",
+    "thread_list",
+    "thread_read",
+    "thread_wait",
+    "pending_request_list",
+    "project_ensure",
+    "thread_launch",
+    "thread_send",
+    "thread_interrupt",
+    "thread_update",
+    "pending_request_respond"
+  ],
+  "calls": [
+    {
+      "name": "server_list",
+      "status": "success"
+    },
+    {
+      "name": "thread_read",
+      "args": {
+        "threadId": "sample"
+      },
+      "status": "error",
+      "code": "server_required"
+    },
+    {
+      "name": "thread_read",
+      "args": {
+        "server": "absent",
+        "threadId": "sample"
+      },
+      "status": "error",
+      "code": "server_unknown"
+    },
+    {
+      "name": "thread_launch",
+      "args": {
+        "server": "alpha",
+        "modelSelection": {
+          "instanceId": "sample-provider",
+          "model": "sample-model"
+        }
+      },
+      "status": "error",
+      "code": "invalid_input"
+    },
+    {
+      "name": "thread_read",
+      "args": {
+        "server": "alpha",
+        "threadId": "sample"
+      },
+      "status": "error",
+      "code": "auth_invalid"
+    },
+    {
+      "name": "thread_wait",
+      "args": {
+        "threads": []
+      },
+      "status": "error"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+# relationships:
+#   references: mcp
+name: t3code-mcp
+tagline: Dispatch agents across your T3 Code servers.
+blurb: >-
+  Stdio MCP tools to discover remote servers, start threads, send messages,
+  wait across environments and read answers through shared t3c profiles.
+category: Development
+language: TypeScript
+status: preview
+repo: https://github.com/wyrd-company/t3code-client
+install:
+  - label: npm
+    command: npm install -g @wyrd-company/t3code-mcp
+  - label: Claude plugin marketplace
+    command: /plugin install t3code-mcp
+  - label: Codex plugin marketplace
+    command: Install t3code-mcp from the Wyrd plugin marketplace in Codex.

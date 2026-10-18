@@ -7,7 +7,7 @@ set -euo pipefail
 tarball="$(realpath "${1:?tarball is required}")"
 unit="${2:-t3code-lib}"
 case "$unit" in
-  t3code-lib|t3code-cli) ;;
+  t3code-lib|t3code-cli|t3code-mcp) ;;
   *) echo "Unknown release unit $unit." >&2; exit 1 ;;
 esac
 typescript="${CONSUMER_TYPESCRIPT:-typescript@5.9}"
@@ -16,6 +16,29 @@ trap 'rm -rf "$consumer"' EXIT
 
 cd "$consumer"
 printf '{ "name": "consumer", "private": true, "type": "module" }\n' > package.json
+if [[ "$unit" == t3code-mcp ]]; then
+  library="$(realpath "${3:?MCP verification requires the library tarball}")"
+  npm install --silent --no-audit --no-fund "$library" "$tarball" "$typescript" "@types/node@24"
+  ./node_modules/.bin/t3code-mcp --version
+  # shellcheck disable=SC2016 # JavaScript template literals stay literal.
+  node --input-type=module -e '
+    const mcp = await import("@wyrd-company/t3code-mcp");
+    for (const name of ["createServer", "loadConfig", "ServerRegistry"])
+      if (typeof mcp[name] !== "function") throw new Error(`Missing public export ${name}.`);
+  '
+  cat > index.ts <<'TS'
+import { createServer, ServerRegistry, type McpConfig } from "@wyrd-company/t3code-mcp";
+export const config: McpConfig = { servers: {}, allowTools: ["*"], denyTools: [], readOnly: false, serverPolicies: {} };
+export const server = createServer(new ServerRegistry(config));
+TS
+  for resolution in "NodeNext NodeNext" "ESNext Bundler"; do
+    read -r module moduleResolution <<<"$resolution"
+    npx tsc --noEmit --strict --skipLibCheck false --types node --target ES2022 \
+      --module "$module" --moduleResolution "$moduleResolution" index.ts
+  done
+  echo "MCP consumer check passed for $(basename "$tarball")."
+  exit 0
+fi
 if [[ "$unit" == t3code-cli ]]; then
   # The library tarball avoids relying on first-publication ordering.
   library="$(realpath "${3:?CLI verification requires the library tarball}")"

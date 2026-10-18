@@ -1,13 +1,14 @@
 $schema: https://refinery.systems/ontology/technical-design
 title: Independent package release and publication pipeline
 objective:
-  Build, verify and publish independent library and CLI release units with saved-plan agreement
+  Build, verify and publish independent library, CLI and MCP release units with saved-plan agreement
   and reproducible package artifacts.
 relationships:
   references:
     - testing
     - library
     - command-line
+    - mcp
 proposed-design:
   high-level-overview: Intentional owns independent package versions and release records. Release
     validates and applies one saved plan; Publish verifies the selected record and distributes the
@@ -21,6 +22,7 @@ proposed-design:
     | ------------ | ---------------------------------- | -------------------------- | ------------------ |
     | `t3code-lib` | `packages/t3code-lib/package.json` | `@wyrd-company/t3code-lib` | `t3code-lib@X.Y.Z` |
     | `t3code-cli` | `packages/t3code-cli/package.json` | `@wyrd-company/t3code-cli` | `t3code-cli@X.Y.Z` |
+    | `t3code-mcp` | `packages/t3code-mcp/package.json` | `@wyrd-company/t3code-mcp` | `t3code-mcp@X.Y.Z` |
 
     The root CHANGELOG.md and `t3code-client@*` tags are historical records for the
     retired package. Keep them intact. Bob owns deprecation of the old npm name.
@@ -79,13 +81,13 @@ proposed-design:
     Release checks main, validates intents, runs the checks, saves the canonical
     plan and verifies the exact record set and public package identities. It
     recomputes and compares the plan immediately before apply. After apply it updates
-    the pnpm lockfile, builds both units and regenerates the CLI shrinkwrap with
+    the pnpm lockfile, builds all units and regenerates the CLI shrinkwrap with
     the applied package versions. It checks formatting, commits the projections and consumed
     intents, and creates records from the saved plan. The commit and selected records
     are pushed atomically. App credentials start the downstream Publish workflows.
     A concurrent main update makes the push fail; nothing is force-pushed.
   publication: |
-    **Publish** responds to either unit's annotated record. It verifies the record
+    **Publish** responds to a unit's annotated record. It verifies the record
     identity, version, annotation, checked-out head and main ancestry. It checks
     and packs only the selected unit. A library tarball contains compiled JavaScript
     and declarations, LICENSE and README, with no source or tests. The consumer gate
@@ -156,7 +158,7 @@ proposed-design:
 
     1. Bob tests and merges the client epic PR, then the epic retrospective completes.
     2. During staged finalization establish main baseline records, dispatch Release
-       for both units and publish both npm units. This first publication is
+       for all units and publish both npm units. This first publication is
        pre-approved; notify Bob through Pushover after it runs.
     3. Download the published CLI npm tarball. Regenerate the tap formula from those
        exact bytes and the npm tarball URL; verify the URL and SHA256. The tap epic
@@ -182,3 +184,11 @@ proposed-design:
     upgrade or remove existing dependency kegs to validate a local formula.
   library-release-identity: |
     The library release unit is `t3code-lib`, its manifest is `packages/t3code-lib/package.json`, and its changelog is `packages/t3code-lib/CHANGELOG.md`. The root historical changelog belongs to the retired package.
+  mcp-publication: |
+    The MCP unit packs compiled JavaScript and declarations, its executable,
+    Claude plugin manifests, LICENSE and README. Its workspace library dependency
+    is rewritten to the library version at packing. Consumer verification installs
+    both local tarballs, imports the package root, typechecks NodeNext and Bundler
+    consumers, and runs `t3code-mcp --version`. Protocol cases run in CI, Release
+    and selected Publish checks. MCP release records publish
+    `packages/t3code-mcp/docs` through the SHA-pinned wyrd.foo v1 action.

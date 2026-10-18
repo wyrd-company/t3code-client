@@ -6,8 +6,8 @@ objective: >-
 relationships:
   related-to:
     - library
-    - profiles
   references:
+    - profiles
     - testing
     - releasing
     - composition
@@ -154,8 +154,14 @@ proposed-design:
     required because there is no calling thread to inherit from. The workspace
     strategy is `root`, `existing_worktree` or `worktree`, as in T3 Code.
     `clientRequestId` makes a launch idempotent: the thread id is a UUID v5 of
-    the server name and the request id, and the launch reuses an existing
-    thread with that id.
+    the server name and the request id. The tool reads that identity first and
+    returns an existing thread untouched, including its initial message. A fresh
+    launch supplies that thread id with `reuseExistingThread: false`; the
+    upstream flag claims an existing empty thread rather than performing an
+    upsert. Concurrent retries in one MCP session are serialized per identity.
+    A lost launch receipt or a create won by another MCP session is recovered
+    by reading the persisted thread identity. No command receipts or credentials
+    are persisted by the MCP package.
 
     `thread_send` maps modes onto library turn delivery. A send cannot be made
     idempotent with the current library surface; after a lost response, read the
