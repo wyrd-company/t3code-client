@@ -1,6 +1,6 @@
 # ---
 # relationships:
-#   implements: [library, command-line]
+#   implements: [library, command-line, mcp]
 # ---
 version: "3"
 
@@ -8,6 +8,9 @@ includes:
   lib:
     taskfile: packages/t3code-lib/Taskfile.yml
     dir: packages/t3code-lib
+  mcp:
+    taskfile: packages/t3code-mcp/Taskfile.yml
+    dir: packages/t3code-mcp
   cli:
     taskfile: packages/t3code-cli/Taskfile.yml
     dir: packages/t3code-cli
@@ -73,5 +76,6 @@ tasks:
       - task: lib:docs:check
       - task: cli:docs:check
       - task: test
+      - task: mcp:test:protocol
       - task: test:live
       - task: package

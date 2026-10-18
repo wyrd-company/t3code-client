@@ -1,0 +1,34 @@
+# ---
+# relationships:
+#   implements: mcp
+# ---
+version: "3"
+tasks:
+  install:
+    cmds: [pnpm install]
+  build:
+    cmds: [pnpm run build]
+  fmt:
+    cmds: [pnpm run fmt]
+  lint:
+    cmds: [pnpm run check]
+  typecheck:
+    cmds: [pnpm run typecheck]
+  test:
+    cmds: [pnpm run test]
+  test:protocol:
+    desc: Verify declarative MCP cases over stdio
+    cmds: [pnpm run build, pnpm run test:protocol]
+  test:live:
+    desc: Test two isolated pinned T3 servers
+    cmds: [pnpm run build, pnpm run test:live]
+  package:
+    cmds: [pnpm run package]
+  check:
+    cmds:
+      - task: lint
+      - task: typecheck
+      - task: test
+      - task: test:protocol
+      - task: test:live
+      - task: package

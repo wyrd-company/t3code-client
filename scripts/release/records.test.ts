@@ -22,12 +22,17 @@ function command(root: string, bin: string, args: string[]) {
 function setup() {
   const root = fixture();
   roots.push(root);
+  NodeFS.symlinkSync(
+    NodePath.resolve(import.meta.dirname, "../../node_modules"),
+    NodePath.join(root, "node_modules"),
+    "dir",
+  );
   write(
     root,
     ".intentional/config.yml",
     NodeFS.readFileSync(new URL("../../.intentional/config.yml", import.meta.url), "utf8"),
   );
-  for (const unit of ["t3code-lib", "t3code-cli"])
+  for (const unit of ["t3code-lib", "t3code-cli", "t3code-mcp"])
     write(
       root,
       `packages/${unit}/package.json`,
@@ -106,14 +111,14 @@ describe("Intentional record agreement", () => {
   });
   it("creates ephemeral zero baselines without tagging the source repository", () => {
     const root = setup();
-    command(root, "git", ["tag", "-d", "t3code-lib@0.0.0", "t3code-cli@0.0.0"]);
+    command(root, "git", ["tag", "-d", "t3code-lib@0.0.0", "t3code-cli@0.0.0", "t3code-mcp@0.0.0"]);
     const result = run(root, "check-intents.sh");
     expect(result.status, result.stderr).toBe(0);
     expect(command(root, "git", ["tag", "--list"]).trim()).toBe("");
   });
   it("refuses missing authoritative history at a nonzero version", () => {
     const root = setup();
-    command(root, "git", ["tag", "-d", "t3code-lib@0.0.0", "t3code-cli@0.0.0"]);
+    command(root, "git", ["tag", "-d", "t3code-lib@0.0.0", "t3code-cli@0.0.0", "t3code-mcp@0.0.0"]);
     write(
       root,
       "packages/t3code-lib/package.json",
@@ -150,4 +155,15 @@ describe("Intentional record agreement", () => {
     command(root, "git", ["push", "--quiet", "origin", "refs/tags/t3code-lib@0.2.0"]);
     expect(run(root, "verify-release-tag.sh", ["t3code-lib@0.2.0"]).status).not.toBe(0);
   });
+});
+
+it("adds an ephemeral new-unit baseline without re-baselining released units", () => {
+  const root = setup();
+  release(root);
+  command(root, "git", ["tag", "-d", "t3code-mcp@0.0.0"]);
+  const before = command(root, "git", ["rev-parse", "t3code-lib@0.1.0"]);
+  const checked = run(root, "check-intents.sh");
+  expect(checked.status, checked.stderr).toBe(0);
+  expect(command(root, "git", ["rev-parse", "t3code-lib@0.1.0"])).toBe(before);
+  expect(command(root, "git", ["tag", "--list", "t3code-mcp@*"]).trim()).toBe("");
 });

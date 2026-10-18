@@ -1,0 +1,5 @@
+{
+  "name": "wildcard cannot opt into approval",
+  "flags": ["--allow-tools", "approval_*"],
+  "expectedTools": []
+}

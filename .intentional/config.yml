@@ -11,6 +11,9 @@ discovery:
     - detector: npm-package
       path: packages/t3code-cli/package.json
       release-unit: t3code-cli
+    - detector: npm-package
+      path: packages/t3code-mcp/package.json
+      release-unit: t3code-mcp
 release-units:
   t3code-lib:
     path: packages/t3code-lib
@@ -24,6 +27,16 @@ release-units:
         template: '{id}@{version}'
   t3code-cli:
     path: packages/t3code-cli
+    projections:
+      - adapter: npm
+        file: package.json
+        mode: committed
+    tags:
+      primary:
+        role: primary
+        template: '{id}@{version}'
+  t3code-mcp:
+    path: packages/t3code-mcp
     projections:
       - adapter: npm
         file: package.json

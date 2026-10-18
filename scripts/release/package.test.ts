@@ -163,3 +163,26 @@ describe("package boundary", () => {
     expect(NodeFS.existsSync(`${root}/npm-invoked`)).toBe(false);
   });
 });
+
+describe("MCP package boundary", () => {
+  it("requires the plugin manifests, public module and executable without CLI shrinkwrap", () => {
+    const files = {
+      "dist/cli.js": "#!/usr/bin/env node",
+      ".claude-plugin/plugin.json": "{}",
+      ".mcp.json": "{}",
+    };
+    const accepted = setup("t3code-mcp", files);
+    expect(
+      run(accepted.root, "verify-package.sh", ["t3code-mcp", accepted.root], accepted.env).status,
+    ).toBe(0);
+    for (const missing of Object.keys(files)) {
+      const fixtureFiles = Object.fromEntries(
+        Object.entries(files).filter(([key]) => key !== missing),
+      );
+      const rejected = setup("t3code-mcp", fixtureFiles);
+      expect(
+        run(rejected.root, "verify-package.sh", ["t3code-mcp", rejected.root], rejected.env).status,
+      ).not.toBe(0);
+    }
+  });
+});

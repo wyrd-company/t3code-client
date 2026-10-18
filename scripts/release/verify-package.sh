@@ -22,6 +22,8 @@ files="$(tar -tzf "$tarball")"
 required=(package/package.json package/LICENSE package/README.md)
 if [[ "$unit" == t3code-lib ]]; then
   required+=(package/dist/index.js package/dist/index.d.ts)
+elif [[ "$unit" == t3code-mcp ]]; then
+  required+=(package/dist/index.js package/dist/index.d.ts package/dist/cli.js package/.claude-plugin/plugin.json package/.mcp.json)
 else
   required+=(package/dist/cli.js package/npm-shrinkwrap.json package/commandSurface.json)
 fi

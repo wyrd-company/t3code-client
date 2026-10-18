@@ -1,6 +1,6 @@
 name: Publish
 
-# Annotated `t3code-lib@X.Y.Z` and `t3code-cli@X.Y.Z` records start publication. Every
+# Annotated package release records start publication. Every
 # job is safe to rerun: an npm version or GitHub Release that already exists
 # is verified instead of recreated.
 
@@ -9,6 +9,7 @@ on:
     tags:
       - "t3code-lib@*"
       - "t3code-cli@*"
+      - "t3code-mcp@*"
 
 permissions: {}
 
@@ -20,7 +21,7 @@ jobs:
   build:
     name: Build and verify
     # The baseline record establishes release authority; it is not a release.
-    if: github.ref_name != 't3code-lib@0.0.0' && github.ref_name != 't3code-cli@0.0.0'
+    if: github.ref_name != 't3code-lib@0.0.0' && github.ref_name != 't3code-cli@0.0.0' && github.ref_name != 't3code-mcp@0.0.0'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -55,12 +56,13 @@ jobs:
           pnpm --filter "@wyrd-company/${GITHUB_REF_NAME%@*}" run typecheck
           pnpm --filter "@wyrd-company/${GITHUB_REF_NAME%@*}" run test
           pnpm --filter "@wyrd-company/${GITHUB_REF_NAME%@*}" run test:live
+          pnpm --filter "@wyrd-company/${GITHUB_REF_NAME%@*}" --if-present run test:protocol
 
       - name: Pack
         run: |
           unit="${GITHUB_REF_NAME%@*}"
           tarball="$(scripts/release/verify-package.sh "$unit" "$RUNNER_TEMP/package")"
-          if [[ "$unit" == t3code-cli ]]; then
+          if [[ "$unit" == t3code-cli || "$unit" == t3code-mcp ]]; then
             library="$(scripts/release/verify-package.sh t3code-lib "$RUNNER_TEMP/library")"
             scripts/release/verify-consumer.sh "$tarball" "$unit" "$library"
           else
@@ -150,5 +152,24 @@ jobs:
         uses: wyrd-company/wyrd.foo/.github/actions/publish-docs@v1
         with:
           docs-dir: docs
+          app-id: ${{ secrets.WYRD_TOOLS_DOCS_PUBLISHER_APP_ID }}
+          private-key: ${{ secrets.WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY }}
+
+  mcp-docs:
+    name: Publish MCP documentation
+    needs: [build, npm]
+    if: startsWith(github.ref_name, 't3code-mcp@')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Publish MCP documentation
+        uses: wyrd-company/wyrd.foo/.github/actions/publish-docs@fdb54b12e88eaf51a2b22714db63c80aba2ed88a # v1
+        with:
+          docs-dir: packages/t3code-mcp/docs
           app-id: ${{ secrets.WYRD_TOOLS_DOCS_PUBLISHER_APP_ID }}
           private-key: ${{ secrets.WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY }}

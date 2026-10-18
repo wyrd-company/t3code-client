@@ -23,11 +23,11 @@ describe("workflow agreements", () => {
     const paths = [...publish().matchAll(/path: (\$\{\{ runner.temp \}\}\/package)/g)];
     expect(paths).toHaveLength(3);
   });
-  it("publishes only the two new unit tag families", () => {
+  it("publishes only supported unit tag families", () => {
     const patterns = [...publish().matchAll(/^      - "([^"]+@\*)"$/gm)]
       .map((match) => match[1])
       .sort();
-    expect(patterns).toEqual(["t3code-cli@*", "t3code-lib@*"]);
+    expect(patterns).toEqual(["t3code-cli@*", "t3code-lib@*", "t3code-mcp@*"]);
   });
   it("uses one saved plan for validation, apply and record creation", () => {
     const workflow = release();
@@ -62,7 +62,7 @@ describe("release foundation wiring", () => {
     }
     expect(foundation).toContain("name: Show Intentional status");
     expect(matrix).toContain("needs: release-foundation");
-    expect(matrix).toContain("unit: [t3code-lib, t3code-cli]");
+    expect(matrix).toContain("unit: [t3code-lib, t3code-cli, t3code-mcp]");
   });
   it("checks package readiness before applying the saved release plan", () => {
     const workflow = release();
@@ -119,5 +119,23 @@ describe("package dependency build ordering", () => {
   it("builds the workspace before Release package checks", () => {
     const workflow = release();
     expect(workflow.indexOf("pnpm run build")).toBeLessThan(workflow.indexOf("pnpm run typecheck"));
+  });
+});
+
+describe("MCP release wiring", () => {
+  it("publishes package docs after npm and pins the v1 action", () => {
+    const job = publish().split("  mcp-docs:")[1]!;
+    expect(job).toContain("needs: [build, npm]");
+    expect(job).toContain("if: startsWith(github.ref_name, 't3code-mcp@')");
+    expect(job).toMatch(/publish-docs@[0-9a-f]{40} # v1/);
+    expect(job).toContain("docs-dir: packages/t3code-mcp/docs");
+  });
+  it("runs protocol cases at CI, release and selected publication gates", () => {
+    const ci = NodeFS.readFileSync(
+      new URL("../../.github/workflows/ci.yml", import.meta.url),
+      "utf8",
+    );
+    for (const text of [ci, release(), publish()]) expect(text).toContain("run test:protocol");
+    expect(publish()).toContain("github.ref_name != 't3code-mcp@0.0.0'");
   });
 });

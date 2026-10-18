@@ -5,6 +5,7 @@ relationships:
     - library
     - testing
     - releasing
+    - mcp
 ---
 
 # t3code-client workspace
@@ -18,6 +19,8 @@ Read `docs/technical-designs/testing.yml` and `docs/technical-designs/releasing.
 - `packages/t3code-lib`: npm `@wyrd-company/t3code-lib`, release unit `t3code-lib`.
 - `packages/t3code-cli`: npm `@wyrd-company/t3code-cli`, unit `t3code-cli`, binary
   `t3c`. Shared composition and handler ownership are in `docs/technical-designs/composition.yml`.
+- `packages/t3code-mcp`: npm `@wyrd-company/t3code-mcp`, unit `t3code-mcp`, binary
+  `t3code-mcp`. Contract: `docs/technical-designs/mcp.yml`.
 - `scripts/release`: shared unit-aware pack, validation and publication steps.
 - `.intentional`: independent unit projections and one pre-0.1.0 intent per unit.
 
@@ -40,5 +43,5 @@ pre-0.1.0 intent. Never hand-edit released versions or changelogs. Historical
 No authoritative baseline tags before epic finalization. `task check` uses a
 scratch repository for missing pre-release baselines, without tagging this repo.
 
-Run `task check` before handoff. Root verbs cover the workspace; `lib:*` and
-`cli:*` select a package. Registered commands without handlers explicitly fail.
+Run `task check` before handoff. Root verbs cover the workspace; `lib:*`,
+`cli:*` and `mcp:*` select a package. Registered commands without handlers explicitly fail.
