@@ -79,5 +79,5 @@ Malformed schema inputs are rejected by the MCP SDK as error results.
 Use `thread_read` to inspect uncertain dispatch outcomes before retrying mutations.
 
 Probing with `server_list` or `servers --probe` has a 5 second per-server deadline
-covering client acquisition and upstream reads. An expired probe reports
+covering client acquisition, upstream reads and error redaction. An expired probe reports
 `reachable:false` and a deadline reason.

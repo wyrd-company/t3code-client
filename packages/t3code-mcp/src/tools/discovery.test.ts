@@ -3,6 +3,7 @@
 //   verifies: mcp
 // ---
 import { afterEach, expect, it, vi } from "vite-plus/test";
+import { T3PreconditionError } from "@wyrd-company/t3code-lib";
 import { config, fakeClient } from "../../test/support/fakes.ts";
 import { ServerRegistry } from "../servers/registry.ts";
 import { discoveryTools, PROBE_DEADLINE_MS } from "./discovery.ts";
@@ -50,6 +51,42 @@ it.each(["open", "environment", "config"])(
         },
       ],
     });
+    expect(vi.getTimerCount()).toBe(0);
+  },
+);
+
+it.each(["profile-open", "error-redaction"])(
+  "keeps a hung %s inside the probe deadline",
+  async (stage) => {
+    vi.useFakeTimers();
+    const fake = fakeClient();
+    if (stage === "error-redaction")
+      fake.server.getConfig.mockRejectedValue(new T3PreconditionError("sample-private-value"));
+    const registry = new ServerRegistry(
+      config({
+        servers: {
+          alpha: { url: "https://server.example", tokenEnv: "SAMPLE_TOKEN" },
+          beta: {},
+        },
+      }),
+      {
+        env: { SAMPLE_TOKEN: "sample-credential" },
+        profiles: { resolveProfile: vi.fn(() => new Promise<never>(() => {})) },
+        create: () => fake.client,
+      },
+    );
+    const result = discoveryTools[0]!.run(
+      { probe: true },
+      { registry, signal: new AbortController().signal },
+    );
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(await result).toMatchObject({
+      servers: [
+        { server: "alpha", reachable: stage === "profile-open" },
+        { server: "beta", reachable: false, error: { code: "server_unreachable" } },
+      ],
+    });
+    expect(JSON.stringify(await result)).not.toContain("sample-private-value");
     expect(vi.getTimerCount()).toBe(0);
   },
 );
