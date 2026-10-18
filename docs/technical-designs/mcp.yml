@@ -96,8 +96,8 @@ proposed-design:
 
     Clients open lazily on a server's first call and close when the MCP session
     ends. The library reconnects a dropped socket. A failed open does not stop
-    other servers. Probes have a 5 s per-server deadline covering client acquisition
-    and upstream reads; expiry reports unreachable with a deadline reason.
+    other servers. Probes have a 5 s per-server deadline covering client acquisition,
+    upstream reads and error redaction; expiry reports unreachable with a deadline reason.
   configuration-precedence: |
     Flags override environment variables, which override the config file.
 

@@ -77,5 +77,5 @@ t3code-mcp serve --server beta --allow-tools 'server_*,thread_*' --deny-tools th
 ```
 
 `server_list` with `probe:true` and `servers --probe` use a 5 second per-server
-probe deadline, including client acquisition and upstream reads. A deadline reports
+probe deadline, including client acquisition, upstream reads and error redaction. A deadline reports
 that server as `reachable:false` with a reason. Other servers remain independent.

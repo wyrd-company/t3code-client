@@ -4,7 +4,7 @@
 // ---
 import { z } from "zod";
 import { runtimeModes } from "../config/schema.ts";
-import { ToolError } from "../errors.ts";
+import { ToolError, toToolError } from "../errors.ts";
 import type { Registry } from "../servers/registry.ts";
 import { tool, serverArg, pageArgs, page } from "./spec.ts";
 export const PROBE_DEADLINE_MS = 5000;
@@ -27,13 +27,17 @@ async function probe(registry: Registry, server: string, signal: AbortSignal) {
   try {
     return await Promise.race([
       (async () => {
-        const client = await registry.client(server, "server_list");
-        combined.throwIfAborted();
-        const [environment] = await Promise.all([
-          client.server.environment(combined),
-          client.server.getConfig(combined),
-        ]);
-        return environment;
+        try {
+          const client = await registry.client(server, "server_list");
+          combined.throwIfAborted();
+          const [environment] = await Promise.all([
+            client.server.environment(combined),
+            client.server.getConfig(combined),
+          ]);
+          return environment;
+        } catch (error) {
+          throw await registry.error(error);
+        }
       })(),
       cancelled,
     ]);
@@ -58,7 +62,7 @@ export const discoveryTools = [
             const environment = await probe(registry, server, signal);
             return { ...base, reachable: true, version: environment.serverVersion, environment };
           } catch (error) {
-            const failure = await registry.error(error);
+            const failure = toToolError(error);
             return {
               ...base,
               reachable: false,
