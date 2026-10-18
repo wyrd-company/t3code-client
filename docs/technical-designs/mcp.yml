@@ -101,9 +101,11 @@ proposed-design:
     startup credential loading and each probe (including upstream reads). Shutdown
     cancels acquisitions and closes acquired clients independently without joining
     abandoned opens; any client that arrives after abandonment is closed. Startup
-    loads each configured credential once for redaction; error formatting does no
-    I/O and withholds upstream text while the credential snapshot is incomplete
-    or unavailable. The library reconnects a dropped socket. A failed peer does
+    loads each configured credential once for unopened-peer redaction. Every
+    client credential store records all credential string values before returning
+    a load or starting a save, so replacements remain redacted. Error formatting
+    does no I/O and withholds upstream text until every server's credentials are
+    known. The library reconnects a dropped socket. A failed peer does
     not stop other servers. Probe expiry reports unreachable with a deadline reason.
   configuration-precedence: |
     Flags override environment variables, which override the config file.
@@ -190,7 +192,9 @@ proposed-design:
     of `done`, in list, read, launch and wait results. A timeout does not interrupt
     work. When the
     request carries a progress token, the tool sends a progress notification
-    every 15 s. Cancellation of the MCP request ends the wait.
+    every 15 s. Cancellation of the MCP request ends the wait. Completion aborts
+    watchers and clears timers without joining watcher promises; late failures
+    are observed and discarded, including non-cancellable credential reads.
 
     `thread_read` reads the transcript through the library and falls back to the
     detail route as t3c does. Item text over `maxCharsPerItem` (default 4000) is

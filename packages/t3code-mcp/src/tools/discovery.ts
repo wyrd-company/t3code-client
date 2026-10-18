@@ -24,6 +24,7 @@ async function probe(registry: Registry, server: string, signal: AbortSignal) {
       ),
     SERVER_DEADLINE_MS,
   );
+  timeout.unref();
   try {
     return await Promise.race([
       (async () => {

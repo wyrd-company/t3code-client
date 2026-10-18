@@ -13,7 +13,7 @@ import type { McpConfig } from "../config/schema.ts";
 import { ToolError } from "../errors.ts";
 import { assertAllowed } from "../policy/policy.ts";
 import { SERVER_DEADLINE_MS, withSignal } from "./acquisition.ts";
-import { CredentialSnapshot } from "./credentials.ts";
+import { CredentialRedactor } from "./credentials.ts";
 
 /** The tool seam is the public library facade; no protocol knowledge belongs here. */
 export type ServerClient = Pick<T3Client, "server" | "threads" | "projects" | "shell" | "close">;
@@ -37,7 +37,7 @@ export class ServerRegistry implements Registry {
   readonly #clients = new Map<string, ServerClient>();
   readonly #pending = new Map<string, Acquisition>();
   readonly #shutdown = new AbortController();
-  readonly #credentials: CredentialSnapshot;
+  readonly #credentials: CredentialRedactor;
   #closing: Promise<void> | undefined;
   #closed = false;
   constructor(
@@ -52,7 +52,7 @@ export class ServerRegistry implements Registry {
     this.#profiles = options.profiles ?? new ProfileManager();
     this.#env = options.env ?? process.env;
     this.#create = options.create ?? T3Client.create;
-    this.#credentials = new CredentialSnapshot(
+    this.#credentials = new CredentialRedactor(
       config,
       this.#profiles,
       this.#env,
@@ -131,7 +131,11 @@ export class ServerRegistry implements Registry {
           }
         : await this.#profiles.resolveProfile(entry.profile ?? name);
     signal.throwIfAborted();
-    return this.#create({ ...connection, clientLabel: "t3code-mcp" });
+    return this.#create({
+      ...connection,
+      credentials: this.#credentials.recording(name, connection.credentials),
+      clientLabel: "t3code-mcp",
+    });
   }
   #token(key: string): string {
     const token = this.#env[key];
