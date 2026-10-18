@@ -34,6 +34,7 @@ proposed-design:
     ```bash
     intentional add --release-unit t3code-lib:minor --message "Describe the library outcome."
     intentional add --release-unit t3code-cli:minor --message "Describe the CLI outcome."
+    intentional add --release-unit t3code-mcp:minor --message "Describe the MCP outcome."
     ```
 
     For later releases, an intent accompanies each consumer-visible change.
@@ -52,7 +53,7 @@ proposed-design:
     ```bash
     intentional tag --baseline --dry-run
     intentional tag --baseline
-    git push --atomic origin refs/tags/t3code-lib@0.0.0 refs/tags/t3code-cli@0.0.0
+    git push --atomic origin refs/tags/t3code-lib@0.0.0 refs/tags/t3code-cli@0.0.0 refs/tags/t3code-mcp@0.0.0
     intentional status
     intentional check
     intentional plan > release-plan.json
@@ -69,14 +70,14 @@ proposed-design:
 
     ```bash
     gh workflow run release.yml --ref main \
-      -f 'expected-records=t3code-lib@0.1.0 t3code-cli@0.1.0'
+      -f 'expected-records=t3code-lib@0.1.0 t3code-cli@0.1.0 t3code-mcp@0.1.0'
     ```
 
     Intentional applies the whole pending plan. It has no per-unit apply switch.
     Release compares the entire planned record set against the expected set and
     fails on any difference. To release only one unit, only that unit may be pending;
     name only its record. No unrelated unit is bumped implicitly. Versions are
-    independent even when a single dispatch releases both.
+    independent even when a single dispatch releases all three.
 
     Release checks main, validates intents, runs the checks, saves the canonical
     plan and verifies the exact record set and public package identities. It
@@ -139,11 +140,11 @@ proposed-design:
     | ------------------------- | ------- | -------------------------------------- |
     | `WYRD_CI_APP_ID`          | Release | GitHub App pushing commits and records |
     | `WYRD_CI_APP_PRIVATE_KEY` | Release | App key                                |
-    | `NPM_TOKEN`               | Publish | npm automation token for both packages |
+    | `NPM_TOKEN`               | Publish | npm automation token for three packages |
 
     The App needs Contents write. Publish requires an Intentional release record
     whose commit is on main. A tag ruleset allowing only the App to create
-    `t3code-lib@*` and `t3code-cli@*` records enforces that release authority.
+    `t3code-lib@*`, `t3code-cli@*` and `t3code-mcp@*` records enforces that release authority.
   documentation-and-homebrew-finalization: |
     The CLI tag publishes `docs` through the wyrd.foo action.
     Only pages marked `docs: true` and assets listed in `docs.yml` are copied.
@@ -158,7 +159,7 @@ proposed-design:
 
     1. Bob tests and merges the client epic PR, then the epic retrospective completes.
     2. During staged finalization establish main baseline records, dispatch Release
-       for all units and publish both npm units. This first publication is
+       for all units and publish three npm units. This first publication is
        pre-approved; notify Bob through Pushover after it runs.
     3. Download the published CLI npm tarball. Regenerate the tap formula from those
        exact bytes and the npm tarball URL; verify the URL and SHA256. The tap epic
