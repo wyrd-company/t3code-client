@@ -81,3 +81,9 @@ Use `thread_read` to inspect uncertain dispatch outcomes before retrying mutatio
 Probing with `server_list` or `servers --probe` has a 5 second per-server deadline
 covering client acquisition, upstream reads and error redaction. An expired probe reports
 `reachable:false` and a deadline reason.
+
+Client acquisition and startup credential loading use the same 5 second deadline.
+Cancellation abandons an acquisition when no callers remain; a later call can retry.
+Shutdown closes acquired clients without waiting for pending profile I/O. Error
+messages use a session credential snapshot and withhold upstream text while that
+snapshot is incomplete or unavailable.

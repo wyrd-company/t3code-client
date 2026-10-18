@@ -16,7 +16,7 @@ export const controlTools = [
     { ...threadArgs, runId: z.string().min(1).optional() },
     async (args, { registry, signal }) => {
       const server = registry.resolve(args.server);
-      const client = await registry.client(server, "thread_interrupt");
+      const client = await registry.client(server, "thread_interrupt", signal);
       const current = await requireThread(client, args.threadId, signal);
       const target = args.runId ?? current.activeRunId;
       if (target === null) return { server, threadId: args.threadId, interrupted: false };
@@ -37,7 +37,7 @@ export const controlTools = [
       if (args.action === "rename" && args.title === undefined)
         throw new ToolError("invalid_input", "Rename requires title.");
       const server = registry.resolve(args.server);
-      const client = await registry.client(server, "thread_update");
+      const client = await registry.client(server, "thread_update", signal);
       const id = threadId(args.threadId);
       await requireThread(client, args.threadId, signal);
       if (args.action === "rename") await client.threads.update(id, { title: args.title! }, signal);
@@ -52,7 +52,7 @@ export const controlTools = [
     threadArgs,
     async (args, { registry, signal }) => {
       const server = registry.resolve(args.server);
-      const client = await registry.client(server, "pending_request_list");
+      const client = await registry.client(server, "pending_request_list", signal);
       await requireThread(client, args.threadId, signal);
       return {
         server,
@@ -74,7 +74,7 @@ export const controlTools = [
     },
     async (args, { registry, signal }) => {
       const server = registry.resolve(args.server);
-      const client = await registry.client(server, "pending_request_respond");
+      const client = await registry.client(server, "pending_request_respond", signal);
       const id = threadId(args.threadId);
       await requireThread(client, args.threadId, signal);
       const request = (await client.threads.pendingRequests(id, signal)).find(
@@ -101,7 +101,7 @@ export const controlTools = [
     },
     async (args, { registry, signal }) => {
       const server = registry.resolve(args.server);
-      const client = await registry.client(server, "approval_respond");
+      const client = await registry.client(server, "approval_respond", signal);
       const id = threadId(args.threadId);
       await requireThread(client, args.threadId, signal);
       const request = (await client.threads.pendingRequests(id, signal)).find(

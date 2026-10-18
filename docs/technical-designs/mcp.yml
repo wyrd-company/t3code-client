@@ -94,10 +94,17 @@ proposed-design:
     without `server` uses `defaultServer`, else the only configured server,
     else fails with `server_required`.
 
-    Clients open lazily on a server's first call and close when the MCP session
-    ends. The library reconnects a dropped socket. A failed open does not stop
-    other servers. Probes have a 5 s per-server deadline covering client acquisition,
-    upstream reads and error redaction; expiry reports unreachable with a deadline reason.
+    Clients open lazily, share an acquisition while callers remain, and enter the
+    client cache only after acquisition succeeds. Each caller can cancel its
+    acquisition; the last cancellation, failure or deadline evicts the pending
+    open so a later call can retry. SERVER_DEADLINE_MS is 5000 ms for acquisition,
+    startup credential loading and each probe (including upstream reads). Shutdown
+    cancels acquisitions and closes acquired clients independently without joining
+    abandoned opens; any client that arrives after abandonment is closed. Startup
+    loads each configured credential once for redaction; error formatting does no
+    I/O and withholds upstream text while the credential snapshot is incomplete
+    or unavailable. The library reconnects a dropped socket. A failed peer does
+    not stop other servers. Probe expiry reports unreachable with a deadline reason.
   configuration-precedence: |
     Flags override environment variables, which override the config file.
 
@@ -131,7 +138,8 @@ proposed-design:
     supplies an explicit runtime mode: a requested mode within the cap, otherwise
     the observed thread mode bounded to the cap. The library sets mode and sends
     the message as two commands, so a concurrent peer can change mode between them.
-    Mode breadth order:
+    An unknown observed runtime mode without an explicit requested mode is refused
+    with `runtime_mode_denied` on a capped server. Mode breadth order:
     `approval-required` < `auto-accept-edits` < `auto` < `full-access`.
 
     `t3code-mcp tools` prints the exposed set for the resolved configuration.

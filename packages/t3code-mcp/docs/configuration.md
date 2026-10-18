@@ -79,3 +79,9 @@ t3code-mcp serve --server beta --allow-tools 'server_*,thread_*' --deny-tools th
 `server_list` with `probe:true` and `servers --probe` use a 5 second per-server
 probe deadline, including client acquisition, upstream reads and error redaction. A deadline reports
 that server as `reachable:false` with a reason. Other servers remain independent.
+
+Client acquisition and startup credential loading use the same 5 second deadline.
+Cancellation abandons an acquisition when no callers remain; a later call can retry.
+Shutdown closes acquired clients without waiting for pending profile I/O. Error
+messages use a session credential snapshot and withhold upstream text while that
+snapshot is incomplete or unavailable.

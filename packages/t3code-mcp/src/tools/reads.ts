@@ -23,7 +23,7 @@ export const readTools = [
     },
     async (args, { registry, signal }) => {
       const server = registry.resolve(args.server);
-      const client = await registry.client(server, "thread_list");
+      const client = await registry.client(server, "thread_list", signal);
       const options: ThreadListOptions = {
         includeArchived: args.includeArchived,
         ...(args.projectId === undefined ? {} : { projectId: projectId(args.projectId) }),
@@ -55,7 +55,7 @@ export const readTools = [
     },
     async (args, { registry, signal }) => {
       const server = registry.resolve(args.server);
-      const client = await registry.client(server, "thread_read");
+      const client = await registry.client(server, "thread_read", signal);
       const id = threadId(args.threadId);
       const detail = await client.threads.detail(id, signal);
       let rows;

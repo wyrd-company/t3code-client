@@ -7,7 +7,7 @@ import { runtimeModes } from "../config/schema.ts";
 import { ToolError, toToolError } from "../errors.ts";
 import type { Registry } from "../servers/registry.ts";
 import { tool, serverArg, pageArgs, page } from "./spec.ts";
-export const PROBE_DEADLINE_MS = 5000;
+import { SERVER_DEADLINE_MS } from "../servers/acquisition.ts";
 async function probe(registry: Registry, server: string, signal: AbortSignal) {
   const controller = new AbortController();
   const combined = AbortSignal.any([signal, controller.signal]);
@@ -22,13 +22,13 @@ async function probe(registry: Registry, server: string, signal: AbortSignal) {
       controller.abort(
         new ToolError("server_unreachable", "Server probe exceeded the 5 s deadline."),
       ),
-    PROBE_DEADLINE_MS,
+    SERVER_DEADLINE_MS,
   );
   try {
     return await Promise.race([
       (async () => {
         try {
-          const client = await registry.client(server, "server_list");
+          const client = await registry.client(server, "server_list", combined);
           combined.throwIfAborted();
           const [environment] = await Promise.all([
             client.server.environment(combined),
@@ -80,7 +80,7 @@ export const discoveryTools = [
     { server: serverArg },
     async (args, { registry, signal }) => {
       const server = registry.resolve(args.server);
-      const client = await registry.client(server, "server_capabilities");
+      const client = await registry.client(server, "server_capabilities", signal);
       const config = await client.server.getConfig(signal);
       return {
         server,
@@ -107,7 +107,7 @@ export const discoveryTools = [
     { server: serverArg, ...pageArgs },
     async (args, { registry, signal }) => {
       const server = registry.resolve(args.server);
-      const client = await registry.client(server, "project_list");
+      const client = await registry.client(server, "project_list", signal);
       return {
         server,
         ...page(
@@ -129,7 +129,7 @@ export const discoveryTools = [
     { server: serverArg, workspaceRoot: z.string().min(1), title: z.string().min(1).optional() },
     async (args, { registry, signal }) => {
       const server = registry.resolve(args.server);
-      const client = await registry.client(server, "project_ensure");
+      const client = await registry.client(server, "project_ensure", signal);
       const project = await client.projects.ensure(
         {
           workspaceRoot: args.workspaceRoot,

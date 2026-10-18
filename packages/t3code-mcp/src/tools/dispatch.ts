@@ -60,7 +60,7 @@ export const dispatchTools = [
         );
       const server = registry.resolve(args.server);
       const mode = boundedMode(args.runtimeMode, registry.config.serverPolicies[server] ?? {});
-      const client = await registry.client(server, "thread_launch");
+      const client = await registry.client(server, "thread_launch", signal);
       const input: Omit<ThreadLaunchInput, "projectId"> = {
         title: args.title,
         modelSelection: args.modelSelection,
@@ -120,14 +120,16 @@ export const dispatchTools = [
       const server = registry.resolve(args.server);
       const policy = registry.config.serverPolicies[server] ?? {};
       let mode = boundedMode(args.runtimeMode, policy);
-      const client = await registry.client(server, "thread_send");
+      const client = await registry.client(server, "thread_send", signal);
       const id = threadId(args.threadId);
       const current = await requireThread(client, args.threadId, signal);
       if (policy.maxRuntimeMode !== undefined && args.runtimeMode === undefined) {
         // Always pass an explicit mode, even when the observed thread is below the cap.
         const index = runtimeModes.indexOf(current.runtimeMode as typeof policy.maxRuntimeMode);
+        if (index < 0)
+          throw new ToolError("runtime_mode_denied", "Observed thread runtime mode is unknown.");
         mode =
-          index >= 0 && index <= runtimeModes.indexOf(policy.maxRuntimeMode)
+          index <= runtimeModes.indexOf(policy.maxRuntimeMode)
             ? current.runtimeMode
             : policy.maxRuntimeMode;
       }
