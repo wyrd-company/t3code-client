@@ -20,15 +20,16 @@ it("resolves default and only server, refuses unknown and ambiguous targets", ()
 it("opens lazily, shares concurrent opens, retries failures and closes clients", async () => {
   const fake = fakeClient();
   const create = vi.fn(() => fake.client);
-  const resolveProfile = vi
-    .fn()
-    .mockRejectedValueOnce(new Error("unavailable"))
-    .mockResolvedValue({ baseUrl: "https://server.example" });
+  const resolveProfile = vi.fn().mockResolvedValue({
+    baseUrl: "https://server.example",
+    credentials: memoryCredentialStore({ accessToken: "sample-credential" }),
+  });
   const registry = new ServerRegistry(config({ servers: { alpha: {}, beta: {} } }), {
     profiles: { resolveProfile },
     create,
   });
   expect(create).not.toHaveBeenCalled();
+  resolveProfile.mockRejectedValueOnce(new Error("unavailable"));
   await expect(registry.client("alpha", "thread_read")).rejects.toThrow("unavailable");
   await Promise.all([
     registry.client("alpha", "thread_read"),
@@ -80,6 +81,9 @@ it("redacts unopened profile peers as well as URL credentials", async () => {
       create,
     },
   );
+  await vi.waitFor(async () => {
+    expect((await registry.error(new T3PreconditionError("Ready"))).message).toBe("Ready");
+  });
   const failure = await registry.error(
     new T3PreconditionError("Echo sample-alpha-credential and sample-alternate-credential"),
   );

@@ -6,7 +6,9 @@ import { afterEach, expect, it, vi } from "vite-plus/test";
 import { T3HttpError, T3RpcError } from "@wyrd-company/t3code-lib";
 import { Client } from "@modelcontextprotocol/client";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
-import { harness, projection } from "../test/support/fakes.ts";
+import { config, fakeClient, harness, projection } from "../test/support/fakes.ts";
+import { ServerRegistry } from "./servers/registry.ts";
+import type { McpConfig } from "./config/schema.ts";
 import { createServer, SERVER_VERSION } from "./server.ts";
 const closers: (() => Promise<void>)[] = [];
 afterEach(async () => {
@@ -16,8 +18,9 @@ afterEach(async () => {
 async function connected(
   state = projection(),
   env: NodeJS.ProcessEnv = { SAMPLE_TOKEN: "sample-credential" },
+  options: Partial<McpConfig> = {},
 ) {
-  const h = harness({}, state, env);
+  const h = harness(options, state, env);
   const server = createServer(h.registry);
   const client = new Client({ name: "sample-client", version: "0.0.0" });
   const [clientWire, serverWire] = InMemoryTransport.createLinkedPair();
@@ -81,11 +84,19 @@ it("propagates SDK request cancellation to upstream watches", async () => {
 it.each(["http", "rpc"])(
   "redacts configured and shaped credentials from %s MCP errors",
   async (kind) => {
-    const h = await connected(projection(), {
-      SAMPLE_TOKEN: "sample-credential",
-      PEER_TOKEN: "sample-peer-credential",
-    });
-    h.registry.config.servers["beta"] = { url: "https://other.example", tokenEnv: "PEER_TOKEN" };
+    const h = await connected(
+      projection(),
+      {
+        SAMPLE_TOKEN: "sample-credential",
+        PEER_TOKEN: "sample-peer-credential",
+      },
+      {
+        servers: {
+          alpha: { url: "https://server.example", tokenEnv: "SAMPLE_TOKEN" },
+          beta: { url: "https://other.example", tokenEnv: "PEER_TOKEN" },
+        },
+      },
+    );
     const text =
       "Echo sample-credential sample-peer-credential Bearer sample-bearer access_token=sample-token apiKey: sample-key";
     h.threads.detail.mockRejectedValue(
@@ -118,3 +129,49 @@ it.each(["http", "rpc"])(
     );
   },
 );
+
+it("returns a tool error while an unopened peer profile hangs", async () => {
+  vi.useFakeTimers();
+  const fake = fakeClient();
+  const resolveProfile = vi.fn(() => new Promise<never>(() => {}));
+  const registry = new ServerRegistry(
+    config({
+      servers: {
+        alpha: { url: "https://server.example", tokenEnv: "SAMPLE_TOKEN" },
+        beta: {},
+      },
+    }),
+    {
+      profiles: { resolveProfile },
+      env: { SAMPLE_TOKEN: "sample-credential" },
+      create: () => fake.client,
+    },
+  );
+  const server = createServer(registry);
+  const client = new Client({ name: "sample-client", version: "0.0.0" });
+  const [clientWire, serverWire] = InMemoryTransport.createLinkedPair();
+  await server.connect(serverWire);
+  await client.connect(clientWire);
+  closers.push(
+    () => client.close(),
+    () => server.close(),
+  );
+  fake.threads.detail.mockRejectedValue(
+    new T3RpcError("sample", { _tag: "unknown", message: "sample-private-value" }),
+  );
+  let result: unknown;
+  void client
+    .callTool({ name: "thread_read", arguments: { server: "alpha", threadId: "thread-1" } })
+    .then((value) => {
+      result = value;
+    });
+  await vi.advanceTimersByTimeAsync(0);
+  expect(result).toMatchObject({
+    isError: true,
+    structuredContent: {
+      error: { code: "upstream_error", message: "The upstream operation failed." },
+    },
+  });
+  expect(JSON.stringify(result)).not.toContain("sample-private-value");
+  expect(resolveProfile).toHaveBeenCalledTimes(1);
+});

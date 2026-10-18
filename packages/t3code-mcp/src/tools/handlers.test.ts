@@ -171,6 +171,28 @@ describe("dispatch", () => {
     ).rejects.toThrow("exceeds");
     expect(h.threads.startTurn).toHaveBeenCalledTimes(1);
   });
+  it("refuses an unknown observed mode under every runtime cap", async () => {
+    for (const maxRuntimeMode of [
+      "approval-required",
+      "auto-accept-edits",
+      "auto",
+      "full-access",
+    ] as const) {
+      const h = harness({ serverPolicies: { alpha: { maxRuntimeMode } } });
+      h.threads.get.mockResolvedValue(shell({ runtimeMode: "future-mode" }));
+      await expect(
+        tool("thread_send").run({ ...base, text: "Sample" }, h.context),
+      ).rejects.toMatchObject({ code: "runtime_mode_denied" });
+      expect(h.threads.startTurn).not.toHaveBeenCalled();
+      await tool("thread_send").run(
+        { ...base, text: "Sample", runtimeMode: "approval-required" },
+        h.context,
+      );
+      expect(h.threads.startTurn).toHaveBeenCalledWith(
+        expect.objectContaining({ runtimeMode: "approval-required" }),
+      );
+    }
+  });
   it("sends an explicit checked mode even when a peer raises the mode after the read", async () => {
     const h = harness({ serverPolicies: { alpha: { maxRuntimeMode: "auto-accept-edits" } } });
     let mode = "approval-required";

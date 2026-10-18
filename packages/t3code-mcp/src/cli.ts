@@ -66,7 +66,13 @@ async function main() {
       token = input.trim();
     }
     if (!token) throw new Error("A pairing token is required on stdin or --token.");
-    const profile = await new ProfileManager().pair({ name: rest[0]!, url: rest[1]! }, token);
+    let profile;
+    try {
+      profile = await new ProfileManager().pair({ name: rest[0]!, url: rest[1]! }, token);
+    } catch (error) {
+      // Pairing responses can echo both the supplied token and unrelated credentials.
+      throw new Error(`Pairing failed (${toToolError(error).code}).`, { cause: error });
+    }
     process.stdout.write(`${JSON.stringify({ server: profile.name, paired: true })}\n`);
     return;
   }

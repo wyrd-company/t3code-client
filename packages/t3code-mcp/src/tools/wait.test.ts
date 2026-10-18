@@ -3,7 +3,8 @@
 //   verifies: mcp
 // ---
 import { afterEach, expect, it, vi } from "vite-plus/test";
-import { harness, projection } from "../../test/support/fakes.ts";
+import { config, harness, projection } from "../../test/support/fakes.ts";
+import { ServerRegistry } from "../servers/registry.ts";
 import { waitForThreads, waitTools } from "./wait.ts";
 afterEach(() => vi.useRealTimers());
 const input = {
@@ -104,3 +105,37 @@ it("settles a running thread when it has an open request", async () => {
     threads: [{ pendingRequests: [{ kind: "user-input", requestId: "request-1" }] }],
   });
 });
+
+it.each(["timeout", "cancellation"])(
+  "finishes %s during hung profile acquisition",
+  async (cause) => {
+    vi.useFakeTimers();
+    const registry = new ServerRegistry(config({ servers: { alpha: {} } }), {
+      profiles: { resolveProfile: () => new Promise<never>(() => {}) },
+    });
+    const controller = new AbortController();
+    let result: object | undefined;
+    let failure: unknown;
+    const pending = waitForThreads(
+      { ...input, timeoutMs: 20 },
+      { registry, signal: controller.signal },
+    ).then(
+      (value) => {
+        result = value;
+      },
+      (error: unknown) => {
+        failure = error;
+      },
+    );
+    try {
+      if (cause === "cancellation") controller.abort(new Error("cancelled"));
+      await vi.advanceTimersByTimeAsync(20);
+      if (cause === "timeout") expect(result).toMatchObject({ timedOut: true });
+      else expect(failure).toMatchObject({ message: "cancelled" });
+    } finally {
+      await registry.close();
+      await pending;
+    }
+    expect(vi.getTimerCount()).toBe(0);
+  },
+);

@@ -6,13 +6,14 @@ import { afterEach, expect, it, vi } from "vite-plus/test";
 import { T3PreconditionError } from "@wyrd-company/t3code-lib";
 import { config, fakeClient } from "../../test/support/fakes.ts";
 import { ServerRegistry } from "../servers/registry.ts";
-import { discoveryTools, PROBE_DEADLINE_MS } from "./discovery.ts";
+import { discoveryTools } from "./discovery.ts";
+import { SERVER_DEADLINE_MS } from "../servers/acquisition.ts";
 afterEach(() => vi.useRealTimers());
 it.each(["open", "environment", "config"])(
   "bounds a hung %s while probing healthy peers",
   async (stage) => {
     vi.useFakeTimers();
-    expect(PROBE_DEADLINE_MS).toBe(5000);
+    expect(SERVER_DEADLINE_MS).toBe(5000);
     const healthy = fakeClient();
     const hung = fakeClient();
     const never = () => new Promise<never>(() => {});
@@ -40,7 +41,7 @@ it.each(["open", "environment", "config"])(
       { probe: true },
       { registry, signal: new AbortController().signal },
     );
-    await vi.advanceTimersByTimeAsync(PROBE_DEADLINE_MS);
+    await vi.advanceTimersByTimeAsync(SERVER_DEADLINE_MS);
     expect(await result).toMatchObject({
       servers: [
         { server: "alpha", reachable: true },
@@ -87,6 +88,13 @@ it.each(["profile-open", "error-redaction"])(
       ],
     });
     expect(JSON.stringify(await result)).not.toContain("sample-private-value");
+    let closed = false;
+    void registry.close().then(() => {
+      closed = true;
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(closed).toBe(true);
+    expect(fake.close).toHaveBeenCalledTimes(1);
     expect(vi.getTimerCount()).toBe(0);
   },
 );

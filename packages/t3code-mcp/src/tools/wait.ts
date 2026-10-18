@@ -48,7 +48,7 @@ export async function waitForThreads(input: WaitInput, context: ToolContext): Pr
           void context.progress!(Date.now() - started).catch(fail);
         }, 15_000);
   const watches = refs.map(async (ref, index) => {
-    const client = await registry.client(ref.server, "thread_wait");
+    const client = await registry.client(ref.server, "thread_wait", combined);
     await requireThread(client, ref.threadId, combined);
     let projection: OrchestrationV2ThreadProjection | undefined;
     for await (const item of client.threads.watch(threadId(ref.threadId), { signal: combined })) {
