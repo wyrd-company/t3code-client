@@ -41,15 +41,19 @@ export async function waitForThreads(input: WaitInput, context: ToolContext): Pr
   signal.addEventListener("abort", abort, { once: true });
   const started = Date.now();
   const timeout = setTimeout(() => finish(true), input.timeoutMs);
+  timeout.unref();
   const progress =
     context.progress === undefined
       ? undefined
       : setInterval(() => {
           void context.progress!(Date.now() - started).catch(fail);
         }, 15_000);
+  progress?.unref();
   const watches = refs.map(async (ref, index) => {
     const client = await registry.client(ref.server, "thread_wait", combined);
+    combined.throwIfAborted();
     await requireThread(client, ref.threadId, combined);
+    combined.throwIfAborted();
     let projection: OrchestrationV2ThreadProjection | undefined;
     for await (const item of client.threads.watch(threadId(ref.threadId), { signal: combined })) {
       if (combined.aborted) return;
@@ -65,8 +69,11 @@ export async function waitForThreads(input: WaitInput, context: ToolContext): Pr
     if (!combined.aborted)
       throw new ToolError("invalid_state", "Thread watch ended before the wait condition.");
   });
-  // Observe every rejection immediately; cancel and join every watcher before returning.
-  for (const watch of watches) void watch.catch(fail);
+  // Observe late failures without joining non-cancellable credential or upstream I/O.
+  for (const watch of watches)
+    void watch.catch((error: unknown) => {
+      if (!combined.aborted) fail(error);
+    });
   try {
     const timedOut = await completed;
     return {
@@ -81,7 +88,6 @@ export async function waitForThreads(input: WaitInput, context: ToolContext): Pr
     clearInterval(progress);
     signal.removeEventListener("abort", abort);
     controller.abort();
-    await Promise.allSettled(watches);
   }
 }
 export const waitTools = [

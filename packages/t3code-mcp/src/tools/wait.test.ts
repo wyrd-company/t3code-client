@@ -44,7 +44,7 @@ it("times out idle threads without interrupting and reports progress every 15 se
   expect(h.threads.interrupt).not.toHaveBeenCalled();
   expect(vi.getTimerCount()).toBe(0);
 });
-it("aborts promptly and joins watchers on request cancellation", async () => {
+it("aborts promptly and cancels watchers on request cancellation", async () => {
   const h = harness({}, projection("running"));
   const controller = new AbortController();
   const pending = waitForThreads(input, { ...h.context, signal: controller.signal });
