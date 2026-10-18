@@ -7,7 +7,8 @@ tasks:
   install:
     cmds: [pnpm install]
   build:
-    cmds: [pnpm run build]
+    desc: Build the MCP server and its library dependency
+    cmds: [pnpm --filter @wyrd-company/t3code-lib build, pnpm run build]
   fmt:
     cmds: [pnpm run fmt]
   lint:
@@ -18,14 +19,18 @@ tasks:
     cmds: [pnpm run test]
   test:protocol:
     desc: Verify declarative MCP cases over stdio
-    cmds: [pnpm run build, pnpm run test:protocol]
+    deps: [build]
+    cmds: [pnpm run test:protocol]
   test:live:
     desc: Test two isolated pinned T3 servers
-    cmds: [pnpm run build, pnpm run test:live]
+    deps: [build]
+    cmds: [pnpm run test:live]
   package:
+    deps: [build]
     cmds: [pnpm run package]
   check:
     cmds:
+      - task: build
       - task: lint
       - task: typecheck
       - task: test
