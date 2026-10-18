@@ -162,9 +162,14 @@ it("returns a tool error while an unopened peer profile hangs", async () => {
   let result: unknown;
   void client
     .callTool({ name: "thread_read", arguments: { server: "alpha", threadId: "thread-1" } })
-    .then((value) => {
-      result = value;
-    });
+    .then(
+      (value) => {
+        result = value;
+      },
+      (error: unknown) => {
+        result = error;
+      },
+    );
   await vi.advanceTimersByTimeAsync(0);
   expect(result).toMatchObject({
     isError: true,
