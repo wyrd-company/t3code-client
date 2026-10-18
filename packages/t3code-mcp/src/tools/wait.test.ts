@@ -26,7 +26,7 @@ it("settles any/all across servers and cancels the remaining watches", async () 
       ),
     ).toMatchObject({
       timedOut: false,
-      threads: [{ server: "alpha", settled: true }, { server: "beta" }],
+      threads: [{ server: "alpha", done: true }, { server: "beta" }],
     });
   }
   expect(h.threads.watch.mock.calls.every(([, options]) => options.signal.aborted)).toBe(true);

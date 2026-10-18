@@ -17,13 +17,10 @@ export const controlTools = [
     async (args, { registry, signal }) => {
       const server = registry.resolve(args.server);
       const client = await registry.client(server, "thread_interrupt");
-      await requireThread(client, args.threadId, signal);
-      await client.threads.interrupt(
-        threadId(args.threadId),
-        args.runId === undefined ? undefined : runId(args.runId),
-        {},
-        signal,
-      );
+      const current = await requireThread(client, args.threadId, signal);
+      const target = args.runId ?? current.activeRunId;
+      if (target === null) return { server, threadId: args.threadId, interrupted: false };
+      await client.threads.interrupt(threadId(args.threadId), runId(target), {}, signal);
       return { server, threadId: args.threadId, interrupted: true };
     },
   ),

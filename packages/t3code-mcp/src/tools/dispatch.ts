@@ -10,7 +10,7 @@ import {
   threadId,
   type ThreadLaunchInput,
 } from "@wyrd-company/t3code-lib";
-import { runtimeMode } from "../config/schema.ts";
+import { runtimeMode, runtimeModes } from "../config/schema.ts";
 import { boundedMode } from "../policy/policy.ts";
 import { ToolError } from "../errors.ts";
 import { requireThread } from "./selection.ts";
@@ -30,7 +30,7 @@ const modelSelection = z.object({
 export const dispatchTools = [
   tool(
     "thread_launch",
-    "Create a thread on another server, optionally starting initialMessage. Supply exactly one of projectId, workspaceRoot or scratch:true, and an explicit modelSelection from server_capabilities. workspace selects root/existing_worktree/worktree. Retain clientRequestId and reuse it on retry for idempotent launch; then call thread_wait and thread_read.",
+    "Create a thread on another server, optionally starting initialMessage. Supply exactly one of projectId, workspaceRoot or scratch:true, and an explicit modelSelection from server_capabilities. workspace selects root/existing_worktree/worktree. Retain clientRequestId and reuse it on retry for idempotent launch; returns done for the wait condition and settled for the user/auto marker; then call thread_wait and thread_read.",
     false,
     {
       server: serverArg,
@@ -61,26 +61,7 @@ export const dispatchTools = [
       const server = registry.resolve(args.server);
       const mode = boundedMode(args.runtimeMode, registry.config.serverPolicies[server] ?? {});
       const client = await registry.client(server, "thread_launch");
-      if (
-        args.projectId !== undefined &&
-        !(await client.projects.get(toProjectId(args.projectId), signal))
-      )
-        throw new ToolError("not_found", "Project does not exist.");
-      const projectId =
-        args.projectId ??
-        (args.scratch
-          ? (await client.projects.ensureScratch(signal)).projectId
-          : (
-              await client.projects.ensure(
-                {
-                  workspaceRoot: args.workspaceRoot!,
-                  title: args.workspaceRoot!.split(/[\\/]/).findLast(Boolean) ?? "Project",
-                },
-                signal,
-              )
-            ).id);
-      const input: ThreadLaunchInput = {
-        projectId: toProjectId(projectId),
+      const input: Omit<ThreadLaunchInput, "projectId"> = {
         title: args.title,
         modelSelection: args.modelSelection,
         workspace: args.workspace,
@@ -94,12 +75,39 @@ export const dispatchTools = [
           ? {}
           : { threadId: launchThreadId(server, args.clientRequestId), reuseExistingThread: false }),
       };
-      return launchOnce(registry, server, client, input, signal);
+      return launchOnce(
+        registry,
+        server,
+        client,
+        input,
+        async () => {
+          if (
+            args.projectId !== undefined &&
+            !(await client.projects.get(toProjectId(args.projectId), signal))
+          )
+            throw new ToolError("not_found", "Project does not exist.");
+          const projectId =
+            args.projectId ??
+            (args.scratch
+              ? (await client.projects.ensureScratch(signal)).projectId
+              : (
+                  await client.projects.ensure(
+                    {
+                      workspaceRoot: args.workspaceRoot!,
+                      title: args.workspaceRoot!.split(/[\\/]/).findLast(Boolean) ?? "Project",
+                    },
+                    signal,
+                  )
+                ).id);
+          return toProjectId(projectId);
+        },
+        signal,
+      );
     },
   ),
   tool(
     "thread_send",
-    "Send text to an existing thread. mode:auto lets the server choose delivery; queue waits behind active work; steer/restart target the active run. runtimeMode is limited by server policy. Sends are not idempotent: after a lost response, read the thread before retrying. Follow with thread_wait.",
+    "Send text to an existing thread. mode:auto lets the server choose delivery; queue waits behind active work; steer/restart target the active run. Capped servers always send an explicit runtimeMode: a requested mode within the cap or the observed thread mode bounded to it. Sends are not idempotent: after a lost response, read the thread before retrying. Follow with thread_wait.",
     false,
     {
       ...threadArgs,
@@ -116,9 +124,12 @@ export const dispatchTools = [
       const id = threadId(args.threadId);
       const current = await requireThread(client, args.threadId, signal);
       if (policy.maxRuntimeMode !== undefined && args.runtimeMode === undefined) {
-        // A send with no mode uses the existing mode; refuse a thread above the cap.
-        boundedMode(current.runtimeMode, policy);
-        mode = undefined;
+        // Always pass an explicit mode, even when the observed thread is below the cap.
+        const index = runtimeModes.indexOf(current.runtimeMode as typeof policy.maxRuntimeMode);
+        mode =
+          index >= 0 && index <= runtimeModes.indexOf(policy.maxRuntimeMode)
+            ? current.runtimeMode
+            : policy.maxRuntimeMode;
       }
       const turn = await client.threads.startTurn({
         threadId: id,

@@ -38,6 +38,11 @@ function setup() {
       `packages/${unit}/package.json`,
       JSON.stringify({ name: `@wyrd-company/${unit}`, version: "0.0.0" }),
     );
+  write(
+    root,
+    "packages/t3code-mcp/.claude-plugin/plugin.json",
+    '{"name":"sample-plugin","version":"0.0.0"}',
+  );
   command(root, "git", ["init", "--quiet", "--initial-branch=main"]);
   command(root, "git", ["config", "user.name", "Agent"]);
   command(root, "git", ["config", "user.email", "agent@example.invalid"]);

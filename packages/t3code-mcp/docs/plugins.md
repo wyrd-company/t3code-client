@@ -8,7 +8,8 @@ relationships:
 
 The npm package includes a Claude Code plugin manifest and `.mcp.json`. The MCP
 server key is `t3code-mcp`; the plugin runs
-`node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js` over stdio.
+`node ${CLAUDE_PLUGIN_ROOT}/dist/cli.js` over stdio. Intentional projects the
+package release version into the plugin manifest during release.
 
 Install `t3code-mcp` from the Wyrd agent marketplace in Claude Code:
 

@@ -81,3 +81,22 @@ it("accepts tokenEnv URL entries and validates read-only environment values", as
     loadConfig({ config: path }, { env: { T3CODE_MCP_READ_ONLY: "yes" } }),
   ).rejects.toThrow("0 or 1");
 });
+it.each([
+  "https://server.example/path",
+  "https://server.example/?access_token=sample-secret",
+  "https://server.example/#sample-secret",
+  "https://sample:sample-secret@server.example",
+  "ftp://server.example",
+  "https://server.example/?",
+  "https://server.example/#",
+])("rejects a server URL that is not an HTTP(S) origin: %s", async (url) => {
+  const path = await file({ servers: { alpha: { url, tokenEnv: "SAMPLE_TOKEN" } } });
+  await expect(loadConfig({ config: path })).rejects.toThrow("Invalid MCP config shape");
+});
+it.each(["http://server.example:1234", "https://server.example/"])(
+  "accepts origin %s",
+  async (url) => {
+    const path = await file({ servers: { alpha: { url, tokenEnv: "SAMPLE_TOKEN" } } });
+    expect((await loadConfig({ config: path })).servers["alpha"]).toMatchObject({ url });
+  },
+);

@@ -13,8 +13,10 @@ import * as path from 'node:path';
 const [source, target] = process.argv.slice(2);
 fs.rmSync(path.join(target, '.intentional'), {recursive: true, force: true});
 fs.cpSync(path.join(source, '.intentional'), path.join(target, '.intentional'), {recursive: true});
-for (const unit of ['t3code-lib', 't3code-cli', 't3code-mcp']) {
-  const relative = `packages/${unit}/package.json`;
+for (const relative of [
+  ...['t3code-lib', 't3code-cli', 't3code-mcp'].map(unit => `packages/${unit}/package.json`),
+  'packages/t3code-mcp/.claude-plugin/plugin.json',
+]) {
   fs.mkdirSync(path.dirname(path.join(target, relative)), {recursive: true});
   fs.copyFileSync(path.join(source, relative), path.join(target, relative));
 }

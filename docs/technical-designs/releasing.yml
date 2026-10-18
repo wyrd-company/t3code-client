@@ -185,6 +185,8 @@ proposed-design:
   library-release-identity: |
     The library release unit is `t3code-lib`, its manifest is `packages/t3code-lib/package.json`, and its changelog is `packages/t3code-lib/CHANGELOG.md`. The root historical changelog belongs to the retired package.
   mcp-publication: |
+    The MCP unit projects its version into package.json through the npm adapter
+    and .claude-plugin/plugin.json through a committed JSON /version projection.
     The MCP unit packs compiled JavaScript and declarations, its executable,
     Claude plugin manifests, LICENSE and README. Its workspace library dependency
     is rewritten to the library version at packing. Consumer verification installs

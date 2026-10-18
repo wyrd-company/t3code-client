@@ -3,8 +3,8 @@
 //   verifies: mcp
 // ---
 import { describe, expect, it } from "vite-plus/test";
-import { T3HttpError } from "@wyrd-company/t3code-lib";
-import { harness, model, projection, shell, at } from "../../test/support/fakes.ts";
+import { T3HttpError, schemas } from "@wyrd-company/t3code-lib";
+import { harness, model, projection, shell, at, messageItem } from "../../test/support/fakes.ts";
 import { allTools } from "../server.ts";
 import { launchThreadId } from "./dispatch.ts";
 const tool = (name: string) => allTools.find((t) => t.name === name)!;
@@ -160,17 +160,36 @@ describe("dispatch", () => {
       );
     },
   );
-  it("refuses an inherited runtime mode above the cap without changing the thread", async () => {
+  it("bounds an inherited runtime mode above the cap and sends it explicitly", async () => {
     const h = harness({ serverPolicies: { alpha: { maxRuntimeMode: "approval-required" } } });
-    await expect(tool("thread_send").run({ ...base, text: "Sample" }, h.context)).rejects.toThrow(
-      "exceeds",
+    await tool("thread_send").run({ ...base, text: "Sample" }, h.context);
+    expect(h.threads.startTurn).toHaveBeenCalledWith(
+      expect.objectContaining({ runtimeMode: "approval-required" }),
     );
-    expect(h.threads.startTurn).not.toHaveBeenCalled();
+    await expect(
+      tool("thread_send").run({ ...base, text: "Sample", runtimeMode: "full-access" }, h.context),
+    ).rejects.toThrow("exceeds");
+    expect(h.threads.startTurn).toHaveBeenCalledTimes(1);
+  });
+  it("sends an explicit checked mode even when a peer raises the mode after the read", async () => {
+    const h = harness({ serverPolicies: { alpha: { maxRuntimeMode: "auto-accept-edits" } } });
+    let mode = "approval-required";
+    h.threads.get.mockImplementation(async () => {
+      const observed = shell({ runtimeMode: mode });
+      mode = "full-access";
+      return observed;
+    });
+    h.threads.startTurn.mockImplementation(async (input) => {
+      mode = (input as { runtimeMode?: string }).runtimeMode ?? mode;
+      return { messageId: "message-2", sequence: 2 };
+    });
+    await tool("thread_send").run({ ...base, text: "Sample" }, h.context);
+    expect(mode).toBe("approval-required");
     await tool("thread_send").run(
-      { ...base, text: "Sample", runtimeMode: "approval-required" },
+      { ...base, text: "Sample", runtimeMode: "auto-accept-edits" },
       h.context,
     );
-    expect(h.threads.startTurn).toHaveBeenCalledTimes(1);
+    expect(mode).toBe("auto-accept-edits");
   });
 });
 describe("controls and request responses", () => {
@@ -178,6 +197,18 @@ describe("controls and request responses", () => {
     const h = harness();
     await tool("thread_interrupt").run({ ...base, runId: "run-1" }, h.context);
     expect(h.threads.interrupt).toHaveBeenCalledWith("thread-1", "run-1", {}, h.context.signal);
+  });
+  it("reports false for idle threads and targets the observed active run", async () => {
+    const h = harness();
+    expect(await tool("thread_interrupt").run(base, h.context)).toMatchObject({
+      interrupted: false,
+    });
+    expect(h.threads.interrupt).not.toHaveBeenCalled();
+    h.threads.get.mockResolvedValue(shell({ activeRunId: "run-2" }));
+    expect(await tool("thread_interrupt").run(base, h.context)).toMatchObject({
+      interrupted: true,
+    });
+    expect(h.threads.interrupt).toHaveBeenCalledWith("thread-1", "run-2", {}, h.context.signal);
   });
   it.each(["rename", "settle", "unsettle", "archive", "unarchive"])(
     "updates %s through its facade",
@@ -275,4 +306,34 @@ it("returns not_found for missing threads on every control and send route", asyn
   await expect(
     tool("thread_wait").run({ threads: [base], timeoutMs: 100 }, h.context),
   ).rejects.toMatchObject({ code: "not_found" });
+});
+
+it("reports nested activity truncation with the item's full identity", async () => {
+  const h = harness();
+  const row = messageItem()[0]!;
+  h.threads.transcript.mockResolvedValue({
+    threadId: "thread-1",
+    title: "Sample",
+    updatedAt: at,
+    items: schemas.orchestrationTurnItems.OrchestrationV2ProjectedTurnItems.parse([
+      {
+        ...row,
+        item: {
+          ...row.item,
+          type: "dynamic_tool",
+          toolName: null,
+          input: { nested: ["long payload"] },
+          output: { body: "long payload" },
+        },
+      },
+    ]),
+  });
+  expect(
+    await tool("thread_read").run({ ...base, view: "activity", maxCharsPerItem: 4 }, h.context),
+  ).toMatchObject({
+    items: [
+      { id: "item-1", type: "dynamic_tool", input: { nested: ["long"] }, output: { body: "long" } },
+    ],
+    truncatedItemIds: ["item-1"],
+  });
 });

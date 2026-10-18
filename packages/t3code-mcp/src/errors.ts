@@ -22,9 +22,24 @@ export class ToolError extends Error {
     this.code = code;
   }
 }
-/** Unknown exception text is withheld; library exceptions have already been redacted. */
-export function toToolError(error: unknown): ToolError {
-  if (error instanceof ToolError) return error;
+/** Redact exact configured credentials and credential-shaped values in upstream text. */
+export function redactMessage(message: string, tokens: readonly string[]): string {
+  let safe = message;
+  for (const token of [...tokens].filter(Boolean).sort((a, b) => b.length - a.length))
+    safe = safe.replaceAll(token, "[redacted]");
+  return safe
+    .replace(/\bBearer\s+[^\s"'<>;,]+/gi, "Bearer [redacted]")
+    .replace(
+      /\b((?:access[_-]?token|refresh[_-]?token|token|api[_-]?key|secret|password|credential|authorization)["']?\s*[:=]\s*)(?:"[^"]*"|'[^']*'|[^\s&,;]+)/gi,
+      "$1[redacted]",
+    );
+}
+/** Unknown exception text is withheld; every forwarded message is redacted locally. */
+export function toToolError(error: unknown, tokens: readonly string[] = []): ToolError {
+  if (error instanceof ToolError) {
+    const message = redactMessage(error.message, tokens);
+    return message === error.message ? error : new ToolError(error.code, message);
+  }
   if (error instanceof z.ZodError)
     return new ToolError("invalid_input", "Arguments do not match the tool schema.");
   if (error instanceof T3Error) {
@@ -39,8 +54,8 @@ export function toToolError(error: unknown): ToolError {
               ? "invalid_state"
               : "upstream_error";
     if (error instanceof T3RpcError && error.is("OrchestrationV2DispatchCommandError"))
-      return new ToolError("invalid_state", error.message);
-    return new ToolError(code, error.message);
+      return new ToolError("invalid_state", redactMessage(error.message, tokens));
+    return new ToolError(code, redactMessage(error.message, tokens));
   }
   return new ToolError("upstream_error", "The upstream operation failed.");
 }

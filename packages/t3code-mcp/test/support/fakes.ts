@@ -3,7 +3,11 @@
 //   verifies: mcp
 // ---
 import { vi } from "vite-plus/test";
-import { schemas, type OrchestrationV2ThreadProjection } from "@wyrd-company/t3code-lib";
+import {
+  schemas,
+  type StartTurnInput,
+  type OrchestrationV2ThreadProjection,
+} from "@wyrd-company/t3code-lib";
 import { ServerRegistry, type ServerClient } from "../../src/servers/registry.ts";
 import type { McpConfig } from "../../src/config/schema.ts";
 export const at = "2020-01-01T00:00:00.000Z";
@@ -145,7 +149,7 @@ export function fakeClient(state = projection()) {
       items: messageItem(),
     })),
     launch: vi.fn(async () => ({ threadId: "thread-1", resumed: false, projection: state })),
-    startTurn: vi.fn(async () => ({ messageId: "message-2", sequence: 2 })),
+    startTurn: vi.fn(async (_input: StartTurnInput) => ({ messageId: "message-2", sequence: 2 })),
     interrupt: vi.fn(async () => {}),
     update: vi.fn(async () => {}),
     settle: vi.fn(async () => {}),
@@ -186,10 +190,14 @@ export function fakeClient(state = projection()) {
     close,
   };
 }
-export function harness(options: Partial<McpConfig> = {}, state = projection()) {
+export function harness(
+  options: Partial<McpConfig> = {},
+  state = projection(),
+  env: NodeJS.ProcessEnv = { SAMPLE_TOKEN: "sample-credential" },
+) {
   const fake = fakeClient(state);
   const registry = new ServerRegistry(config(options), {
-    env: { SAMPLE_TOKEN: "sample-credential" },
+    env,
     create: () => fake.client,
   });
   return { ...fake, registry, context: { registry, signal: new AbortController().signal } };

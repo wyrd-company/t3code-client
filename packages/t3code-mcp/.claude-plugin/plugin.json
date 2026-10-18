@@ -1,5 +1,6 @@
 {
   "name": "t3code-mcp",
+  "version": "0.0.0",
   "displayName": "T3 Code cross-server tools",
   "description": "Dispatch, message, wait on and read threads across named T3 Code servers.",
   "author": { "name": "Wyrd Company" },

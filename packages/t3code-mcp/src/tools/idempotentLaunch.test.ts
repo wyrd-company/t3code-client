@@ -33,6 +33,7 @@ it("serializes concurrent retries and launches exactly once", async () => {
   const results = await Promise.all([launch.run(input, h.context), launch.run(input, h.context)]);
   expect(results).toMatchObject([{ resumed: false }, { resumed: true }]);
   expect(h.threads.launch).toHaveBeenCalledTimes(1);
+  expect(h.projects.get).toHaveBeenCalledTimes(1);
 });
 
 it("recovers a persisted launch after a lost receipt without replaying", async () => {
@@ -61,3 +62,18 @@ it("does not recover a cancelled launch", async () => {
   );
   expect(h.threads.get).toHaveBeenCalledTimes(1);
 });
+
+it.each([{ projectId: "missing-project" }, { workspaceRoot: "/tmp/different" }, { scratch: true }])(
+  "reuses persisted identity before resolving $projectId $workspaceRoot $scratch",
+  async (selector) => {
+    const h = harness();
+    h.projects.get.mockRejectedValue(new Error("Project lookup must not run"));
+    h.projects.ensure.mockRejectedValue(new Error("Project ensure must not run"));
+    h.projects.ensureScratch.mockRejectedValue(new Error("Scratch ensure must not run"));
+    const { projectId: _project, ...retry } = input;
+    expect(await launch.run({ ...retry, ...selector }, h.context)).toMatchObject({ resumed: true });
+    expect(h.projects.get).not.toHaveBeenCalled();
+    expect(h.projects.ensure).not.toHaveBeenCalled();
+    expect(h.projects.ensureScratch).not.toHaveBeenCalled();
+  },
+);
