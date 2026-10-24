@@ -7,7 +7,7 @@ import * as NodeFS from "node:fs";
 import { expect, it } from "vite-plus/test";
 import { parse } from "yaml";
 
-const guide = NodeFS.readFileSync(new URL("../../docs/dagu.md", import.meta.url), "utf8");
+const guide = NodeFS.readFileSync(new URL("../../docs/user/t3c/dagu.md", import.meta.url), "utf8");
 const fixture = (name: string): Record<string, unknown> =>
   parse(NodeFS.readFileSync(new URL(`../dagu/${name}.yaml`, import.meta.url), "utf8")) as Record<
     string,

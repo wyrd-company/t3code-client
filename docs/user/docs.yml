@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://wyrd.foo/schemas/docs/v1.json
+schemaVersion: 1
+relationships:
+  references: command-line
+assets:
+  - assets/demo.gif
+products:
+  t3c:
+    name: t3c
+    version: 0.1.0
+    docs-version: 0.1.0
+    release-unit: t3code-cli
+    tagline: Run T3 Code conversations from your terminal and automation.
+    blurb: >-
+      A Node command-line client and TypeScript library for stock T3 Code.
+      Pair named servers, run or continue conversations, inspect threads, and
+      preserve clear output and exit codes in automation.
+    status: preview
+    category: Agent Tooling
+    highlights:
+      - Run a conversation on a stock T3 Code server from a terminal or an automation harness.
+      - Pair named server profiles, and keep session tokens out of the argument list by reading them from stdin.
+      - Continue a thread, list threads and projects, and read a thread's last message.
+      - Answers go to stdout and progress to stderr, with --json for structured results and --stream for incremental output.
+      - The same client ships as the TypeScript library @wyrd-company/t3code-lib.
+    media:
+      - src: assets/demo.gif
+        caption: Pairing a profile, starting and waiting for a thread, continuing it, and listing projects.
+    nav:
+      - section: Get started
+        groups:
+          - group: Basics
+            pages: [index, auth]
+      - section: Reference
+        groups:
+          - group: Using t3c
+            pages: [commands, policy, dagu]
+          - group: Library
+            pages: [library-reference]
+    kinds:
+      - kind: cli
+        install:
+          - method: npm
+            os: [macos, linux, windows]
+            default: true
+            command: npm install -g @wyrd-company/t3code-cli
+          - method: homebrew
+            os: [macos, linux]
+            command: brew install wyrd-company/tools/t3c

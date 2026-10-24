@@ -1,5 +1,5 @@
 ---
-docs: true
+product: t3c
 title: Getting started
 order: 1
 relationships:

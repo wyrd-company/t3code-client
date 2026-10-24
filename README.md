@@ -1,6 +1,6 @@
 # t3code-client
 
-![t3c pairs a profile, starts and waits for a thread, and lists projects](docs/assets/demo.gif)
+![t3c pairs a profile, starts and waits for a thread, and lists projects](docs/user/t3c/assets/demo.gif)
 
 A pnpm workspace for stock T3 Code 0.1.0, orchestration protocol 2.
 
@@ -22,17 +22,17 @@ task lib:check
 task cli:check
 ```
 
-User guide: [getting started](docs/index.md),
-[profiles](docs/auth.md),
-[command behavior](docs/commands.md),
-[output and exits](docs/policy.md),
-[Dagu](docs/dagu.md), and
-[library API](docs/library-reference.md).
+User guide: [getting started](docs/user/t3c/index.md),
+[profiles](docs/user/t3c/auth.md),
+[command behavior](docs/user/t3c/commands.md),
+[output and exits](docs/user/t3c/policy.md),
+[Dagu](docs/user/t3c/dagu.md), and
+[library API](docs/user/t3c/library-reference.md).
 
 `task docs` generates the JSDoc library API and published reference.
-The public usage guides are authored in `docs/`.
+The public usage guides are authored in `docs/user/t3c/`.
 `task demo` records real commands with a fresh pinned server home and
-`gpt-6-luna`, writing `docs/assets/demo.gif`.
+`gpt-6-luna`, writing `docs/user/t3c/assets/demo.gif`.
 
 Root verbs run the workspace. Package Taskfiles supply the same verbs:
 `install`, `build`, `fmt`, `lint`, `typecheck`, `test`, `test:live`, `package`,

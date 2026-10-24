@@ -60,9 +60,9 @@ proposed-design:
     ships dist/cli.js and npm-shrinkwrap.json with registry resolutions. Local
     consumer validation installs both package tarballs together. npm publication
     uses provenance. The t3c Homebrew formula depends on node and consumes the
-    release tarball. CLI docs are published from docs through
-    wyrd-company/wyrd.foo/.github/actions/publish-docs@v1 on t3code-cli@ tags.
-    docs.yml and pages include the generated library reference and demo.gif;
+    release tarball. CLI docs are published from docs/user on t3code-cli@ tags.
+    docs/user/docs.yml and the pages under docs/user/t3c include the generated
+    library reference and demo.gif;
     Taskfile targets generate the reference with jsdoc-to-markdown and render the
     VHS tape. The README and docs display the same demo asset.
   development: >-
