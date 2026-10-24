@@ -3,7 +3,7 @@ schemaVersion: 1
 relationships:
   references: command-line
 assets:
-  - assets/demo.gif
+  - t3c/assets/demo.gif
 products:
   t3c:
     name: t3c

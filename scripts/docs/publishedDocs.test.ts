@@ -59,12 +59,15 @@ it("resolves every local published-page link and demo asset", () => {
       { media: { src: string }[]; nav: { groups: { pages: string[] }[] }[] }
     >;
   };
-  expect(manifest.assets).toEqual(["assets/demo.gif"]);
+  // The assets list is relative to docs/user/; product fields are relative to the product folder.
+  expect(manifest.assets).toEqual(["t3c/assets/demo.gif"]);
   expect(Object.keys(manifest.products)).toEqual(["t3c"]);
-  expect(manifest.products["t3c"]!.media.map((item) => item.src)).toEqual(manifest.assets);
-  expect(
-    NodeFS.readFileSync(NodePath.join(root, manifest.assets[0]!)).subarray(0, 3).toString(),
-  ).toBe("GIF");
+  const media = manifest.products["t3c"]!.media.map((item) => item.src);
+  expect(media).toEqual(["assets/demo.gif"]);
+  const listed = manifest.assets.map((path) => NodePath.join(user, path));
+  expect(media.map((path) => NodePath.join(root, path))).toEqual(listed);
+  for (const path of listed)
+    expect(NodeFS.readFileSync(path).subarray(0, 3).toString(), path).toBe("GIF");
 });
 it("lists every published page once in the navigation", () => {
   const manifest = parse(read("docs.yml")) as {
