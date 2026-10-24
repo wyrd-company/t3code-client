@@ -32,3 +32,11 @@ release-units:
       primary:
         role: primary
         template: '{id}@{version}'
+  t3c-docs:
+    path: docs/user/t3c
+    depends-on:
+      - t3code-cli
+    tags:
+      primary:
+        role: primary
+        template: '{id}@{version}'
