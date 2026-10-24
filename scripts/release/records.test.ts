@@ -38,7 +38,8 @@ function setup() {
   command(root, "git", ["config", "user.email", "agent@example.invalid"]);
   command(root, "git", ["add", "."]);
   command(root, "git", ["commit", "--quiet", "-m", "chore: initial projections"]);
-  command(root, "intentional", ["tag", "--baseline"]);
+  // The docs unit is tag-only: its baseline carries the docs-version it starts at.
+  command(root, "intentional", ["tag", "--baseline", "--version", "t3c-docs=0.1.0"]);
   return root;
 }
 function release(root: string) {
@@ -109,7 +110,7 @@ describe("Intentional record agreement", () => {
     command(root, "git", ["tag", "-d", "t3code-lib@0.0.0", "t3code-cli@0.0.0"]);
     const result = run(root, "check-intents.sh");
     expect(result.status, result.stderr).toBe(0);
-    expect(command(root, "git", ["tag", "--list"]).trim()).toBe("");
+    expect(command(root, "git", ["tag", "--list"]).trim()).toBe("t3c-docs@0.1.0");
   });
   it("refuses missing authoritative history at a nonzero version", () => {
     const root = setup();
