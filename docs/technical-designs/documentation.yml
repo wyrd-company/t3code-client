@@ -24,8 +24,10 @@ proposed-design:
     adds publishing metadata; `cli:docs:check` compares the complete result.
     `task check` runs both freshness checks. `docs/user/docs.yml` registers the existing GIF.
     Publish consumes `docs/user` on CLI release tags; every page under it is
-    published and each asset is registered, with its path relative to the
-    product folder `docs/user/t3c`. Internal structured artifacts stay outside `docs/user`.
+    published and each asset is registered. The `assets` list is relative to
+    `docs/user`; the product fields (`media`, `logo`, `favicon`, `social-image`)
+    are relative to the product folder `docs/user/t3c`. Internal structured
+    artifacts stay outside `docs/user`.
   canonical-inputs: >-
     The CLI specification and native cli-surface.json asset are colocated in
     docs/specifications. Build copies that native input to the packaged command
