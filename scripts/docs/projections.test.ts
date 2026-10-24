@@ -10,6 +10,7 @@ const docs = new URL("../../docs/", import.meta.url);
 function read(path: string): string {
   return NodeFS.readFileSync(new URL(path, docs), "utf8");
 }
+const reference = "user/t3c/library-reference.md";
 function prose(text: string): string {
   return text
     .replace(/\]\([^)]+\)/gu, "]")
@@ -19,6 +20,6 @@ function prose(text: string): string {
 
 it("publishes the entire generated library reference with one canonical generator input", () => {
   const api = read("api.md").replace(/^---\n[\s\S]*?\n---\n/u, "");
-  expect(prose(read("library-reference.md"))).toContain(prose(api));
-  expect(read("library-reference.md")).toContain("from docs/api.md; edit the source.");
+  expect(prose(read(reference))).toContain(prose(api));
+  expect(read(reference)).toContain("from docs/api.md; edit the source.");
 });

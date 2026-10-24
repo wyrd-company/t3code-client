@@ -49,4 +49,4 @@ Read [the specification](../../docs/specifications/command-line.yml) and
 - The CLI package contains `dist/cli.js` and a registry-resolved `npm-shrinkwrap.json`.
   Local consumer checks install the library and CLI tarballs together.
 
-The [Dagu harness guide](../../docs/dagu.md) explains stdin, output and continuation; the specification defines CLI behavior.
+The [Dagu harness guide](../../docs/user/t3c/dagu.md) explains stdin, output and continuation; the specification defines CLI behavior.

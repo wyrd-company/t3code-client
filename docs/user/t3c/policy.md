@@ -1,5 +1,5 @@
 ---
-docs: true
+product: t3c
 title: Output, exits and requests
 order: 4
 relationships:

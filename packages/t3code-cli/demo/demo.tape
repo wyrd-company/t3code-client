@@ -1,6 +1,6 @@
 # relationships:
 #   demonstrates: command-line
-Output ../../docs/assets/demo.gif
+Output ../../docs/user/t3c/assets/demo.gif
 Set Shell bash
 Set FontSize 18
 Set Width 1000

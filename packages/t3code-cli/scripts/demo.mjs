@@ -110,7 +110,9 @@ try {
   process.env.DEMO_PROJECT = `${root}/sample-project`;
   await NodeFSP.mkdir(process.env.DEMO_PROJECT);
   await NodeFSP.mkdir(`${root}/bin`);
-  await NodeFSP.mkdir(new URL("../../../docs/assets/", import.meta.url), { recursive: true });
+  await NodeFSP.mkdir(new URL("../../../docs/user/t3c/assets/", import.meta.url), {
+    recursive: true,
+  });
   await NodeFSP.writeFile(
     `${root}/bin/t3c.mjs`,
     `#!/usr/bin/env node
@@ -183,7 +185,7 @@ catch { process.stderr.write("Demo capture failed.\\n"); process.exitCode = 1; }
     if (code !== 0) throw new Error(`VHS failed (${code}).`);
     const artifactPath = process.argv.includes("--check")
       ? `${root}/demo.gif`
-      : NodePath.resolve(import.meta.dirname, "../../../docs/assets/demo.gif");
+      : NodePath.resolve(import.meta.dirname, "../../../docs/user/t3c/assets/demo.gif");
     const artifact = await NodeFSP.readFile(artifactPath);
     console.log(
       JSON.stringify({

@@ -1,5 +1,5 @@
 ---
-docs: true
+product: t3c
 title: Library API
 order: 6
 relationships:

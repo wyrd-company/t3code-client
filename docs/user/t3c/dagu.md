@@ -1,5 +1,5 @@
 ---
-docs: true
+product: t3c
 title: Dagu harness
 order: 5
 relationships:

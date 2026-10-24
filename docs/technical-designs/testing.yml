@@ -83,7 +83,7 @@ proposed-design:
     output, error context, shrinkwrap and Taskfile ownership interfaces.
   recorded-cli-demonstration: |
     `task demo` starts a fresh pinned server home outside Git and renders the
-    committed `packages/t3code-cli/demo/demo.tape` to `docs/assets/demo.gif`.
+    committed `packages/t3code-cli/demo/demo.tape` to `docs/user/t3c/assets/demo.gif`.
     It replaces the config and server-evidence directories with owned paths and
     clears operational server/token/home/workspace/keep overrides and both display
     variables inside the isolated process. Ordinary live-test overrides remain
@@ -185,7 +185,7 @@ proposed-design:
     cleanup.
 
   dagu-fixture-verification: |
-    The [Dagu guide](../dagu.md#run-the-committed-fixtures) owns the consumer
+    The [Dagu guide](../user/t3c/dagu.md#run-the-committed-fixtures) owns the consumer
     invocation recipe for `scripts/dagu/verification.yaml` and
     `scripts/dagu/continuation.yaml`: installed matching package consumer, existing
     absolute project, explicit compatible server/environment prerequisites,
