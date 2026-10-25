@@ -17,7 +17,7 @@ import type { ShellWatchItem } from "../../src/api/shell.ts";
 import { T3Client } from "../../src/client.ts";
 import { T3RpcError } from "../../src/errors.ts";
 import type { WebSocketConstructor } from "../../src/internal/websocket.ts";
-import { threadId, type ProjectId, type ThreadId } from "../../src/schemas/common.ts";
+import { messageId, threadId, type ProjectId, type ThreadId } from "../../src/schemas/common.ts";
 
 const baseUrl = process.env["T3_LIVE_URL"];
 const token = process.env["T3_LIVE_TOKEN"];
@@ -230,6 +230,28 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(projection.thread.title).toBe("live sample thread");
     expect(client.threads.phase(thread)).toBe("idle");
     expect(await client.threads.pendingRequests(id)).toEqual([]);
+  });
+
+  it("observes stock conversation workflow-script omission without starting a provider", async () => {
+    const mid = messageId(NodeCrypto.randomUUID());
+    await client.threads.dispatch({
+      type: "message.dispatch",
+      commandId: client.threads.dispatcher.newCommandId(),
+      messageId: mid,
+      threadId: id,
+      createdBy: "user",
+      creationSource: "web",
+      text: "Sample message",
+      attachments: [],
+      dispatchMode: { type: "defer_start" },
+    });
+    const projection = await client.threads.projection(id);
+    const message = projection.messages.find((row) => row.id === mid);
+    expect(message).toBeDefined();
+    expect(message?.text).toBe("Sample message");
+    expect(Object.hasOwn(message ?? {}, "workflowScript")).toBe(false);
+    expect(message?.["workflowScript"]).toBeUndefined();
+    expect(projection.runs.find((run) => run.userMessageId === mid)?.status).toBe("preparing");
   });
 
   it("finds within a thread and refuses workflow and app requests it cannot serve", async () => {

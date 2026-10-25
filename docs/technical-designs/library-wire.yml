@@ -160,6 +160,13 @@ proposed-design:
     shared `threadPullRequests` keys them: host and repository case-insensitively,
     with a Forgejo link's port and the Azure DevOps host forms folded in.
 
+    Conversation messages in projections and `message.updated` events expose
+    optional boolean `workflowScript` metadata. True identifies a provider-native
+    workflow script, false identifies ordinary text, and omission preserves older
+    servers and producers that do not supply the classification. Malformed values
+    fail decoding; unknown metadata survives. Reading the field does not execute a
+    workflow, change message text or choose a display policy.
+
     The transcript route answers with the thread's `visibleTurnItems`, its
     `title`, and `updatedAt` in one read. It refuses a thread whose transcript is
     larger than the server's file attachment limit.

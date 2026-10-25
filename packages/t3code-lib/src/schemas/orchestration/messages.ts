@@ -91,6 +91,8 @@ export const OrchestrationV2ConversationMessage = z.looseObject({
   scheduledTaskId: ScheduledTaskId.optional(),
   /** The sending agent's thread in this environment, separate from the receiving thread. */
   senderThreadId: ThreadId.optional(),
+  /** Whether the message contains a provider-native workflow script. */
+  workflowScript: z.boolean().optional(),
   id: MessageId,
   threadId: ThreadId,
   runId: RunId.nullable(),

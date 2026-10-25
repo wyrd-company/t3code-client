@@ -72,7 +72,13 @@ export type ThreadMetaUpdate = ThreadMetadataUpdatePayload;
 
 export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
 
-/** Thread lifecycle, history, runs and pending requests. */
+/**
+ * Thread lifecycle, history, runs and pending requests.
+ * Projection conversation messages expose optional boolean `workflowScript`
+ * metadata: true marks a provider-native workflow script, false marks ordinary
+ * text, and older servers or other producers can omit it. Reading this metadata
+ * does not execute a workflow or change message text.
+ */
 export class ThreadsApi {
   readonly #commands: ThreadCommands;
 
