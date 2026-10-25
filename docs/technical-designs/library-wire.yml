@@ -166,6 +166,12 @@ proposed-design:
     older links can omit it. Malformed values fail decoding and unknown metadata
     survives. Reading the field does not fetch a repository.
 
+    The existing `thread.pull-request.link` command accepts optional nonempty
+    string `repositoryWebUrl` metadata through `threads.dispatch`. Browser URLs,
+    clone URLs and other nonempty strings retain the tagged wire type; omission
+    leaves the metadata unsupplied. Malformed values fail before dispatch and
+    unknown command metadata survives. Sending the field does not fetch a repository.
+
     Conversation messages in projections and `message.updated` events expose
     optional boolean `workflowScript` metadata. True identifies a provider-native
     workflow script, false identifies ordinary text, and omission preserves older

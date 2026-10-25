@@ -70,6 +70,10 @@ omission does not mean that the file is absent.</p>
 Linked pull requests expose optional nonempty string <code>repositoryWebUrl</code> metadata
 in thread reads and link update events. It carries a browser or clone URL when
 supplied; older links can omit it. Reading it does not fetch the repository.
+<code>dispatch</code> accepts optional nonempty string <code>repositoryWebUrl</code> on
+<code>thread.pull-request.link</code>: browser or clone URLs and other nonempty strings
+pass through, omission leaves it unsupplied, and malformed values fail before sending.
+Unknown command metadata survives; sending the field does not fetch a repository.
 Projection conversation messages and user-message turn items in projections,
 history/transcript rows and turn-item updates expose optional boolean <code>workflowScript</code>
 metadata: true marks a provider-native workflow script, false marks ordinary
@@ -1132,6 +1136,10 @@ Thread lifecycle, history, runs and pending requests.
 Linked pull requests expose optional nonempty string `repositoryWebUrl` metadata
 in thread reads and link update events. It carries a browser or clone URL when
 supplied; older links can omit it. Reading it does not fetch the repository.
+`dispatch` accepts optional nonempty string `repositoryWebUrl` on
+`thread.pull-request.link`: browser or clone URLs and other nonempty strings
+pass through, omission leaves it unsupplied, and malformed values fail before sending.
+Unknown command metadata survives; sending the field does not fetch a repository.
 Projection conversation messages and user-message turn items in projections,
 history/transcript rows and turn-item updates expose optional boolean `workflowScript`
 metadata: true marks a provider-native workflow script, false marks ordinary
