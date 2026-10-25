@@ -78,6 +78,12 @@ identifies the subagent task that started the work and waits on it. Values are
 trimmed nonempty strings for every kind, including fallback kinds. Omission
 stays absent, malformed values fail decoding and unknown metadata survives.
 Reading this field does not start work or change completion policy.
+Pending subagent tasks also expose optional <code>providerInstanceId</code> through these
+reads and events. Derived shell work identifies the owning provider thread&#39;s
+instance. Values are trimmed provider slugs: at most 64 characters, starting
+with a letter, then letters, digits, hyphens or underscores. Omission stays
+absent; malformed subagent values fail decoding. Other task kinds preserve
+this key as unknown metadata. Reading it does not select a provider or start work.
 Provider-thread native metadata exposes optional <code>forkHeadMessageId</code> through
 projections, detail snapshots and provider-thread events. It identifies the
 native message at a fork head. Strings are trimmed and must be nonempty;
@@ -1196,6 +1202,12 @@ identifies the subagent task that started the work and waits on it. Values are
 trimmed nonempty strings for every kind, including fallback kinds. Omission
 stays absent, malformed values fail decoding and unknown metadata survives.
 Reading this field does not start work or change completion policy.
+Pending subagent tasks also expose optional `providerInstanceId` through these
+reads and events. Derived shell work identifies the owning provider thread's
+instance. Values are trimmed provider slugs: at most 64 characters, starting
+with a letter, then letters, digits, hyphens or underscores. Omission stays
+absent; malformed subagent values fail decoding. Other task kinds preserve
+this key as unknown metadata. Reading it does not select a provider or start work.
 Provider-thread native metadata exposes optional `forkHeadMessageId` through
 projections, detail snapshots and provider-thread events. It identifies the
 native message at a fork head. Strings are trimmed and must be nonempty;

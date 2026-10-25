@@ -168,6 +168,14 @@ proposed-design:
     Omission stays absent, malformed values fail decoding, and unknown metadata
     survives. Reading the field does not start work or change completion policy.
 
+    Pending subagent tasks expose optional `providerInstanceId` through these
+    same reads and events. Derived shell work identifies the owning provider
+    thread's instance. Values use the open provider-instance slug contract:
+    trimmed, at most 64 characters, starting with a letter and containing only
+    letters, digits, hyphens and underscores. Omission stays absent and malformed
+    subagent values fail decoding. Other task kinds keep this key as unknown
+    metadata. Reading it does not select a provider or start work.
+
     A workflow run is a subagent whose `workflow` field carries the provider's
     replace-in-full view of the run: an append-only phase list and one entry
     per agent. `orchestration.stopWorkflow` stops the run by that subagent; the

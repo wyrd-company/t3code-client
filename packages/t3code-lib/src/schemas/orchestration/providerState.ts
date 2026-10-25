@@ -57,25 +57,33 @@ export type OrchestrationV2ProviderSessionDetached = z.infer<
 >;
 
 const pendingBackgroundTaskKinds = ["subagent", "command", "monitor", "background_task"] as const;
+const pendingBackgroundTask = z.looseObject({
+  taskId: TrimmedNonEmptyString,
+  description: TrimmedNonEmptyString.optional(),
+  /** The subagent task that started this work and waits on it. */
+  parentTaskId: TrimmedNonEmptyString.optional(),
+  kind: z.string().optional(),
+  childThreadId: ThreadId.optional(),
+});
 /**
  * Provider-owned background work that can outlive the root turn. A kind this
  * build does not know, or none, loads as `background_task`, as upstream does.
  */
-export const OrchestrationV2PendingBackgroundTask = z
-  .looseObject({
-    taskId: TrimmedNonEmptyString,
-    description: TrimmedNonEmptyString.optional(),
-    /** The subagent task that started this work and waits on it. */
-    parentTaskId: TrimmedNonEmptyString.optional(),
-    kind: z.string().optional(),
-    childThreadId: ThreadId.optional(),
-  })
-  .transform((task) => ({
-    ...task,
-    kind: (pendingBackgroundTaskKinds as readonly string[]).includes(task.kind ?? "")
-      ? (task.kind as (typeof pendingBackgroundTaskKinds)[number])
-      : ("background_task" as const),
-  }));
+export const OrchestrationV2PendingBackgroundTask = z.union([
+  pendingBackgroundTask.extend({
+    kind: z.literal("subagent"),
+    // The owning provider thread's instance in derived pending work.
+    providerInstanceId: ProviderInstanceId.optional(),
+  }),
+  pendingBackgroundTask
+    .refine((task) => task.kind !== "subagent")
+    .transform((task) => ({
+      ...task,
+      kind: (pendingBackgroundTaskKinds as readonly string[]).includes(task.kind ?? "")
+        ? (task.kind as "command" | "monitor" | "background_task")
+        : ("background_task" as const),
+    })),
+]);
 export type OrchestrationV2PendingBackgroundTask = z.infer<
   typeof OrchestrationV2PendingBackgroundTask
 >;
