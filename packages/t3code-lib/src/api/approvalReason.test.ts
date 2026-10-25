@@ -49,7 +49,8 @@ afterEach(async () => {
 it("types approval-request reasons and preserves strings, omission and unknown metadata", () => {
   for (const metadata of validMetadata) {
     const parsed = OrchestrationV2TurnItem.parse(turnItem(metadata));
-    if (parsed.type !== "approval_request") throw new Error("Expected approval turn item");
+    if ("unknown" in parsed || parsed.type !== "approval_request")
+      throw new Error("Expected approval turn item");
     expectTypeOf(parsed.reason).toEqualTypeOf<string | undefined>();
     expect(parsed).toEqual(turnItem(metadata));
     expect(Object.hasOwn(parsed, "reason")).toBe(Object.hasOwn(metadata, "reason"));
