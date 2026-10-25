@@ -45,6 +45,11 @@ proposed-design:
     are never read or embedded in startup diagnostics; they can contain pairing
     credentials and QR output. The stopped server's owned home remains available
     for explicit diagnosis. Failure reporting preserves lifecycle evidence errors.
+    Successful teardown also withholds server output from retained evidence;
+    text redaction cannot remove credentials encoded in QR rendering. The
+    evidence log contains an explicit omission marker. Readiness, stopped-process
+    and home-removal records remain available. `T3_LIVE_KEEP=1` preserves the
+    owned home and raw log for explicit diagnosis without copying it to evidence.
     The `t3` version is the server build this library targets,
     so the live suite is the check that the client still matches it.
 

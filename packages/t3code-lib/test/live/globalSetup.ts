@@ -165,17 +165,11 @@ export default async function setup(): Promise<(() => Promise<void>) | undefined
   const teardown = async () => {
     await stop();
     if (evidenceDir) {
-      const output = await NodeFSP.readFile(NodePath.join(root, "server.log"), "utf8");
-      const session = process.env["T3_LIVE_TOKEN"];
-      const sanitized = (session ? output.replaceAll(session, "[redacted]") : output)
-        .replace(/Bearer\s+[^\s"']+/gi, "Bearer [redacted]")
-        .replace(
-          /((?:token|credential|secret|password|ticket)["']?\s*[:=]\s*["']?)[^\s,"'}]+/gi,
-          "$1[redacted]",
-        );
+      // Text redaction cannot remove credentials encoded in QR rendering or
+      // other unstructured output. Retain an explicit omission marker instead.
       await NodeFSP.writeFile(
         NodePath.join(evidenceDir, `${NodePath.basename(root)}-server.log`),
-        sanitized,
+        "Server output withheld: it can contain pairing credentials and QR output.\n",
       );
     }
     if (process.env["T3_LIVE_KEEP"] !== "1") {
