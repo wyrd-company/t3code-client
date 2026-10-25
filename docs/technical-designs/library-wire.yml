@@ -185,6 +185,14 @@ proposed-design:
     `orchestration.getArchivedShellSnapshot`, and `thread.updated` items for
     them arrive on `orchestration.subscribeArchivedShell`.
 
+    `ServerConfig.lastEventLoopStall` is optional recent server event-loop stall
+    metadata in configuration reads and configuration stream snapshots. Its
+    `detectedAt` is a string, `durationMs` is a nonnegative integer, `cpuCount` is
+    a positive integer and `loadAverage` is an optional number (absent on Windows).
+    Omission means no recent stall was supplied. Null and malformed objects fail
+    decoding; unknown metadata is preserved. Detection and expiry belong to the
+    server; reads do not cache the value or change timing.
+
     `projects.ensureScratch` finds or creates the environment's Scratch project,
     rooted at `ServerConfig.scratchWorkspaceRoot`; the server sends that field
     only when its data directory is outside a Git checkout, and fails the call

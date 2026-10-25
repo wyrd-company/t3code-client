@@ -8,6 +8,7 @@ import {
   IsoDateTime,
   NonNegativeInt,
   ProjectId,
+  PositiveInt,
   ThreadId,
   TrimmedNonEmptyString,
   forwardCompatibleArray,
@@ -61,6 +62,13 @@ export const UsageLimitSourceSnapshot = z.looseObject({
 export type UsageLimitSourceSnapshot = z.infer<typeof UsageLimitSourceSnapshot>;
 export const UsageLimitSourceSnapshots = forwardCompatibleArray(UsageLimitSourceSnapshot);
 export type UsageLimitSourceSnapshots = z.infer<typeof UsageLimitSourceSnapshots>;
+export const ServerEventLoopStall = z.looseObject({
+  detectedAt: IsoDateTime,
+  durationMs: NonNegativeInt,
+  loadAverage: z.number().optional(),
+  cpuCount: PositiveInt,
+});
+export type ServerEventLoopStall = z.infer<typeof ServerEventLoopStall>;
 export const ServerConfig = z.looseObject({
   environment: ExecutionEnvironmentDescriptor,
   auth: ServerAuthDescriptor,
@@ -91,6 +99,7 @@ export const ServerConfig = z.looseObject({
   scratchWorkspaceRoot: TrimmedNonEmptyString.optional(),
   /** Folder that holds projects started from just a name (`projects.createNew`). */
   newProjectsRoot: TrimmedNonEmptyString.optional(),
+  lastEventLoopStall: ServerEventLoopStall.optional(),
   environmentThemes: z.array(EnvironmentTheme).optional(),
   usageLimitSources: UsageLimitSourceSnapshots.optional(),
 });

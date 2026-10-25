@@ -78,6 +78,13 @@ provider failure code, or null when none applies; older servers can omit it.</p>
 </dd>
 <dt><a href="#ServerApi">ServerApi</a></dt>
 <dd><p>Server environment, configuration and providers.
+Configuration reads and configuration snapshots expose optional
+<code>lastEventLoopStall</code>: the latest recent noticeable server event-loop stall.
+It contains string <code>detectedAt</code>, nonnegative integer <code>durationMs</code>, positive
+integer <code>cpuCount</code> and optional numeric <code>loadAverage</code> (absent on Windows).
+Omission means no recent stall was supplied; null and malformed objects fail
+decoding. Unknown metadata is preserved. The server controls detection and
+expiry; reading this metadata does not cache it or change timing.
 Environment capabilities include optional boolean <code>environmentThemes</code>: true
 advertises environment-theme publication through configuration streams. False
 and omission are preserved; omission does not advertise support. Available
@@ -1558,6 +1565,13 @@ watchArchived(
 ## ServerApi
 
 Server environment, configuration and providers.
+Configuration reads and configuration snapshots expose optional
+`lastEventLoopStall`: the latest recent noticeable server event-loop stall.
+It contains string `detectedAt`, nonnegative integer `durationMs`, positive
+integer `cpuCount` and optional numeric `loadAverage` (absent on Windows).
+Omission means no recent stall was supplied; null and malformed objects fail
+decoding. Unknown metadata is preserved. The server controls detection and
+expiry; reading this metadata does not cache it or change timing.
 Environment capabilities include optional boolean `environmentThemes`: true
 advertises environment-theme publication through configuration streams. False
 and omission are preserved; omission does not advertise support. Available

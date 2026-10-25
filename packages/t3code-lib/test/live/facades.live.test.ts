@@ -58,6 +58,12 @@ describe.skipIf(!enabled)("live facades", () => {
     }
   });
 
+  it("observes stock event-loop stall metadata through public configuration", async () => {
+    const config = await client.server.getConfig();
+    expect(Object.hasOwn(config, "lastEventLoopStall")).toBe(false);
+    expect(config.lastEventLoopStall).toBeUndefined();
+  });
+
   it("reads stock server self-update omission through public facades", async () => {
     const environment = await client.server.environment();
     const config = await client.server.getConfig();
