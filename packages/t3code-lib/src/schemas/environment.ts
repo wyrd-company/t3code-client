@@ -62,6 +62,7 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   pullRequestChecks: z.boolean().optional(),
   threadSnooze: z.boolean().optional(),
   threadRestartContinuation: z.boolean().optional(),
+  projectSettingsOverrides: z.boolean().optional(),
   threadSettlement: z.boolean().optional(),
   threadVisitedTracking: z.boolean().optional(),
   threadPullRequestWatch: z.boolean().optional(),

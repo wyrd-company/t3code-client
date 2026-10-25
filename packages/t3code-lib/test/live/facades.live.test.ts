@@ -99,6 +99,7 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(environment.capabilities.pullRequestChecks).toBe(true);
     expect(environment.capabilities.threadSnooze).toBe(true);
     expect(environment.capabilities.threadRestartContinuation).toBe(true);
+    expect(environment.capabilities.projectSettingsOverrides).toBe(true);
     expect(environment.capabilities.usageModelAliases).toBe(true);
     const config = await client.server.getConfig();
     expect(config.environment.capabilities.threadPinning).toBe(true);
@@ -111,6 +112,7 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(config.environment.capabilities.pullRequestChecks).toBe(true);
     expect(config.environment.capabilities.threadSnooze).toBe(true);
     expect(config.environment.capabilities.threadRestartContinuation).toBe(true);
+    expect(config.environment.capabilities.projectSettingsOverrides).toBe(true);
     expect(config.environment.capabilities.usageModelAliases).toBe(true);
   });
 
