@@ -76,6 +76,11 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   otlpEndpointCheck: z.boolean().optional(),
   pullRequestStackActions: z.boolean().optional(),
   agentActivityPublishing: z.boolean().optional(),
+  serverSelfUpdate: forwardCompatibleLiteral([
+    "boot-service",
+    "respawn",
+    "desktop-managed",
+  ]).optional(),
   serverSelfUpdateProgress: z.boolean().optional(),
   serverUpdateThreadContinuation: z.boolean().optional(),
   desktopAppUpdate: z.boolean().optional(),

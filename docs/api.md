@@ -242,6 +242,12 @@ true advertises continuation of running provider turns after a server update.
 False and omission are preserved; omission does not advertise support.
 Supplied non-boolean values fail decoding. Unknown fields remain intact.
 This metadata flag does not start an update, restart the server or continue a turn.</p>
+<p>Environment capabilities also include optional <code>serverSelfUpdate</code>: <code>boot-service</code>,
+<code>respawn</code> or <code>desktop-managed</code> identifies the advertised server update path.
+Omission is preserved and advertises no update path. Unknown strings are preserved
+for forward compatibility; supplied non-string values fail decoding. Available
+through environment reads, configuration reads and configuration snapshots.
+This metadata does not start an update or restart a server or desktop app.</p>
 <p>Environment capabilities also include optional boolean <code>serverSelfUpdateProgress</code>:
 true advertises streaming self-update progress before restart acknowledgement.
 False and omission are preserved; omission does not advertise streaming support.
@@ -1711,6 +1717,13 @@ true advertises continuation of running provider turns after a server update.
 False and omission are preserved; omission does not advertise support.
 Supplied non-boolean values fail decoding. Unknown fields remain intact.
 This metadata flag does not start an update, restart the server or continue a turn.
+
+Environment capabilities also include optional `serverSelfUpdate`: `boot-service`,
+`respawn` or `desktop-managed` identifies the advertised server update path.
+Omission is preserved and advertises no update path. Unknown strings are preserved
+for forward compatibility; supplied non-string values fail decoding. Available
+through environment reads, configuration reads and configuration snapshots.
+This metadata does not start an update or restart a server or desktop app.
 
 Environment capabilities also include optional boolean `serverSelfUpdateProgress`:
 true advertises streaming self-update progress before restart acknowledgement.

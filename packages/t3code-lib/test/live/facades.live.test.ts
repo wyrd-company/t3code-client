@@ -58,6 +58,15 @@ describe.skipIf(!enabled)("live facades", () => {
     }
   });
 
+  it("reads stock server self-update omission through public facades", async () => {
+    const environment = await client.server.environment();
+    const config = await client.server.getConfig();
+    for (const capabilities of [environment.capabilities, config.environment.capabilities]) {
+      expect(capabilities.serverSelfUpdate).toBeUndefined();
+      expect(Object.hasOwn(capabilities, "serverSelfUpdate")).toBe(false);
+    }
+  });
+
   it("reads the stock thread-stop metadata through public facades", async () => {
     const environment = await client.server.environment();
     expect(environment.capabilities.threadStop).toBe(true);

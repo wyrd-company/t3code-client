@@ -492,3 +492,12 @@ proposed-design:
     False and omission are preserved; omission does not advertise support.
     Supplied non-boolean values fail decoding. Unknown fields remain intact.
     This metadata flag does not dispatch a command or change `threads.stop`.
+
+  optional-server-self-update-capability: |
+    `ExecutionEnvironmentCapabilities.serverSelfUpdate` is an optional growing
+    literal available through `server.environment`, `server.getConfig` and
+    configuration stream snapshots. `boot-service`, `respawn` and `desktop-managed`
+    identify the advertised server update path. Omission is preserved and advertises
+    no update path. Unknown strings are preserved for forward compatibility;
+    supplied non-string values fail decoding. Unknown fields remain intact.
+    This metadata does not start an update or restart a server or desktop app.
