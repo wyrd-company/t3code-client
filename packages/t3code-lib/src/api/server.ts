@@ -30,6 +30,10 @@ export interface WatchServerLifecycleOptions {
  * Null means unknown; omission leaves legacy snapshots on `version`.
  * This metadata is available through configuration reads, provider lists and
  * configuration streams; it does not enforce a provider version policy.
+ * Provider workspace snapshots expose optional `optionDescriptors` arrays using
+ * the existing boolean/select descriptor union. Omission means no descriptor
+ * snapshot was supplied; an empty array supplies no options. Unknown descriptor
+ * types decode to `{ unknown: true, raw }`; malformed known types fail decoding.
  */
 export class ServerApi {
   readonly rpc: RpcClient<RpcMethods>;

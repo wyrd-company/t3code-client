@@ -260,6 +260,7 @@ export const ServerProviderWorkspaceSnapshot = z.looseObject({
   checkedAt: IsoDateTime,
   slashCommands: z.array(ServerProviderSlashCommand),
   skills: z.array(ServerProviderSkill),
+  optionDescriptors: z.array(ProviderOptionDescriptor).optional(),
 });
 export type ServerProviderWorkspaceSnapshot = z.infer<typeof ServerProviderWorkspaceSnapshot>;
 export const ServerProvider = z.looseObject({

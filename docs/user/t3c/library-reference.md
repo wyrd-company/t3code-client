@@ -79,7 +79,11 @@ Provider <code>installedVersion</code> is an optional nullable trimmed nonempty 
 the installed CLI version for a local provider with a separate server.
 Null means unknown; omission leaves legacy snapshots on <code>version</code>.
 This metadata is available through configuration reads, provider lists and
-configuration streams; it does not enforce a provider version policy.</p>
+configuration streams; it does not enforce a provider version policy.
+Provider workspace snapshots expose optional <code>optionDescriptors</code> arrays using
+the existing boolean/select descriptor union. Omission means no descriptor
+snapshot was supplied; an empty array supplies no options. Unknown descriptor
+types decode to <code>{ unknown: true, raw }</code>; malformed known types fail decoding.</p>
 </dd>
 <dt><a href="#VcsApi">VcsApi</a></dt>
 <dd><p>Repository references, worktrees and status.</p>
@@ -1363,6 +1367,10 @@ the installed CLI version for a local provider with a separate server.
 Null means unknown; omission leaves legacy snapshots on `version`.
 This metadata is available through configuration reads, provider lists and
 configuration streams; it does not enforce a provider version policy.
+Provider workspace snapshots expose optional `optionDescriptors` arrays using
+the existing boolean/select descriptor union. Omission means no descriptor
+snapshot was supplied; an empty array supplies no options. Unknown descriptor
+types decode to `{ unknown: true, raw }`; malformed known types fail decoding.
 
 **Kind**: global class
 

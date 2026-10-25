@@ -206,3 +206,10 @@ proposed-design:
     string. It reports the installed CLI version for a local provider with a
     separate server. Null means unknown; omission leaves legacy snapshots on
     `version`. The library does not infer a value or enforce a version policy.
+  provider-workspace-options: |
+    Provider workspace snapshots in configuration reads, provider lists and config
+    streams expose optional `optionDescriptors` arrays. Each entry uses the
+    existing boolean/select provider option descriptor union. Omission means no
+    descriptor snapshot was supplied; an empty array supplies no options.
+    Unknown descriptor types decode to `{ unknown: true, raw }`; malformed known
+    types fail decoding. The library does not infer workspace options.
