@@ -1506,7 +1506,7 @@ status(
 
 ### vcsApi.createWorktree()
 
-Create a worktree through the server.
+Create a worktree in the server's managed folder. Supply `path: null`.
 
 ```ts
 createWorktree(

@@ -31,7 +31,7 @@ export class VcsApi {
     return this.rpc.call("vcs.refreshStatus", input, signal);
   }
 
-  /** Create a worktree through the server. */
+  /** Create a worktree in the server's managed folder. Supply `path: null`. */
   createWorktree(
     input: RpcPayload<RpcMethods, "vcs.createWorktree">,
     signal?: AbortSignal,

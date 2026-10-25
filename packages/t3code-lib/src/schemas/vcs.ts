@@ -45,7 +45,8 @@ export const VcsCreateWorktreeInput = z.looseObject({
   refName: TrimmedNonEmptyString,
   newRefName: TrimmedNonEmptyString.optional(),
   baseRefName: TrimmedNonEmptyString.optional(),
-  path: TrimmedNonEmptyString.nullable(),
+  /** Required on the wire; the server selects the managed worktree folder. */
+  path: z.null(),
 });
 export type VcsCreateWorktreeInput = z.infer<typeof VcsCreateWorktreeInput>;
 export const VcsRemoveWorktreeInput = z.looseObject({
