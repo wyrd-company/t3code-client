@@ -189,6 +189,11 @@ through configuration arrays and environmentThemesUpdated payloads.
 Published themes expose optional <code>version</code>: the literal number 1. Omission
 stays absent in configuration theme arrays and environmentThemesUpdated
 stream payloads. This is theme-file metadata, not a server version check.
+Published themes expose optional <code>colors</code>: a palette map whose keys match
+/^[a-zA-Z][a-zA-Z0-9]{0,63}$/ and whose string values are trimmed, nonempty
+and at most 64 characters after trimming. Empty maps are valid; omission stays
+absent. Malformed maps fail decoding in config reads and snapshots; theme
+streams report decode errors and continue. Values are not restricted to hex.
 Unknown theme metadata is preserved. Reading these colors does not apply a theme.
 Environment capabilities also include optional boolean <code>usageLimitSources</code>:
 true advertises quota streaming from configured usage-limit sources. False
@@ -1775,6 +1780,11 @@ through configuration arrays and environmentThemesUpdated payloads.
 Published themes expose optional `version`: the literal number 1. Omission
 stays absent in configuration theme arrays and environmentThemesUpdated
 stream payloads. This is theme-file metadata, not a server version check.
+Published themes expose optional `colors`: a palette map whose keys match
+/^[a-zA-Z][a-zA-Z0-9]{0,63}$/ and whose string values are trimmed, nonempty
+and at most 64 characters after trimming. Empty maps are valid; omission stays
+absent. Malformed maps fail decoding in config reads and snapshots; theme
+streams report decode errors and continue. Values are not restricted to hex.
 Unknown theme metadata is preserved. Reading these colors does not apply a theme.
 Environment capabilities also include optional boolean `usageLimitSources`:
 true advertises quota streaming from configured usage-limit sources. False

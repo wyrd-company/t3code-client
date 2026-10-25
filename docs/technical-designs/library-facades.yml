@@ -519,3 +519,12 @@ proposed-design:
     metadata in configuration theme arrays and `environmentThemesUpdated`
     payloads. Omission stays absent; other values are malformed. Unknown theme
     metadata is preserved. Reading it does not apply a theme or check the server version.
+
+  optional-theme-colors: |
+    `EnvironmentTheme.colors` is an optional palette map. Keys match
+    /^[a-zA-Z][a-zA-Z0-9]{0,63}$/; values are trimmed, nonempty strings of at most
+    64 characters after trimming. Values are not restricted to hexadecimal colors.
+    Empty maps are valid, omission stays absent and unknown theme metadata is
+    preserved. Configuration reads and snapshots reject malformed maps. Theme
+    update streams report decode errors and continue to later valid events.
+    Reading palette metadata does not apply a theme.
