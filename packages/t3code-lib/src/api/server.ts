@@ -50,6 +50,9 @@ export interface WatchServerLifecycleOptions {
  * Published themes also expose optional `accent` with the same #RGB/#RRGGBB
  * format, exact color and case preservation, omission and malformed-value rules
  * through configuration arrays and environmentThemesUpdated payloads.
+ * Published themes expose optional `version`: the literal number 1. Omission
+ * stays absent in configuration theme arrays and environmentThemesUpdated
+ * stream payloads. This is theme-file metadata, not a server version check.
  * Unknown theme metadata is preserved. Reading these colors does not apply a theme.
  * Environment capabilities also include optional boolean `usageLimitSources`:
  * true advertises quota streaming from configured usage-limit sources. False

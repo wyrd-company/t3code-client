@@ -514,3 +514,8 @@ proposed-design:
     a present value. Malformed present values fail decoding. The field is typed
     in configuration theme arrays and `environmentThemesUpdated` payloads. Unknown
     theme metadata is preserved. Reading accent does not apply a theme.
+  optional-theme-version: |
+    `EnvironmentTheme.version` is an optional literal number 1. It is theme-file
+    metadata in configuration theme arrays and `environmentThemesUpdated`
+    payloads. Omission stays absent; other values are malformed. Unknown theme
+    metadata is preserved. Reading it does not apply a theme or check the server version.
