@@ -43,6 +43,13 @@ export interface WatchServerLifecycleOptions {
  * and omission are preserved; omission does not advertise support. Available
  * through environment reads, configuration reads and configuration snapshots.
  * Supplied non-boolean values fail decoding.
+ * Provider records expose optional `supportedRuntimeModes` arrays using the
+ * existing RuntimeMode literal set. Omission stays absent; empty arrays stay
+ * empty. Known modes and unknown strings, including duplicates, retain order.
+ * Malformed array entries are dropped. Non-array fields make a provider record
+ * malformed; existing forward-compatible arrays omit it while later valid
+ * records remain available. This metadata does not select a mode or change
+ * runtime defaults or policy.
  * Provider records expose optional boolean `configurableProviders`: true
  * advertises that the provider accepts provider configuration. False and
  * omission are preserved; omission does not advertise support. Supplied

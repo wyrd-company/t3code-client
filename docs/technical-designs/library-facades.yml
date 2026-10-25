@@ -559,3 +559,12 @@ proposed-design:
     record malformed; existing forward-compatible arrays omit it and later valid
     records remain available. Unknown provider metadata is preserved. Reading this
     flag does not add or call provider configuration operations.
+  provider-supported-runtime-modes: |
+    Provider records in configuration reads, provider lists and configuration
+    streams expose optional `supportedRuntimeModes` arrays using the existing
+    RuntimeMode literal set. Omission stays absent; empty arrays stay empty.
+    Known modes and unknown strings, including duplicates, retain their order.
+    Malformed array entries are dropped. A non-array field makes the provider
+    record malformed; existing forward-compatible arrays omit that record while
+    later valid records remain available. Unknown provider metadata is preserved.
+    This metadata does not select a mode or change runtime defaults or policy.

@@ -274,6 +274,7 @@ export const ServerProvider = z.looseObject({
   continuation: ServerProviderContinuation.optional(),
   showInteractionModeToggle: z.boolean().optional(),
   reportsContextWindow: z.boolean().optional(),
+  supportedRuntimeModes: forwardCompatibleArray(RuntimeMode).optional(),
   requiresNewThreadForModelChange: z.boolean().optional(),
   supportsConversationRollback: z.boolean().optional(),
   supportsTextGeneration: z.boolean().optional(),
