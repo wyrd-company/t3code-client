@@ -184,7 +184,11 @@ proposed-design:
 
     A workflow run is a subagent whose `workflow` field carries the provider's
     replace-in-full view of the run: an append-only phase list and one entry
-    per agent. `orchestration.stopWorkflow` stops the run by that subagent; the
+    per agent. Workflow agents expose optional nonnegative integer `completedAt`
+    metadata in epoch milliseconds through projection/detail reads and subagent
+    updates. Zero and omission are preserved; malformed values fail decoding,
+    and unknown metadata survives. Reading it does not change workflow completion.
+    `orchestration.stopWorkflow` stops the run by that subagent; the
     `subagent.stop` command stops one provider-native child while its run keeps
     working. The server advertises thread find with `threadFind` and
     `threadFindProgressive` in `ServerConfig`.

@@ -137,7 +137,11 @@ Projection conversation messages and user-message turn items in projections,
 history/transcript rows and turn-item updates expose optional boolean <code>workflowScript</code>
 metadata: true marks a provider-native workflow script, false marks ordinary
 text, and older servers or other producers can omit it. Reading this metadata
-does not execute a workflow or change message text.</p>
+does not execute a workflow or change message text.
+Workflow agents in projection/detail reads and subagent updates expose optional
+nonnegative integer <code>completedAt</code> epoch milliseconds. Zero and omission are
+preserved, malformed values fail decoding, and unknown metadata survives.
+Reading it does not change workflow completion.</p>
 </dd>
 <dt><a href="#ShellApi">ShellApi</a></dt>
 <dd><p>Live and archived cross-thread snapshots. Thread shells carry optional
@@ -1270,6 +1274,10 @@ history/transcript rows and turn-item updates expose optional boolean `workflowS
 metadata: true marks a provider-native workflow script, false marks ordinary
 text, and older servers or other producers can omit it. Reading this metadata
 does not execute a workflow or change message text.
+Workflow agents in projection/detail reads and subagent updates expose optional
+nonnegative integer `completedAt` epoch milliseconds. Zero and omission are
+preserved, malformed values fail decoding, and unknown metadata survives.
+Reading it does not change workflow completion.
 
 **Kind**: global class
 

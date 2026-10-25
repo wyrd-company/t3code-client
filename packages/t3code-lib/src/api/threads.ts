@@ -149,6 +149,10 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
  * metadata: true marks a provider-native workflow script, false marks ordinary
  * text, and older servers or other producers can omit it. Reading this metadata
  * does not execute a workflow or change message text.
+ * Workflow agents in projection/detail reads and subagent updates expose optional
+ * nonnegative integer `completedAt` epoch milliseconds. Zero and omission are
+ * preserved, malformed values fail decoding, and unknown metadata survives.
+ * Reading it does not change workflow completion.
  */
 export class ThreadsApi {
   readonly #commands: ThreadCommands;
