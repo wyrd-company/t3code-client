@@ -77,6 +77,7 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   pullRequestStackActions: z.boolean().optional(),
   agentActivityPublishing: z.boolean().optional(),
   serverSelfUpdateProgress: z.boolean().optional(),
+  serverUpdateThreadContinuation: z.boolean().optional(),
   desktopAppUpdate: z.boolean().optional(),
   threadSettlement: z.boolean().optional(),
   threadVisitedTracking: z.boolean().optional(),
