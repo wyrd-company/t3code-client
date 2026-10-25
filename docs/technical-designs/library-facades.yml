@@ -356,6 +356,14 @@ proposed-design:
     Supplied non-boolean values fail decoding. Unknown capability fields remain
     intact. This metadata flag does not read database storage.
 
+  optional-storage-cleanup-capability: |
+    `ExecutionEnvironmentCapabilities.storageCleanup` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises storage cleanup support. False and omission
+    are preserved; omission does not advertise support. Supplied non-boolean
+    values fail decoding. Unknown capability fields remain intact. This metadata
+    flag does not perform storage cleanup.
+
   optional-project-file-reads: |
     `projects.files.read` mirrors `projects.readFile`. Its optional `allowMissing`
     input is a boolean. When true, an absent file returns empty contents, zero

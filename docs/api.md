@@ -205,7 +205,12 @@ Environment capabilities also include optional boolean <code>databaseStorage</co
 true advertises streaming database size and reclaimable space. False and omission
 are preserved; omission does not advertise support. Available through environment
 reads, configuration reads and configuration snapshots. Supplied non-boolean
-values fail decoding. This metadata flag does not read database storage.</p>
+values fail decoding. This metadata flag does not read database storage.
+Environment capabilities include optional boolean <code>storageCleanup</code>: true
+advertises storage cleanup support. False and omission are preserved; omission
+does not advertise support. Available through environment reads, configuration
+reads and configuration snapshots. Supplied non-boolean values fail decoding.
+This metadata flag does not perform storage cleanup.</p>
 </dd>
 <dt><a href="#VcsApi">VcsApi</a></dt>
 <dd><p>Repository references, worktrees and status.</p>
@@ -1621,6 +1626,11 @@ true advertises streaming database size and reclaimable space. False and omissio
 are preserved; omission does not advertise support. Available through environment
 reads, configuration reads and configuration snapshots. Supplied non-boolean
 values fail decoding. This metadata flag does not read database storage.
+Environment capabilities include optional boolean `storageCleanup`: true
+advertises storage cleanup support. False and omission are preserved; omission
+does not advertise support. Available through environment reads, configuration
+reads and configuration snapshots. Supplied non-boolean values fail decoding.
+This metadata flag does not perform storage cleanup.
 
 **Kind**: global class
 

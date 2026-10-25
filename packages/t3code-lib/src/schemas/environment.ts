@@ -70,6 +70,7 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   commandOutputStreaming: z.boolean().optional(),
   ignoredFileListing: z.boolean().optional(),
   databaseStorage: z.boolean().optional(),
+  storageCleanup: z.boolean().optional(),
   threadSettlement: z.boolean().optional(),
   threadVisitedTracking: z.boolean().optional(),
   threadPullRequestWatch: z.boolean().optional(),
