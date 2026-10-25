@@ -174,7 +174,12 @@ advertises environment-theme publication through configuration streams. False
 and omission are preserved; omission does not advertise support. Available
 through environment reads, configuration reads and configuration snapshots.
 Supplied non-boolean values fail decoding.
-Provider records expose optional <code>iconUrl</code>: a trimmed nonempty string of at
+Provider setup records expose optional <code>documentationUrl</code>: a trimmed nonempty
+string of at most 2,048 characters. Setup and field omission stay absent.
+Malformed provider records are omitted by existing forward-compatible arrays
+in reads and streams; unknown setup metadata is preserved. Reading this
+metadata does not fetch or open documentation.</p>
+<p>Provider records expose optional <code>iconUrl</code>: a trimmed nonempty string of at
 most 2,048 characters. Omission stays absent. Malformed provider records are
 omitted by the existing forward-compatible arrays in config reads and streams.
 Unknown provider metadata is preserved. This field does not fetch or render
@@ -1776,6 +1781,12 @@ advertises environment-theme publication through configuration streams. False
 and omission are preserved; omission does not advertise support. Available
 through environment reads, configuration reads and configuration snapshots.
 Supplied non-boolean values fail decoding.
+Provider setup records expose optional `documentationUrl`: a trimmed nonempty
+string of at most 2,048 characters. Setup and field omission stay absent.
+Malformed provider records are omitted by existing forward-compatible arrays
+in reads and streams; unknown setup metadata is preserved. Reading this
+metadata does not fetch or open documentation.
+
 Provider records expose optional `iconUrl`: a trimmed nonempty string of at
 most 2,048 characters. Omission stays absent. Malformed provider records are
 omitted by the existing forward-compatible arrays in config reads and streams.

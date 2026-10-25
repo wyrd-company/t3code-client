@@ -544,3 +544,10 @@ proposed-design:
     omitted by existing forward-compatible arrays in reads and streams. Unknown provider
     metadata is preserved. Reading this metadata does not fetch or render icons;
     consumers that render remote icons must validate the owning driver origin.
+  provider-setup-documentation: |
+    Provider setup records in configuration reads, provider lists and configuration
+    streams expose optional `documentationUrl`: a trimmed nonempty string of at
+    most 2,048 characters. Setup and field omission stay absent. Malformed provider
+    records are omitted by existing forward-compatible arrays; later valid records
+    remain available. Unknown setup and provider metadata is preserved. Reading
+    this metadata does not fetch or open documentation.

@@ -277,7 +277,13 @@ export const ServerProvider = z.looseObject({
   requiresNewThreadForModelChange: z.boolean().optional(),
   supportsConversationRollback: z.boolean().optional(),
   supportsTextGeneration: z.boolean().optional(),
-  setup: z.looseObject({ canAuthenticate: z.boolean(), canInstall: z.boolean() }).optional(),
+  setup: z
+    .looseObject({
+      canAuthenticate: z.boolean(),
+      canInstall: z.boolean(),
+      documentationUrl: TrimmedNonEmptyString.max(2_048).optional(),
+    })
+    .optional(),
   runtimePaths: z
     .looseObject({
       homePath: TrimmedNonEmptyString,
