@@ -91,10 +91,12 @@ describe.skipIf(!enabled)("live facades", () => {
     const environment = await client.server.environment();
     expect(environment.capabilities.threadPinning).toBe(true);
     expect(environment.capabilities.threadPinReorder).toBe(true);
+    expect(environment.capabilities.threadActiveReorder).toBe(true);
     expect(environment.capabilities.usageModelAliases).toBe(true);
     const config = await client.server.getConfig();
     expect(config.environment.capabilities.threadPinning).toBe(true);
     expect(config.environment.capabilities.threadPinReorder).toBe(true);
+    expect(config.environment.capabilities.threadActiveReorder).toBe(true);
     expect(config.environment.capabilities.usageModelAliases).toBe(true);
   });
 

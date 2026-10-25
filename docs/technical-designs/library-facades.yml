@@ -218,6 +218,14 @@ proposed-design:
     advertise support. Non-boolean supplied values fail decoding. This metadata
     flag does not reorder a thread.
 
+  optional-thread-active-reorder-capability: |
+    `ExecutionEnvironmentCapabilities.threadActiveReorder` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises persistence of manual Active thread order;
+    false and omission are preserved without inference. Omission does not
+    advertise support. Non-boolean supplied values fail decoding. This metadata
+    flag does not reorder a thread.
+
   optional-project-file-reads: |
     `projects.files.read` mirrors `projects.readFile`. Its optional `allowMissing`
     input is a boolean. When true, an absent file returns empty contents, zero
