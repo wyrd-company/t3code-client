@@ -40,6 +40,10 @@ export interface WatchServerLifecycleOptions {
  * `observability.otlpLogsEnabled`. False and omission stay intact; malformed
  * non-Booleans fail decoding, and later valid stream chunks remain available.
  * This metadata does not enable or configure log export.
+ * Configuration reads and snapshots expose optional Boolean
+ * `observability.otlpTracesEnabled`. False and omission stay intact; malformed
+ * non-Booleans fail decoding, and later valid stream chunks remain available.
+ * This metadata does not enable or configure trace export.
  * Configuration observability exposes optional `otlpTracesUrl`,
  * `otlpMetricsUrl` and `otlpLogsUrl`: trimmed nonempty strings without a URL-format
  * or length restriction. Omission stays

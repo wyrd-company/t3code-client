@@ -639,3 +639,10 @@ proposed-design:
     metadata are preserved. Malformed non-Booleans fail decoding; later valid
     stream chunks remain available. Reading the flag does not configure telemetry
     or enable log export. Other observability fields remain loose.
+
+  optional-observability-trace-export-flag: |
+    Configuration reads and snapshots expose optional Boolean
+    `observability.otlpTracesEnabled`. False, omission and unknown observability
+    metadata are preserved. Malformed non-Booleans fail decoding; later valid
+    stream chunks remain available. Reading the flag does not configure telemetry
+    or enable trace export. Other observability fields remain loose.

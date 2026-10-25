@@ -187,6 +187,10 @@ Configuration reads and snapshots expose optional Boolean
 <code>observability.otlpLogsEnabled</code>. False and omission stay intact; malformed
 non-Booleans fail decoding, and later valid stream chunks remain available.
 This metadata does not enable or configure log export.
+Configuration reads and snapshots expose optional Boolean
+<code>observability.otlpTracesEnabled</code>. False and omission stay intact; malformed
+non-Booleans fail decoding, and later valid stream chunks remain available.
+This metadata does not enable or configure trace export.
 Configuration observability exposes optional <code>otlpTracesUrl</code>,
 <code>otlpMetricsUrl</code> and <code>otlpLogsUrl</code>: trimmed nonempty strings without a URL-format
 or length restriction. Omission stays
@@ -1869,6 +1873,10 @@ Configuration reads and snapshots expose optional Boolean
 `observability.otlpLogsEnabled`. False and omission stay intact; malformed
 non-Booleans fail decoding, and later valid stream chunks remain available.
 This metadata does not enable or configure log export.
+Configuration reads and snapshots expose optional Boolean
+`observability.otlpTracesEnabled`. False and omission stay intact; malformed
+non-Booleans fail decoding, and later valid stream chunks remain available.
+This metadata does not enable or configure trace export.
 Configuration observability exposes optional `otlpTracesUrl`,
 `otlpMetricsUrl` and `otlpLogsUrl`: trimmed nonempty strings without a URL-format
 or length restriction. Omission stays
