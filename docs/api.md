@@ -189,7 +189,13 @@ Published themes expose optional <code>colors</code>: a palette map whose keys m
 and at most 64 characters after trimming. Empty maps are valid; omission stays
 absent. Malformed maps fail decoding in config reads and snapshots; theme
 streams report decode errors and continue. Values are not restricted to hex.
-Unknown theme metadata is preserved. Reading these colors does not apply a theme.
+Published themes expose optional <code>variants</code> with independently optional <code>light</code>
+and <code>dark</code> palette maps. Palette keys match /^[a-zA-Z][a-zA-Z0-9]{0,63}$/;
+values are trimmed nonempty strings of at most 64 characters, including CSS
+color forms beyond hex. Empty variants and empty palettes are valid. Omission
+stays absent; malformed known palettes fail config decoding and produce
+recoverable stream decode-errors. Unknown theme and variant metadata is preserved.
+Reading these palette variants does not apply a theme.
 Environment capabilities also include optional boolean <code>usageLimitSources</code>:
 true advertises quota streaming from configured usage-limit sources. False
 and omission are preserved; omission does not advertise support. Available
@@ -1780,7 +1786,13 @@ Published themes expose optional `colors`: a palette map whose keys match
 and at most 64 characters after trimming. Empty maps are valid; omission stays
 absent. Malformed maps fail decoding in config reads and snapshots; theme
 streams report decode errors and continue. Values are not restricted to hex.
-Unknown theme metadata is preserved. Reading these colors does not apply a theme.
+Published themes expose optional `variants` with independently optional `light`
+and `dark` palette maps. Palette keys match /^[a-zA-Z][a-zA-Z0-9]{0,63}$/;
+values are trimmed nonempty strings of at most 64 characters, including CSS
+color forms beyond hex. Empty variants and empty palettes are valid. Omission
+stays absent; malformed known palettes fail config decoding and produce
+recoverable stream decode-errors. Unknown theme and variant metadata is preserved.
+Reading these palette variants does not apply a theme.
 Environment capabilities also include optional boolean `usageLimitSources`:
 true advertises quota streaming from configured usage-limit sources. False
 and omission are preserved; omission does not advertise support. Available

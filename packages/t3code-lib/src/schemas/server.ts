@@ -20,7 +20,17 @@ import { ServerProviders, ServerProviderUsageLimits } from "./provider.ts";
 
 export const EditorId = forwardCompatibleLiteral(["cursor", "vscode", "zed", "file-manager"]);
 export type EditorId = z.infer<typeof EditorId>;
+const EnvironmentThemeVariantColors = z.record(
+  z.string().regex(/^[a-zA-Z][a-zA-Z0-9]{0,63}$/),
+  TrimmedNonEmptyString.max(64),
+);
 export const EnvironmentTheme = z.looseObject({
+  variants: z
+    .looseObject({
+      light: EnvironmentThemeVariantColors.optional(),
+      dark: EnvironmentThemeVariantColors.optional(),
+    })
+    .optional(),
   colors: z
     .record(z.string().regex(/^[a-zA-Z][a-zA-Z0-9]{0,63}$/), TrimmedNonEmptyString.max(64))
     .optional(),

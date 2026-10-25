@@ -528,3 +528,12 @@ proposed-design:
     preserved. Configuration reads and snapshots reject malformed maps. Theme
     update streams report decode errors and continue to later valid events.
     Reading palette metadata does not apply a theme.
+
+  optional-theme-variants: |
+    `EnvironmentTheme.variants` is an optional object with independently optional
+    `light` and `dark` palette maps. Keys match /^[a-zA-Z][a-zA-Z0-9]{0,63}$/;
+    values are trimmed nonempty strings of at most 64 characters, including CSS
+    forms beyond hex. Empty variants and empty palettes are valid; omission stays
+    absent. Unknown theme and variant metadata is preserved. Configuration reads
+    and snapshots reject malformed known palettes; theme stream decode-errors
+    remain recoverable. Reading this metadata does not apply a theme.
