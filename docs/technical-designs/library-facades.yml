@@ -424,3 +424,11 @@ proposed-design:
     and omission are preserved without inference. Omission does not advertise
     support. Non-boolean supplied values fail decoding. This metadata flag does
     not run storage cleanup.
+
+  optional-otlp-endpoint-check-capability: |
+    `ExecutionEnvironmentCapabilities.otlpEndpointCheck` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises support for checking OTLP endpoints for
+    telemetry export settings; false and omission are preserved without inference.
+    Omission does not advertise support. Non-boolean supplied values fail decoding.
+    This metadata flag does not check an endpoint.

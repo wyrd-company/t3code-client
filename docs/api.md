@@ -215,7 +215,12 @@ Environment capabilities include optional boolean <code>storageCleanupRun</code>
 advertises support for running storage cleanup. False and omission are preserved;
 omission does not advertise support. Available through environment reads,
 configuration reads and configuration snapshots. Supplied non-boolean values
-fail decoding. This metadata flag does not run storage cleanup.</p>
+fail decoding. This metadata flag does not run storage cleanup.
+Environment capabilities also include optional boolean <code>otlpEndpointCheck</code>:
+true advertises support for checking OTLP endpoints for telemetry export settings.
+False and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding. This metadata flag does not check an endpoint.</p>
 </dd>
 <dt><a href="#VcsApi">VcsApi</a></dt>
 <dd><p>Repository references, worktrees and status.</p>
@@ -1641,6 +1646,11 @@ advertises support for running storage cleanup. False and omission are preserved
 omission does not advertise support. Available through environment reads,
 configuration reads and configuration snapshots. Supplied non-boolean values
 fail decoding. This metadata flag does not run storage cleanup.
+Environment capabilities also include optional boolean `otlpEndpointCheck`:
+true advertises support for checking OTLP endpoints for telemetry export settings.
+False and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding. This metadata flag does not check an endpoint.
 
 **Kind**: global class
 

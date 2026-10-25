@@ -168,6 +168,11 @@ export interface WatchServerLifecycleOptions {
  * omission does not advertise support. Available through environment reads,
  * configuration reads and configuration snapshots. Supplied non-boolean values
  * fail decoding. This metadata flag does not run storage cleanup.
+ * Environment capabilities also include optional boolean `otlpEndpointCheck`:
+ * true advertises support for checking OTLP endpoints for telemetry export settings.
+ * False and omission are preserved; omission does not advertise support. Available
+ * through environment reads, configuration reads and configuration snapshots.
+ * Supplied non-boolean values fail decoding. This metadata flag does not check an endpoint.
  */
 export class ServerApi {
   readonly rpc: RpcClient<RpcMethods>;

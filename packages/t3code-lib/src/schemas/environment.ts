@@ -72,6 +72,7 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   databaseStorage: z.boolean().optional(),
   storageCleanup: z.boolean().optional(),
   storageCleanupRun: z.boolean().optional(),
+  otlpEndpointCheck: z.boolean().optional(),
   threadSettlement: z.boolean().optional(),
   threadVisitedTracking: z.boolean().optional(),
   threadPullRequestWatch: z.boolean().optional(),
