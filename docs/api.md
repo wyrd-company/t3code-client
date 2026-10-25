@@ -78,6 +78,12 @@ provider failure code, or null when none applies; older servers can omit it.</p>
 </dd>
 <dt><a href="#ServerApi">ServerApi</a></dt>
 <dd><p>Server environment, configuration and providers.
+Configuration reads and snapshots expose optional <code>directEndpoints</code>: address
+hints with <code>kind</code> (lan or tailnet) and nonempty <code>httpBaseUrl</code>. Empty arrays and
+omission are distinct. Unknown kind strings and extra metadata are preserved;
+malformed entries are dropped, while a non-array field fails decoding.
+These are hints only: consumers must verify that an address answers as this
+environment before using it. Reading them does not select or connect to one.
 Configuration reads and configuration snapshots expose optional
 <code>lastEventLoopStall</code>: the latest recent noticeable server event-loop stall.
 It contains string <code>detectedAt</code>, nonnegative integer <code>durationMs</code>, positive
@@ -1565,6 +1571,12 @@ watchArchived(
 ## ServerApi
 
 Server environment, configuration and providers.
+Configuration reads and snapshots expose optional `directEndpoints`: address
+hints with `kind` (lan or tailnet) and nonempty `httpBaseUrl`. Empty arrays and
+omission are distinct. Unknown kind strings and extra metadata are preserved;
+malformed entries are dropped, while a non-array field fails decoding.
+These are hints only: consumers must verify that an address answers as this
+environment before using it. Reading them does not select or connect to one.
 Configuration reads and configuration snapshots expose optional
 `lastEventLoopStall`: the latest recent noticeable server event-loop stall.
 It contains string `detectedAt`, nonnegative integer `durationMs`, positive

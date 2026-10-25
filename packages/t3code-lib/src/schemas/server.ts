@@ -62,6 +62,13 @@ export const UsageLimitSourceSnapshot = z.looseObject({
 export type UsageLimitSourceSnapshot = z.infer<typeof UsageLimitSourceSnapshot>;
 export const UsageLimitSourceSnapshots = forwardCompatibleArray(UsageLimitSourceSnapshot);
 export type UsageLimitSourceSnapshots = z.infer<typeof UsageLimitSourceSnapshots>;
+export const ServerDirectEndpointKind = forwardCompatibleLiteral(["lan", "tailnet"]);
+export type ServerDirectEndpointKind = z.infer<typeof ServerDirectEndpointKind>;
+export const ServerDirectEndpoint = z.looseObject({
+  kind: ServerDirectEndpointKind,
+  httpBaseUrl: TrimmedNonEmptyString,
+});
+export type ServerDirectEndpoint = z.infer<typeof ServerDirectEndpoint>;
 export const ServerEventLoopStall = z.looseObject({
   detectedAt: IsoDateTime,
   durationMs: NonNegativeInt,
@@ -79,6 +86,7 @@ export const ServerConfig = z.looseObject({
   providers: ServerProviders,
   availableEditors: forwardCompatibleArray(EditorId),
   remoteOpenTargets: forwardCompatibleArray(RemoteOpenTarget).optional(),
+  directEndpoints: forwardCompatibleArray(ServerDirectEndpoint).optional(),
   observability: ServerObservability,
   settings: ServerSettings,
   shellResumeCompletionMarker: z.boolean().optional(),

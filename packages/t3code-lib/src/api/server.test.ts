@@ -113,6 +113,47 @@ describe("ServerApi", () => {
     expect(snapshots[1]?.lastEventLoopStall).toEqual(stall);
   });
 
+  it("reads direct endpoint metadata and preserves stream decode errors before a later snapshot", async () => {
+    const config = fixture("server-config") as Record<string, unknown>;
+    delete config["directEndpoints"];
+    const endpoints = [
+      {
+        kind: "lan",
+        httpBaseUrl: "http://192.168.1.2:3000/",
+        future: "preserved",
+      },
+    ];
+    const present = { ...config, directEndpoints: endpoints };
+    const malformed = { ...config, directEndpoints: null };
+    server.respond("server.getConfig", present);
+    await expect(api.getConfig()).resolves.toMatchObject({ directEndpoints: endpoints });
+    server.respond("server.getConfig", malformed);
+    await expect(api.getConfig()).rejects.toBeInstanceOf(T3DecodeError);
+    server.handle("subscribeServerConfig", () => ({
+      kind: "stream",
+      chunks: [config, malformed, present].map((config) => [
+        { version: 1, type: "snapshot", config },
+      ]),
+    }));
+    const snapshots = [];
+    let errors = 0;
+    for await (const item of api.watchConfig()) {
+      if ("kind" in item && item.kind === "decode-error" && "error" in item) {
+        expect(item.error).toBeInstanceOf(T3DecodeError);
+        errors += 1;
+        continue;
+      }
+      const event = ServerConfigStreamEvent.parse(item);
+      if ("unknown" in event) throw new Error("Expected a known config event");
+      if (event.type !== "snapshot") throw new Error("Expected a config snapshot");
+      snapshots.push(event.config);
+    }
+    expect(errors).toBe(1);
+    expect(snapshots).toHaveLength(2);
+    expect(Object.hasOwn(snapshots[0] ?? {}, "directEndpoints")).toBe(false);
+    expect(snapshots[1]?.directEndpoints).toEqual(endpoints);
+  });
+
   it("finds a provider model by slug or alias", async () => {
     const config = fixture("server-config") as {
       providers: Array<{ instanceId: string; models: Array<{ slug: string; aliases?: string[] }> }>;

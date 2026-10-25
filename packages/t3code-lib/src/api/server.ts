@@ -25,6 +25,12 @@ export interface WatchServerLifecycleOptions {
 
 /**
  * Server environment, configuration and providers.
+ * Configuration reads and snapshots expose optional `directEndpoints`: address
+ * hints with `kind` (lan or tailnet) and nonempty `httpBaseUrl`. Empty arrays and
+ * omission are distinct. Unknown kind strings and extra metadata are preserved;
+ * malformed entries are dropped, while a non-array field fails decoding.
+ * These are hints only: consumers must verify that an address answers as this
+ * environment before using it. Reading them does not select or connect to one.
  * Configuration reads and configuration snapshots expose optional
  * `lastEventLoopStall`: the latest recent noticeable server event-loop stall.
  * It contains string `detectedAt`, nonnegative integer `durationMs`, positive

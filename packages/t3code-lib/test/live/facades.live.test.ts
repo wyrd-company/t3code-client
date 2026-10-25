@@ -64,6 +64,12 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(config.lastEventLoopStall).toBeUndefined();
   });
 
+  it("observes stock direct endpoint metadata through public config", async () => {
+    const config = await client.server.getConfig();
+    expect(Object.hasOwn(config, "directEndpoints")).toBe(true);
+    expect(config["directEndpoints"]).toEqual([]);
+  });
+
   it("reads stock server self-update omission through public facades", async () => {
     const environment = await client.server.environment();
     const config = await client.server.getConfig();

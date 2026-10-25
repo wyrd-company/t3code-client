@@ -15,6 +15,14 @@ proposed-design:
     Related library designs carry the wire, transport, auth, usage and facade
     contracts. The library architecture links the canonical design family.
   wire-facts-verified-against-t-code: |
+    Server configuration reads and stream snapshots expose optional
+    `directEndpoints`: a forward-compatible array of address hints with `kind`
+    (`lan` or `tailnet`) and nonempty `httpBaseUrl`. Unknown kind strings and
+    extra metadata survive; malformed entries are dropped. Omission and an empty
+    array are distinct; non-array values fail decoding. Consumers verify that an
+    address answers as this environment before use. The library does not choose
+    or connect to an endpoint from this metadata.
+
     The server speaks orchestration protocol 2 and refuses other clients. The
     `/ws` upgrade must carry `?orchestrationProtocol=2` (a 426 answers an upgrade
     without it), and the orchestration HTTP routes must carry the header
