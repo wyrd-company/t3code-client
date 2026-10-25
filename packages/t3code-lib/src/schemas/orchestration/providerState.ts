@@ -65,6 +65,8 @@ export const OrchestrationV2PendingBackgroundTask = z
   .looseObject({
     taskId: TrimmedNonEmptyString,
     description: TrimmedNonEmptyString.optional(),
+    /** The subagent task that started this work and waits on it. */
+    parentTaskId: TrimmedNonEmptyString.optional(),
     kind: z.string().optional(),
     childThreadId: ThreadId.optional(),
   })

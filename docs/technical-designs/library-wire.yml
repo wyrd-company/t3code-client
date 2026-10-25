@@ -161,6 +161,13 @@ proposed-design:
     Unknown option metadata survives decoding. Reading preview metadata does not
     answer a question or change its response policy.
 
+    Pending background tasks in provider-thread projections, HTTP detail snapshots,
+    provider-thread events and thread shells expose optional `parentTaskId` metadata.
+    It identifies the subagent task that started the work and waits on it. Values
+    are trimmed nonempty strings for every task kind, including fallback kinds.
+    Omission stays absent, malformed values fail decoding, and unknown metadata
+    survives. Reading the field does not start work or change completion policy.
+
     A workflow run is a subagent whose `workflow` field carries the provider's
     replace-in-full view of the run: an append-only phase list and one entry
     per agent. `orchestration.stopWorkflow` stops the run by that subagent; the

@@ -72,6 +72,12 @@ omission does not mean that the file is absent.</p>
 </dd>
 <dt><a href="#ThreadsApi">ThreadsApi</a></dt>
 <dd><p>Thread lifecycle, history, runs and pending requests.
+Pending background tasks expose optional <code>parentTaskId</code> through provider-thread
+projections, detail snapshots, provider-thread events and thread shells. It
+identifies the subagent task that started the work and waits on it. Values are
+trimmed nonempty strings for every kind, including fallback kinds. Omission
+stays absent, malformed values fail decoding and unknown metadata survives.
+Reading this field does not start work or change completion policy.
 Provider-thread native metadata exposes optional <code>forkHeadMessageId</code> through
 projections, detail snapshots and provider-thread events. It identifies the
 native message at a fork head. Strings are trimmed and must be nonempty;
@@ -1184,6 +1190,12 @@ async delete(
 ## ThreadsApi
 
 Thread lifecycle, history, runs and pending requests.
+Pending background tasks expose optional `parentTaskId` through provider-thread
+projections, detail snapshots, provider-thread events and thread shells. It
+identifies the subagent task that started the work and waits on it. Values are
+trimmed nonempty strings for every kind, including fallback kinds. Omission
+stays absent, malformed values fail decoding and unknown metadata survives.
+Reading this field does not start work or change completion policy.
 Provider-thread native metadata exposes optional `forkHeadMessageId` through
 projections, detail snapshots and provider-thread events. It identifies the
 native message at a fork head. Strings are trimmed and must be nonempty;

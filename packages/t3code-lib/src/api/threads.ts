@@ -74,6 +74,12 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
 
 /**
  * Thread lifecycle, history, runs and pending requests.
+ * Pending background tasks expose optional `parentTaskId` through provider-thread
+ * projections, detail snapshots, provider-thread events and thread shells. It
+ * identifies the subagent task that started the work and waits on it. Values are
+ * trimmed nonempty strings for every kind, including fallback kinds. Omission
+ * stays absent, malformed values fail decoding and unknown metadata survives.
+ * Reading this field does not start work or change completion policy.
  * Provider-thread native metadata exposes optional `forkHeadMessageId` through
  * projections, detail snapshots and provider-thread events. It identifies the
  * native message at a fork head. Strings are trimmed and must be nonempty;
