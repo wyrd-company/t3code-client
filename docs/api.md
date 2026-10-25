@@ -108,6 +108,11 @@ true advertises persistence of manual Active thread order. False and omission
 are preserved; omission does not advertise support. Available through
 environment reads, configuration reads and configuration snapshots. Supplied
 non-boolean values fail decoding. This metadata flag does not reorder a thread.
+Environment capabilities also include optional boolean <code>threadAutoSettleOptOut</code>:
+true advertises support for disabling auto-settle per thread. False and omission
+are preserved; omission does not advertise support. Available through
+environment reads, configuration reads and configuration snapshots. Supplied
+non-boolean values fail decoding. This metadata flag does not change auto-settle.
 Provider <code>installedVersion</code> is an optional nullable trimmed nonempty string:
 the installed CLI version for a local provider with a separate server.
 Null means unknown; omission leaves legacy snapshots on <code>version</code>.
@@ -1437,6 +1442,11 @@ true advertises persistence of manual Active thread order. False and omission
 are preserved; omission does not advertise support. Available through
 environment reads, configuration reads and configuration snapshots. Supplied
 non-boolean values fail decoding. This metadata flag does not reorder a thread.
+Environment capabilities also include optional boolean `threadAutoSettleOptOut`:
+true advertises support for disabling auto-settle per thread. False and omission
+are preserved; omission does not advertise support. Available through
+environment reads, configuration reads and configuration snapshots. Supplied
+non-boolean values fail decoding. This metadata flag does not change auto-settle.
 Provider `installedVersion` is an optional nullable trimmed nonempty string:
 the installed CLI version for a local provider with a separate server.
 Null means unknown; omission leaves legacy snapshots on `version`.
