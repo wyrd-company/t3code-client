@@ -243,7 +243,7 @@ export const OrchestrationV2TurnItemMembers = [
     providerInstanceId: ProviderInstanceId,
     childThreadId: ThreadId.nullable(),
     prompt: z.string(),
-    progress: z.string().optional(),
+    progress: z.string().nullable().optional(),
     result: z.string().nullable(),
   }),
   z.looseObject({

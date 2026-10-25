@@ -91,6 +91,10 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
  * native message at a fork head. Strings are trimmed and must be nonempty;
  * omission stays absent, malformed values fail decoding and unknown metadata
  * survives. Reading this field does not create or resume a fork.
+ * Subagent turn-item `progress` is an optional string or null through projections,
+ * detail snapshots, visible rows and turn-item events. Strings and null survive;
+ * omission stays absent and other values fail decoding. Null represents unavailable
+ * progress in stock server projections. Reading it does not stop work or change policy.
  * Approval-request turn items expose optional `fullAccessOverride` through
  * projections, detail snapshots and turn-item events. Known values `ask_rule`
  * and `provider_check` describe why the provider requested approval in full-access

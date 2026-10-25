@@ -149,6 +149,12 @@ proposed-design:
     omit it. Nested usage values are validated and unknown metadata survives.
     Reading this metadata does not enforce a context budget or perform a fork.
 
+    Subagent turn items expose optional `progress` through thread projections,
+    HTTP detail snapshots, visible rows and turn-item events. Strings, including
+    empty strings, and null are preserved. Omission stays absent; other values
+    fail decoding. Null represents unavailable progress in stock server projections.
+    Reading this metadata does not stop work or change completion policy.
+
     Approval-request turn items expose optional string `reason` through thread
     projections, detail snapshots and turn-item events. Empty and arbitrary strings
     are valid. Omission stays absent, malformed values fail decoding, and unknown
