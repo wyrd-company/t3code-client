@@ -457,3 +457,12 @@ proposed-design:
     omission are preserved; omission does not advertise support. Supplied
     non-boolean values fail decoding. This metadata flag performs no pull request
     operation.
+
+  optional-desktop-app-update-capability: |
+    `ExecutionEnvironmentCapabilities.desktopAppUpdate` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises a desktop app update through the supervising
+    desktop app. False and omission are preserved; omission does not advertise
+    support. Supplied non-boolean values fail decoding. Unknown capability fields
+    remain intact. This metadata flag does not update or restart the desktop app
+    or server.
