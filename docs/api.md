@@ -88,6 +88,11 @@ true advertises custom model rate persistence and application to usage summaries
 False and omission are preserved; omission does not advertise support. Available
 through environment reads, configuration reads and configuration snapshots.
 Supplied non-boolean values fail decoding. This flag does not configure rates.
+Environment capabilities also include optional boolean <code>usageModelAliases</code>:
+true advertises model-name mapping through configured usage aliases. False
+and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding. This flag does not configure aliases.
 Provider <code>installedVersion</code> is an optional nullable trimmed nonempty string:
 the installed CLI version for a local provider with a separate server.
 Null means unknown; omission leaves legacy snapshots on <code>version</code>.
@@ -1397,6 +1402,11 @@ true advertises custom model rate persistence and application to usage summaries
 False and omission are preserved; omission does not advertise support. Available
 through environment reads, configuration reads and configuration snapshots.
 Supplied non-boolean values fail decoding. This flag does not configure rates.
+Environment capabilities also include optional boolean `usageModelAliases`:
+true advertises model-name mapping through configured usage aliases. False
+and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding. This flag does not configure aliases.
 Provider `installedVersion` is an optional nullable trimmed nonempty string:
 the installed CLI version for a local provider with a separate server.
 Null means unknown; omission leaves legacy snapshots on `version`.

@@ -49,6 +49,8 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   usageLimitSources: z.boolean().optional(),
   /** Server persists custom model rates and applies them to usage summaries. */
   usagePriceOverrides: z.boolean().optional(),
+  /** Server maps model names through configured usage aliases. */
+  usageModelAliases: z.boolean().optional(),
   threadSettlement: z.boolean().optional(),
   threadVisitedTracking: z.boolean().optional(),
   threadPullRequestWatch: z.boolean().optional(),
