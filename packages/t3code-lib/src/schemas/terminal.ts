@@ -55,6 +55,7 @@ export const TerminalAttachInput = z.looseObject({
   env: TerminalEnvSchema.optional(),
   providerInstanceId: ProviderInstanceId.optional(),
   restartIfNotRunning: z.boolean().optional(),
+  resume: z.boolean().optional(),
 });
 export type TerminalAttachInput = z.infer<typeof TerminalAttachInput>;
 export const TerminalWriteInput = z.looseObject({

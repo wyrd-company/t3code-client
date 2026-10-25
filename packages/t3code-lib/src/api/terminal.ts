@@ -7,7 +7,14 @@ import type { RpcMethods } from "../rpc/registry.ts";
 import type { RpcPayload, RpcSuccess } from "../rpc/spec.ts";
 import { unwrapStreamItems, type DecodedStreamItem } from "./streamItems.ts";
 
-/** Server terminal operations and event streams. */
+/**
+ * Server terminal operations and event streams.
+ * `attach` accepts optional boolean `resume`. With `resume: true`, resubscriptions
+ * preserve closed, exited and evicted terminals instead of restarting them,
+ * even when `restartIfNotRunning: true`. Unknown terminal IDs can recover when
+ * `cwd` is supplied, including after a server restart. Omission and `false`
+ * retain ordinary attach behavior; unknown IDs without `cwd` fail lookup.
+ */
 export class TerminalApi {
   readonly rpc: RpcClient<RpcMethods>;
 

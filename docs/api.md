@@ -75,7 +75,12 @@ omission does not mean that the file is absent.</p>
 <dd><p>Repository references, worktrees and status.</p>
 </dd>
 <dt><a href="#TerminalApi">TerminalApi</a></dt>
-<dd><p>Server terminal operations and event streams.</p>
+<dd><p>Server terminal operations and event streams.
+<code>attach</code> accepts optional boolean <code>resume</code>. With <code>resume: true</code>, resubscriptions
+preserve closed, exited and evicted terminals instead of restarting them,
+even when <code>restartIfNotRunning: true</code>. Unknown terminal IDs can recover when
+<code>cwd</code> is supplied, including after a server restart. Omission and <code>false</code>
+retain ordinary attach behavior; unknown IDs without <code>cwd</code> fail lookup.</p>
 </dd>
 <dt><a href="#CommandDispatcher">CommandDispatcher</a></dt>
 <dd><p>Validated orchestration dispatch and bookkeeping ids.</p>
@@ -1597,6 +1602,11 @@ watchStatus(
 ## TerminalApi
 
 Server terminal operations and event streams.
+`attach` accepts optional boolean `resume`. With `resume: true`, resubscriptions
+preserve closed, exited and evicted terminals instead of restarting them,
+even when `restartIfNotRunning: true`. Unknown terminal IDs can recover when
+`cwd` is supplied, including after a server restart. Omission and `false`
+retain ordinary attach behavior; unknown IDs without `cwd` fail lookup.
 
 **Kind**: global class
 

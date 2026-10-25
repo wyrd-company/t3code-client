@@ -192,3 +192,11 @@ proposed-design:
     `workingTree.files[].path` is relative to that root. Paths preserve
     whitespace. The server omits the root when it cannot resolve it; callers
     must handle omission. Unknown working-tree fields remain available.
+
+  terminal-attach: |
+    `terminal.attach` accepts optional boolean `resume`. With `resume: true`,
+    resubscriptions preserve closed, exited and evicted terminals instead of
+    restarting them, even with `restartIfNotRunning: true`. Unknown terminal IDs
+    can recover when `cwd` is supplied, including after a server restart.
+    Omission and `false` retain ordinary attach behavior. Unknown IDs without
+    `cwd` fail lookup. The stock server owns terminal lifecycle behavior.
