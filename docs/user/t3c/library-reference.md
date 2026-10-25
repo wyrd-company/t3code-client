@@ -230,7 +230,13 @@ Environment capabilities also include optional boolean <code>pullRequestStackAct
 true advertises support for pull request stack actions. False and omission are
 preserved; omission does not advertise support. Available through environment
 reads, configuration reads and configuration snapshots. Supplied non-boolean
-values fail decoding. This metadata flag does not perform a pull request stack action.</p>
+values fail decoding. This metadata flag does not perform a pull request stack action.
+Environment capabilities also include optional boolean <code>agentActivityPublishing</code>:
+true reports that agent activity publishing is enabled and relay link credentials
+are configured. False and omission are preserved; older servers can omit this
+field while still publishing. Available through environment reads, configuration
+reads and configuration snapshots. Supplied non-boolean values fail decoding.
+This metadata flag does not configure or publish agent activity.</p>
 </dd>
 <dt><a href="#VcsApi">VcsApi</a></dt>
 <dd><p>Repository references, worktrees and status.</p>
@@ -1666,6 +1672,12 @@ true advertises support for pull request stack actions. False and omission are
 preserved; omission does not advertise support. Available through environment
 reads, configuration reads and configuration snapshots. Supplied non-boolean
 values fail decoding. This metadata flag does not perform a pull request stack action.
+Environment capabilities also include optional boolean `agentActivityPublishing`:
+true reports that agent activity publishing is enabled and relay link credentials
+are configured. False and omission are preserved; older servers can omit this
+field while still publishing. Available through environment reads, configuration
+reads and configuration snapshots. Supplied non-boolean values fail decoding.
+This metadata flag does not configure or publish agent activity.
 
 **Kind**: global class
 

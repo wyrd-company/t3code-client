@@ -440,3 +440,12 @@ proposed-design:
     stack actions; false and omission are preserved without inference. Omission
     does not advertise support. Non-boolean supplied values fail decoding.
     This metadata flag does not perform a pull request stack action.
+
+  optional-agent-activity-publishing-capability: |
+    `ExecutionEnvironmentCapabilities.agentActivityPublishing` is an optional
+    boolean available through `server.environment`, `server.getConfig` and
+    configuration stream snapshots. True reports that agent activity publishing
+    is enabled and relay link credentials are configured. False and omission are
+    preserved without inference; older servers can omit this field while still
+    publishing. Non-boolean supplied values fail decoding. This metadata flag
+    does not configure or publish agent activity.

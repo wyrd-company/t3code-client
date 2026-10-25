@@ -74,6 +74,7 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   storageCleanupRun: z.boolean().optional(),
   otlpEndpointCheck: z.boolean().optional(),
   pullRequestStackActions: z.boolean().optional(),
+  agentActivityPublishing: z.boolean().optional(),
   threadSettlement: z.boolean().optional(),
   threadVisitedTracking: z.boolean().optional(),
   threadPullRequestWatch: z.boolean().optional(),
