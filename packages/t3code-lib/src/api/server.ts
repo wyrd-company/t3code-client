@@ -86,6 +86,11 @@ export interface WatchServerLifecycleOptions {
  * preserved; omission does not advertise support. Available through environment
  * reads, configuration reads and configuration snapshots. Supplied non-boolean
  * values fail decoding. This metadata flag does not fetch or run checks.
+ * Environment capabilities also include optional boolean `threadSnooze`:
+ * true advertises support for snoozing threads. False and omission are preserved;
+ * omission does not advertise support. Available through environment reads,
+ * configuration reads and configuration snapshots. Supplied non-boolean values
+ * fail decoding. This metadata flag does not snooze a thread.
  * Provider `installedVersion` is an optional nullable trimmed nonempty string:
  * the installed CLI version for a local provider with a separate server.
  * Null means unknown; omission leaves legacy snapshots on `version`.
