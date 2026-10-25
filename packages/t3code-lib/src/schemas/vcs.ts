@@ -17,6 +17,7 @@ export const VcsRef = z.looseObject({
   name: TrimmedNonEmptyString,
   isRemote: z.boolean().optional(),
   remoteName: TrimmedNonEmptyString.optional(),
+  upstreamRef: TrimmedNonEmptyString.optional(),
   current: z.boolean(),
   isDefault: z.boolean(),
   worktreePath: TrimmedNonEmptyString.nullable(),

@@ -178,3 +178,9 @@ proposed-design:
     `vcs.listRefs` returns an optional boolean `isAtRepositoryRoot` that reports
     whether the requested `cwd` is the repository root. Omission does not mean
     false. Unknown result fields remain available for forward compatibility.
+
+  optional-upstream-references: |
+    Each reference from `vcs.listRefs` can include `upstreamRef`, an optional
+    trimmed nonempty string containing the full Git ref, such as
+    `refs/remotes/origin/main`. Callers must handle omission. Unknown reference
+    fields remain available for forward compatibility.

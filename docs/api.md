@@ -1491,6 +1491,9 @@ Repository references, worktrees and status.
 
 List repository references. The optional boolean `isAtRepositoryRoot`
 reports whether `cwd` is the repository root. Omission does not mean false.
+Each reference can include `upstreamRef`, an optional trimmed nonempty string
+containing the full Git ref (for example `refs/remotes/origin/main`).
+The field can be omitted; callers must handle omission.
 
 ```ts
 listRefs(
