@@ -236,6 +236,12 @@ advertises server pull request support. False and omission are preserved; omissi
 does not advertise support. Available through environment reads, configuration
 reads and configuration snapshots. Supplied non-boolean values fail decoding.
 This metadata flag performs no pull request operation.
+Environment capabilities also include optional boolean <code>threadStop</code>:
+true advertises support for the upstream thread-stop command. False and
+omission are preserved; omission does not advertise support. Supplied
+non-boolean values fail decoding. Available through environment reads,
+configuration reads and configuration snapshots; unknown fields remain intact.
+This metadata flag does not dispatch a command or change <code>threads.stop</code>.
 Environment capabilities also include optional boolean <code>serverUpdateThreadContinuation</code>:
 true advertises continuation of running provider turns after a server update.
 False and omission are preserved; omission does not advertise support.
@@ -1699,6 +1705,12 @@ advertises server pull request support. False and omission are preserved; omissi
 does not advertise support. Available through environment reads, configuration
 reads and configuration snapshots. Supplied non-boolean values fail decoding.
 This metadata flag performs no pull request operation.
+Environment capabilities also include optional boolean `threadStop`:
+true advertises support for the upstream thread-stop command. False and
+omission are preserved; omission does not advertise support. Supplied
+non-boolean values fail decoding. Available through environment reads,
+configuration reads and configuration snapshots; unknown fields remain intact.
+This metadata flag does not dispatch a command or change `threads.stop`.
 Environment capabilities also include optional boolean `serverUpdateThreadContinuation`:
 true advertises continuation of running provider turns after a server update.
 False and omission are preserved; omission does not advertise support.

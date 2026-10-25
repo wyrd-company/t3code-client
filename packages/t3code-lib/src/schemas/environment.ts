@@ -83,6 +83,7 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   threadVisitedTracking: z.boolean().optional(),
   threadPullRequestWatch: z.boolean().optional(),
   serverResolvedCommandContext: z.boolean().optional(),
+  threadStop: z.boolean().optional(),
   serverBrowser: z.boolean().optional(),
   projectWorktreeCleanup: z.boolean().optional(),
   settledWorktreeCleanup: z.boolean().optional(),

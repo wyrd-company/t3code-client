@@ -58,6 +58,13 @@ describe.skipIf(!enabled)("live facades", () => {
     }
   });
 
+  it("reads the stock thread-stop metadata through public facades", async () => {
+    const environment = await client.server.environment();
+    expect(environment.capabilities.threadStop).toBe(true);
+    const config = await client.server.getConfig();
+    expect(config.environment.capabilities.threadStop).toBe(true);
+  });
+
   it("speaks orchestration protocol 2 and reads the granular permissions", async () => {
     const environment = await client.auth.descriptor();
     expect(environment.orchestrationProtocolVersion).toBe(2);
