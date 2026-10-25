@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: library-facades
+// ---
 import { z } from "zod";
 
 import { EnvironmentId, TrimmedNonEmptyString, forwardCompatibleLiteral } from "./common.ts";
@@ -39,6 +43,8 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   questionAttachments: z.boolean().optional(),
   fileAttachments: z.looseObject({ maxUploadBytes: z.number().int().min(1) }).optional(),
   inlineMessageContext: z.boolean().optional(),
+  /** Server publishes environment themes through configuration streams. */
+  environmentThemes: z.boolean().optional(),
   threadSettlement: z.boolean().optional(),
   threadVisitedTracking: z.boolean().optional(),
   threadPullRequestWatch: z.boolean().optional(),

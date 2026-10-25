@@ -25,6 +25,11 @@ export interface WatchServerLifecycleOptions {
 
 /**
  * Server environment, configuration and providers.
+ * Environment capabilities include optional boolean `environmentThemes`: true
+ * advertises environment-theme publication through configuration streams. False
+ * and omission are preserved; omission does not advertise support. Available
+ * through environment reads, configuration reads and configuration snapshots.
+ * Supplied non-boolean values fail decoding.
  * Provider `installedVersion` is an optional nullable trimmed nonempty string:
  * the installed CLI version for a local provider with a separate server.
  * Null means unknown; omission leaves legacy snapshots on `version`.

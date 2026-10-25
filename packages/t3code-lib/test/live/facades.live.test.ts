@@ -66,6 +66,13 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(session.auth.serverUpdateScope).toBe("environment:maintain");
   });
 
+  it("reads the stock environment-theme capability through public facades", async () => {
+    const environment = await client.server.environment();
+    expect(environment.capabilities.environmentThemes).toBe(true);
+    const config = await client.server.getConfig();
+    expect(config.environment.capabilities.environmentThemes).toBe(true);
+  });
+
   it("ensures a project idempotently", async () => {
     const project = await client.projects.ensure({ workspaceRoot, title: "live sample" });
     projectId = project.id;
