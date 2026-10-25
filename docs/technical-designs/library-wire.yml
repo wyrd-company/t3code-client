@@ -149,6 +149,12 @@ proposed-design:
     omit it. Nested usage values are validated and unknown metadata survives.
     Reading this metadata does not enforce a context budget or perform a fork.
 
+    Approval-request turn items expose optional string `reason` through thread
+    projections, detail snapshots and turn-item events. Empty and arbitrary strings
+    are valid. Omission stays absent, malformed values fail decoding, and unknown
+    metadata survives. Reading the reason does not answer the approval or change
+    permissions.
+
     User-input question options expose optional string `preview` through thread
     projections, HTTP detail snapshots and `turn-item.updated` events. Empty and
     arbitrary strings are valid; older servers and provider reports can omit it.

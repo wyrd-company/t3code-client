@@ -72,7 +72,11 @@ omission does not mean that the file is absent.</p>
 </dd>
 <dt><a href="#ThreadsApi">ThreadsApi</a></dt>
 <dd><p>Thread lifecycle, history, runs and pending requests.
-User-input question options expose optional string <code>preview</code> through projections,
+Approval-request turn items expose optional string <code>reason</code> through projection,
+detail and turn-item events. Empty and arbitrary strings are valid; omission
+stays absent and malformed values fail decoding. Reading this metadata does
+not answer an approval or change permissions.</p>
+<p>User-input question options expose optional string <code>preview</code> through projections,
 detail snapshots and turn-item events. Empty and arbitrary strings are valid;
 provider reports and older servers can omit it. Reading it does not answer the
 question or change its response policy.</p>
@@ -1170,6 +1174,11 @@ async delete(
 ## ThreadsApi
 
 Thread lifecycle, history, runs and pending requests.
+Approval-request turn items expose optional string `reason` through projection,
+detail and turn-item events. Empty and arbitrary strings are valid; omission
+stays absent and malformed values fail decoding. Reading this metadata does
+not answer an approval or change permissions.
+
 User-input question options expose optional string `preview` through projections,
 detail snapshots and turn-item events. Empty and arbitrary strings are valid;
 provider reports and older servers can omit it. Reading it does not answer the

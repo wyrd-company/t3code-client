@@ -156,6 +156,7 @@ export const OrchestrationV2TurnItemMembers = [
     requestId: RuntimeRequestId,
     requestKind: ProviderRequestKind,
     prompt: z.string().optional(),
+    reason: z.string().optional(),
     appName: z.string().optional(),
     options: z.array(ProviderApprovalOption).optional(),
   }),
