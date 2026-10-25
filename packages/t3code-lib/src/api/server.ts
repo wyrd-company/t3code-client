@@ -25,6 +25,12 @@ export interface WatchServerLifecycleOptions {
 
 /**
  * Server environment, configuration and providers.
+ * Configuration reads and snapshots expose optional `RemoteOpenTarget.username`
+ * as a trimmed nonempty string without an extra format or length constraint.
+ * Omission stays absent; unknown target metadata and growing kind strings remain.
+ * Malformed usernames invalidate their target records; the existing compatible
+ * array decoder omits those records and preserves later valid rows and chunks.
+ * Reading this metadata does not look up a username or open an SSH connection.
  * Configuration observability exposes optional `otlpTracesUrl`,
  * `otlpMetricsUrl` and `otlpLogsUrl`: trimmed nonempty strings without a URL-format
  * or length restriction. Omission stays

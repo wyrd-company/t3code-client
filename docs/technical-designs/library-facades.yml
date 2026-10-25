@@ -616,3 +616,11 @@ proposed-design:
     representation. Unknown metadata survives. Shell records retain their
     separate timestamp field. Reading this metadata does not wake a thread
     or change a timer.
+  remote-open-username-metadata: |
+    Configuration reads and snapshots expose optional `RemoteOpenTarget.username`
+    as a trimmed nonempty string, without an extra format or length constraint.
+    Omission remains absent. Unknown target metadata and growing kind strings
+    are preserved. Null, blank and non-string values invalidate the target
+    record; the existing forward-compatible array decoder omits malformed records
+    and preserves later valid rows and stream chunks. Reading this metadata
+    does not look up a username, build a remote link or open an SSH connection.

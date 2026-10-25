@@ -55,6 +55,7 @@ export type RemoteOpenTargetKind = z.infer<typeof RemoteOpenTargetKind>;
 export const RemoteOpenTarget = z.looseObject({
   kind: RemoteOpenTargetKind,
   host: TrimmedNonEmptyString,
+  username: TrimmedNonEmptyString.optional(),
 });
 export type RemoteOpenTarget = z.infer<typeof RemoteOpenTarget>;
 export const ResolvedKeybindingsConfig = z.array(z.looseObject({}));
