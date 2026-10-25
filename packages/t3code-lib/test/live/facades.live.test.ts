@@ -93,12 +93,14 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(environment.capabilities.threadPinReorder).toBe(true);
     expect(environment.capabilities.threadActiveReorder).toBe(true);
     expect(environment.capabilities.threadAutoSettleOptOut).toBe(true);
+    expect(environment.capabilities.threadTitleRegeneration).toBe(true);
     expect(environment.capabilities.usageModelAliases).toBe(true);
     const config = await client.server.getConfig();
     expect(config.environment.capabilities.threadPinning).toBe(true);
     expect(config.environment.capabilities.threadPinReorder).toBe(true);
     expect(config.environment.capabilities.threadActiveReorder).toBe(true);
     expect(config.environment.capabilities.threadAutoSettleOptOut).toBe(true);
+    expect(config.environment.capabilities.threadTitleRegeneration).toBe(true);
     expect(config.environment.capabilities.usageModelAliases).toBe(true);
   });
 

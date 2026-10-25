@@ -234,6 +234,14 @@ proposed-design:
     advertise support. Non-boolean supplied values fail decoding. This metadata
     flag does not change auto-settle.
 
+  optional-thread-title-regeneration-capability: |
+    `ExecutionEnvironmentCapabilities.threadTitleRegeneration` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises support for regenerating thread titles through
+    thread metadata updates; false and omission are preserved without inference.
+    Omission does not advertise support. Non-boolean supplied values fail decoding.
+    This metadata flag does not regenerate a title.
+
   optional-project-file-reads: |
     `projects.files.read` mirrors `projects.readFile`. Its optional `allowMissing`
     input is a boolean. When true, an absent file returns empty contents, zero
