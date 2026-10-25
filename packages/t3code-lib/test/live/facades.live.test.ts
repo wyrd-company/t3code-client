@@ -104,6 +104,7 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(environment.capabilities.projectCloneTracking).toBe(true);
     expect(environment.capabilities.environmentIcon).toBe(true);
     expect(environment.capabilities.threadAutoSettlement).toBe(true);
+    expect(environment.capabilities.requiredWorktreeBootstrap).toBe(true);
     expect(environment.capabilities.usageModelAliases).toBe(true);
     const config = await client.server.getConfig();
     expect(config.environment.capabilities.threadPinning).toBe(true);
@@ -121,6 +122,7 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(config.environment.capabilities.projectCloneTracking).toBe(true);
     expect(config.environment.capabilities.environmentIcon).toBe(true);
     expect(config.environment.capabilities.threadAutoSettlement).toBe(true);
+    expect(config.environment.capabilities.requiredWorktreeBootstrap).toBe(true);
     expect(config.environment.capabilities.usageModelAliases).toBe(true);
   });
 

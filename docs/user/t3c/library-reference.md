@@ -178,6 +178,12 @@ client. False and omission are preserved; omission does not advertise support.
 Available through environment reads, configuration reads and configuration
 snapshots. Supplied non-boolean values fail decoding. This metadata flag does
 not change settlement settings or settle a thread.
+Environment capabilities also include optional boolean <code>requiredWorktreeBootstrap</code>:
+true advertises support for required worktree bootstrap. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not enforce bootstrap or change
+policy.
 Provider <code>installedVersion</code> is an optional nullable trimmed nonempty string:
 the installed CLI version for a local provider with a separate server.
 Null means unknown; omission leaves legacy snapshots on <code>version</code>.
@@ -1572,6 +1578,12 @@ client. False and omission are preserved; omission does not advertise support.
 Available through environment reads, configuration reads and configuration
 snapshots. Supplied non-boolean values fail decoding. This metadata flag does
 not change settlement settings or settle a thread.
+Environment capabilities also include optional boolean `requiredWorktreeBootstrap`:
+true advertises support for required worktree bootstrap. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not enforce bootstrap or change
+policy.
 Provider `installedVersion` is an optional nullable trimmed nonempty string:
 the installed CLI version for a local provider with a separate server.
 Null means unknown; omission leaves legacy snapshots on `version`.
