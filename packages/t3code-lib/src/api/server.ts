@@ -34,6 +34,9 @@ export interface WatchServerLifecycleOptions {
  * the existing boolean/select descriptor union. Omission means no descriptor
  * snapshot was supplied; an empty array supplies no options. Unknown descriptor
  * types decode to `{ unknown: true, raw }`; malformed known types fail decoding.
+ * Workspace `slashCommandsPending` is an optional boolean: true marks pending
+ * slash-command discovery; false and omission are preserved without inference.
+ * A pending snapshot can retain the previous slash commands.
  */
 export class ServerApi {
   readonly rpc: RpcClient<RpcMethods>;

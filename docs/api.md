@@ -78,7 +78,10 @@ configuration streams; it does not enforce a provider version policy.
 Provider workspace snapshots expose optional <code>optionDescriptors</code> arrays using
 the existing boolean/select descriptor union. Omission means no descriptor
 snapshot was supplied; an empty array supplies no options. Unknown descriptor
-types decode to <code>{ unknown: true, raw }</code>; malformed known types fail decoding.</p>
+types decode to <code>{ unknown: true, raw }</code>; malformed known types fail decoding.
+Workspace <code>slashCommandsPending</code> is an optional boolean: true marks pending
+slash-command discovery; false and omission are preserved without inference.
+A pending snapshot can retain the previous slash commands.</p>
 </dd>
 <dt><a href="#VcsApi">VcsApi</a></dt>
 <dd><p>Repository references, worktrees and status.</p>
@@ -1366,6 +1369,9 @@ Provider workspace snapshots expose optional `optionDescriptors` arrays using
 the existing boolean/select descriptor union. Omission means no descriptor
 snapshot was supplied; an empty array supplies no options. Unknown descriptor
 types decode to `{ unknown: true, raw }`; malformed known types fail decoding.
+Workspace `slashCommandsPending` is an optional boolean: true marks pending
+slash-command discovery; false and omission are preserved without inference.
+A pending snapshot can retain the previous slash commands.
 
 **Kind**: global class
 

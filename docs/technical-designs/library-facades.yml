@@ -213,3 +213,9 @@ proposed-design:
     descriptor snapshot was supplied; an empty array supplies no options.
     Unknown descriptor types decode to `{ unknown: true, raw }`; malformed known
     types fail decoding. The library does not infer workspace options.
+  provider-workspace-slash-commands: |
+    Provider workspace snapshots in configuration reads, provider lists and config
+    streams expose optional boolean `slashCommandsPending`. True marks pending
+    slash-command discovery; the stock server can retain previous slash commands
+    while discovery is pending. False and omission are preserved without inference.
+    Non-boolean supplied values fail decoding.

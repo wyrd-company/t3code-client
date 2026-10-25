@@ -259,6 +259,7 @@ export const ServerProviderWorkspaceSnapshot = z.looseObject({
   cwd: TrimmedNonEmptyString,
   checkedAt: IsoDateTime,
   slashCommands: z.array(ServerProviderSlashCommand),
+  slashCommandsPending: z.boolean().optional(),
   skills: z.array(ServerProviderSkill),
   optionDescriptors: z.array(ProviderOptionDescriptor).optional(),
 });
