@@ -34,6 +34,12 @@ proposed-design:
     `T3_SERVICE_LAUNCHER_CONTEXT` without reading its value, so an app launcher
     context cannot attach the test server to the app service lifecycle. The parent
     environment and explicit external-server selection remain intact.
+    Linux process evidence captures the owned launcher's descendant identities.
+    If a proc entry disappears and a signal-zero check confirms that PID is
+    absent, the roster retains its PID, available identity fields and
+    `absentDuringCapture: true`. Surviving siblings retain complete identities.
+    Missing proc data for an existing PID and other capture errors fail setup.
+    Teardown checks every recorded PID for absence, including partial rows.
     The `t3` version is the server build this library targets,
     so the live suite is the check that the client still matches it.
 
