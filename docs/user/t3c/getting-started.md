@@ -18,7 +18,7 @@ its answer, continues the conversation, and lists the selected project and threa
 
 `t3c` sends prompts to a stock T3 Code server and prints the assistant's final
 answer. Use it in a terminal or a harness that supplies a prompt on stdin.
-Node >=22.16 is required. The target is T3 Code 0.1.0, protocol 2.
+Node >=22.16 is required. The target is T3 Code 0.1.2, protocol 2.
 
 Install with npm or Homebrew:
 
