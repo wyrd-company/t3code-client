@@ -64,6 +64,7 @@ export type ServerConfigIssues = z.infer<typeof ServerConfigIssues>;
 export const ServerObservability = z.looseObject({
   otlpTracesUrl: TrimmedNonEmptyString.optional(),
   otlpMetricsUrl: TrimmedNonEmptyString.optional(),
+  otlpLogsUrl: TrimmedNonEmptyString.optional(),
 });
 export type ServerObservability = z.infer<typeof ServerObservability>;
 export const ServerSettings = z.looseObject({});

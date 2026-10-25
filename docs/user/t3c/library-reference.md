@@ -161,8 +161,9 @@ it. Reading this metadata does not answer a request or change run behavior.</p>
 </dd>
 <dt><a href="#ServerApi">ServerApi</a></dt>
 <dd><p>Server environment, configuration and providers.
-Configuration observability exposes optional <code>otlpTracesUrl</code> and
-<code>otlpMetricsUrl</code>: trimmed nonempty strings without a URL-format or length restriction. Omission stays
+Configuration observability exposes optional <code>otlpTracesUrl</code>,
+<code>otlpMetricsUrl</code> and <code>otlpLogsUrl</code>: trimmed nonempty strings without a URL-format
+or length restriction. Omission stays
 absent. Null, blank and non-string values fail configuration decoding;
 unknown observability metadata is preserved. Configuration snapshots use
 the same schema, and later valid stream chunks remain available after a
@@ -1795,8 +1796,9 @@ watchArchived(
 ## ServerApi
 
 Server environment, configuration and providers.
-Configuration observability exposes optional `otlpTracesUrl` and
-`otlpMetricsUrl`: trimmed nonempty strings without a URL-format or length restriction. Omission stays
+Configuration observability exposes optional `otlpTracesUrl`,
+`otlpMetricsUrl` and `otlpLogsUrl`: trimmed nonempty strings without a URL-format
+or length restriction. Omission stays
 absent. Null, blank and non-string values fail configuration decoding;
 unknown observability metadata is preserved. Configuration snapshots use
 the same schema, and later valid stream chunks remain available after a

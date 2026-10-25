@@ -25,8 +25,9 @@ export interface WatchServerLifecycleOptions {
 
 /**
  * Server environment, configuration and providers.
- * Configuration observability exposes optional `otlpTracesUrl` and
- * `otlpMetricsUrl`: trimmed nonempty strings without a URL-format or length restriction. Omission stays
+ * Configuration observability exposes optional `otlpTracesUrl`,
+ * `otlpMetricsUrl` and `otlpLogsUrl`: trimmed nonempty strings without a URL-format
+ * or length restriction. Omission stays
  * absent. Null, blank and non-string values fail configuration decoding;
  * unknown observability metadata is preserved. Configuration snapshots use
  * the same schema, and later valid stream chunks remain available after a
