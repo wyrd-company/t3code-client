@@ -71,7 +71,9 @@ omission does not mean that the file is absent.</p>
 <dt><a href="#ShellApi">ShellApi</a></dt>
 <dd><p>Live and archived cross-thread snapshots. Thread shells carry optional
 <code>latestRunStopRequested</code>: whether the latest run has an interruption request.
-Older servers can omit it. This metadata does not request a stop.</p>
+Optional <code>blockedOnThreadWait</code> reports whether the active run is blocked on
+thread-wait work. Older servers can omit these fields. Reading them does not
+request a stop or change wait behavior.</p>
 </dd>
 <dt><a href="#ServerApi">ServerApi</a></dt>
 <dd><p>Server environment, configuration and providers.
@@ -1491,7 +1493,9 @@ dispatch(command: OrchestrationV2Command, signal?: AbortSignal): Promise<Dispatc
 
 Live and archived cross-thread snapshots. Thread shells carry optional
 `latestRunStopRequested`: whether the latest run has an interruption request.
-Older servers can omit it. This metadata does not request a stop.
+Optional `blockedOnThreadWait` reports whether the active run is blocked on
+thread-wait work. Older servers can omit these fields. Reading them does not
+request a stop or change wait behavior.
 
 **Kind**: global class
 

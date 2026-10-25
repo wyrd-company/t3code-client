@@ -191,6 +191,11 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(thread.runtimeMode).toBe("auto");
     expect(thread.createdBy).toBe("user");
     expect(thread.status).toBe("idle");
+    expect(thread.blockedOnThreadWait).toBe(false);
+    expect(Object.hasOwn(thread, "blockedOnThreadWait")).toBe(true);
+    const observedShell = (await client.shell.snapshot()).threads.find((row) => row.id === id);
+    expect(observedShell?.blockedOnThreadWait).toBe(false);
+    expect(Object.hasOwn(observedShell ?? {}, "blockedOnThreadWait")).toBe(true);
     expect(thread.latestRunStopRequested).toBe(false);
     expect(Object.hasOwn(thread, "latestRunStopRequested")).toBe(true);
     expect(

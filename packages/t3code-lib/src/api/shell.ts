@@ -60,7 +60,9 @@ export function loadShellSnapshot(
 /**
  * Live and archived cross-thread snapshots. Thread shells carry optional
  * `latestRunStopRequested`: whether the latest run has an interruption request.
- * Older servers can omit it. This metadata does not request a stop.
+ * Optional `blockedOnThreadWait` reports whether the active run is blocked on
+ * thread-wait work. Older servers can omit these fields. Reading them does not
+ * request a stop or change wait behavior.
  */
 export class ShellApi {
   readonly http: HttpTransport;

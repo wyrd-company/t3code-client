@@ -123,6 +123,7 @@ export const OrchestrationV2ThreadShell = z.looseObject({
   activityRunStatus: forwardCompatibleLiteral(["preparing", "starting", "running", "waiting"])
     .nullable()
     .optional(),
+  blockedOnThreadWait: z.boolean().optional(),
   status: OrchestrationV2ShellThreadStatus,
   lastError: z.string().nullable().optional(),
   lastErrorClass: OrchestrationV2ProviderFailureClass.nullable().optional(),
