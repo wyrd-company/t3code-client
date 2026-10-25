@@ -26,9 +26,7 @@ describe("optional thread-snooze capability", () => {
     type WireConfig = RpcSuccess<RpcMethods, "server.getConfig">;
     type Snapshot = ServerConfigStreamSnapshotEvent["config"];
     expectTypeOf<Environment["capabilities"]["threadSnooze"]>().toEqualTypeOf<Expected>();
-    expectTypeOf<
-      Config["environment"]["capabilities"]["threadSnooze"]
-    >().toEqualTypeOf<Expected>();
+    expectTypeOf<Config["environment"]["capabilities"]["threadSnooze"]>().toEqualTypeOf<Expected>();
     expectTypeOf<
       WireConfig["environment"]["capabilities"]["threadSnooze"]
     >().toEqualTypeOf<Expected>();
