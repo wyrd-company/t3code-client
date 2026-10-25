@@ -20,12 +20,16 @@ const descriptor = {
 describe("optional pull request stack actions capability", () => {
   it("exposes optional boolean through schema, registry, facade and config snapshot", () => {
     type Expected = boolean | undefined;
-    expectTypeOf<ExecutionEnvironmentCapabilities["pullRequestStackActions"]>().toEqualTypeOf<Expected>();
+    expectTypeOf<
+      ExecutionEnvironmentCapabilities["pullRequestStackActions"]
+    >().toEqualTypeOf<Expected>();
     type Environment = Awaited<ReturnType<ServerApi["environment"]>>;
     type Config = Awaited<ReturnType<ServerApi["getConfig"]>>;
     type WireConfig = RpcSuccess<RpcMethods, "server.getConfig">;
     type Snapshot = ServerConfigStreamSnapshotEvent["config"];
-    expectTypeOf<Environment["capabilities"]["pullRequestStackActions"]>().toEqualTypeOf<Expected>();
+    expectTypeOf<
+      Environment["capabilities"]["pullRequestStackActions"]
+    >().toEqualTypeOf<Expected>();
     expectTypeOf<
       Config["environment"]["capabilities"]["pullRequestStackActions"]
     >().toEqualTypeOf<Expected>();
