@@ -284,6 +284,7 @@ export const ServerProvider = z.looseObject({
       documentationUrl: TrimmedNonEmptyString.max(2_048).optional(),
     })
     .optional(),
+  configurableProviders: z.boolean().optional(),
   runtimePaths: z
     .looseObject({
       homePath: TrimmedNonEmptyString,

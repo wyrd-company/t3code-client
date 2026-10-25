@@ -43,6 +43,13 @@ export interface WatchServerLifecycleOptions {
  * and omission are preserved; omission does not advertise support. Available
  * through environment reads, configuration reads and configuration snapshots.
  * Supplied non-boolean values fail decoding.
+ * Provider records expose optional boolean `configurableProviders`: true
+ * advertises that the provider accepts provider configuration. False and
+ * omission are preserved; omission does not advertise support. Supplied
+ * non-boolean values make the provider record malformed, and existing
+ * forward-compatible arrays omit it in reads and streams. Reading this flag
+ * does not add or call provider configuration operations.
+ *
  * Provider setup records expose optional `documentationUrl`: a trimmed nonempty
  * string of at most 2,048 characters. Setup and field omission stay absent.
  * Malformed provider records are omitted by existing forward-compatible arrays

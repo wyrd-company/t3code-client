@@ -551,3 +551,11 @@ proposed-design:
     records are omitted by existing forward-compatible arrays; later valid records
     remain available. Unknown setup and provider metadata is preserved. Reading
     this metadata does not fetch or open documentation.
+  provider-configurability: |
+    Provider records in configuration reads, provider lists and configuration
+    streams expose optional boolean `configurableProviders`: true advertises that
+    the provider accepts provider configuration. False and omission are preserved;
+    omission does not advertise support. Non-boolean values make the provider
+    record malformed; existing forward-compatible arrays omit it and later valid
+    records remain available. Unknown provider metadata is preserved. Reading this
+    flag does not add or call provider configuration operations.
