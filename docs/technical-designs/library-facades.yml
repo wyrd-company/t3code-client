@@ -587,3 +587,10 @@ proposed-design:
     the same schema, and later valid stream chunks remain available after a
     decode error. Reading this metadata does not configure telemetry or contact
     an endpoint.
+  provider-auth-can-logout: |
+    Provider auth records in configuration reads, provider lists and configuration
+    snapshots/providerStatuses expose optional boolean `canLogout`. True, false
+    and omission are preserved; omission does not advertise support. Unknown auth
+    and provider metadata is preserved. Non-boolean values make the provider record
+    malformed; existing forward-compatible arrays omit it while later valid records
+    remain available. Reading this metadata does not log out or change authentication.

@@ -107,6 +107,7 @@ export const ServerProviderAuthStatus = forwardCompatibleLiteral([
 ]);
 export type ServerProviderAuthStatus = z.infer<typeof ServerProviderAuthStatus>;
 export const ServerProviderAuth = z.looseObject({
+  canLogout: z.boolean().optional(),
   status: ServerProviderAuthStatus,
   type: TrimmedNonEmptyString.optional(),
   label: TrimmedNonEmptyString.optional(),

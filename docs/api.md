@@ -182,6 +182,12 @@ advertises environment-theme publication through configuration streams. False
 and omission are preserved; omission does not advertise support. Available
 through environment reads, configuration reads and configuration snapshots.
 Supplied non-boolean values fail decoding.
+Provider auth records expose optional boolean <code>canLogout</code> metadata. True,
+false and omission are preserved; omission does not advertise support.
+Unknown auth and provider metadata is preserved. Non-boolean values make
+the provider record malformed; existing forward-compatible arrays omit it
+in reads and streams while later valid records remain available. Reading
+this metadata does not log out or change authentication.
 Provider records expose optional <code>nativeSessions</code> metadata. When present,
 <code>canList</code>, <code>canLoad</code> and <code>canResume</code> are required booleans; <code>canDelete</code> is
 optional. False and omission are preserved; omission does not advertise
@@ -1817,6 +1823,12 @@ advertises environment-theme publication through configuration streams. False
 and omission are preserved; omission does not advertise support. Available
 through environment reads, configuration reads and configuration snapshots.
 Supplied non-boolean values fail decoding.
+Provider auth records expose optional boolean `canLogout` metadata. True,
+false and omission are preserved; omission does not advertise support.
+Unknown auth and provider metadata is preserved. Non-boolean values make
+the provider record malformed; existing forward-compatible arrays omit it
+in reads and streams while later valid records remain available. Reading
+this metadata does not log out or change authentication.
 Provider records expose optional `nativeSessions` metadata. When present,
 `canList`, `canLoad` and `canResume` are required booleans; `canDelete` is
 optional. False and omission are preserved; omission does not advertise
