@@ -187,6 +187,14 @@ advertises environment-theme publication through configuration streams. False
 and omission are preserved; omission does not advertise support. Available
 through environment reads, configuration reads and configuration snapshots.
 Supplied non-boolean values fail decoding.
+Provider auth records also expose optional <code>action</code> metadata with required
+<code>elicitationId</code> (trimmed nonempty string, max 256), <code>url</code> (string, max 2048)
+and <code>message</code> (string, max 1024). Optional <code>createdAt</code> and <code>expiresAt</code> are
+strings of at most 128 characters. Only the elicitation id is trimmed;
+other strings permit empty and arbitrary text. Omission and unknown nested
+metadata are preserved. Malformed actions make provider records malformed;
+existing arrays omit them while later valid records remain available.
+Reading this metadata does not open a URL or change authentication state.
 Provider auth records expose optional boolean <code>canLogout</code> metadata. True,
 false and omission are preserved; omission does not advertise support.
 Unknown auth and provider metadata is preserved. Non-boolean values make
@@ -1828,6 +1836,14 @@ advertises environment-theme publication through configuration streams. False
 and omission are preserved; omission does not advertise support. Available
 through environment reads, configuration reads and configuration snapshots.
 Supplied non-boolean values fail decoding.
+Provider auth records also expose optional `action` metadata with required
+`elicitationId` (trimmed nonempty string, max 256), `url` (string, max 2048)
+and `message` (string, max 1024). Optional `createdAt` and `expiresAt` are
+strings of at most 128 characters. Only the elicitation id is trimmed;
+other strings permit empty and arbitrary text. Omission and unknown nested
+metadata are preserved. Malformed actions make provider records malformed;
+existing arrays omit them while later valid records remain available.
+Reading this metadata does not open a URL or change authentication state.
 Provider auth records expose optional boolean `canLogout` metadata. True,
 false and omission are preserved; omission does not advertise support.
 Unknown auth and provider metadata is preserved. Non-boolean values make

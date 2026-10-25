@@ -107,6 +107,15 @@ export const ServerProviderAuthStatus = forwardCompatibleLiteral([
 ]);
 export type ServerProviderAuthStatus = z.infer<typeof ServerProviderAuthStatus>;
 export const ServerProviderAuth = z.looseObject({
+  action: z
+    .looseObject({
+      elicitationId: TrimmedNonEmptyString.max(256),
+      url: z.string().max(2_048),
+      message: z.string().max(1_024),
+      createdAt: z.string().max(128).optional(),
+      expiresAt: z.string().max(128).optional(),
+    })
+    .optional(),
   canLogout: z.boolean().optional(),
   status: ServerProviderAuthStatus,
   type: TrimmedNonEmptyString.optional(),

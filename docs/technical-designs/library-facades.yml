@@ -594,3 +594,15 @@ proposed-design:
     and provider metadata is preserved. Non-boolean values make the provider record
     malformed; existing forward-compatible arrays omit it while later valid records
     remain available. Reading this metadata does not log out or change authentication.
+
+  provider-auth-action: |
+    Provider auth records in configuration reads, provider lists and configuration
+    snapshots/providerStatuses expose optional `action` metadata. The object requires
+    `elicitationId` (trimmed nonempty string, maximum 256 characters), `url` (string,
+    maximum 2048) and `message` (string, maximum 1024). Optional `createdAt` and
+    `expiresAt` are strings of at most 128 characters. Only the elicitation id is
+    trimmed; the other strings permit empty and arbitrary text. Omission stays
+    absent. Unknown action, auth and provider metadata is preserved. Malformed
+    action metadata makes the provider record malformed; existing forward-compatible
+    arrays omit it while later valid records remain available. Reading this metadata
+    does not open a URL, authenticate or change authentication state.
