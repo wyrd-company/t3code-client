@@ -31,8 +31,8 @@ const valid = [
 ];
 const normalized = (metadata: Record<string, unknown>) => {
   const parsed = theme(metadata);
-  if (metadata.colors !== undefined) {
-    const colors = metadata.colors as Record<string, string>;
+  if (metadata["colors"] !== undefined) {
+    const colors = metadata["colors"] as Record<string, string>;
     return {
       ...parsed,
       colors: Object.fromEntries(Object.entries(colors).map(([k, v]) => [k, v.trim()])),
