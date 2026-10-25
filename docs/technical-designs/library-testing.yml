@@ -30,7 +30,11 @@ proposed-design:
     `pnpm run test:live` runs `test/live/**` against a real server.
     `test/live/globalSetup.ts` starts the `t3` devDependency on a free loopback
     port with its own data directory, issues a bearer token, and stops the server
-    when the run ends. The `t3` version is the server build this library targets,
+    when the run ends. Both owned server and token-issuance processes omit
+    `T3_SERVICE_LAUNCHER_CONTEXT` without reading its value, so an app launcher
+    context cannot attach the test server to the app service lifecycle. The parent
+    environment and explicit external-server selection remain intact.
+    The `t3` version is the server build this library targets,
     so the live suite is the check that the client still matches it.
 
     | Variable          | Meaning                                                             |

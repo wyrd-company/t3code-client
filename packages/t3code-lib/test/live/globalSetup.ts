@@ -11,6 +11,8 @@ import * as NodeNet from "node:net";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
+import { serverEnvironment } from "../support/serverEnvironment.ts";
+
 import { processAbsent, processIdentities } from "./serverEvidence.ts";
 
 const READY_TIMEOUT_MS = 60_000;
@@ -78,7 +80,7 @@ function issueToken(bin: string, baseDir: string): string {
       "live-tests",
       "--token-only",
     ],
-    { encoding: "utf8" },
+    { encoding: "utf8", env: serverEnvironment() },
   );
   return output.trim();
 }
@@ -111,7 +113,7 @@ export default async function setup(): Promise<(() => Promise<void>) | undefined
       "warn",
       workspace,
     ],
-    { stdio: ["ignore", log.fd, log.fd] },
+    { stdio: ["ignore", log.fd, log.fd], env: serverEnvironment() },
   );
 
   let ownedProcesses: Awaited<ReturnType<typeof processIdentities>> = [];
