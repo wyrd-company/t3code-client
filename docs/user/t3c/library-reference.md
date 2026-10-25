@@ -72,6 +72,10 @@ omission does not mean that the file is absent.</p>
 </dd>
 <dt><a href="#ThreadsApi">ThreadsApi</a></dt>
 <dd><p>Thread lifecycle, history, runs and pending requests.
+Provider-turn token usage exposes optional positive integer <code>autoCompactThreshold</code>
+through detail, projection and stream reads. It reports provider auto-compaction
+metadata in tokens. Omission stays absent, malformed values fail decoding, and
+unknown metadata survives. Reading it does not enforce compaction or change timing.
 <code>update</code> and <code>dispatch</code> accept optional nullable nonempty string <code>expectedBranch</code>
 on metadata updates. The server rejects an update if its current branch differs;
 null expects no branch, and omission leaves this precondition unsupplied.
@@ -1153,6 +1157,10 @@ async delete(
 ## ThreadsApi
 
 Thread lifecycle, history, runs and pending requests.
+Provider-turn token usage exposes optional positive integer `autoCompactThreshold`
+through detail, projection and stream reads. It reports provider auto-compaction
+metadata in tokens. Omission stays absent, malformed values fail decoding, and
+unknown metadata survives. Reading it does not enforce compaction or change timing.
 `update` and `dispatch` accept optional nullable nonempty string `expectedBranch`
 on metadata updates. The server rejects an update if its current branch differs;
 null expects no branch, and omission leaves this precondition unsupplied.

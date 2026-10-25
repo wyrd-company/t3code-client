@@ -74,6 +74,10 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
 
 /**
  * Thread lifecycle, history, runs and pending requests.
+ * Provider-turn token usage exposes optional positive integer `autoCompactThreshold`
+ * through detail, projection and stream reads. It reports provider auto-compaction
+ * metadata in tokens. Omission stays absent, malformed values fail decoding, and
+ * unknown metadata survives. Reading it does not enforce compaction or change timing.
  * `update` and `dispatch` accept optional nullable nonempty string `expectedBranch`
  * on metadata updates. The server rejects an update if its current branch differs;
  * null expects no branch, and omission leaves this precondition unsupplied.

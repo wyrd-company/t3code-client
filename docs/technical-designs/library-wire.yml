@@ -15,6 +15,13 @@ proposed-design:
     Related library designs carry the wire, transport, auth, usage and facade
     contracts. The library architecture links the canonical design family.
   wire-facts-verified-against-t-code: |
+    Provider-turn token usage exposes optional positive integer
+    `autoCompactThreshold` through thread detail, projection and stream reads.
+    It reports provider auto-compaction metadata in tokens. Omission stays absent;
+    malformed values fail decoding and extra metadata survives. Reading this value
+    does not enforce compaction or change timing. This is separate from the
+    thread-level token usage snapshot.
+
     Server configuration reads and stream snapshots expose optional
     `directEndpoints`: a forward-compatible array of address hints with `kind`
     (`lan` or `tailnet`) and nonempty `httpBaseUrl`. Unknown kind strings and
