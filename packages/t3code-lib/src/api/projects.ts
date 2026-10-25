@@ -80,7 +80,15 @@ export function normalizeWorkspaceRoot(workspaceRoot: string): string {
   return NodePath.resolve(trimmed.length === 0 ? "/" : trimmed);
 }
 
-/** Project discovery, creation, mutations and files. */
+/**
+ * Project discovery, creation, mutations and files.
+ *
+ * `projects.files.read({ cwd, relativePath, allowMissing: true })` returns
+ * empty contents, zero byteLength, truncated false and `exists: false` for an
+ * absent file. Omitted or false `allowMissing` retains the missing-file error.
+ * The optional boolean result field `exists` can be omitted by the server;
+ * omission does not mean that the file is absent.
+ */
 export class ProjectsApi {
   readonly files: ProjectFilesApi;
 

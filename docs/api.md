@@ -56,6 +56,11 @@ TypeScript declarations ship with the package.
 </dd>
 <dt><a href="#ProjectsApi">ProjectsApi</a></dt>
 <dd><p>Project discovery, creation, mutations and files.</p>
+<p><code>projects.files.read({ cwd, relativePath, allowMissing: true })</code> returns
+empty contents, zero byteLength, truncated false and <code>exists: false</code> for an
+absent file. Omitted or false <code>allowMissing</code> retains the missing-file error.
+The optional boolean result field <code>exists</code> can be omitted by the server;
+omission does not mean that the file is absent.</p>
 </dd>
 <dt><a href="#ThreadsApi">ThreadsApi</a></dt>
 <dd><p>Thread lifecycle, history, runs and pending requests.</p>
@@ -740,6 +745,12 @@ async ensureScopes(required: AuthEnvironmentScopeType[]): Promise<void>;
 ## ProjectsApi
 
 Project discovery, creation, mutations and files.
+
+`projects.files.read({ cwd, relativePath, allowMissing: true })` returns
+empty contents, zero byteLength, truncated false and `exists: false` for an
+absent file. Omitted or false `allowMissing` retains the missing-file error.
+The optional boolean result field `exists` can be omitted by the server;
+omission does not mean that the file is absent.
 
 **Kind**: global class
 
