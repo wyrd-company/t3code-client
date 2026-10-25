@@ -17,7 +17,7 @@ it("publishes the complete CLI navigation and generated library page with unique
     "t3c/auth.md",
     "t3c/commands.md",
     "t3c/dagu.md",
-    "t3c/index.md",
+    "t3c/getting-started.md",
     "t3c/library-reference.md",
     "t3c/policy.md",
   ]);
@@ -34,7 +34,7 @@ it("publishes the complete CLI navigation and generated library page with unique
     "t3c/auth.md": "2",
     "t3c/commands.md": "3",
     "t3c/dagu.md": "5",
-    "t3c/index.md": "1",
+    "t3c/getting-started.md": "1",
     "t3c/library-reference.md": "6",
     "t3c/policy.md": "4",
   });

@@ -30,7 +30,7 @@ products:
       - section: Get started
         groups:
           - group: Basics
-            pages: [index, auth]
+            pages: [getting-started, auth]
       - section: Reference
         groups:
           - group: Using t3c

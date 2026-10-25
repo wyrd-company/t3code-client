@@ -22,7 +22,7 @@ task lib:check
 task cli:check
 ```
 
-User guide: [getting started](docs/user/t3c/index.md),
+User guide: [getting started](docs/user/t3c/getting-started.md),
 [profiles](docs/user/t3c/auth.md),
 [command behavior](docs/user/t3c/commands.md),
 [output and exits](docs/user/t3c/policy.md),

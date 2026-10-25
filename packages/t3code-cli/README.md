@@ -26,7 +26,7 @@ stderr. `--json` provides structured results; `--stream` emits incremental outpu
 `t3c version` reports client, library, target and reachable server versions.
 `t3c --version` prints the package version.
 
-Read [getting started](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/index.md), [auth/profiles](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/auth.md),
+Read [getting started](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/getting-started.md), [auth/profiles](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/auth.md),
 [commands](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/commands.md), [output and exit codes](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/policy.md),
 [the Dagu harness](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/dagu.md), and [the library API](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/library-reference.md).
 Use `t3c --help` or a command's `--help` for options.
