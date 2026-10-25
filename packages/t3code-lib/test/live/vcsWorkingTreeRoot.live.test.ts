@@ -27,6 +27,23 @@ describe.skipIf(!baseUrl || !token)("live working-tree roots", () => {
       const nested = NodePath.join(cwd, "nested");
       await NodeFSP.mkdir(nested);
       await NodeFSP.writeFile(NodePath.join(nested, "sample file.txt"), "sample\n");
+      NodeCP.execFileSync("git", ["-C", cwd, "add", "nested/sample file.txt"], { stdio: "pipe" });
+      NodeCP.execFileSync(
+        "git",
+        [
+          "-C",
+          cwd,
+          "-c",
+          "user.name=Sample",
+          "-c",
+          "user.email=sample@example.invalid",
+          "commit",
+          "-m",
+          "Initial",
+        ],
+        { stdio: "pipe" },
+      );
+      await NodeFSP.appendFile(NodePath.join(nested, "sample file.txt"), "changed\n");
       const status = await client.vcs.status({ cwd: nested });
       expect(status.workingTree.rootPath).toBe(await NodeFSP.realpath(cwd));
       expect(status.workingTree.files.map((file) => file.path)).toContain("nested/sample file.txt");
