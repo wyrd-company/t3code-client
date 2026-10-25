@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: library-testing
+// ---
 /**
  * Starts the pinned `t3` devDependency on a free loopback port with its own
  * data directory, issues a bearer token, and exposes both to the live tests
@@ -17,7 +21,6 @@ import { processAbsent, processIdentities } from "./serverEvidence.ts";
 
 const READY_TIMEOUT_MS = 60_000;
 const PROBE_TIMEOUT_MS = 2_000;
-const LOG_TAIL_LINES = 40;
 
 function serverBin(): string {
   const require = NodeModule.createRequire(import.meta.url);
@@ -80,7 +83,7 @@ function issueToken(bin: string, baseDir: string): string {
       "live-tests",
       "--token-only",
     ],
-    { encoding: "utf8", env: serverEnvironment() },
+    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: serverEnvironment() },
   );
   return output.trim();
 }
@@ -190,30 +193,41 @@ export default async function setup(): Promise<(() => Promise<void>) | undefined
     });
   };
 
+  let stage = "started evidence";
   try {
     await writeEvidence("started");
+    stage = "readiness";
     await waitForReady(baseUrl, server);
+    stage = "process inventory";
     if (server.pid) ownedProcesses = await processIdentities(server.pid);
+    stage = "environment descriptor";
     const descriptor = (await fetch(new URL("/.well-known/t3/environment", baseUrl)).then(
       (response) => response.json(),
     )) as Record<string, unknown>;
+    stage = "ready evidence";
     await writeEvidence("ready", {
       ownedProcesses,
       serverVersion: descriptor["serverVersion"],
       protocol: descriptor["orchestrationProtocolVersion"],
     });
     process.env["T3_LIVE_URL"] = baseUrl;
+    stage = "token issuance";
     process.env["T3_LIVE_TOKEN"] = issueToken(bin, baseDir);
     process.env["T3_LIVE_HOME"] = baseDir;
     process.env["T3_LIVE_WORKSPACE"] = workspace;
   } catch (error) {
-    // Keep the data directory so the log named below still exists.
+    // Retain the owned home for explicit diagnosis, but never read or forward
+    // its log or the dependency error: either can contain pairing tokens/QRs.
     await stop();
-    const output = await NodeFSP.readFile(NodePath.join(root, "server.log"), "utf8");
-    const tail = output.split("\n").slice(-LOG_TAIL_LINES).join("\n");
+    const code = error instanceof Error && "code" in error ? error.code : undefined;
+    const safeCode =
+      typeof code === "string" && /^(?:EACCES|EPERM|ENOENT|ESRCH|EIO|ENOSPC|EMFILE)$/.test(code)
+        ? code
+        : "unavailable";
     throw new Error(
-      `Could not start the live T3 Code server; see ${root}/server.log. Last output:\n${tail}`,
-      { cause: error },
+      `Could not start the live T3 Code server during ${stage}; ` +
+        `exit=${server.exitCode ?? "none"}, signal=${server.signalCode ?? "none"}, code=${safeCode}. ` +
+        `Owned home retained at ${root}. Startup output and dependency error details withheld.`,
     );
   }
   return teardown;

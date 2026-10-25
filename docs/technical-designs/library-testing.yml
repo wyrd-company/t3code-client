@@ -40,6 +40,11 @@ proposed-design:
     `absentDuringCapture: true`. Surviving siblings retain complete identities.
     Missing proc data for an existing PID and other capture errors fail setup.
     Teardown checks every recorded PID for absence, including partial rows.
+    Startup failures report the failed setup stage, process exit/signal and an
+    allowlisted system error code. Raw server logs and dependency error payloads
+    are never read or embedded in startup diagnostics; they can contain pairing
+    credentials and QR output. The stopped server's owned home remains available
+    for explicit diagnosis. Failure reporting preserves lifecycle evidence errors.
     The `t3` version is the server build this library targets,
     so the live suite is the check that the client still matches it.
 
