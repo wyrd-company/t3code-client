@@ -97,7 +97,9 @@ it.each([false, true])(
       "▄",
     ])
       expect(retained).not.toContain(value);
-    expect(retained).toContain("withheld");
+    expect(retained).toBe(
+      "Server output withheld: it can contain pairing credentials and QR output.\n",
+    );
     expect(vi.mocked(NodeFSP.readFile).mock.calls.map(([path]) => String(path))).toEqual([
       "/proc/23456/stat",
     ]);
