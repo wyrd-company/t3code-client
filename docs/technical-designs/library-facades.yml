@@ -166,3 +166,10 @@ proposed-design:
       close;
     }
     ```
+
+  optional-project-file-reads: |
+    `projects.files.read` mirrors `projects.readFile`. Its optional `allowMissing`
+    input is a boolean. When true, an absent file returns empty contents, zero
+    byteLength, truncated false and exists false. Omitted or false retains the
+    server's missing-file error. The optional boolean result field `exists` can
+    be omitted by the server; callers must not infer absence from omission.

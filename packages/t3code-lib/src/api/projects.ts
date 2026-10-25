@@ -58,7 +58,7 @@ export interface ProjectFilesApi {
   /** List active project summaries from the shell snapshot. */
   /** List workspace entries. */
   list(input: ProjectListEntriesInput, signal?: AbortSignal): Promise<ProjectListEntriesResult>;
-  /** Read a workspace file. */
+  /** Read a file; `allowMissing` returns an empty result with `exists: false` for an absent file. */
   read(input: ProjectReadFileInput, signal?: AbortSignal): Promise<ProjectReadFileResult>;
   /** Write a workspace file. */
   write(input: ProjectWriteFileInput, signal?: AbortSignal): Promise<ProjectWriteFileResult>;
