@@ -78,7 +78,8 @@ omission does not mean that the file is absent.</p>
 <code>latestRunStopRequested</code>: whether the latest run has an interruption request.
 Optional <code>blockedOnThreadWait</code> reports whether the active run is blocked on
 thread-wait work. Older servers can omit these fields. Reading them does not
-request a stop or change wait behavior.</p>
+request a stop or change wait behavior. Optional <code>lastErrorCode</code> is the current
+provider failure code, or null when none applies; older servers can omit it.</p>
 </dd>
 <dt><a href="#ServerApi">ServerApi</a></dt>
 <dd><p>Server environment, configuration and providers.
@@ -1500,7 +1501,8 @@ Live and archived cross-thread snapshots. Thread shells carry optional
 `latestRunStopRequested`: whether the latest run has an interruption request.
 Optional `blockedOnThreadWait` reports whether the active run is blocked on
 thread-wait work. Older servers can omit these fields. Reading them does not
-request a stop or change wait behavior.
+request a stop or change wait behavior. Optional `lastErrorCode` is the current
+provider failure code, or null when none applies; older servers can omit it.
 
 **Kind**: global class
 

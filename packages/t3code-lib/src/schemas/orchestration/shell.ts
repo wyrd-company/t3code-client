@@ -127,6 +127,7 @@ export const OrchestrationV2ThreadShell = z.looseObject({
   status: OrchestrationV2ShellThreadStatus,
   lastError: z.string().nullable().optional(),
   lastErrorClass: OrchestrationV2ProviderFailureClass.nullable().optional(),
+  lastErrorCode: z.string().nullable().optional(),
   usageLimitResetAt: IsoDateTime.nullable().optional(),
   pendingRuntimeRequest: OrchestrationV2PendingRuntimeRequestSummary.nullable(),
   latestVisibleMessage: OrchestrationV2LatestVisibleMessageSummary.nullable(),

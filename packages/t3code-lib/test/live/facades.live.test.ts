@@ -201,6 +201,12 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(
       (await client.shell.snapshot()).threads.find((row) => row.id === id)?.latestRunStopRequested,
     ).toBe(false);
+    expect(Object.hasOwn(thread, "lastErrorCode")).toBe(true);
+    expect(thread.lastErrorCode).toBeNull();
+    const errorShell = (await client.shell.snapshot()).threads.find((row) => row.id === id);
+    expect(errorShell).toBeDefined();
+    expect(Object.hasOwn(errorShell ?? {}, "lastErrorCode")).toBe(true);
+    expect(errorShell?.lastErrorCode).toBeNull();
     const again = await client.threads.ensure({ ...input, title: "ignored" });
     expect(again.title).toBe("live sample thread");
     const detail = await client.threads.detail(id);
