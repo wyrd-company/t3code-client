@@ -79,6 +79,9 @@ supplied; older links can omit it. Reading it does not fetch the repository.
 <code>thread.pull-request.link</code>: browser or clone URLs and other nonempty strings
 pass through, omission leaves it unsupplied, and malformed values fail before sending.
 Unknown command metadata survives; sending the field does not fetch a repository.
+The optional <code>link</code> on <code>thread.pull-request.watch</code> also accepts optional
+nonempty string <code>repositoryWebUrl</code>; omission and unknown metadata survive,
+and malformed values fail before sending. This metadata does not change watch policy.
 Projection conversation messages and user-message turn items in projections,
 history/transcript rows and turn-item updates expose optional boolean <code>workflowScript</code>
 metadata: true marks a provider-native workflow script, false marks ordinary
@@ -1145,6 +1148,9 @@ supplied; older links can omit it. Reading it does not fetch the repository.
 `thread.pull-request.link`: browser or clone URLs and other nonempty strings
 pass through, omission leaves it unsupplied, and malformed values fail before sending.
 Unknown command metadata survives; sending the field does not fetch a repository.
+The optional `link` on `thread.pull-request.watch` also accepts optional
+nonempty string `repositoryWebUrl`; omission and unknown metadata survive,
+and malformed values fail before sending. This metadata does not change watch policy.
 Projection conversation messages and user-message turn items in projections,
 history/transcript rows and turn-item updates expose optional boolean `workflowScript`
 metadata: true marks a provider-native workflow script, false marks ordinary

@@ -81,6 +81,9 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
  * `thread.pull-request.link`: browser or clone URLs and other nonempty strings
  * pass through, omission leaves it unsupplied, and malformed values fail before sending.
  * Unknown command metadata survives; sending the field does not fetch a repository.
+ * The optional `link` on `thread.pull-request.watch` also accepts optional
+ * nonempty string `repositoryWebUrl`; omission and unknown metadata survive,
+ * and malformed values fail before sending. This metadata does not change watch policy.
  * Projection conversation messages and user-message turn items in projections,
  * history/transcript rows and turn-item updates expose optional boolean `workflowScript`
  * metadata: true marks a provider-native workflow script, false marks ordinary

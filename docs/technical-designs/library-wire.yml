@@ -172,6 +172,12 @@ proposed-design:
     leaves the metadata unsupplied. Malformed values fail before dispatch and
     unknown command metadata survives. Sending the field does not fetch a repository.
 
+    The optional `link` on the existing `thread.pull-request.watch` command also
+    accepts optional nonempty string `repositoryWebUrl` through `threads.dispatch`.
+    Browser URLs, clone URLs and other nonempty strings pass through; omission
+    leaves it unsupplied, malformed values fail before sending, and unknown nested
+    metadata survives. This metadata does not change watch policy.
+
     Conversation messages in projections and `message.updated` events expose
     optional boolean `workflowScript` metadata. True identifies a provider-native
     workflow script, false identifies ordinary text, and omission preserves older

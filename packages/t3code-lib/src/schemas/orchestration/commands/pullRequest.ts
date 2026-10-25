@@ -48,7 +48,11 @@ export const ThreadPullRequestWatchCommand = z.looseObject({
   ...ThreadPullRequestKey.shape,
   watching: z.boolean(),
   link: z
-    .looseObject({ url: TrimmedNonEmptyString, source: ThreadPullRequestLinkSource })
+    .looseObject({
+      url: TrimmedNonEmptyString,
+      source: ThreadPullRequestLinkSource,
+      repositoryWebUrl: TrimmedNonEmptyString.optional(),
+    })
     .optional(),
 });
 export const ThreadPullRequestSyncCommand = z.looseObject({
