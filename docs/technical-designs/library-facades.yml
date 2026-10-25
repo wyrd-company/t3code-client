@@ -178,6 +178,14 @@ proposed-design:
     configuration streams; false and omission are preserved without inference.
     Omission does not advertise support. Non-boolean supplied values fail decoding.
 
+  optional-usage-limit-source-capability: |
+    `ExecutionEnvironmentCapabilities.usageLimitSources` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises quota streaming from configured usage-limit
+    sources; false and omission are preserved without inference. Omission does
+    not advertise support. Non-boolean supplied values fail decoding. This flag
+    is distinct from the usage-limit-source snapshots and subscription input.
+
   optional-project-file-reads: |
     `projects.files.read` mirrors `projects.readFile`. Its optional `allowMissing`
     input is a boolean. When true, an absent file returns empty contents, zero

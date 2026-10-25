@@ -45,6 +45,8 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   inlineMessageContext: z.boolean().optional(),
   /** Server publishes environment themes through configuration streams. */
   environmentThemes: z.boolean().optional(),
+  /** Server streams quota from configured usage-limit sources. */
+  usageLimitSources: z.boolean().optional(),
   threadSettlement: z.boolean().optional(),
   threadVisitedTracking: z.boolean().optional(),
   threadPullRequestWatch: z.boolean().optional(),
