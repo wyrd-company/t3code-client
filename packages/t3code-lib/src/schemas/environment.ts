@@ -68,6 +68,7 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   environmentIcon: z.boolean().optional(),
   requiredWorktreeBootstrap: z.boolean().optional(),
   commandOutputStreaming: z.boolean().optional(),
+  ignoredFileListing: z.boolean().optional(),
   threadSettlement: z.boolean().optional(),
   threadVisitedTracking: z.boolean().optional(),
   threadPullRequestWatch: z.boolean().optional(),

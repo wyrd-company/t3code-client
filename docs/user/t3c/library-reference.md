@@ -189,6 +189,11 @@ true advertises support for streaming command output. False and omission are
 preserved; omission does not advertise support. Available through environment
 reads, configuration reads and configuration snapshots. Supplied non-boolean
 values fail decoding. This metadata flag does not subscribe to command output.
+Environment capabilities also include optional boolean <code>ignoredFileListing</code>:
+true advertises support for listing ignored files. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not list ignored files.
 Provider <code>installedVersion</code> is an optional nullable trimmed nonempty string:
 the installed CLI version for a local provider with a separate server.
 Null means unknown; omission leaves legacy snapshots on <code>version</code>.
@@ -1594,6 +1599,11 @@ true advertises support for streaming command output. False and omission are
 preserved; omission does not advertise support. Available through environment
 reads, configuration reads and configuration snapshots. Supplied non-boolean
 values fail decoding. This metadata flag does not subscribe to command output.
+Environment capabilities also include optional boolean `ignoredFileListing`:
+true advertises support for listing ignored files. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not list ignored files.
 Provider `installedVersion` is an optional nullable trimmed nonempty string:
 the installed CLI version for a local provider with a separate server.
 Null means unknown; omission leaves legacy snapshots on `version`.
