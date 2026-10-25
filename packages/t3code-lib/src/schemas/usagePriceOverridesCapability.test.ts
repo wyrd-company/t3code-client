@@ -20,7 +20,9 @@ const descriptor = {
 describe("optional usage-price-override capability", () => {
   it("exposes optional boolean through schema, registry, facade and config snapshot", () => {
     type Expected = boolean | undefined;
-    expectTypeOf<ExecutionEnvironmentCapabilities["usagePriceOverrides"]>().toEqualTypeOf<Expected>();
+    expectTypeOf<
+      ExecutionEnvironmentCapabilities["usagePriceOverrides"]
+    >().toEqualTypeOf<Expected>();
     type Environment = Awaited<ReturnType<ServerApi["environment"]>>;
     type Config = Awaited<ReturnType<ServerApi["getConfig"]>>;
     type WireConfig = RpcSuccess<RpcMethods, "server.getConfig">;
