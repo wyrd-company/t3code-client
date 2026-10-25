@@ -231,6 +231,11 @@ true advertises support for pull request stack actions. False and omission are
 preserved; omission does not advertise support. Available through environment
 reads, configuration reads and configuration snapshots. Supplied non-boolean
 values fail decoding. This metadata flag does not perform a pull request stack action.
+Environment capabilities also include optional boolean <code>pullRequests</code>: true
+advertises server pull request support. False and omission are preserved; omission
+does not advertise support. Available through environment reads, configuration
+reads and configuration snapshots. Supplied non-boolean values fail decoding.
+This metadata flag performs no pull request operation.
 Environment capabilities also include optional boolean <code>agentActivityPublishing</code>:
 true reports that agent activity publishing is enabled and relay link credentials
 are configured. False and omission are preserved; older servers can omit this
@@ -1672,6 +1677,11 @@ true advertises support for pull request stack actions. False and omission are
 preserved; omission does not advertise support. Available through environment
 reads, configuration reads and configuration snapshots. Supplied non-boolean
 values fail decoding. This metadata flag does not perform a pull request stack action.
+Environment capabilities also include optional boolean `pullRequests`: true
+advertises server pull request support. False and omission are preserved; omission
+does not advertise support. Available through environment reads, configuration
+reads and configuration snapshots. Supplied non-boolean values fail decoding.
+This metadata flag performs no pull request operation.
 Environment capabilities also include optional boolean `agentActivityPublishing`:
 true reports that agent activity publishing is enabled and relay link credentials
 are configured. False and omission are preserved; older servers can omit this

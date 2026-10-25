@@ -449,3 +449,11 @@ proposed-design:
     preserved without inference; older servers can omit this field while still
     publishing. Non-boolean supplied values fail decoding. This metadata flag
     does not configure or publish agent activity.
+
+  optional-pull-requests-capability: |
+    `ExecutionEnvironmentCapabilities.pullRequests` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises server pull request support. False and
+    omission are preserved; omission does not advertise support. Supplied
+    non-boolean values fail decoding. This metadata flag performs no pull request
+    operation.
