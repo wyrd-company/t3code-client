@@ -329,3 +329,12 @@ proposed-design:
     must be nonempty; omission stays absent, malformed values fail decoding
     and unknown metadata survives. Reading this field does not create or
     resume a fork.
+
+  thread-context-usage-cost: >-
+    Provider-thread contextUsage exposes optional cost through thread projections,
+    HTTP detail snapshots and provider-thread.updated events. The loose cost object
+    requires a finite numeric amount and a trimmed nonempty currency string of at
+    most 32 characters. Negative, zero and fractional amounts are valid; currency
+    has no format restriction. Omission stays absent, malformed values fail decoding
+    and unknown cost and usage metadata survives. Reading this metadata does not
+    price usage, convert currencies or start provider work.

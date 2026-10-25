@@ -105,6 +105,11 @@ not answer an approval or change permissions.</p>
 detail snapshots and turn-item events. Empty and arbitrary strings are valid;
 provider reports and older servers can omit it. Reading it does not answer the
 question or change its response policy.</p>
+<p>Provider-thread context usage exposes optional <code>cost</code> in detail, projection
+and provider-thread update events. Its amount is finite, including negative,
+zero and fractional values; currency is trimmed, nonempty and at most 32
+characters. Omission stays absent and unknown cost metadata survives.
+Malformed values fail decoding. Reading cost does not price or convert usage.</p>
 <p>Provider-turn token usage exposes optional positive integer <code>autoCompactThreshold</code>
 through detail, projection and stream reads. It reports provider auto-compaction
 metadata in tokens. Omission stays absent, malformed values fail decoding, and
@@ -1323,6 +1328,12 @@ User-input question options expose optional string `preview` through projections
 detail snapshots and turn-item events. Empty and arbitrary strings are valid;
 provider reports and older servers can omit it. Reading it does not answer the
 question or change its response policy.
+
+Provider-thread context usage exposes optional `cost` in detail, projection
+and provider-thread update events. Its amount is finite, including negative,
+zero and fractional values; currency is trimmed, nonempty and at most 32
+characters. Omission stays absent and unknown cost metadata survives.
+Malformed values fail decoding. Reading cost does not price or convert usage.
 
 Provider-turn token usage exposes optional positive integer `autoCompactThreshold`
 through detail, projection and stream reads. It reports provider auto-compaction

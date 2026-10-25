@@ -28,6 +28,12 @@ export const ThreadTokenUsageSnapshot = z.looseObject({
   durationMs: NonNegativeInt.optional(),
   compactsAutomatically: z.boolean().optional(),
   autoCompactThreshold: PositiveInt.optional(),
+  cost: z
+    .looseObject({
+      amount: z.number(),
+      currency: TrimmedNonEmptyString.max(32),
+    })
+    .optional(),
 });
 export type ThreadTokenUsageSnapshot = z.infer<typeof ThreadTokenUsageSnapshot>;
 

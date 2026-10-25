@@ -115,6 +115,12 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
  * provider reports and older servers can omit it. Reading it does not answer the
  * question or change its response policy.
  *
+ * Provider-thread context usage exposes optional `cost` in detail, projection
+ * and provider-thread update events. Its amount is finite, including negative,
+ * zero and fractional values; currency is trimmed, nonempty and at most 32
+ * characters. Omission stays absent and unknown cost metadata survives.
+ * Malformed values fail decoding. Reading cost does not price or convert usage.
+ *
  * Provider-turn token usage exposes optional positive integer `autoCompactThreshold`
  * through detail, projection and stream reads. It reports provider auto-compaction
  * metadata in tokens. Omission stays absent, malformed values fail decoding, and
