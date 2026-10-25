@@ -17,7 +17,7 @@ proposed-design:
     types. The `typescript-api` development alias supplies the 5.9 compiler API;
     build and typecheck remain TypeScript 7. Missing public JSDoc fails generation.
   publication-and-generation: |
-    `docs/user/t3c/index.md`, `auth.md`, `commands.md`, `policy.md` and `dagu.md`
+    `docs/user/t3c/getting-started.md`, `auth.md`, `commands.md`, `policy.md` and `dagu.md`
     are authored usage guides, in navigation orders 1 through 5. `task docs` invokes
     `cli:docs`, which runs `lib:docs` before projecting the complete `docs/api.md`
     into `docs/user/t3c/library-reference.md` at order 6. Its generator rewrites links and
