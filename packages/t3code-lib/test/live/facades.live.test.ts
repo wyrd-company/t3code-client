@@ -109,6 +109,7 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(environment.capabilities.ignoredFileListing).toBe(true);
     expect(environment.capabilities.databaseStorage).toBe(true);
     expect(environment.capabilities.storageCleanup).toBe(true);
+    expect(environment.capabilities.storageCleanupRun).toBe(true);
     expect(environment.capabilities.usageModelAliases).toBe(true);
     const config = await client.server.getConfig();
     expect(config.environment.capabilities.threadPinning).toBe(true);
@@ -131,6 +132,7 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(config.environment.capabilities.ignoredFileListing).toBe(true);
     expect(config.environment.capabilities.databaseStorage).toBe(true);
     expect(config.environment.capabilities.storageCleanup).toBe(true);
+    expect(config.environment.capabilities.storageCleanupRun).toBe(true);
     expect(config.environment.capabilities.usageModelAliases).toBe(true);
   });
 

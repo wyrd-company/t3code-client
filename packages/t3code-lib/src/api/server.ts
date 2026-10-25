@@ -163,6 +163,11 @@ export interface WatchServerLifecycleOptions {
  * does not advertise support. Available through environment reads, configuration
  * reads and configuration snapshots. Supplied non-boolean values fail decoding.
  * This metadata flag does not perform storage cleanup.
+ * Environment capabilities include optional boolean `storageCleanupRun`: true
+ * advertises support for running storage cleanup. False and omission are preserved;
+ * omission does not advertise support. Available through environment reads,
+ * configuration reads and configuration snapshots. Supplied non-boolean values
+ * fail decoding. This metadata flag does not run storage cleanup.
  */
 export class ServerApi {
   readonly rpc: RpcClient<RpcMethods>;

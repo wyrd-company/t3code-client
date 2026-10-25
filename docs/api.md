@@ -210,7 +210,12 @@ Environment capabilities include optional boolean <code>storageCleanup</code>: t
 advertises storage cleanup support. False and omission are preserved; omission
 does not advertise support. Available through environment reads, configuration
 reads and configuration snapshots. Supplied non-boolean values fail decoding.
-This metadata flag does not perform storage cleanup.</p>
+This metadata flag does not perform storage cleanup.
+Environment capabilities include optional boolean <code>storageCleanupRun</code>: true
+advertises support for running storage cleanup. False and omission are preserved;
+omission does not advertise support. Available through environment reads,
+configuration reads and configuration snapshots. Supplied non-boolean values
+fail decoding. This metadata flag does not run storage cleanup.</p>
 </dd>
 <dt><a href="#VcsApi">VcsApi</a></dt>
 <dd><p>Repository references, worktrees and status.</p>
@@ -1631,6 +1636,11 @@ advertises storage cleanup support. False and omission are preserved; omission
 does not advertise support. Available through environment reads, configuration
 reads and configuration snapshots. Supplied non-boolean values fail decoding.
 This metadata flag does not perform storage cleanup.
+Environment capabilities include optional boolean `storageCleanupRun`: true
+advertises support for running storage cleanup. False and omission are preserved;
+omission does not advertise support. Available through environment reads,
+configuration reads and configuration snapshots. Supplied non-boolean values
+fail decoding. This metadata flag does not run storage cleanup.
 
 **Kind**: global class
 
