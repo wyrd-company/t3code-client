@@ -183,6 +183,12 @@ export interface WatchServerLifecycleOptions {
  * does not advertise support. Available through environment reads, configuration
  * reads and configuration snapshots. Supplied non-boolean values fail decoding.
  * This metadata flag performs no pull request operation.
+ * Environment capabilities also include optional boolean `serverSelfUpdateProgress`:
+ * true advertises streaming self-update progress before restart acknowledgement.
+ * False and omission are preserved; omission does not advertise streaming support.
+ * Available through environment reads, configuration reads and configuration snapshots.
+ * Supplied non-boolean values fail decoding. This metadata flag does not start
+ * an update, subscribe to progress or restart the server.
  * Environment capabilities also include optional boolean `desktopAppUpdate`:
  * true advertises a desktop app update through the supervising desktop app.
  * False and omission are preserved; omission does not advertise support. Available

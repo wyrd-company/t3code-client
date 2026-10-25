@@ -466,3 +466,12 @@ proposed-design:
     support. Supplied non-boolean values fail decoding. Unknown capability fields
     remain intact. This metadata flag does not update or restart the desktop app
     or server.
+
+  optional-server-self-update-progress-capability: |
+    `ExecutionEnvironmentCapabilities.serverSelfUpdateProgress` is an optional
+    boolean available through `server.environment`, `server.getConfig` and
+    configuration stream snapshots. True advertises streaming self-update progress
+    before restart acknowledgement. False and omission are preserved; omission
+    does not advertise streaming support. Supplied non-boolean values fail decoding.
+    Unknown capability fields remain intact. This metadata flag does not start an
+    update, subscribe to progress or restart the server.
