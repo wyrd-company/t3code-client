@@ -606,3 +606,13 @@ proposed-design:
     action metadata makes the provider record malformed; existing forward-compatible
     arrays omit it while later valid records remain available. Reading this metadata
     does not open a URL, authenticate or change authentication state.
+
+  optional-app-thread-wake-metadata: |
+    App-thread records expose optional nullable `lastSnoozeWakeAt` through
+    `threads.detail`, `threads.projection`, watch snapshots and thread-state
+    events. The timestamp records a manual wake without changing the sidebar
+    sort position. Date-time strings and null survive, omission stays absent,
+    and nonstring nonnull values fail decoding under the existing IsoDateTime
+    representation. Unknown metadata survives. Shell records retain their
+    separate timestamp field. Reading this metadata does not wake a thread
+    or change a timer.

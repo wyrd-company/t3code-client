@@ -72,6 +72,10 @@ omission does not mean that the file is absent.</p>
 </dd>
 <dt><a href="#ThreadsApi">ThreadsApi</a></dt>
 <dd><p>Thread lifecycle, history, runs and pending requests.
+App-thread records expose optional nullable <code>lastSnoozeWakeAt</code> through detail,
+projection and thread-state watch events. Timestamp strings and null survive;
+omission stays absent and nonstring nonnull values fail decoding. Unknown
+metadata survives. This field records a manual wake without changing sort order.
 Pending background tasks expose optional <code>parentTaskId</code> through provider-thread
 projections, detail snapshots, provider-thread events and thread shells. It
 identifies the subagent task that started the work and waits on it. Values are
@@ -1278,6 +1282,10 @@ async delete(
 ## ThreadsApi
 
 Thread lifecycle, history, runs and pending requests.
+App-thread records expose optional nullable `lastSnoozeWakeAt` through detail,
+projection and thread-state watch events. Timestamp strings and null survive;
+omission stays absent and nonstring nonnull values fail decoding. Unknown
+metadata survives. This field records a manual wake without changing sort order.
 Pending background tasks expose optional `parentTaskId` through provider-thread
 projections, detail snapshots, provider-thread events and thread shells. It
 identifies the subagent task that started the work and waits on it. Values are

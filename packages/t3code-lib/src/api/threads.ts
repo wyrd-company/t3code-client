@@ -74,6 +74,10 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
 
 /**
  * Thread lifecycle, history, runs and pending requests.
+ * App-thread records expose optional nullable `lastSnoozeWakeAt` through detail,
+ * projection and thread-state watch events. Timestamp strings and null survive;
+ * omission stays absent and nonstring nonnull values fail decoding. Unknown
+ * metadata survives. This field records a manual wake without changing sort order.
  * Pending background tasks expose optional `parentTaskId` through provider-thread
  * projections, detail snapshots, provider-thread events and thread shells. It
  * identifies the subagent task that started the work and waits on it. Values are
