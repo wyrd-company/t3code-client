@@ -162,6 +162,11 @@ False and omission are preserved; omission does not advertise support. Available
 through environment reads, configuration reads and configuration snapshots.
 Supplied non-boolean values fail decoding. This metadata flag does not start or
 track a clone.
+Environment capabilities also include optional boolean <code>environmentIcon</code>:
+true advertises support for a custom environment icon. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not select or change an icon.
 Provider <code>installedVersion</code> is an optional nullable trimmed nonempty string:
 the installed CLI version for a local provider with a separate server.
 Null means unknown; omission leaves legacy snapshots on <code>version</code>.
@@ -1545,6 +1550,11 @@ False and omission are preserved; omission does not advertise support. Available
 through environment reads, configuration reads and configuration snapshots.
 Supplied non-boolean values fail decoding. This metadata flag does not start or
 track a clone.
+Environment capabilities also include optional boolean `environmentIcon`:
+true advertises support for a custom environment icon. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not select or change an icon.
 Provider `installedVersion` is an optional nullable trimmed nonempty string:
 the installed CLI version for a local provider with a separate server.
 Null means unknown; omission leaves legacy snapshots on `version`.
