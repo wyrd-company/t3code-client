@@ -72,7 +72,12 @@ omission does not mean that the file is absent.</p>
 </dd>
 <dt><a href="#ThreadsApi">ThreadsApi</a></dt>
 <dd><p>Thread lifecycle, history, runs and pending requests.
-Approval-request turn items expose optional string <code>reason</code> through projection,
+Approval-request turn items expose optional <code>fullAccessOverride</code> through
+projections, detail snapshots and turn-item events. Known values <code>ask_rule</code>
+and <code>provider_check</code> describe why the provider requested approval in full-access
+mode. Future strings survive; omission stays absent and nonstrings fail decoding.
+Reading this metadata does not answer an approval or change permissions.</p>
+<p>Approval-request turn items expose optional string <code>reason</code> through projection,
 detail and turn-item events. Empty and arbitrary strings are valid; omission
 stays absent and malformed values fail decoding. Reading this metadata does
 not answer an approval or change permissions.</p>
@@ -1174,6 +1179,12 @@ async delete(
 ## ThreadsApi
 
 Thread lifecycle, history, runs and pending requests.
+Approval-request turn items expose optional `fullAccessOverride` through
+projections, detail snapshots and turn-item events. Known values `ask_rule`
+and `provider_check` describe why the provider requested approval in full-access
+mode. Future strings survive; omission stays absent and nonstrings fail decoding.
+Reading this metadata does not answer an approval or change permissions.
+
 Approval-request turn items expose optional string `reason` through projection,
 detail and turn-item events. Empty and arbitrary strings are valid; omission
 stays absent and malformed values fail decoding. Reading this metadata does

@@ -288,3 +288,11 @@ proposed-design:
     `ServerConfig.newProjectsRoot` with a README, an icon and a first commit,
     then creates the project; a failed commit is reported in `commitError` and
     keeps the project.
+
+  approval-full-access-override: >-
+    Approval-request turn items expose optional fullAccessOverride metadata through
+    thread projections, detail snapshots and turn-item events. The known values
+    ask_rule and provider_check describe why the provider requested approval in
+    full-access mode. Future string values survive; omission stays absent and
+    nonstring values fail decoding. Reading this metadata does not answer an
+    approval or change permissions.

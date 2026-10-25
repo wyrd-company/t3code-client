@@ -157,6 +157,7 @@ export const OrchestrationV2TurnItemMembers = [
     requestKind: ProviderRequestKind,
     prompt: z.string().optional(),
     reason: z.string().optional(),
+    fullAccessOverride: forwardCompatibleLiteral(["ask_rule", "provider_check"]).optional(),
     appName: z.string().optional(),
     options: z.array(ProviderApprovalOption).optional(),
   }),

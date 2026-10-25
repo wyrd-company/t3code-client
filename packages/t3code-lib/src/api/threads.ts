@@ -74,6 +74,12 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
 
 /**
  * Thread lifecycle, history, runs and pending requests.
+ * Approval-request turn items expose optional `fullAccessOverride` through
+ * projections, detail snapshots and turn-item events. Known values `ask_rule`
+ * and `provider_check` describe why the provider requested approval in full-access
+ * mode. Future strings survive; omission stays absent and nonstrings fail decoding.
+ * Reading this metadata does not answer an approval or change permissions.
+ *
  * Approval-request turn items expose optional string `reason` through projection,
  * detail and turn-item events. Empty and arbitrary strings are valid; omission
  * stays absent and malformed values fail decoding. Reading this metadata does
