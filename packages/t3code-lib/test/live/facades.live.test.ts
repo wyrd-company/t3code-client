@@ -260,6 +260,38 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(projection.runs.find((run) => run.userMessageId === mid)?.status).toBe("preparing");
   });
 
+  it("observes stock linked pull request repository URL metadata", async () => {
+    for (const [number, repositoryWebUrl] of [
+      [41, undefined],
+      [42, "https://example.invalid/sample/repository"],
+    ] as const) {
+      await client.threads.dispatch({
+        type: "thread.pull-request.link",
+        commandId: client.threads.dispatcher.newCommandId(),
+        threadId: id,
+        host: "example.invalid",
+        repository: "sample/repository",
+        number,
+        url: `https://example.invalid/sample/repository/pull/${number}`,
+        source: "manual",
+        ...(repositoryWebUrl === undefined ? {} : { repositoryWebUrl }),
+      });
+      const thread = (await client.threads.projection(id)).thread;
+      const link = thread.pullRequests?.find((entry) => entry.number === number);
+      expect(link).toBeDefined();
+      expect(Object.hasOwn(link ?? {}, "repositoryWebUrl")).toBe(repositoryWebUrl !== undefined);
+      expect(link?.["repositoryWebUrl"]).toBe(repositoryWebUrl);
+      await client.threads.dispatch({
+        type: "thread.pull-request.unlink",
+        commandId: client.threads.dispatcher.newCommandId(),
+        threadId: id,
+        host: "example.invalid",
+        repository: "sample/repository",
+        number,
+      });
+    }
+  });
+
   it("finds within a thread and refuses workflow and app requests it cannot serve", async () => {
     const config = await client.rpc.call("server.getConfig", {});
     expect([config.threadFind, config.threadFindProgressive]).toEqual([true, true]);

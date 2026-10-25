@@ -72,6 +72,9 @@ omission does not mean that the file is absent.</p>
 </dd>
 <dt><a href="#ThreadsApi">ThreadsApi</a></dt>
 <dd><p>Thread lifecycle, history, runs and pending requests.
+Linked pull requests expose optional nonempty string <code>repositoryWebUrl</code> metadata
+in thread reads and link update events. It carries a browser or clone URL when
+supplied; older links can omit it. Reading it does not fetch the repository.
 Projection conversation messages and user-message turn items in projections,
 history/transcript rows and turn-item updates expose optional boolean <code>workflowScript</code>
 metadata: true marks a provider-native workflow script, false marks ordinary
@@ -1131,6 +1134,9 @@ async delete(
 ## ThreadsApi
 
 Thread lifecycle, history, runs and pending requests.
+Linked pull requests expose optional nonempty string `repositoryWebUrl` metadata
+in thread reads and link update events. It carries a browser or clone URL when
+supplied; older links can omit it. Reading it does not fetch the repository.
 Projection conversation messages and user-message turn items in projections,
 history/transcript rows and turn-item updates expose optional boolean `workflowScript`
 metadata: true marks a provider-native workflow script, false marks ordinary

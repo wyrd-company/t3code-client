@@ -74,6 +74,9 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
 
 /**
  * Thread lifecycle, history, runs and pending requests.
+ * Linked pull requests expose optional nonempty string `repositoryWebUrl` metadata
+ * in thread reads and link update events. It carries a browser or clone URL when
+ * supplied; older links can omit it. Reading it does not fetch the repository.
  * Projection conversation messages and user-message turn items in projections,
  * history/transcript rows and turn-item updates expose optional boolean `workflowScript`
  * metadata: true marks a provider-native workflow script, false marks ordinary

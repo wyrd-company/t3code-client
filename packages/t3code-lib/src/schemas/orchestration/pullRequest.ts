@@ -107,6 +107,8 @@ export type ThreadPullRequestWatch = z.infer<typeof ThreadPullRequestWatch>;
 export const ThreadPullRequestLink = z.looseObject({
   ...ThreadPullRequestKey.shape,
   url: TrimmedNonEmptyString,
+  /** Browser or clone URL supplied by the server; older links can omit it. */
+  repositoryWebUrl: TrimmedNonEmptyString.optional(),
   source: ThreadPullRequestLinkSource,
   linkedAt: IsoDateTime,
   snapshot: ThreadPullRequestSnapshot.nullable(),
