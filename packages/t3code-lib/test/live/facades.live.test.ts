@@ -87,12 +87,14 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(config.environment.capabilities.usagePriceOverrides).toBe(true);
   });
 
-  it("reads the stock usage-model-alias capability through public facades", async () => {
+  it("reads stock usage-alias and thread-pin capabilities through public facades", async () => {
     const environment = await client.server.environment();
     expect(environment.capabilities.threadPinning).toBe(true);
+    expect(environment.capabilities.threadPinReorder).toBe(true);
     expect(environment.capabilities.usageModelAliases).toBe(true);
     const config = await client.server.getConfig();
     expect(config.environment.capabilities.threadPinning).toBe(true);
+    expect(config.environment.capabilities.threadPinReorder).toBe(true);
     expect(config.environment.capabilities.usageModelAliases).toBe(true);
   });
 

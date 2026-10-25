@@ -53,6 +53,7 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   usageModelAliases: z.boolean().optional(),
   /** Server supports pinning threads. */
   threadPinning: z.boolean().optional(),
+  threadPinReorder: z.boolean().optional(),
   threadSettlement: z.boolean().optional(),
   threadVisitedTracking: z.boolean().optional(),
   threadPullRequestWatch: z.boolean().optional(),
