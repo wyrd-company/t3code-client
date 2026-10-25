@@ -25,6 +25,13 @@ export interface WatchServerLifecycleOptions {
 
 /**
  * Server environment, configuration and providers.
+ * Configuration observability exposes optional `otlpTracesUrl`: a trimmed
+ * nonempty string without a URL-format or length restriction. Omission stays
+ * absent. Null, blank and non-string values fail configuration decoding;
+ * unknown observability metadata is preserved. Configuration snapshots use
+ * the same schema, and later valid stream chunks remain available after a
+ * decode error. Reading this metadata does not configure telemetry or contact
+ * an endpoint.
  * Configuration reads and snapshots expose optional `directEndpoints`: address
  * hints with `kind` (lan or tailnet) and nonempty `httpBaseUrl`. Empty arrays and
  * omission are distinct. Unknown kind strings and extra metadata are preserved;
