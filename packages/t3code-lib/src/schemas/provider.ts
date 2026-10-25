@@ -269,6 +269,7 @@ export const ServerProvider = z.looseObject({
   driver: ProviderDriverKind,
   displayName: TrimmedNonEmptyString.optional(),
   accentColor: TrimmedNonEmptyString.optional(),
+  iconUrl: TrimmedNonEmptyString.max(2_048).optional(),
   badgeLabel: TrimmedNonEmptyString.optional(),
   continuation: ServerProviderContinuation.optional(),
   showInteractionModeToggle: z.boolean().optional(),

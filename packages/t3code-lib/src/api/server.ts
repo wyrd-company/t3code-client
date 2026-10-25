@@ -43,6 +43,11 @@ export interface WatchServerLifecycleOptions {
  * and omission are preserved; omission does not advertise support. Available
  * through environment reads, configuration reads and configuration snapshots.
  * Supplied non-boolean values fail decoding.
+ * Provider records expose optional `iconUrl`: a trimmed nonempty string of at
+ * most 2,048 characters. Omission stays absent. Malformed provider records are
+ * omitted by the existing forward-compatible arrays in config reads and streams.
+ * Unknown provider metadata is preserved. This field does not fetch or render
+ * an icon; consumers that display remote icons must validate the driver origin.
  * Published environment themes expose optional `canvas`: a seed color written
  * as #RGB or #RRGGBB, with either letter case preserved. Omission stays absent;
  * whitespace, other strings, null and non-string values fail decoding. Available
