@@ -167,6 +167,13 @@ proposed-design:
     fail decoding; unknown metadata survives. Reading the field does not execute a
     workflow, change message text or choose a display policy.
 
+    User-message turn items in projections, transcript/history rows and
+    `turn-item.updated` events expose optional boolean `workflowScript` metadata.
+    True identifies a provider-native workflow script, false identifies ordinary
+    text, and omission preserves producers that do not supply the classification.
+    Malformed values fail decoding; unknown metadata survives. Reading the field
+    does not execute a workflow, change message text or choose a display policy.
+
     The transcript route answers with the thread's `visibleTurnItems`, its
     `title`, and `updatedAt` in one read. It refuses a thread whose transcript is
     larger than the server's file attachment limit.

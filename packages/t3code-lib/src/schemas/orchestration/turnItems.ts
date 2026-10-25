@@ -75,6 +75,7 @@ export const OrchestrationV2TurnItemMembers = [
     messageId: MessageId,
     scheduledTaskId: ScheduledTaskId.optional(),
     senderThreadId: ThreadId.optional(),
+    workflowScript: z.boolean().optional(),
     inputIntent: OrchestrationV2UserMessageInputIntent,
     text: z.string(),
     context: OrchestrationMessageContext.optional(),

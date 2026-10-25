@@ -251,6 +251,12 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(message?.text).toBe("Sample message");
     expect(Object.hasOwn(message ?? {}, "workflowScript")).toBe(false);
     expect(message?.["workflowScript"]).toBeUndefined();
+    const item = projection.turnItems.find(
+      (row) => row.type === "user_message" && row.messageId === mid,
+    );
+    expect(item).toBeDefined();
+    expect(Object.hasOwn(item ?? {}, "workflowScript")).toBe(false);
+    expect(item?.["workflowScript"]).toBeUndefined();
     expect(projection.runs.find((run) => run.userMessageId === mid)?.status).toBe("preparing");
   });
 

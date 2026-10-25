@@ -72,7 +72,8 @@ omission does not mean that the file is absent.</p>
 </dd>
 <dt><a href="#ThreadsApi">ThreadsApi</a></dt>
 <dd><p>Thread lifecycle, history, runs and pending requests.
-Projection conversation messages expose optional boolean <code>workflowScript</code>
+Projection conversation messages and user-message turn items in projections,
+history/transcript rows and turn-item updates expose optional boolean <code>workflowScript</code>
 metadata: true marks a provider-native workflow script, false marks ordinary
 text, and older servers or other producers can omit it. Reading this metadata
 does not execute a workflow or change message text.</p>
@@ -1130,7 +1131,8 @@ async delete(
 ## ThreadsApi
 
 Thread lifecycle, history, runs and pending requests.
-Projection conversation messages expose optional boolean `workflowScript`
+Projection conversation messages and user-message turn items in projections,
+history/transcript rows and turn-item updates expose optional boolean `workflowScript`
 metadata: true marks a provider-native workflow script, false marks ordinary
 text, and older servers or other producers can omit it. Reading this metadata
 does not execute a workflow or change message text.
