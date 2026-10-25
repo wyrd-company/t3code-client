@@ -21,6 +21,10 @@ import { ServerProviders, ServerProviderUsageLimits } from "./provider.ts";
 export const EditorId = forwardCompatibleLiteral(["cursor", "vscode", "zed", "file-manager"]);
 export type EditorId = z.infer<typeof EditorId>;
 export const EnvironmentTheme = z.looseObject({
+  canvas: z
+    .string()
+    .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/)
+    .optional(),
   id: z.string(),
   name: z.string(),
   appearance: forwardCompatibleLiteral(["light", "dark"]),

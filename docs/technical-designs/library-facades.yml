@@ -501,3 +501,10 @@ proposed-design:
     no update path. Unknown strings are preserved for forward compatibility;
     supplied non-string values fail decoding. Unknown fields remain intact.
     This metadata does not start an update or restart a server or desktop app.
+
+  optional-theme-canvas: |
+    `EnvironmentTheme.canvas` is an optional string matching #RGB or #RRGGBB.
+    Letter case is preserved; whitespace and other strings are invalid. Omission
+    remains absent. Null and non-string values fail decoding. The member is typed
+    in configuration theme arrays and `environmentThemesUpdated` payloads. Unknown
+    theme metadata survives. Reading the seed color does not apply a theme.

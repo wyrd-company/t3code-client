@@ -179,6 +179,11 @@ advertises environment-theme publication through configuration streams. False
 and omission are preserved; omission does not advertise support. Available
 through environment reads, configuration reads and configuration snapshots.
 Supplied non-boolean values fail decoding.
+Published environment themes expose optional <code>canvas</code>: a seed color written
+as #RGB or #RRGGBB, with either letter case preserved. Omission stays absent;
+whitespace, other strings, null and non-string values fail decoding. Available
+in configuration theme arrays and environmentThemesUpdated stream payloads.
+Unknown theme metadata is preserved. Reading canvas does not apply a theme.
 Environment capabilities also include optional boolean <code>usageLimitSources</code>:
 true advertises quota streaming from configured usage-limit sources. False
 and omission are preserved; omission does not advertise support. Available
@@ -1754,6 +1759,11 @@ advertises environment-theme publication through configuration streams. False
 and omission are preserved; omission does not advertise support. Available
 through environment reads, configuration reads and configuration snapshots.
 Supplied non-boolean values fail decoding.
+Published environment themes expose optional `canvas`: a seed color written
+as #RGB or #RRGGBB, with either letter case preserved. Omission stays absent;
+whitespace, other strings, null and non-string values fail decoding. Available
+in configuration theme arrays and environmentThemesUpdated stream payloads.
+Unknown theme metadata is preserved. Reading canvas does not apply a theme.
 Environment capabilities also include optional boolean `usageLimitSources`:
 true advertises quota streaming from configured usage-limit sources. False
 and omission are preserved; omission does not advertise support. Available
