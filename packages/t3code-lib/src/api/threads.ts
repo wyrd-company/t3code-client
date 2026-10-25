@@ -78,6 +78,10 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
  * through detail, projection and stream reads. It reports provider auto-compaction
  * metadata in tokens. Omission stays absent, malformed values fail decoding, and
  * unknown metadata survives. Reading it does not enforce compaction or change timing.
+ * Provider-turn usage also exposes optional string `promptCacheExpiresAt` through
+ * the same reads. It reports the provider's prompt cache expiry metadata. Empty
+ * and other strings pass through; omission stays absent and malformed values fail
+ * decoding. Reading the field does not expire a cache or schedule compaction.
  * `update` and `dispatch` accept optional nullable nonempty string `expectedBranch`
  * on metadata updates. The server rejects an update if its current branch differs;
  * null expects no branch, and omission leaves this precondition unsupplied.

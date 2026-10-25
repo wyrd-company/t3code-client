@@ -148,6 +148,7 @@ export const OrchestrationV2ProviderTurnTokenUsage = z.looseObject({
   /** Prompt cache lifetime; the cache is cold once `updatedAt` is this old. */
   promptCacheTtlMs: PositiveInt.optional(),
   autoCompactThreshold: PositiveInt.optional(),
+  promptCacheExpiresAt: z.string().optional(),
   updatedAt: z.string(),
 });
 export type OrchestrationV2ProviderTurnTokenUsage = z.infer<

@@ -22,6 +22,12 @@ proposed-design:
     does not enforce compaction or change timing. This is separate from the
     thread-level token usage snapshot.
 
+    Provider-turn token usage also exposes optional string `promptCacheExpiresAt`
+    through thread detail, projection and stream reads. It reports the provider's
+    prompt cache expiry metadata. Empty and other strings pass through; omission
+    stays absent, malformed values fail decoding and unknown metadata survives.
+    Reading the field does not expire a cache or schedule compaction.
+
     Server configuration reads and stream snapshots expose optional
     `directEndpoints`: a forward-compatible array of address hints with `kind`
     (`lan` or `tailnet`) and nonempty `httpBaseUrl`. Unknown kind strings and
