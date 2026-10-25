@@ -2,7 +2,6 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { hasScope } from "../auth/scopes.ts";
 import {
-  AuthAdministrativeScopes,
   AuthClientSession,
   AuthCreatePairingCredentialInput,
   AuthEnvironmentScope,
@@ -57,10 +56,28 @@ describe("auth scope vocabulary", () => {
       scopes: [...granular],
     });
   });
-  it("groups the standard, legacy, and administrative sets", () => {
-    expect(AuthStandardClientScopes).toHaveLength(13);
-    expect(AuthStandardClientScopes).toEqual(expect.arrayContaining([...granular, "relay:read"]));
-    expect(AuthStandardClientScopes).not.toContain("access:read");
+  it("matches the stock standard grants and retains the legacy vocabulary", () => {
+    expect(AuthStandardClientScopes).toEqual([
+      "orchestration:read",
+      "orchestration:operate",
+      "settings:write",
+      "providers:manage",
+      "environment:maintain",
+      "preview:operate",
+      "diagnostics:read",
+      "terminal:read",
+      "terminal:operate",
+      "source-control:write",
+      "filesystem:read",
+      "filesystem:write",
+      "relay:read",
+      "access:read",
+      "access:write",
+      "relay:write",
+    ]);
+    expect(AuthCreatePairingCredentialInput.parse({ scopes: ["orchestration:read"] })).toEqual({
+      scopes: ["orchestration:read"],
+    });
     expect(AuthLegacyScopes).toEqual([
       "orchestration:read",
       "orchestration:operate",
@@ -71,8 +88,6 @@ describe("auth scope vocabulary", () => {
       "relay:read",
       "relay:write",
     ]);
-    expect(AuthAdministrativeScopes).toHaveLength(16);
-    expect(AuthAdministrativeScopes).not.toContain("review:write");
   });
   it("keeps descriptors loose and reads the optional server update scope", () => {
     expect(ServerAuthDescriptor.parse(authDescriptor)).toMatchObject({ futureField: true });
