@@ -119,6 +119,12 @@ export interface WatchServerLifecycleOptions {
  * preserved; omission does not advertise support. Available through environment
  * reads, configuration reads and configuration snapshots. Supplied non-boolean
  * values fail decoding. This metadata flag does not select or change an icon.
+ * Environment capabilities also include optional boolean `threadAutoSettlement`:
+ * true advertises server evaluation of merge and inactivity settlement without a
+ * client. False and omission are preserved; omission does not advertise support.
+ * Available through environment reads, configuration reads and configuration
+ * snapshots. Supplied non-boolean values fail decoding. This metadata flag does
+ * not change settlement settings or settle a thread.
  * Provider `installedVersion` is an optional nullable trimmed nonempty string:
  * the installed CLI version for a local provider with a separate server.
  * Null means unknown; omission leaves legacy snapshots on `version`.

@@ -74,6 +74,8 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   projectWorktreeCleanup: z.boolean().optional(),
   settledWorktreeCleanup: z.boolean().optional(),
   worktreesDirectory: z.boolean().optional(),
+  /** Server evaluates merge and inactivity settlement without a client. */
+  threadAutoSettlement: z.boolean().optional(),
   /** Server can exclude pull-request-linked threads from inactivity settlement. */
   threadAutoSettlementScope: z.boolean().optional(),
   serverInstallation: ServerInstallation.optional().catch(undefined),
