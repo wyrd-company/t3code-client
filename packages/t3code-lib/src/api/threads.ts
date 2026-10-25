@@ -89,6 +89,12 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
  * Linked pull requests expose optional nonempty string `repositoryWebUrl` metadata
  * in thread reads and link update events. It carries a browser or clone URL when
  * supplied; older links can omit it. Reading it does not fetch the repository.
+ * Context transfers in projections, HTTP detail snapshots and context-transfer
+ * events expose optional `sourceTokenUsage` with the provider-turn usage shape.
+ * Native forks can retain source usage; older transfers and portable handoffs
+ * can omit it. Nested usage is validated; unknown metadata survives. Reading it
+ * does not enforce a context budget or perform a fork.
+ *
  * Linked pull requests also expose optional `endedWatch` records in thread reads
  * and link-update events. The record uses the existing watch timestamps, nullable
  * head SHA, check/remark arrays, pass/conflict flags and wake count. Omission

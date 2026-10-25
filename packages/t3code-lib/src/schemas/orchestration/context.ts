@@ -21,6 +21,7 @@ import {
   taggedUnionWithUnknown,
 } from "../common.ts";
 import { OrchestrationV2Actor, OrchestrationV2ProviderRef } from "./model.ts";
+import { OrchestrationV2ProviderTurnTokenUsage } from "./providerState.ts";
 
 export const OrchestrationV2ContextTransferType = forwardCompatibleLiteral([
   "fork",
@@ -68,6 +69,7 @@ export const OrchestrationV2ContextTransfer = z.looseObject({
   sourcePoint: OrchestrationV2ContextSourcePoint,
   basePoint: OrchestrationV2ContextSourcePoint.nullable(),
   sourceProviderInstanceId: ProviderInstanceId.nullable(),
+  sourceTokenUsage: OrchestrationV2ProviderTurnTokenUsage.optional(),
   targetProviderInstanceId: ProviderInstanceId.nullable(),
   targetRunId: RunId.nullable(),
   status: forwardCompatibleLiteral([

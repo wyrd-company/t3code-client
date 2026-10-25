@@ -142,6 +142,13 @@ proposed-design:
     scripts run on the host. The shell stream reports projects as
     `project.updated` and `project.removed`.
 
+    Context transfers in thread projections, HTTP detail snapshots and
+    `context-transfer.created` / `context-transfer.updated` events expose optional
+    `sourceTokenUsage` metadata with the provider-turn usage shape. Native forks
+    can retain the source turn's usage; older transfers and portable handoffs can
+    omit it. Nested usage values are validated and unknown metadata survives.
+    Reading this metadata does not enforce a context budget or perform a fork.
+
     A workflow run is a subagent whose `workflow` field carries the provider's
     replace-in-full view of the run: an append-only phase list and one entry
     per agent. `orchestration.stopWorkflow` stops the run by that subagent; the
