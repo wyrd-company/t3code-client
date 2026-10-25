@@ -83,6 +83,7 @@ export const OrchestrationV2ProviderThreadNativeMetadata = z.looseObject({
   title: TrimmedNonEmptyString.nullable().optional(),
   updatedAt: TrimmedNonEmptyString.nullable().optional(),
   itemIdentityVersion: z.literal(2).optional(),
+  forkHeadMessageId: TrimmedNonEmptyString.optional(),
 });
 export type OrchestrationV2ProviderThreadNativeMetadata = z.infer<
   typeof OrchestrationV2ProviderThreadNativeMetadata

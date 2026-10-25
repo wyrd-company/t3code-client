@@ -74,6 +74,11 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
 
 /**
  * Thread lifecycle, history, runs and pending requests.
+ * Provider-thread native metadata exposes optional `forkHeadMessageId` through
+ * projections, detail snapshots and provider-thread events. It identifies the
+ * native message at a fork head. Strings are trimmed and must be nonempty;
+ * omission stays absent, malformed values fail decoding and unknown metadata
+ * survives. Reading this field does not create or resume a fork.
  * Approval-request turn items expose optional `fullAccessOverride` through
  * projections, detail snapshots and turn-item events. Known values `ask_rule`
  * and `provider_check` describe why the provider requested approval in full-access
