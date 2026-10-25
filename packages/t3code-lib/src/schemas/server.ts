@@ -63,6 +63,7 @@ export type ResolvedKeybindingsConfig = z.infer<typeof ResolvedKeybindingsConfig
 export const ServerConfigIssues = z.array(z.looseObject({}));
 export type ServerConfigIssues = z.infer<typeof ServerConfigIssues>;
 export const ServerObservability = z.looseObject({
+  otlpLogsEnabled: z.boolean().optional(),
   otlpTracesUrl: TrimmedNonEmptyString.optional(),
   otlpMetricsUrl: TrimmedNonEmptyString.optional(),
   otlpLogsUrl: TrimmedNonEmptyString.optional(),

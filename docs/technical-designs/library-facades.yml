@@ -632,3 +632,10 @@ proposed-design:
     Non-string values fail decoding; later valid chunks remain available.
     Reading this metadata does not compact threads or change defaults or timing.
     Other settings remain loose; settings mutation stays outside the facade.
+
+  optional-observability-log-export-flag: |
+    Configuration reads and snapshots expose optional Boolean
+    `observability.otlpLogsEnabled`. False, omission and unknown observability
+    metadata are preserved. Malformed non-Booleans fail decoding; later valid
+    stream chunks remain available. Reading the flag does not configure telemetry
+    or enable log export. Other observability fields remain loose.

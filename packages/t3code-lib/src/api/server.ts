@@ -36,6 +36,10 @@ export interface WatchServerLifecycleOptions {
  * Malformed usernames invalidate their target records; the existing compatible
  * array decoder omits those records and preserves later valid rows and chunks.
  * Reading this metadata does not look up a username or open an SSH connection.
+ * Configuration reads and snapshots expose optional Boolean
+ * `observability.otlpLogsEnabled`. False and omission stay intact; malformed
+ * non-Booleans fail decoding, and later valid stream chunks remain available.
+ * This metadata does not enable or configure log export.
  * Configuration observability exposes optional `otlpTracesUrl`,
  * `otlpMetricsUrl` and `otlpLogsUrl`: trimmed nonempty strings without a URL-format
  * or length restriction. Omission stays
