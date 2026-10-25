@@ -74,6 +74,11 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
 
 /**
  * Thread lifecycle, history, runs and pending requests.
+ * User-input question options expose optional string `preview` through projections,
+ * detail snapshots and turn-item events. Empty and arbitrary strings are valid;
+ * provider reports and older servers can omit it. Reading it does not answer the
+ * question or change its response policy.
+ *
  * Provider-turn token usage exposes optional positive integer `autoCompactThreshold`
  * through detail, projection and stream reads. It reports provider auto-compaction
  * metadata in tokens. Omission stays absent, malformed values fail decoding, and

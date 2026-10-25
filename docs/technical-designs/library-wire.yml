@@ -149,6 +149,12 @@ proposed-design:
     omit it. Nested usage values are validated and unknown metadata survives.
     Reading this metadata does not enforce a context budget or perform a fork.
 
+    User-input question options expose optional string `preview` through thread
+    projections, HTTP detail snapshots and `turn-item.updated` events. Empty and
+    arbitrary strings are valid; older servers and provider reports can omit it.
+    Unknown option metadata survives decoding. Reading preview metadata does not
+    answer a question or change its response policy.
+
     A workflow run is a subagent whose `workflow` field carries the provider's
     replace-in-full view of the run: an append-only phase list and one entry
     per agent. `orchestration.stopWorkflow` stops the run by that subagent; the

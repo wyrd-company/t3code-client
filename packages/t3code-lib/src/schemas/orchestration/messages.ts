@@ -128,6 +128,7 @@ export const OrchestrationV2UserInputQuestion = z.looseObject({
       label: TrimmedNonEmptyString,
       description: TrimmedNonEmptyString,
       value: z.string().optional(),
+      preview: z.string().optional(),
     }),
   ),
   multiSelect: z.boolean().optional(),
