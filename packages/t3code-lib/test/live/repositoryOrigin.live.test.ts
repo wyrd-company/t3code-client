@@ -42,6 +42,14 @@ describe.skipIf(!baseUrl || !token)("live repository origin remote URL", () => {
           title: `Sample ${name}`,
         });
         ids.push(created.id);
+        // Project enrichment is asynchronous; read the public snapshot until resolved.
+        await expect
+          .poll(async () => {
+            const snapshot = await client.projects.snapshot();
+            return snapshot.projects.find((candidate) => candidate.id === created.id)
+              ?.repositoryIdentity?.locator.remoteUrl;
+          })
+          .toBe(canonicalUrl);
         const project = (await client.projects.snapshot()).projects.find(
           (candidate) => candidate.id === created.id,
         );
