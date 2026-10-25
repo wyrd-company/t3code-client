@@ -231,6 +231,10 @@ proposed-design:
     work; older servers can omit it. Reading it does not change wait behavior.
     The optional nullable string `lastErrorCode` reports the current provider
     failure code, or null when none applies; older servers can omit it.
+    A non-null `pendingRuntimeRequest` summary has optional boolean `blocking`: false
+    for an async question the run keeps working past. Older servers can omit it.
+    Null and nonboolean values fail decoding; unknown summary metadata survives.
+    Reading this metadata does not answer the request or change run behavior.
     The shell snapshot has `threads` and
     `archivedThreads`, but the server fills `archivedThreads` only on the socket
     snapshot; archived threads are read with

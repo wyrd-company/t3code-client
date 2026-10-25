@@ -81,6 +81,8 @@ export const OrchestrationV2PendingRuntimeRequestSummary = z.looseObject({
   id: RuntimeRequestId,
   kind: OrchestrationV2RuntimeRequestKind,
   createdAt: IsoDateTime,
+  /** False for async questions the run keeps working past; older servers can omit it. */
+  blocking: z.boolean().optional(),
 });
 export type OrchestrationV2PendingRuntimeRequestSummary = z.infer<
   typeof OrchestrationV2PendingRuntimeRequestSummary

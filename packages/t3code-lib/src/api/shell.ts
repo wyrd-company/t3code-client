@@ -64,6 +64,9 @@ export function loadShellSnapshot(
  * thread-wait work. Older servers can omit these fields. Reading them does not
  * request a stop or change wait behavior. Optional `lastErrorCode` is the current
  * provider failure code, or null when none applies; older servers can omit it.
+ * A pending runtime request summary carries optional boolean `blocking`: false
+ * for an async question the run can keep working past. Older servers can omit
+ * it. Reading this metadata does not answer a request or change run behavior.
  */
 export class ShellApi {
   readonly http: HttpTransport;

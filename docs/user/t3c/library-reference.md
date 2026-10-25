@@ -103,7 +103,10 @@ does not execute a workflow or change message text.</p>
 Optional <code>blockedOnThreadWait</code> reports whether the active run is blocked on
 thread-wait work. Older servers can omit these fields. Reading them does not
 request a stop or change wait behavior. Optional <code>lastErrorCode</code> is the current
-provider failure code, or null when none applies; older servers can omit it.</p>
+provider failure code, or null when none applies; older servers can omit it.
+A pending runtime request summary carries optional boolean <code>blocking</code>: false
+for an async question the run can keep working past. Older servers can omit
+it. Reading this metadata does not answer a request or change run behavior.</p>
 </dd>
 <dt><a href="#ServerApi">ServerApi</a></dt>
 <dd><p>Server environment, configuration and providers.
@@ -1564,6 +1567,9 @@ Optional `blockedOnThreadWait` reports whether the active run is blocked on
 thread-wait work. Older servers can omit these fields. Reading them does not
 request a stop or change wait behavior. Optional `lastErrorCode` is the current
 provider failure code, or null when none applies; older servers can omit it.
+A pending runtime request summary carries optional boolean `blocking`: false
+for an async question the run can keep working past. Older servers can omit
+it. Reading this metadata does not answer a request or change run behavior.
 
 **Kind**: global class
 
