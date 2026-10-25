@@ -67,6 +67,7 @@ export type ExecutionEnvironmentDescriptor = z.infer<typeof ExecutionEnvironment
 /** The checkout's own remote when it names a different repository than the canonical one. */
 export const RepositoryOrigin = z.looseObject({
   canonicalKey: TrimmedNonEmptyString,
+  remoteUrl: TrimmedNonEmptyString.optional(),
   displayName: TrimmedNonEmptyString.optional(),
 });
 export type RepositoryOrigin = z.infer<typeof RepositoryOrigin>;

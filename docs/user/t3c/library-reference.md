@@ -61,6 +61,9 @@ TypeScript declarations ship with the package.
 </dd>
 <dt><a href="#ProjectsApi">ProjectsApi</a></dt>
 <dd><p>Project discovery, creation, mutations and files.</p>
+<p>Project repository identities can include <code>origin.remoteUrl</code>, an optional
+trimmed nonempty string naming the checkout remote when its repository differs
+from the canonical repository. Omission does not imply a missing remote.</p>
 <p><code>projects.files.read({ cwd, relativePath, allowMissing: true })</code> returns
 empty contents, zero byteLength, truncated false and <code>exists: false</code> for an
 absent file. Omitted or false <code>allowMissing</code> retains the missing-file error.
@@ -767,6 +770,10 @@ async ensureScopes(required: AuthEnvironmentScopeType[]): Promise<void>;
 ## ProjectsApi
 
 Project discovery, creation, mutations and files.
+
+Project repository identities can include `origin.remoteUrl`, an optional
+trimmed nonempty string naming the checkout remote when its repository differs
+from the canonical repository. Omission does not imply a missing remote.
 
 `projects.files.read({ cwd, relativePath, allowMissing: true })` returns
 empty contents, zero byteLength, truncated false and `exists: false` for an

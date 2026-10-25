@@ -83,6 +83,10 @@ export function normalizeWorkspaceRoot(workspaceRoot: string): string {
 /**
  * Project discovery, creation, mutations and files.
  *
+ * Project repository identities can include `origin.remoteUrl`, an optional
+ * trimmed nonempty string naming the checkout remote when its repository differs
+ * from the canonical repository. Omission does not imply a missing remote.
+ *
  * `projects.files.read({ cwd, relativePath, allowMissing: true })` returns
  * empty contents, zero byteLength, truncated false and `exists: false` for an
  * absent file. Omitted or false `allowMissing` retains the missing-file error.

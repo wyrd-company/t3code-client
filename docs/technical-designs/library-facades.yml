@@ -20,6 +20,10 @@ proposed-design:
     (`commandId`, `messageId`, `createdBy`, `creationSource`) so callers never
     hand-build a command, and translate stream items into domain items.
 
+    Project repository identities can include `origin.remoteUrl`, an optional
+    trimmed nonempty string naming the checkout remote when its repository differs
+    from the canonical repository. Omission does not imply a missing remote.
+
     ```ts
     export class ProjectsApi {
       list(): Promise<OrchestrationProjectShell[]>                    // from the shell snapshot
