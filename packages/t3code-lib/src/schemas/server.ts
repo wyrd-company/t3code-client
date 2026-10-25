@@ -64,6 +64,7 @@ export const ServerConfigIssues = z.array(z.looseObject({}));
 export type ServerConfigIssues = z.infer<typeof ServerConfigIssues>;
 export const ServerObservability = z.looseObject({
   otlpTracesEnabled: z.boolean().optional(),
+  otlpMetricsEnabled: z.boolean().optional(),
   otlpLogsEnabled: z.boolean().optional(),
   otlpTracesUrl: TrimmedNonEmptyString.optional(),
   otlpMetricsUrl: TrimmedNonEmptyString.optional(),
