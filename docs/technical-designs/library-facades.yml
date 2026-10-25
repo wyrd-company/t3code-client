@@ -200,3 +200,9 @@ proposed-design:
     can recover when `cwd` is supplied, including after a server restart.
     Omission and `false` retain ordinary attach behavior. Unknown IDs without
     `cwd` fail lookup. The stock server owns terminal lifecycle behavior.
+  provider-installed-version: |
+    Provider records in server configuration reads, provider lists and config
+    streams expose `installedVersion` as an optional nullable trimmed nonempty
+    string. It reports the installed CLI version for a local provider with a
+    separate server. Null means unknown; omission leaves legacy snapshots on
+    `version`. The library does not infer a value or enforce a version policy.

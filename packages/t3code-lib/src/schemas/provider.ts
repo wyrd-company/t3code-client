@@ -284,6 +284,8 @@ export const ServerProvider = z.looseObject({
   enabled: z.boolean(),
   installed: z.boolean(),
   version: TrimmedNonEmptyString.nullable(),
+  /** Installed CLI version for a local provider with a separate server; null means unknown. */
+  installedVersion: TrimmedNonEmptyString.nullable().optional(),
   status: ServerProviderState,
   auth: ServerProviderAuth,
   checkedAt: IsoDateTime,

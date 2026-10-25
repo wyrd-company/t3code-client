@@ -74,7 +74,12 @@ omission does not mean that the file is absent.</p>
 <dd><p>Live and archived cross-thread snapshots.</p>
 </dd>
 <dt><a href="#ServerApi">ServerApi</a></dt>
-<dd><p>Server environment, configuration and providers.</p>
+<dd><p>Server environment, configuration and providers.
+Provider <code>installedVersion</code> is an optional nullable trimmed nonempty string:
+the installed CLI version for a local provider with a separate server.
+Null means unknown; omission leaves legacy snapshots on <code>version</code>.
+This metadata is available through configuration reads, provider lists and
+configuration streams; it does not enforce a provider version policy.</p>
 </dd>
 <dt><a href="#VcsApi">VcsApi</a></dt>
 <dd><p>Repository references, worktrees and status.</p>
@@ -1353,6 +1358,11 @@ watchArchived(
 ## ServerApi
 
 Server environment, configuration and providers.
+Provider `installedVersion` is an optional nullable trimmed nonempty string:
+the installed CLI version for a local provider with a separate server.
+Null means unknown; omission leaves legacy snapshots on `version`.
+This metadata is available through configuration reads, provider lists and
+configuration streams; it does not enforce a provider version policy.
 
 **Kind**: global class
 

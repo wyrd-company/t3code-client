@@ -23,7 +23,14 @@ export interface WatchServerLifecycleOptions {
   readonly signal?: AbortSignal;
 }
 
-/** Server environment, configuration and providers. */
+/**
+ * Server environment, configuration and providers.
+ * Provider `installedVersion` is an optional nullable trimmed nonempty string:
+ * the installed CLI version for a local provider with a separate server.
+ * Null means unknown; omission leaves legacy snapshots on `version`.
+ * This metadata is available through configuration reads, provider lists and
+ * configuration streams; it does not enforce a provider version policy.
+ */
 export class ServerApi {
   readonly rpc: RpcClient<RpcMethods>;
   readonly http: HttpTransport;
