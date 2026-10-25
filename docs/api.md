@@ -67,6 +67,10 @@ omission does not mean that the file is absent.</p>
 </dd>
 <dt><a href="#ThreadsApi">ThreadsApi</a></dt>
 <dd><p>Thread lifecycle, history, runs and pending requests.
+<code>update</code> and <code>dispatch</code> accept optional nullable nonempty string <code>expectedBranch</code>
+on metadata updates. The server rejects an update if its current branch differs;
+null expects no branch, and omission leaves this precondition unsupplied.
+String values are trimmed; malformed values fail before sending.
 Linked pull requests expose optional nonempty string <code>repositoryWebUrl</code> metadata
 in thread reads and link update events. It carries a browser or clone URL when
 supplied; older links can omit it. Reading it does not fetch the repository.
@@ -1141,6 +1145,10 @@ async delete(
 ## ThreadsApi
 
 Thread lifecycle, history, runs and pending requests.
+`update` and `dispatch` accept optional nullable nonempty string `expectedBranch`
+on metadata updates. The server rejects an update if its current branch differs;
+null expects no branch, and omission leaves this precondition unsupplied.
+String values are trimmed; malformed values fail before sending.
 Linked pull requests expose optional nonempty string `repositoryWebUrl` metadata
 in thread reads and link update events. It carries a browser or clone URL when
 supplied; older links can omit it. Reading it does not fetch the repository.

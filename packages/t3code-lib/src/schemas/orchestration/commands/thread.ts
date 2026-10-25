@@ -116,6 +116,7 @@ export const ThreadMetadataUpdatePayload = z.looseObject({
   branch: TrimmedNonEmptyString.nullable().optional(),
   worktreePath: TrimmedNonEmptyString.nullable().optional(),
   expectedWorktreePath: TrimmedNonEmptyString.nullable().optional(),
+  expectedBranch: TrimmedNonEmptyString.nullable().optional(),
   /** Reject unless no message or run has landed on this thread. */
   expectedEmpty: z.boolean().optional(),
   limitRecovery: OrchestrationV2LimitRecoveryUpdate.nullable().optional(),

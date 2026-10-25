@@ -232,6 +232,20 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(await client.threads.pendingRequests(id)).toEqual([]);
   });
 
+  it("observes stock expected-branch metadata without starting a provider", async () => {
+    const original = (await client.threads.projection(id)).thread;
+    expect(original.branch).toBeNull();
+    await client.threads.update(id, { expectedBranch: null, branch: "sample-branch" });
+    expect((await client.threads.projection(id)).thread.branch).toBe("sample-branch");
+    await expect(
+      client.threads.update(id, { expectedBranch: null, title: "Rejected title" }),
+    ).rejects.toBeInstanceOf(T3RpcError);
+    expect((await client.threads.projection(id)).thread.title).toBe(original.title);
+    await client.threads.update(id, { expectedBranch: "sample-branch", branch: null });
+    expect((await client.threads.projection(id)).thread.branch).toBeNull();
+    await client.threads.update(id, { title: original.title });
+  });
+
   it("observes stock conversation workflow-script omission without starting a provider", async () => {
     const mid = messageId(NodeCrypto.randomUUID());
     await client.threads.dispatch({

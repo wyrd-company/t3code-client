@@ -184,6 +184,12 @@ proposed-design:
     leaves it unsupplied, malformed values fail before sending, and unknown nested
     metadata survives. This metadata does not change watch policy.
 
+    `thread.metadata.update` and `threads.update` accept optional nullable
+    nonempty string `expectedBranch` metadata. The server compares a supplied
+    value with the current branch and rejects a mismatch. Null expects no branch;
+    omission leaves this precondition unsupplied. Strings are trimmed, malformed
+    values fail before sending, and unknown metadata survives.
+
     Conversation messages in projections and `message.updated` events expose
     optional boolean `workflowScript` metadata. True identifies a provider-native
     workflow script, false identifies ordinary text, and omission preserves older
