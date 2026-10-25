@@ -432,3 +432,11 @@ proposed-design:
     telemetry export settings; false and omission are preserved without inference.
     Omission does not advertise support. Non-boolean supplied values fail decoding.
     This metadata flag does not check an endpoint.
+
+  optional-pull-request-stack-actions-capability: |
+    `ExecutionEnvironmentCapabilities.pullRequestStackActions` is an optional
+    boolean available through `server.environment`, `server.getConfig` and
+    configuration stream snapshots. True advertises support for pull request
+    stack actions; false and omission are preserved without inference. Omission
+    does not advertise support. Non-boolean supplied values fail decoding.
+    This metadata flag does not perform a pull request stack action.

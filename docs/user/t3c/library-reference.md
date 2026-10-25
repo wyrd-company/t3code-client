@@ -225,7 +225,12 @@ Environment capabilities also include optional boolean <code>otlpEndpointCheck</
 true advertises support for checking OTLP endpoints for telemetry export settings.
 False and omission are preserved; omission does not advertise support. Available
 through environment reads, configuration reads and configuration snapshots.
-Supplied non-boolean values fail decoding. This metadata flag does not check an endpoint.</p>
+Supplied non-boolean values fail decoding. This metadata flag does not check an endpoint.
+Environment capabilities also include optional boolean <code>pullRequestStackActions</code>:
+true advertises support for pull request stack actions. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not perform a pull request stack action.</p>
 </dd>
 <dt><a href="#VcsApi">VcsApi</a></dt>
 <dd><p>Repository references, worktrees and status.</p>
@@ -1656,6 +1661,11 @@ true advertises support for checking OTLP endpoints for telemetry export setting
 False and omission are preserved; omission does not advertise support. Available
 through environment reads, configuration reads and configuration snapshots.
 Supplied non-boolean values fail decoding. This metadata flag does not check an endpoint.
+Environment capabilities also include optional boolean `pullRequestStackActions`:
+true advertises support for pull request stack actions. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not perform a pull request stack action.
 
 **Kind**: global class
 
