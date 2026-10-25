@@ -229,6 +229,13 @@ proposed-design:
     `passedChecks` decodes to an empty array. Malformed watch records fail
     decoding and unknown metadata survives. Reading the field does not restart a watch.
 
+    Linked pull request snapshot authors expose optional boolean `isBot` through
+    app and shell threads, detail and projection reads, thread snapshots and
+    `thread.pull-request-link-updated` events, and shell snapshots and updates.
+    True and false survive; omission stays absent and unknown actor metadata
+    survives. Malformed values fail decoding; later valid stream items remain
+    available. Reading this metadata does not change author permissions.
+
     The existing `thread.pull-request.link` command accepts optional nonempty
     string `repositoryWebUrl` metadata through `threads.dispatch`. Browser URLs,
     clone URLs and other nonempty strings retain the tagged wire type; omission

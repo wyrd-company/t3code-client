@@ -121,6 +121,11 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
  * characters. Omission stays absent and unknown cost metadata survives.
  * Malformed values fail decoding. Reading cost does not price or convert usage.
  *
+ * Linked pull request snapshot authors expose optional boolean `isBot` in
+ * detail, projection and link-update events. True and false survive; omission
+ * stays absent and unknown actor metadata survives. Malformed values fail
+ * decoding. Reading this metadata does not change author permissions.
+ *
  * Provider-turn token usage exposes optional positive integer `autoCompactThreshold`
  * through detail, projection and stream reads. It reports provider auto-compaction
  * metadata in tokens. Omission stays absent, malformed values fail decoding, and

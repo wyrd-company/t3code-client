@@ -67,6 +67,9 @@ export function loadShellSnapshot(
  * A pending runtime request summary carries optional boolean `blocking`: false
  * for an async question the run can keep working past. Older servers can omit
  * it. Reading this metadata does not answer a request or change run behavior.
+ * Linked pull request snapshot authors carry optional boolean `isBot` through
+ * shell snapshots and updates. True, false, omission and unknown actor metadata
+ * survive; malformed values fail decoding. This metadata does not grant permissions.
  */
 export class ShellApi {
   readonly http: HttpTransport;

@@ -36,6 +36,7 @@ export const ThreadPullRequestLinkSource = forwardCompatibleLiteral([
 ]);
 export type ThreadPullRequestLinkSource = z.infer<typeof ThreadPullRequestLinkSource>;
 export const PullRequestActor = z.looseObject({
+  isBot: z.boolean().optional(),
   login: TrimmedNonEmptyString,
   name: z.string().nullable(),
   avatarUrl: z.string().nullable(),

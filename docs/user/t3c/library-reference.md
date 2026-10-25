@@ -115,6 +115,10 @@ and provider-thread update events. Its amount is finite, including negative,
 zero and fractional values; currency is trimmed, nonempty and at most 32
 characters. Omission stays absent and unknown cost metadata survives.
 Malformed values fail decoding. Reading cost does not price or convert usage.</p>
+<p>Linked pull request snapshot authors expose optional boolean <code>isBot</code> in
+detail, projection and link-update events. True and false survive; omission
+stays absent and unknown actor metadata survives. Malformed values fail
+decoding. Reading this metadata does not change author permissions.</p>
 <p>Provider-turn token usage exposes optional positive integer <code>autoCompactThreshold</code>
 through detail, projection and stream reads. It reports provider auto-compaction
 metadata in tokens. Omission stays absent, malformed values fail decoding, and
@@ -166,7 +170,10 @@ request a stop or change wait behavior. Optional <code>lastErrorCode</code> is t
 provider failure code, or null when none applies; older servers can omit it.
 A pending runtime request summary carries optional boolean <code>blocking</code>: false
 for an async question the run can keep working past. Older servers can omit
-it. Reading this metadata does not answer a request or change run behavior.</p>
+it. Reading this metadata does not answer a request or change run behavior.
+Linked pull request snapshot authors carry optional boolean <code>isBot</code> through
+shell snapshots and updates. True, false, omission and unknown actor metadata
+survive; malformed values fail decoding. This metadata does not grant permissions.</p>
 </dd>
 <dt><a href="#ServerApi">ServerApi</a></dt>
 <dd><p>Server environment, configuration and providers.
@@ -1340,6 +1347,11 @@ zero and fractional values; currency is trimmed, nonempty and at most 32
 characters. Omission stays absent and unknown cost metadata survives.
 Malformed values fail decoding. Reading cost does not price or convert usage.
 
+Linked pull request snapshot authors expose optional boolean `isBot` in
+detail, projection and link-update events. True and false survive; omission
+stays absent and unknown actor metadata survives. Malformed values fail
+decoding. Reading this metadata does not change author permissions.
+
 Provider-turn token usage exposes optional positive integer `autoCompactThreshold`
 through detail, projection and stream reads. It reports provider auto-compaction
 metadata in tokens. Omission stays absent, malformed values fail decoding, and
@@ -1775,6 +1787,9 @@ provider failure code, or null when none applies; older servers can omit it.
 A pending runtime request summary carries optional boolean `blocking`: false
 for an async question the run can keep working past. Older servers can omit
 it. Reading this metadata does not answer a request or change run behavior.
+Linked pull request snapshot authors carry optional boolean `isBot` through
+shell snapshots and updates. True, false, omission and unknown actor metadata
+survive; malformed values fail decoding. This metadata does not grant permissions.
 
 **Kind**: global class
 
