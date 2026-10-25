@@ -200,7 +200,12 @@ snapshot was supplied; an empty array supplies no options. Unknown descriptor
 types decode to <code>{ unknown: true, raw }</code>; malformed known types fail decoding.
 Workspace <code>slashCommandsPending</code> is an optional boolean: true marks pending
 slash-command discovery; false and omission are preserved without inference.
-A pending snapshot can retain the previous slash commands.</p>
+A pending snapshot can retain the previous slash commands.
+Environment capabilities also include optional boolean <code>databaseStorage</code>:
+true advertises streaming database size and reclaimable space. False and omission
+are preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not read database storage.</p>
 </dd>
 <dt><a href="#VcsApi">VcsApi</a></dt>
 <dd><p>Repository references, worktrees and status.</p>
@@ -1611,6 +1616,11 @@ types decode to `{ unknown: true, raw }`; malformed known types fail decoding.
 Workspace `slashCommandsPending` is an optional boolean: true marks pending
 slash-command discovery; false and omission are preserved without inference.
 A pending snapshot can retain the previous slash commands.
+Environment capabilities also include optional boolean `databaseStorage`:
+true advertises streaming database size and reclaimable space. False and omission
+are preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not read database storage.
 
 **Kind**: global class
 

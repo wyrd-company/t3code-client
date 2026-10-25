@@ -153,6 +153,11 @@ export interface WatchServerLifecycleOptions {
  * Workspace `slashCommandsPending` is an optional boolean: true marks pending
  * slash-command discovery; false and omission are preserved without inference.
  * A pending snapshot can retain the previous slash commands.
+ * Environment capabilities also include optional boolean `databaseStorage`:
+ * true advertises streaming database size and reclaimable space. False and omission
+ * are preserved; omission does not advertise support. Available through environment
+ * reads, configuration reads and configuration snapshots. Supplied non-boolean
+ * values fail decoding. This metadata flag does not read database storage.
  */
 export class ServerApi {
   readonly rpc: RpcClient<RpcMethods>;
