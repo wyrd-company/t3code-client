@@ -57,7 +57,11 @@ export function loadShellSnapshot(
   });
 }
 
-/** Live and archived cross-thread snapshots. */
+/**
+ * Live and archived cross-thread snapshots. Thread shells carry optional
+ * `latestRunStopRequested`: whether the latest run has an interruption request.
+ * Older servers can omit it. This metadata does not request a stop.
+ */
 export class ShellApi {
   readonly http: HttpTransport;
   readonly rpc: RpcClient<RpcMethods>;

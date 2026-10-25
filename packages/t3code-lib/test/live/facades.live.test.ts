@@ -191,6 +191,11 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(thread.runtimeMode).toBe("auto");
     expect(thread.createdBy).toBe("user");
     expect(thread.status).toBe("idle");
+    expect(thread.latestRunStopRequested).toBe(false);
+    expect(Object.hasOwn(thread, "latestRunStopRequested")).toBe(true);
+    expect(
+      (await client.shell.snapshot()).threads.find((row) => row.id === id)?.latestRunStopRequested,
+    ).toBe(false);
     const again = await client.threads.ensure({ ...input, title: "ignored" });
     expect(again.title).toBe("live sample thread");
     const detail = await client.threads.detail(id);

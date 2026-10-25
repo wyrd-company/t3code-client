@@ -117,6 +117,7 @@ export const OrchestrationV2ThreadShell = z.looseObject({
   latestRunRequestedAt: IsoDateTime.nullable().optional(),
   latestRunStartedAt: IsoDateTime.nullable().optional(),
   latestRunCompletedAt: IsoDateTime.nullable().optional(),
+  latestRunStopRequested: z.boolean().optional(),
   activeRunId: RunId.nullable(),
   activityRunStartedAt: IsoDateTime.nullable().optional(),
   activityRunStatus: forwardCompatibleLiteral(["preparing", "starting", "running", "waiting"])

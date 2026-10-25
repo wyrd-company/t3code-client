@@ -74,7 +74,9 @@ omission does not mean that the file is absent.</p>
 <dd><p>Thread lifecycle, history, runs and pending requests.</p>
 </dd>
 <dt><a href="#ShellApi">ShellApi</a></dt>
-<dd><p>Live and archived cross-thread snapshots.</p>
+<dd><p>Live and archived cross-thread snapshots. Thread shells carry optional
+<code>latestRunStopRequested</code>: whether the latest run has an interruption request.
+Older servers can omit it. This metadata does not request a stop.</p>
 </dd>
 <dt><a href="#ServerApi">ServerApi</a></dt>
 <dd><p>Server environment, configuration and providers.
@@ -1492,7 +1494,9 @@ dispatch(command: OrchestrationV2Command, signal?: AbortSignal): Promise<Dispatc
 
 ## ShellApi
 
-Live and archived cross-thread snapshots.
+Live and archived cross-thread snapshots. Thread shells carry optional
+`latestRunStopRequested`: whether the latest run has an interruption request.
+Older servers can omit it. This metadata does not request a stop.
 
 **Kind**: global class
 

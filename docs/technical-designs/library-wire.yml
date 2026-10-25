@@ -172,7 +172,9 @@ proposed-design:
 
     The thread shell carries `status` (`idle` or the latest run's status),
     `activeRunId`, `pendingRuntimeRequest`, and `latestVisibleMessage`, so a
-    list view needs no projection. The shell snapshot has `threads` and
+    list view needs no projection. Its optional boolean `latestRunStopRequested`
+    reports whether the latest run has an interruption request; older servers can
+    omit it. Reading this metadata does not request a stop. The shell snapshot has `threads` and
     `archivedThreads`, but the server fills `archivedThreads` only on the socket
     snapshot; archived threads are read with
     `orchestration.getArchivedShellSnapshot`, and `thread.updated` items for
