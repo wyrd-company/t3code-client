@@ -134,6 +134,7 @@ export const VcsStatusStreamEvent = taggedUnionWithUnknown("_tag", [
 ]);
 export type VcsStatusStreamEvent = z.infer<typeof VcsStatusStreamEvent>;
 export const VcsListRefsResult = z.looseObject({
+  isAtRepositoryRoot: z.boolean().optional(),
   refs: z.array(VcsRef),
   isRepo: z.boolean(),
   hasPrimaryRemote: z.boolean(),

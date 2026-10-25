@@ -1494,7 +1494,8 @@ Repository references, worktrees and status.
 
 ### vcsApi.listRefs()
 
-List repository references.
+List repository references. The optional boolean `isAtRepositoryRoot`
+reports whether `cwd` is the repository root. Omission does not mean false.
 
 ```ts
 listRefs(

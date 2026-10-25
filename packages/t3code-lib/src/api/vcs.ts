@@ -15,7 +15,10 @@ export class VcsApi {
     this.rpc = rpc;
   }
 
-  /** List repository references. */
+  /**
+   * List repository references. The optional boolean `isAtRepositoryRoot`
+   * reports whether `cwd` is the repository root. Omission does not mean false.
+   */
   listRefs(
     input: RpcPayload<RpcMethods, "vcs.listRefs">,
     signal?: AbortSignal,

@@ -173,3 +173,8 @@ proposed-design:
     byteLength, truncated false and exists false. Omitted or false retains the
     server's missing-file error. The optional boolean result field `exists` can
     be omitted by the server; callers must not infer absence from omission.
+
+  optional-repository-root-detection: |
+    `vcs.listRefs` returns an optional boolean `isAtRepositoryRoot` that reports
+    whether the requested `cwd` is the repository root. Omission does not mean
+    false. Unknown result fields remain available for forward compatibility.
