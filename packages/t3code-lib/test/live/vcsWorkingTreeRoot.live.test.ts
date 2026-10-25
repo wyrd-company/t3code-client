@@ -37,7 +37,7 @@ describe.skipIf(!baseUrl || !token)("live working-tree roots", () => {
           { cwd: nested },
           { signal: abort.signal },
         )) {
-          if (event._tag !== "snapshot") continue;
+          if (!("_tag" in event) || event._tag !== "snapshot") continue;
           observed = true;
           expect(event.local.workingTree.rootPath).toBe(await NodeFSP.realpath(cwd));
           expect(event.local.workingTree.files.map((file) => file.path)).toContain(
