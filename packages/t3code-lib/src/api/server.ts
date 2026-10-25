@@ -45,6 +45,11 @@ export interface WatchServerLifecycleOptions {
  * and omission are preserved; omission does not advertise support. Available
  * through environment reads, configuration reads and configuration snapshots.
  * Supplied non-boolean values fail decoding. This flag does not configure aliases.
+ * Environment capabilities also include optional boolean `threadPinning`:
+ * true advertises support for pinning threads. False and omission are preserved;
+ * omission does not advertise support. Available through environment reads,
+ * configuration reads and configuration snapshots. Supplied non-boolean values
+ * fail decoding. This metadata flag does not pin a thread.
  * Provider `installedVersion` is an optional nullable trimmed nonempty string:
  * the installed CLI version for a local provider with a separate server.
  * Null means unknown; omission leaves legacy snapshots on `version`.

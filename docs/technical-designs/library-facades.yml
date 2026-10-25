@@ -202,6 +202,14 @@ proposed-design:
     not advertise support. Non-boolean supplied values fail decoding. This
     metadata flag does not configure usage aliases.
 
+  optional-thread-pinning-capability: |
+    `ExecutionEnvironmentCapabilities.threadPinning` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises support for pinning threads; false and
+    omission are preserved without inference. Omission does not advertise support.
+    Non-boolean supplied values fail decoding. This metadata flag does not pin
+    a thread.
+
   optional-project-file-reads: |
     `projects.files.read` mirrors `projects.readFile`. Its optional `allowMissing`
     input is a boolean. When true, an absent file returns empty contents, zero

@@ -51,6 +51,8 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   usagePriceOverrides: z.boolean().optional(),
   /** Server maps model names through configured usage aliases. */
   usageModelAliases: z.boolean().optional(),
+  /** Server supports pinning threads. */
+  threadPinning: z.boolean().optional(),
   threadSettlement: z.boolean().optional(),
   threadVisitedTracking: z.boolean().optional(),
   threadPullRequestWatch: z.boolean().optional(),

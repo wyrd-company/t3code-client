@@ -89,8 +89,10 @@ describe.skipIf(!enabled)("live facades", () => {
 
   it("reads the stock usage-model-alias capability through public facades", async () => {
     const environment = await client.server.environment();
+    expect(environment.capabilities.threadPinning).toBe(true);
     expect(environment.capabilities.usageModelAliases).toBe(true);
     const config = await client.server.getConfig();
+    expect(config.environment.capabilities.threadPinning).toBe(true);
     expect(config.environment.capabilities.usageModelAliases).toBe(true);
   });
 
