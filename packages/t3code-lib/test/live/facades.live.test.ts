@@ -80,6 +80,13 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(config.environment.capabilities.usageLimitSources).toBe(true);
   });
 
+  it("reads the stock usage-price-override capability through public facades", async () => {
+    const environment = await client.server.environment();
+    expect(environment.capabilities.usagePriceOverrides).toBe(true);
+    const config = await client.server.getConfig();
+    expect(config.environment.capabilities.usagePriceOverrides).toBe(true);
+  });
+
   it("ensures a project idempotently", async () => {
     const project = await client.projects.ensure({ workspaceRoot, title: "live sample" });
     projectId = project.id;

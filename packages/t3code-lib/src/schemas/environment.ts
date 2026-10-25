@@ -47,6 +47,8 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   environmentThemes: z.boolean().optional(),
   /** Server streams quota from configured usage-limit sources. */
   usageLimitSources: z.boolean().optional(),
+  /** Server persists custom model rates and applies them to usage summaries. */
+  usagePriceOverrides: z.boolean().optional(),
   threadSettlement: z.boolean().optional(),
   threadVisitedTracking: z.boolean().optional(),
   threadPullRequestWatch: z.boolean().optional(),
