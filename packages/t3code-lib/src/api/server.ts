@@ -91,6 +91,12 @@ export interface WatchServerLifecycleOptions {
  * omission does not advertise support. Available through environment reads,
  * configuration reads and configuration snapshots. Supplied non-boolean values
  * fail decoding. This metadata flag does not snooze a thread.
+ * Environment capabilities also include optional boolean `threadRestartContinuation`:
+ * true advertises persistence of the opt-in for continuing interrupted threads
+ * after restarts. False and omission are preserved; omission does not advertise
+ * support. Available through environment reads, configuration reads and
+ * configuration snapshots. Supplied non-boolean values fail decoding.
+ * This metadata flag does not configure or trigger continuation.
  * Provider `installedVersion` is an optional nullable trimmed nonempty string:
  * the installed CLI version for a local provider with a separate server.
  * Null means unknown; omission leaves legacy snapshots on `version`.
