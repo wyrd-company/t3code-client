@@ -624,3 +624,11 @@ proposed-design:
     record; the existing forward-compatible array decoder omits malformed records
     and preserves later valid rows and stream chunks. Reading this metadata
     does not look up a username, build a remote link or open an SSH connection.
+
+  optional-idle-compaction-metadata: |
+    Configuration reads, snapshots and settings updates expose optional
+    `settings.idleCompaction`: `onReturn`, `beforeCacheExpires` or `off`.
+    Growing strings, omission and unknown settings metadata remain intact.
+    Non-string values fail decoding; later valid chunks remain available.
+    Reading this metadata does not compact threads or change defaults or timing.
+    Other settings remain loose; settings mutation stays outside the facade.

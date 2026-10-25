@@ -68,7 +68,9 @@ export const ServerObservability = z.looseObject({
   otlpLogsUrl: TrimmedNonEmptyString.optional(),
 });
 export type ServerObservability = z.infer<typeof ServerObservability>;
-export const ServerSettings = z.looseObject({});
+export const ServerSettings = z.looseObject({
+  idleCompaction: forwardCompatibleLiteral(["onReturn", "beforeCacheExpires", "off"]).optional(),
+});
 export type ServerSettings = z.infer<typeof ServerSettings>;
 export const UsageLimitSourceAccount = z.looseObject({
   id: TrimmedNonEmptyString,

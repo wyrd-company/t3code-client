@@ -177,6 +177,11 @@ survive; malformed values fail decoding. This metadata does not grant permission
 </dd>
 <dt><a href="#ServerApi">ServerApi</a></dt>
 <dd><p>Server environment, configuration and providers.
+Configuration reads, snapshots and settings updates expose optional
+<code>settings.idleCompaction</code>: onReturn, beforeCacheExpires or off. Growing string
+values, omission and unknown settings metadata are preserved. Non-string
+values fail decoding; later valid stream chunks remain available. Reading
+this metadata does not compact threads or change defaults or timing.
 Configuration reads and snapshots expose optional <code>RemoteOpenTarget.username</code>
 as a trimmed nonempty string without an extra format or length constraint.
 Omission stays absent; unknown target metadata and growing kind strings remain.
@@ -1850,6 +1855,11 @@ watchArchived(
 ## ServerApi
 
 Server environment, configuration and providers.
+Configuration reads, snapshots and settings updates expose optional
+`settings.idleCompaction`: onReturn, beforeCacheExpires or off. Growing string
+values, omission and unknown settings metadata are preserved. Non-string
+values fail decoding; later valid stream chunks remain available. Reading
+this metadata does not compact threads or change defaults or timing.
 Configuration reads and snapshots expose optional `RemoteOpenTarget.username`
 as a trimmed nonempty string without an extra format or length constraint.
 Omission stays absent; unknown target metadata and growing kind strings remain.
