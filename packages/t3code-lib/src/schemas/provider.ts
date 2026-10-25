@@ -285,6 +285,14 @@ export const ServerProvider = z.looseObject({
       documentationUrl: TrimmedNonEmptyString.max(2_048).optional(),
     })
     .optional(),
+  nativeSessions: z
+    .looseObject({
+      canList: z.boolean(),
+      canLoad: z.boolean(),
+      canResume: z.boolean(),
+      canDelete: z.boolean().optional(),
+    })
+    .optional(),
   configurableProviders: z.boolean().optional(),
   runtimePaths: z
     .looseObject({

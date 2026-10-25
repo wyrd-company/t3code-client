@@ -179,6 +179,13 @@ advertises environment-theme publication through configuration streams. False
 and omission are preserved; omission does not advertise support. Available
 through environment reads, configuration reads and configuration snapshots.
 Supplied non-boolean values fail decoding.
+Provider records expose optional <code>nativeSessions</code> metadata. When present,
+<code>canList</code>, <code>canLoad</code> and <code>canResume</code> are required booleans; <code>canDelete</code> is
+optional. False and omission are preserved; omission does not advertise
+support. Unknown nested and provider metadata is preserved. Malformed native
+session metadata makes the provider record malformed; existing arrays omit
+it in reads and streams while later valid records remain available. Reading
+this metadata does not perform a native-session operation.
 Provider records expose optional <code>supportedRuntimeModes</code> arrays using the
 existing RuntimeMode literal set. Omission stays absent; empty arrays stay
 empty. Known modes and unknown strings, including duplicates, retain order.
@@ -1799,6 +1806,13 @@ advertises environment-theme publication through configuration streams. False
 and omission are preserved; omission does not advertise support. Available
 through environment reads, configuration reads and configuration snapshots.
 Supplied non-boolean values fail decoding.
+Provider records expose optional `nativeSessions` metadata. When present,
+`canList`, `canLoad` and `canResume` are required booleans; `canDelete` is
+optional. False and omission are preserved; omission does not advertise
+support. Unknown nested and provider metadata is preserved. Malformed native
+session metadata makes the provider record malformed; existing arrays omit
+it in reads and streams while later valid records remain available. Reading
+this metadata does not perform a native-session operation.
 Provider records expose optional `supportedRuntimeModes` arrays using the
 existing RuntimeMode literal set. Omission stays absent; empty arrays stay
 empty. Known modes and unknown strings, including duplicates, retain order.

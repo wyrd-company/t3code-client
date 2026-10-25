@@ -568,3 +568,12 @@ proposed-design:
     record malformed; existing forward-compatible arrays omit that record while
     later valid records remain available. Unknown provider metadata is preserved.
     This metadata does not select a mode or change runtime defaults or policy.
+  provider-native-sessions: |
+    Provider records in configuration reads, provider lists and configuration
+    streams expose optional `nativeSessions` metadata. When present, `canList`,
+    `canLoad` and `canResume` are required booleans; `canDelete` is optional.
+    False and omission are preserved, and omission does not advertise support.
+    Unknown nested and provider metadata is preserved. Malformed native-session
+    metadata makes the provider record malformed; existing forward-compatible
+    arrays omit it while later valid records remain available. Reading this
+    metadata does not perform a native-session operation.
