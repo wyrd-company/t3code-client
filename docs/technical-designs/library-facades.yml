@@ -508,3 +508,9 @@ proposed-design:
     remains absent. Null and non-string values fail decoding. The member is typed
     in configuration theme arrays and `environmentThemesUpdated` payloads. Unknown
     theme metadata survives. Reading the seed color does not apply a theme.
+  optional-theme-accent: |
+    `EnvironmentTheme.accent` is an optional string matching #RGB or #RRGGBB.
+    Decoding preserves the exact color and case, and keeps omission distinct from
+    a present value. Malformed present values fail decoding. The field is typed
+    in configuration theme arrays and `environmentThemesUpdated` payloads. Unknown
+    theme metadata is preserved. Reading accent does not apply a theme.

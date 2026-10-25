@@ -183,7 +183,10 @@ Published environment themes expose optional <code>canvas</code>: a seed color w
 as #RGB or #RRGGBB, with either letter case preserved. Omission stays absent;
 whitespace, other strings, null and non-string values fail decoding. Available
 in configuration theme arrays and environmentThemesUpdated stream payloads.
-Unknown theme metadata is preserved. Reading canvas does not apply a theme.
+Published themes also expose optional <code>accent</code> with the same #RGB/#RRGGBB
+format, exact color and case preservation, omission and malformed-value rules
+through configuration arrays and environmentThemesUpdated payloads.
+Unknown theme metadata is preserved. Reading these colors does not apply a theme.
 Environment capabilities also include optional boolean <code>usageLimitSources</code>:
 true advertises quota streaming from configured usage-limit sources. False
 and omission are preserved; omission does not advertise support. Available
@@ -1763,7 +1766,10 @@ Published environment themes expose optional `canvas`: a seed color written
 as #RGB or #RRGGBB, with either letter case preserved. Omission stays absent;
 whitespace, other strings, null and non-string values fail decoding. Available
 in configuration theme arrays and environmentThemesUpdated stream payloads.
-Unknown theme metadata is preserved. Reading canvas does not apply a theme.
+Published themes also expose optional `accent` with the same #RGB/#RRGGBB
+format, exact color and case preservation, omission and malformed-value rules
+through configuration arrays and environmentThemesUpdated payloads.
+Unknown theme metadata is preserved. Reading these colors does not apply a theme.
 Environment capabilities also include optional boolean `usageLimitSources`:
 true advertises quota streaming from configured usage-limit sources. False
 and omission are preserved; omission does not advertise support. Available
