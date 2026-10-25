@@ -100,6 +100,7 @@ export const VcsStatusLocalShape = {
   refName: TrimmedNonEmptyString.nullable(),
   hasWorkingTreeChanges: z.boolean(),
   workingTree: z.looseObject({
+    rootPath: z.string().min(1).optional(),
     files: z.array(
       z.looseObject({
         path: z.string().min(1),

@@ -184,3 +184,11 @@ proposed-design:
     trimmed nonempty string containing the full Git ref, such as
     `refs/remotes/origin/main`. Callers must handle omission. Unknown reference
     fields remain available for forward compatibility.
+
+  optional-working-tree-root: |
+    `vcs.status` and local status from `vcs.watchStatus` snapshots and updates
+    expose `workingTree.rootPath` as an optional nonempty string. It contains
+    the absolute worktree root on the server environment; each
+    `workingTree.files[].path` is relative to that root. Paths preserve
+    whitespace. The server omits the root when it cannot resolve it; callers
+    must handle omission. Unknown working-tree fields remain available.

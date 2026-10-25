@@ -29,7 +29,12 @@ export class VcsApi {
     return this.rpc.call("vcs.listRefs", input, signal);
   }
 
-  /** Refresh repository status. */
+  /**
+   * Refresh repository status. `workingTree.rootPath` is an optional nonempty
+   * string containing the absolute worktree root on the server environment.
+   * Each `workingTree.files[].path` is relative to that root. Paths preserve
+   * whitespace; the root is omitted when the server cannot resolve it.
+   */
   status(
     input: RpcPayload<RpcMethods, "vcs.refreshStatus">,
     signal?: AbortSignal,
@@ -69,7 +74,11 @@ export class VcsApi {
     return this.rpc.call("vcs.switchRef", input, signal);
   }
 
-  /** Subscribe to repository status changes. */
+  /**
+   * Subscribe to repository status changes. Local status in snapshots and updates
+   * carries the same optional `workingTree.rootPath` contract as `status`:
+   * the absolute server-side root for relative file paths, omitted if unresolved.
+   */
   watchStatus(
     input: RpcPayload<RpcMethods, "subscribeVcsStatus">,
     options?: { readonly signal?: AbortSignal },
