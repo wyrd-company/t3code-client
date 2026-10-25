@@ -359,6 +359,55 @@ describe.skipIf(!enabled)("live facades", () => {
     }
   });
 
+  it("independently observes stock ended-watch output metadata", async () => {
+    const key = { host: "example.invalid", repository: "sample/repository", number: 43 };
+    await client.threads.dispatch({
+      type: "thread.pull-request.link",
+      commandId: client.threads.dispatcher.newCommandId(),
+      threadId: id,
+      ...key,
+      url: "https://example.invalid/sample/repository/pull/43",
+      source: "manual",
+    });
+    const readLink = async () =>
+      (await client.threads.projection(id)).thread.pullRequests?.find(
+        (entry) => entry.number === key.number,
+      );
+    try {
+      const initial = await readLink();
+      expect(initial).toBeDefined();
+      expect(Object.hasOwn(initial ?? {}, "endedWatch")).toBe(false);
+      expect(initial?.["endedWatch"]).toBeUndefined();
+      await client.threads.dispatch({
+        type: "thread.pull-request.watch",
+        watching: true,
+        commandId: client.threads.dispatcher.newCommandId(),
+        threadId: id,
+        ...key,
+      });
+      const watching = await readLink();
+      expect(watching?.watch).toBeDefined();
+      await client.threads.dispatch({
+        type: "thread.pull-request.watch",
+        watching: false,
+        commandId: client.threads.dispatcher.newCommandId(),
+        threadId: id,
+        ...key,
+      });
+      const ended = await readLink();
+      expect(Object.hasOwn(ended ?? {}, "watch")).toBe(false);
+      expect(Object.hasOwn(ended ?? {}, "endedWatch")).toBe(true);
+      expect(ended?.["endedWatch"]).toEqual(watching?.watch);
+    } finally {
+      await client.threads.dispatch({
+        type: "thread.pull-request.unlink",
+        commandId: client.threads.dispatcher.newCommandId(),
+        threadId: id,
+        ...key,
+      });
+    }
+  });
+
   it("finds within a thread and refuses workflow and app requests it cannot serve", async () => {
     const config = await client.rpc.call("server.getConfig", {});
     expect([config.threadFind, config.threadFindProgressive]).toEqual([true, true]);

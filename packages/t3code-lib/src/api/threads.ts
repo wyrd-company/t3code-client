@@ -77,6 +77,11 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
  * Linked pull requests expose optional nonempty string `repositoryWebUrl` metadata
  * in thread reads and link update events. It carries a browser or clone URL when
  * supplied; older links can omit it. Reading it does not fetch the repository.
+ * Linked pull requests also expose optional `endedWatch` records in thread reads
+ * and link-update events. The record uses the existing watch timestamps, nullable
+ * head SHA, check/remark arrays, pass/conflict flags and wake count. Omission
+ * stays absent; missing `passedChecks` defaults to an empty array. Malformed
+ * records fail decoding, and unknown metadata survives. Reading it does not restart a watch.
  * `dispatch` accepts optional nonempty string `repositoryWebUrl` on
  * `thread.pull-request.link`: browser or clone URLs and other nonempty strings
  * pass through, omission leaves it unsupplied, and malformed values fail before sending.

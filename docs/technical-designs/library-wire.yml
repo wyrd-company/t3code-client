@@ -166,6 +166,12 @@ proposed-design:
     older links can omit it. Malformed values fail decoding and unknown metadata
     survives. Reading the field does not fetch a repository.
 
+    The same links expose optional `endedWatch` using `ThreadPullRequestWatch`:
+    start and remark timestamps, nullable head SHA, check and remark arrays,
+    pass/conflict flags and wake count. Omission stays absent; missing
+    `passedChecks` decodes to an empty array. Malformed watch records fail
+    decoding and unknown metadata survives. Reading the field does not restart a watch.
+
     The existing `thread.pull-request.link` command accepts optional nonempty
     string `repositoryWebUrl` metadata through `threads.dispatch`. Browser URLs,
     clone URLs and other nonempty strings retain the tagged wire type; omission

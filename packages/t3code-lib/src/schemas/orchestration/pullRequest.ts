@@ -114,5 +114,7 @@ export const ThreadPullRequestLink = z.looseObject({
   snapshot: ThreadPullRequestSnapshot.nullable(),
   stack: ThreadPullRequestStack.nullable(),
   watch: ThreadPullRequestWatch.optional(),
+  /** The last watch as it ended; older links can omit it. */
+  endedWatch: ThreadPullRequestWatch.optional(),
 });
 export type ThreadPullRequestLink = z.infer<typeof ThreadPullRequestLink>;
