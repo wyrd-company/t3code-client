@@ -164,7 +164,13 @@ Reading it does not change workflow completion.
 an optional <code>reason</code> string. Any string reason passes unchanged, omission stays
 absent, unknown command metadata survives, and malformed fields fail before
 sending. Servers that accept it advertise <code>threadStop</code>; <code>dispatch</code> does not
-check that flag. <code>stop</code> still sends <code>run.interrupt</code> with <code>holdQueue</code>.</p>
+check that flag. <code>stop</code> still sends <code>run.interrupt</code> with <code>holdQueue</code>.
+<code>dispatch</code> also accepts the <code>queued-run.start</code> command with <code>commandId</code>,
+<code>threadId</code> and <code>runId</code>. Ids use the same trimmed normalization as the other
+queued-run commands, unknown command metadata survives, and malformed or
+missing ids fail before sending. The server starts only a queued plain user
+message on a stopped thread; otherwise it fails with
+<code>OrchestrationV2DispatchCommandError</code>. No facade method sends it.</p>
 </dd>
 <dt><a href="#ShellApi">ShellApi</a></dt>
 <dd><p>Live and archived cross-thread snapshots. Thread shells carry optional
@@ -1460,6 +1466,12 @@ an optional `reason` string. Any string reason passes unchanged, omission stays
 absent, unknown command metadata survives, and malformed fields fail before
 sending. Servers that accept it advertise `threadStop`; `dispatch` does not
 check that flag. `stop` still sends `run.interrupt` with `holdQueue`.
+`dispatch` also accepts the `queued-run.start` command with `commandId`,
+`threadId` and `runId`. Ids use the same trimmed normalization as the other
+queued-run commands, unknown command metadata survives, and malformed or
+missing ids fail before sending. The server starts only a queued plain user
+message on a stopped thread; otherwise it fails with
+`OrchestrationV2DispatchCommandError`. No facade method sends it.
 
 **Kind**: global class
 

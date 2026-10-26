@@ -294,6 +294,16 @@ proposed-design:
     thread fails with `OrchestrationV2DispatchCommandError`. `threads.stop`
     still sends `run.interrupt` with `holdQueue`.
 
+    `queued-run.start` carries `commandId`, `threadId` and `runId`, all
+    required. `threads.dispatch` and typed `rpc.call` validate and send it:
+    ids use the same trimmed normalization as the other queued-run commands,
+    unknown metadata survives, and malformed or missing ids fail before
+    sending. The server starts the selected run only while the thread is
+    stopped, the run is a queued plain user message and no other run blocks
+    it. A missing thread or an unknown run fails with
+    `OrchestrationV2DispatchCommandError`. No capability flag advertises it,
+    and no facade method sends it. `queue.resume` is unchanged.
+
     The thread shell carries `status` (`idle` or the latest run's status),
     `activeRunId`, `pendingRuntimeRequest`, and `latestVisibleMessage`, so a
     list view needs no projection. Its optional boolean `latestRunStopRequested`

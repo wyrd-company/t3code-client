@@ -173,6 +173,12 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
  * absent, unknown command metadata survives, and malformed fields fail before
  * sending. Servers that accept it advertise `threadStop`; `dispatch` does not
  * check that flag. `stop` still sends `run.interrupt` with `holdQueue`.
+ * `dispatch` also accepts the `queued-run.start` command with `commandId`,
+ * `threadId` and `runId`. Ids use the same trimmed normalization as the other
+ * queued-run commands, unknown command metadata survives, and malformed or
+ * missing ids fail before sending. The server starts only a queued plain user
+ * message on a stopped thread; otherwise it fails with
+ * `OrchestrationV2DispatchCommandError`. No facade method sends it.
  */
 export class ThreadsApi {
   readonly #commands: ThreadCommands;

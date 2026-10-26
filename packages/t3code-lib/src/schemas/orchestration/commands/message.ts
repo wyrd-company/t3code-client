@@ -122,6 +122,16 @@ export const QueuedMessagePromoteToSteerCommand = z.looseObject({
   targetRunId: RunId,
 });
 export const QueueResumeCommand = z.looseObject({ type: z.literal("queue.resume"), ...stamped });
+/**
+ * Start one queued run now. The server accepts it only while the thread is
+ * stopped and the run is a queued plain user message; otherwise it answers
+ * with `OrchestrationV2DispatchCommandError`.
+ */
+export const QueuedRunStartCommand = z.looseObject({
+  type: z.literal("queued-run.start"),
+  ...run,
+});
+export type QueuedRunStartCommand = z.infer<typeof QueuedRunStartCommand>;
 export const QueuedRunReorderCommand = z.looseObject({
   type: z.literal("queued-run.reorder"),
   ...run,
@@ -171,6 +181,7 @@ export const messageCommandMembers = [
   RunInterruptCommand,
   QueuedMessagePromoteToSteerCommand,
   QueueResumeCommand,
+  QueuedRunStartCommand,
   QueuedRunReorderCommand,
   QueuedRunCancelCommand,
   QueuedRunEditCommand,
