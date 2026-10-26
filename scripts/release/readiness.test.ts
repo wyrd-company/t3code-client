@@ -33,6 +33,12 @@ describe("pre-apply package readiness", () => {
       expect(result.status).not.toBe(0);
     });
   }
+  it("accepts the tag-only docs unit, which has no package", () => {
+    const root = fixture();
+    roots.push(root);
+    write(root, "plan.json", JSON.stringify({ tags: [{ release_unit: "t3c-docs" }] }));
+    expect(run(root, "verify-readiness.sh", ["plan.json"]).status).toBe(0);
+  });
   it("rejects unsupported units before apply", () => {
     expect(ready("other").status).not.toBe(0);
   });

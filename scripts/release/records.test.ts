@@ -112,6 +112,25 @@ describe("Intentional record agreement", () => {
     expect(result.status, result.stderr).toBe(0);
     expect(command(root, "git", ["tag", "--list"]).trim()).toBe("t3c-docs@0.1.0");
   });
+  it("baselines a missing docs unit at its docs-version without tagging the source repository", () => {
+    const root = setup();
+    command(root, "git", ["tag", "-d", "t3c-docs@0.1.0"]);
+    write(
+      root,
+      "docs/user/docs.yml",
+      "schemaVersion: 1\nproducts:\n  t3c:\n    version: 0.0.0\n    docs-version: 0.1.0\n",
+    );
+    const result = run(root, "check-intents.sh");
+    expect(result.status, result.stderr).toBe(0);
+    expect(command(root, "git", ["tag", "--list", "t3c-docs@*"]).trim()).toBe("");
+  });
+  it("refuses a missing docs unit baseline when docs.yml holds no docs-version", () => {
+    const root = setup();
+    command(root, "git", ["tag", "-d", "t3c-docs@0.1.0"]);
+    const result = run(root, "check-intents.sh");
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("Missing authoritative baseline for t3c-docs");
+  });
   it("refuses missing authoritative history at a nonzero version", () => {
     const root = setup();
     command(root, "git", ["tag", "-d", "t3code-lib@0.0.0", "t3code-cli@0.0.0"]);
