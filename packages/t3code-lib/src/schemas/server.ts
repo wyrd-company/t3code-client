@@ -16,6 +16,7 @@ import {
   taggedUnionWithUnknown,
 } from "./common.ts";
 import { ExecutionEnvironmentDescriptor } from "./environment.ts";
+import { ResolvedKeybindingsConfig } from "./keybindings.ts";
 import { ServerProviders, ServerProviderUsageLimits } from "./provider.ts";
 
 export const EditorId = forwardCompatibleLiteral(["cursor", "vscode", "zed", "file-manager"]);
@@ -58,8 +59,7 @@ export const RemoteOpenTarget = z.looseObject({
   username: TrimmedNonEmptyString.optional(),
 });
 export type RemoteOpenTarget = z.infer<typeof RemoteOpenTarget>;
-export const ResolvedKeybindingsConfig = z.array(z.looseObject({}));
-export type ResolvedKeybindingsConfig = z.infer<typeof ResolvedKeybindingsConfig>;
+export { ResolvedKeybindingsConfig };
 const KeybindingsMalformedConfigIssue = z.looseObject({
   kind: z.literal("keybindings.malformed-config"),
   message: TrimmedNonEmptyString,

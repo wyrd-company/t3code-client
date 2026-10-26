@@ -178,6 +178,16 @@ survive; malformed values fail decoding. This metadata does not grant permission
 <dt><a href="#ServerApi">ServerApi</a></dt>
 <dd><p>Server environment, configuration and providers.
 Configuration reads, snapshots and <code>keybindingsUpdated</code> payloads type
+<code>keybindings</code> as resolved rules with <code>command</code>, <code>shortcut</code> and optional
+<code>whenAst</code>. Known command names keep their literal types; script and newer
+commands remain strings. <code>shortcut.key</code> is trimmed to 1 to 64 characters and
+the five modifier flags are required Booleans. <code>whenAst</code> is a recursive union
+of <code>identifier</code>, <code>not</code>, <code>and</code> and <code>or</code> nodes without a depth bound; unknown node
+types decode as <code>{ unknown: true, raw }</code> at any depth and extra metadata is
+preserved. Malformed rules are omitted and later rules kept; more than 256
+remaining rules or a non-array fail decoding, and later valid stream chunks
+remain available. Reading keybindings does not add or remove a rule.
+Configuration reads, snapshots and <code>keybindingsUpdated</code> payloads type
 <code>issues</code>: <code>keybindings.malformed-config</code> with a trimmed nonempty <code>message</code>,
 and <code>keybindings.invalid-entry</code> with the same <code>message</code> and a numeric
 <code>index</code> without an integer or sign bound. Unknown kinds decode as
@@ -1895,6 +1905,16 @@ watchArchived(
 ## ServerApi
 
 Server environment, configuration and providers.
+Configuration reads, snapshots and `keybindingsUpdated` payloads type
+`keybindings` as resolved rules with `command`, `shortcut` and optional
+`whenAst`. Known command names keep their literal types; script and newer
+commands remain strings. `shortcut.key` is trimmed to 1 to 64 characters and
+the five modifier flags are required Booleans. `whenAst` is a recursive union
+of `identifier`, `not`, `and` and `or` nodes without a depth bound; unknown node
+types decode as `{ unknown: true, raw }` at any depth and extra metadata is
+preserved. Malformed rules are omitted and later rules kept; more than 256
+remaining rules or a non-array fail decoding, and later valid stream chunks
+remain available. Reading keybindings does not add or remove a rule.
 Configuration reads, snapshots and `keybindingsUpdated` payloads type
 `issues`: `keybindings.malformed-config` with a trimmed nonempty `message`,
 and `keybindings.invalid-entry` with the same `message` and a numeric

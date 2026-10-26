@@ -75,6 +75,7 @@ proposed-design:
         auth.ts                 scopes, descriptors, session state, tokens, pairing links, clients
         environment.ts          ExecutionEnvironmentDescriptor, repository identity, protocol constants
         httpErrors.ts           Environment*Error records
+        keybindings.ts          resolved keybinding rules: commands, shortcuts, when nodes
         rpcErrors.ts            RpcErrorRecord: every tagged error the registered RPC methods declare
         rpcErrors/              orchestration, MCP app, vcs, and terminal error records, shared tagged-error helpers
         mcpApps.ts              MCP App tool calls, tool info, resource reads, model context
@@ -101,7 +102,7 @@ proposed-design:
           shell.ts              project and thread shells, shell snapshot and stream items
           stream.ts             thread stream items, RPC inputs and outputs, launch
           commands.ts           OrchestrationV2Command union (commands/*.ts by family)
-        server.ts               ServerConfig (providers, issues and idleCompaction typed; keybindings and other settings loose), config/lifecycle stream events
+        server.ts               ServerConfig (providers, keybindings, issues and idleCompaction typed; other settings loose), config/lifecycle stream events
         provider.ts             provider snapshot, models, auth status
         vcs.ts                  refs, status, worktree inputs/results
         terminal.ts             open/attach/write/events

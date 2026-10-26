@@ -6,6 +6,7 @@ export * as common from "./common.ts";
 export * as auth from "./auth.ts";
 export * as environment from "./environment.ts";
 export * as httpErrors from "./httpErrors.ts";
+export * as keybindings from "./keybindings.ts";
 export * as mcpApps from "./mcpApps.ts";
 export * as projects from "./projects.ts";
 export * as rpcErrors from "./rpcErrors.ts";

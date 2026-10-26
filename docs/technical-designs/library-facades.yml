@@ -667,8 +667,26 @@ proposed-design:
     extra issue metadata is preserved. The existing forward-compatible array
     omits malformed records and keeps later valid records; empty arrays stay
     empty and a non-array `issues` fails decoding, with later valid stream chunks
-    still available. Resolved keybindings remain loose. Reading issues does not
-    read, write or repair a keybindings file.
+    still available. Reading issues does not read, write or repair a
+    keybindings file.
+
+  resolved-keybindings: |
+    Configuration reads, configuration snapshots and `keybindingsUpdated`
+    payloads type `keybindings` as resolved rules: required `command` and
+    `shortcut`, optional `whenAst`. `command` is a growing string; the static
+    command names of the pinned server, including the effort commands, keep
+    their literal types, and script commands and newer commands remain strings.
+    `shortcut.key` is trimmed to between 1 and 64 characters, and `metaKey`,
+    `ctrlKey`, `shiftKey`, `altKey` and `modKey` are required Booleans.
+    `whenAst` is a recursive union keyed by `type`: `identifier` with a
+    nonempty untrimmed `name`, `not` with `node`, and `and` or `or` with `left`
+    and `right`. Unknown node types decode as `{ unknown: true, raw }` at any
+    depth, and the union has no depth bound. Extra rule, shortcut and node
+    metadata is preserved. A malformed rule, including one with a malformed
+    known node at any depth, is omitted and later rules are kept. More than 256
+    rules left after omission, or a non-array `keybindings`, fail decoding, with
+    later valid stream chunks still available. Reading keybindings does not
+    write, add or remove a rule.
 
   optional-observability-log-export-flag: |
     Configuration reads and snapshots expose optional Boolean

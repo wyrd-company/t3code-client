@@ -26,6 +26,16 @@ export interface WatchServerLifecycleOptions {
 /**
  * Server environment, configuration and providers.
  * Configuration reads, snapshots and `keybindingsUpdated` payloads type
+ * `keybindings` as resolved rules with `command`, `shortcut` and optional
+ * `whenAst`. Known command names keep their literal types; script and newer
+ * commands remain strings. `shortcut.key` is trimmed to 1 to 64 characters and
+ * the five modifier flags are required Booleans. `whenAst` is a recursive union
+ * of `identifier`, `not`, `and` and `or` nodes without a depth bound; unknown node
+ * types decode as `{ unknown: true, raw }` at any depth and extra metadata is
+ * preserved. Malformed rules are omitted and later rules kept; more than 256
+ * remaining rules or a non-array fail decoding, and later valid stream chunks
+ * remain available. Reading keybindings does not add or remove a rule.
+ * Configuration reads, snapshots and `keybindingsUpdated` payloads type
  * `issues`: `keybindings.malformed-config` with a trimmed nonempty `message`,
  * and `keybindings.invalid-entry` with the same `message` and a numeric
  * `index` without an integer or sign bound. Unknown kinds decode as
