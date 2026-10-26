@@ -60,7 +60,22 @@ export const RemoteOpenTarget = z.looseObject({
 export type RemoteOpenTarget = z.infer<typeof RemoteOpenTarget>;
 export const ResolvedKeybindingsConfig = z.array(z.looseObject({}));
 export type ResolvedKeybindingsConfig = z.infer<typeof ResolvedKeybindingsConfig>;
-export const ServerConfigIssues = z.array(z.looseObject({}));
+const KeybindingsMalformedConfigIssue = z.looseObject({
+  kind: z.literal("keybindings.malformed-config"),
+  message: TrimmedNonEmptyString,
+});
+const KeybindingsInvalidEntryIssue = z.looseObject({
+  kind: z.literal("keybindings.invalid-entry"),
+  message: TrimmedNonEmptyString,
+  index: z.number(),
+});
+/** A configuration problem the server reports; unknown kinds decode as `{ unknown: true, raw }`. */
+export const ServerConfigIssue = taggedUnionWithUnknown("kind", [
+  KeybindingsMalformedConfigIssue,
+  KeybindingsInvalidEntryIssue,
+]);
+export type ServerConfigIssue = z.infer<typeof ServerConfigIssue>;
+export const ServerConfigIssues = forwardCompatibleArray(ServerConfigIssue);
 export type ServerConfigIssues = z.infer<typeof ServerConfigIssues>;
 export const ServerObservability = z.looseObject({
   logsDirectoryPath: TrimmedNonEmptyString.optional(),

@@ -658,6 +658,18 @@ proposed-design:
     Reading this metadata does not compact threads or change defaults or timing.
     Other settings remain loose; settings mutation stays outside the facade.
 
+  configuration-issues: |
+    Configuration reads, configuration snapshots and `keybindingsUpdated`
+    payloads type `issues` as a growing union keyed by `kind`.
+    `keybindings.malformed-config` requires a trimmed nonempty `message`.
+    `keybindings.invalid-entry` requires the same `message` and a numeric `index`
+    with no integer or sign bound. Unknown kinds decode as `{ unknown: true, raw }`;
+    extra issue metadata is preserved. The existing forward-compatible array
+    omits malformed records and keeps later valid records; empty arrays stay
+    empty and a non-array `issues` fails decoding, with later valid stream chunks
+    still available. Resolved keybindings remain loose. Reading issues does not
+    read, write or repair a keybindings file.
+
   optional-observability-log-export-flag: |
     Configuration reads and snapshots expose optional Boolean
     `observability.otlpLogsEnabled`. False, omission and unknown observability

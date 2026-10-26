@@ -172,6 +172,13 @@ survive; malformed values fail decoding. This metadata does not grant permission
 </dd>
 <dt><a href="#ServerApi">ServerApi</a></dt>
 <dd><p>Server environment, configuration and providers.
+Configuration reads, snapshots and <code>keybindingsUpdated</code> payloads type
+<code>issues</code>: <code>keybindings.malformed-config</code> with a trimmed nonempty <code>message</code>,
+and <code>keybindings.invalid-entry</code> with the same <code>message</code> and a numeric
+<code>index</code> without an integer or sign bound. Unknown kinds decode as
+<code>{ unknown: true, raw }</code> and extra issue metadata is preserved. Malformed
+records are omitted, later valid records and stream chunks remain available,
+and a non-array <code>issues</code> fails decoding. Reading issues does not change keybindings.
 Configuration reads, snapshots and settings updates expose optional
 <code>settings.idleCompaction</code>: onReturn, beforeCacheExpires or off. Growing string
 values, omission and unknown settings metadata are preserved. Non-string
@@ -1883,6 +1890,13 @@ watchArchived(
 ## ServerApi
 
 Server environment, configuration and providers.
+Configuration reads, snapshots and `keybindingsUpdated` payloads type
+`issues`: `keybindings.malformed-config` with a trimmed nonempty `message`,
+and `keybindings.invalid-entry` with the same `message` and a numeric
+`index` without an integer or sign bound. Unknown kinds decode as
+`{ unknown: true, raw }` and extra issue metadata is preserved. Malformed
+records are omitted, later valid records and stream chunks remain available,
+and a non-array `issues` fails decoding. Reading issues does not change keybindings.
 Configuration reads, snapshots and settings updates expose optional
 `settings.idleCompaction`: onReturn, beforeCacheExpires or off. Growing string
 values, omission and unknown settings metadata are preserved. Non-string
