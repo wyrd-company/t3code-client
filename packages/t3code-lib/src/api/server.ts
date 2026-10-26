@@ -52,6 +52,11 @@ export interface WatchServerLifecycleOptions {
  * `observability.localTracingEnabled`. False and omission stay intact; malformed
  * non-Booleans fail decoding, and later valid stream chunks remain available.
  * This metadata does not enable or configure local tracing.
+ * Configuration reads and snapshots expose optional `observability.logsDirectoryPath`:
+ * the server log directory as a trimmed nonempty string without a path-format or
+ * length restriction. Omission stays absent; null, blank and non-string values fail
+ * decoding, and later valid stream chunks remain available. Reading this metadata
+ * does not open, read or create the directory.
  * Configuration observability exposes optional `otlpTracesUrl`,
  * `otlpMetricsUrl` and `otlpLogsUrl`: trimmed nonempty strings without a URL-format
  * or length restriction. Omission stays

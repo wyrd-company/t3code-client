@@ -638,25 +638,33 @@ proposed-design:
     `observability.otlpLogsEnabled`. False, omission and unknown observability
     metadata are preserved. Malformed non-Booleans fail decoding; later valid
     stream chunks remain available. Reading the flag does not configure telemetry
-    or enable log export. Other observability fields remain loose.
+    or enable log export.
 
   optional-observability-trace-export-flag: |
     Configuration reads and snapshots expose optional Boolean
     `observability.otlpTracesEnabled`. False, omission and unknown observability
     metadata are preserved. Malformed non-Booleans fail decoding; later valid
     stream chunks remain available. Reading the flag does not configure telemetry
-    or enable trace export. Other observability fields remain loose.
+    or enable trace export.
 
   optional-observability-metric-export-flag: |
     Configuration reads and snapshots expose optional Boolean
     `observability.otlpMetricsEnabled`. False, omission and unknown observability
     metadata are preserved. Malformed non-Booleans fail decoding; later valid
     stream chunks remain available. Reading the flag does not configure telemetry
-    or enable metric export. Other observability fields remain loose.
+    or enable metric export.
 
   optional-observability-local-tracing-flag: |
     Configuration reads and snapshots expose optional Boolean
     `observability.localTracingEnabled`. False, omission and unknown observability
     metadata are preserved. Malformed non-Booleans fail decoding; later valid
     stream chunks remain available. Reading the flag does not configure telemetry
-    or enable local tracing. Other observability fields remain loose.
+    or enable local tracing.
+
+  optional-observability-logs-directory-path: |
+    Configuration reads and snapshots expose optional `observability.logsDirectoryPath`:
+    the server log directory as a trimmed nonempty string, without a path-format
+    or length restriction. Omission stays absent. Null, blank and non-string
+    values fail decoding; later valid stream chunks remain available. The
+    observability object stays loose and preserves unknown metadata. Reading
+    this metadata does not open, read or create the directory.
