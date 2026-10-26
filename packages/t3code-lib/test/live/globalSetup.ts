@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: library-testing
+// ---
 /**
  * Starts the pinned `t3` devDependency on a free loopback port with its own
  * data directory, issues a bearer token, and exposes both to the live tests
@@ -11,11 +15,12 @@ import * as NodeNet from "node:net";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
+import { serverEnvironment } from "../support/serverEnvironment.ts";
+
 import { processAbsent, processIdentities } from "./serverEvidence.ts";
 
 const READY_TIMEOUT_MS = 60_000;
 const PROBE_TIMEOUT_MS = 2_000;
-const LOG_TAIL_LINES = 40;
 
 function serverBin(): string {
   const require = NodeModule.createRequire(import.meta.url);
@@ -78,7 +83,7 @@ function issueToken(bin: string, baseDir: string): string {
       "live-tests",
       "--token-only",
     ],
-    { encoding: "utf8" },
+    { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: serverEnvironment() },
   );
   return output.trim();
 }
@@ -111,7 +116,7 @@ export default async function setup(): Promise<(() => Promise<void>) | undefined
       "warn",
       workspace,
     ],
-    { stdio: ["ignore", log.fd, log.fd] },
+    { stdio: ["ignore", log.fd, log.fd], env: serverEnvironment() },
   );
 
   let ownedProcesses: Awaited<ReturnType<typeof processIdentities>> = [];
@@ -160,17 +165,11 @@ export default async function setup(): Promise<(() => Promise<void>) | undefined
   const teardown = async () => {
     await stop();
     if (evidenceDir) {
-      const output = await NodeFSP.readFile(NodePath.join(root, "server.log"), "utf8");
-      const session = process.env["T3_LIVE_TOKEN"];
-      const sanitized = (session ? output.replaceAll(session, "[redacted]") : output)
-        .replace(/Bearer\s+[^\s"']+/gi, "Bearer [redacted]")
-        .replace(
-          /((?:token|credential|secret|password|ticket)["']?\s*[:=]\s*["']?)[^\s,"'}]+/gi,
-          "$1[redacted]",
-        );
+      // Text redaction cannot remove credentials encoded in QR rendering or
+      // other unstructured output. Retain an explicit omission marker instead.
       await NodeFSP.writeFile(
         NodePath.join(evidenceDir, `${NodePath.basename(root)}-server.log`),
-        sanitized,
+        "Server output withheld: it can contain pairing credentials and QR output.\n",
       );
     }
     if (process.env["T3_LIVE_KEEP"] !== "1") {
@@ -188,30 +187,41 @@ export default async function setup(): Promise<(() => Promise<void>) | undefined
     });
   };
 
+  let stage = "started evidence";
   try {
     await writeEvidence("started");
+    stage = "readiness";
     await waitForReady(baseUrl, server);
+    stage = "process inventory";
     if (server.pid) ownedProcesses = await processIdentities(server.pid);
+    stage = "environment descriptor";
     const descriptor = (await fetch(new URL("/.well-known/t3/environment", baseUrl)).then(
       (response) => response.json(),
     )) as Record<string, unknown>;
+    stage = "ready evidence";
     await writeEvidence("ready", {
       ownedProcesses,
       serverVersion: descriptor["serverVersion"],
       protocol: descriptor["orchestrationProtocolVersion"],
     });
     process.env["T3_LIVE_URL"] = baseUrl;
+    stage = "token issuance";
     process.env["T3_LIVE_TOKEN"] = issueToken(bin, baseDir);
     process.env["T3_LIVE_HOME"] = baseDir;
     process.env["T3_LIVE_WORKSPACE"] = workspace;
   } catch (error) {
-    // Keep the data directory so the log named below still exists.
+    // Retain the owned home for explicit diagnosis, but never read or forward
+    // its log or the dependency error: either can contain pairing tokens/QRs.
     await stop();
-    const output = await NodeFSP.readFile(NodePath.join(root, "server.log"), "utf8");
-    const tail = output.split("\n").slice(-LOG_TAIL_LINES).join("\n");
+    const code = error instanceof Error && "code" in error ? error.code : undefined;
+    const safeCode =
+      typeof code === "string" && /^(?:EACCES|EPERM|ENOENT|ESRCH|EIO|ENOSPC|EMFILE)$/.test(code)
+        ? code
+        : "unavailable";
     throw new Error(
-      `Could not start the live T3 Code server; see ${root}/server.log. Last output:\n${tail}`,
-      { cause: error },
+      `Could not start the live T3 Code server during ${stage}; ` +
+        `exit=${server.exitCode ?? "none"}, signal=${server.signalCode ?? "none"}, code=${safeCode}. ` +
+        `Owned home retained at ${root}. Startup output and dependency error details withheld.`,
     );
   }
   return teardown;

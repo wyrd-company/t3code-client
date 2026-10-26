@@ -18,6 +18,8 @@ import {
 import { RepositoryIdentity, ThreadEnvMode } from "./environment.ts";
 import { ModelSelection } from "./orchestration/model.ts";
 
+export * from "./projectsIgnoredFiles.ts";
+
 export const PROJECT_SEARCH_ENTRIES_MAX_LIMIT = 200;
 export const ProjectEntryKind = forwardCompatibleLiteral(["file", "directory"]);
 export type ProjectEntryKind = z.infer<typeof ProjectEntryKind>;
@@ -82,6 +84,8 @@ export const PROJECT_READ_FILE_PATH_MAX_LENGTH = 512;
 export const ProjectReadFileInput = z.looseObject({
   cwd: TrimmedNonEmptyString,
   relativePath: TrimmedNonEmptyString.max(PROJECT_READ_FILE_PATH_MAX_LENGTH),
+  /** Return an absent-file result instead of failing when the file does not exist. */
+  allowMissing: z.boolean().optional(),
 });
 export type ProjectReadFileInput = z.infer<typeof ProjectReadFileInput>;
 export const ProjectReadFileResult = z.looseObject({
@@ -89,6 +93,8 @@ export const ProjectReadFileResult = z.looseObject({
   contents: z.string(),
   byteLength: NonNegativeInt,
   truncated: z.boolean(),
+  /** False for an absent optional file; servers can omit this field. */
+  exists: z.boolean().optional(),
 });
 export type ProjectReadFileResult = z.infer<typeof ProjectReadFileResult>;
 export const PROJECT_WRITE_FILE_PATH_MAX_LENGTH = 512;

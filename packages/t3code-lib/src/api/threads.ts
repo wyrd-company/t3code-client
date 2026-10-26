@@ -15,6 +15,10 @@ import type { RunId, ThreadId } from "../schemas/common.ts";
 import type { OrchestrationV2Command } from "../schemas/orchestration/commands.ts";
 import type { ThreadMetadataUpdatePayload } from "../schemas/orchestration/commands/thread.ts";
 import type {
+  OrchestrationV2CommandOutputFrame,
+  OrchestrationV2SubscribeCommandOutputInput,
+} from "../schemas/orchestration/commandOutput.ts";
+import type {
   ModelSelection,
   ProviderInteractionMode,
   RuntimeMode,
@@ -31,6 +35,7 @@ import type {
   OrchestrationV2ThreadLaunchResult,
 } from "../schemas/orchestration/stream.ts";
 import type { HttpTransport } from "../transport/http.ts";
+import { watchCommandOutput, type WatchCommandOutputOptions } from "./commandOutput.ts";
 import { isMissingResourceError, type CommandDispatcher } from "./dispatch.ts";
 import {
   ThreadCommands,
@@ -61,10 +66,12 @@ import {
   type PendingRequest,
   type ThreadPhase,
 } from "./threadProjection.ts";
+import type { DecodedStreamItem } from "./streamItems.ts";
 import { startThreadTurn } from "./threadTurnStart.ts";
 import { watchThread, type ThreadWatchItem, type ThreadWatchOptions } from "./threadWatch.ts";
 import type { StartTurnInput, TurnHandle } from "./turns.ts";
 
+export type { WatchCommandOutputOptions } from "./commandOutput.ts";
 export type { ThreadCreateInput, ThreadLaunchInput } from "./threadCreation.ts";
 export type { ThreadHistoryPageOptions, ThreadListOptions } from "./threadReads.ts";
 
@@ -72,7 +79,129 @@ export type ThreadMetaUpdate = ThreadMetadataUpdatePayload;
 
 export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
 
-/** Thread lifecycle, history, runs and pending requests. */
+/**
+ * Thread lifecycle, history, runs and pending requests.
+ * App-thread records expose optional nullable `lastSnoozeWakeAt` through detail,
+ * projection and thread-state watch events. Timestamp strings and null survive;
+ * omission stays absent and nonstring nonnull values fail decoding. Unknown
+ * metadata survives. This field records a manual wake without changing sort order.
+ * Pending background tasks expose optional `parentTaskId` through provider-thread
+ * projections, detail snapshots, provider-thread events and thread shells. It
+ * identifies the subagent task that started the work and waits on it. Values are
+ * trimmed nonempty strings for every kind, including fallback kinds. Omission
+ * stays absent, malformed values fail decoding and unknown metadata survives.
+ * Reading this field does not start work or change completion policy.
+ * Pending subagent tasks also expose optional `providerInstanceId` through these
+ * reads and events. Derived shell work identifies the owning provider thread's
+ * instance. Values are trimmed provider slugs: at most 64 characters, starting
+ * with a letter, then letters, digits, hyphens or underscores. Omission stays
+ * absent; malformed subagent values fail decoding. Other task kinds preserve
+ * this key as unknown metadata. Reading it does not select a provider or start work.
+ * Provider-thread native metadata exposes optional `forkHeadMessageId` through
+ * projections, detail snapshots and provider-thread events. It identifies the
+ * native message at a fork head. Strings are trimmed and must be nonempty;
+ * omission stays absent, malformed values fail decoding and unknown metadata
+ * survives. Reading this field does not create or resume a fork.
+ * Subagent turn-item `progress` is an optional string or null through projections,
+ * detail snapshots, visible rows and turn-item events. Strings and null survive;
+ * omission stays absent and other values fail decoding. Null represents unavailable
+ * progress in stock server projections. Reading it does not stop work or change policy.
+ * Approval-request turn items expose optional `fullAccessOverride` through
+ * projections, detail snapshots and turn-item events. Known values `ask_rule`
+ * and `provider_check` describe why the provider requested approval in full-access
+ * mode. Future strings survive; omission stays absent and nonstrings fail decoding.
+ * Reading this metadata does not answer an approval or change permissions.
+ *
+ * Approval-request turn items expose optional string `reason` through projection,
+ * detail and turn-item events. Empty and arbitrary strings are valid; omission
+ * stays absent and malformed values fail decoding. Reading this metadata does
+ * not answer an approval or change permissions.
+ *
+ * User-input question options expose optional string `preview` through projections,
+ * detail snapshots and turn-item events. Empty and arbitrary strings are valid;
+ * provider reports and older servers can omit it. Reading it does not answer the
+ * question or change its response policy.
+ *
+ * Provider-thread context usage exposes optional `cost` in detail, projection
+ * and provider-thread update events. Its amount is finite, including negative,
+ * zero and fractional values; currency is trimmed, nonempty and at most 32
+ * characters. Omission stays absent and unknown cost metadata survives.
+ * Malformed values fail decoding. Reading cost does not price or convert usage.
+ *
+ * Linked pull request snapshot authors expose optional boolean `isBot` in
+ * detail, projection and link-update events. True and false survive; omission
+ * stays absent and unknown actor metadata survives. Malformed values fail
+ * decoding. Reading this metadata does not change author permissions.
+ *
+ * Provider-turn token usage exposes optional positive integer `autoCompactThreshold`
+ * through detail, projection and stream reads. It reports provider auto-compaction
+ * metadata in tokens. Omission stays absent, malformed values fail decoding, and
+ * unknown metadata survives. Reading it does not enforce compaction or change timing.
+ * Provider-turn usage also exposes optional string `promptCacheExpiresAt` through
+ * the same reads. It reports the provider's prompt cache expiry metadata. Empty
+ * and other strings pass through; omission stays absent and malformed values fail
+ * decoding. Reading the field does not expire a cache or schedule compaction.
+ * `update` and `dispatch` accept optional nullable nonempty string `expectedBranch`
+ * on metadata updates. The server rejects an update if its current branch differs;
+ * null expects no branch, and omission leaves this precondition unsupplied.
+ * String values are trimmed; malformed values fail before sending.
+ * Linked pull requests expose optional nonempty string `repositoryWebUrl` metadata
+ * in thread reads and link update events. It carries a browser or clone URL when
+ * supplied; older links can omit it. Reading it does not fetch the repository.
+ * Context transfers in projections, HTTP detail snapshots and context-transfer
+ * events expose optional `sourceTokenUsage` with the provider-turn usage shape.
+ * Native forks can retain source usage; older transfers and portable handoffs
+ * can omit it. Nested usage is validated; unknown metadata survives. Reading it
+ * does not enforce a context budget or perform a fork.
+ *
+ * Linked pull requests also expose optional `endedWatch` records in thread reads
+ * and link-update events. The record uses the existing watch timestamps, nullable
+ * head SHA, check/remark arrays, pass/conflict flags and wake count. Omission
+ * stays absent; missing `passedChecks` defaults to an empty array. Malformed
+ * records fail decoding, and unknown metadata survives. Reading it does not restart a watch.
+ * `dispatch` accepts optional nonempty string `repositoryWebUrl` on
+ * `thread.pull-request.link`: browser or clone URLs and other nonempty strings
+ * pass through, omission leaves it unsupplied, and malformed values fail before sending.
+ * Unknown command metadata survives; sending the field does not fetch a repository.
+ * The optional `link` on `thread.pull-request.watch` also accepts optional
+ * nonempty string `repositoryWebUrl`; omission and unknown metadata survive,
+ * and malformed values fail before sending. This metadata does not change watch policy.
+ * Projection conversation messages and user-message turn items in projections,
+ * history/transcript rows and turn-item updates expose optional boolean `workflowScript`
+ * metadata: true marks a provider-native workflow script, false marks ordinary
+ * text, and older servers or other producers can omit it. Reading this metadata
+ * does not execute a workflow or change message text.
+ * Workflow agents in projection/detail reads and subagent updates expose optional
+ * nonnegative integer `completedAt` epoch milliseconds. Zero and omission are
+ * preserved, malformed values fail decoding, and unknown metadata survives.
+ * Reading it does not change workflow completion.
+ * `dispatch` accepts the `thread.stop` command with `commandId`, `threadId` and
+ * an optional `reason` string. Any string reason passes unchanged, omission stays
+ * absent, unknown command metadata survives, and malformed fields fail before
+ * sending. Servers that accept it advertise `threadStop`; `dispatch` does not
+ * check that flag. `stop` still sends `run.interrupt` with `holdQueue`.
+ * `dispatch` also accepts the `queued-run.start` command with `commandId`,
+ * `threadId` and `runId`. Ids use the same trimmed normalization as the other
+ * queued-run commands, unknown command metadata survives, and malformed or
+ * missing ids fail before sending. The server starts only a queued plain user
+ * message on a stopped thread; otherwise it fails with
+ * `OrchestrationV2DispatchCommandError`. No facade method sends it.
+ *
+ * `watchCommandOutput` follows `orchestration.subscribeCommandOutput` for one
+ * `command_execution` row (`{ threadId, itemId }`, trimmed nonempty ids). Each
+ * frame has `kind` (`replace` carries the bounded tail, `append` extends it;
+ * future strings survive), terminal `text` with its escapes passed through
+ * unchanged, `truncated` and `running`. All four fields are required and
+ * unknown fields survive. The stream ends after a frame with `running: false`;
+ * a settled row sends one `replace` frame. A malformed frame is delivered as a
+ * decode error, recognised by its `error` being a `T3DecodeError` because a
+ * frame's `kind` is an open string, and later frames continue. A missing
+ * thread, a missing row or a row that is not a command fails with
+ * `OrchestrationV2CommandOutputError`. Returning early or aborting the signal
+ * ends the subscription; there is no resubscription. Servers that support it
+ * advertise `commandOutputStreaming`; check that flag before subscribing on an
+ * older server. The library does not render terminal output.
+ */
 export class ThreadsApi {
   readonly #commands: ThreadCommands;
 
@@ -296,6 +425,14 @@ export class ThreadsApi {
       ...options,
       snapshotLoader: (signal) => this.detail(threadId, signal),
     });
+  }
+
+  /** Follow one command row's output; decode failures remain stream items. */
+  watchCommandOutput(
+    input: OrchestrationV2SubscribeCommandOutputInput,
+    options: WatchCommandOutputOptions = {},
+  ): AsyncIterable<DecodedStreamItem<OrchestrationV2CommandOutputFrame>> {
+    return watchCommandOutput(this.rpc, input, options);
   }
 
   /** Derive the visible phase from a thread summary. */

@@ -82,6 +82,9 @@ export const AuthStandardClientScopes = [
   "filesystem:read",
   "filesystem:write",
   "relay:read",
+  "access:read",
+  "access:write",
+  "relay:write",
 ] as const satisfies readonly AuthEnvironmentScope[];
 
 /**
@@ -96,13 +99,6 @@ export const AuthLegacyScopes = [
   "access:read",
   "access:write",
   "relay:read",
-  "relay:write",
-] as const satisfies readonly AuthEnvironmentScope[];
-
-export const AuthAdministrativeScopes = [
-  ...AuthStandardClientScopes,
-  "access:read",
-  "access:write",
   "relay:write",
 ] as const satisfies readonly AuthEnvironmentScope[];
 

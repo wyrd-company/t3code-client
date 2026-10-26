@@ -20,7 +20,7 @@ it("requires matching lifecycle identities, native process absence and home remo
       pid: 101,
       root: "/sample/home",
       platform: "linux",
-      serverVersion: "0.1.0",
+      serverVersion: "0.1.2",
       protocol: 2,
       ownedProcesses: identities,
     },

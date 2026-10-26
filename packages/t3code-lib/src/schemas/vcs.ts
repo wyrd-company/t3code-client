@@ -17,6 +17,7 @@ export const VcsRef = z.looseObject({
   name: TrimmedNonEmptyString,
   isRemote: z.boolean().optional(),
   remoteName: TrimmedNonEmptyString.optional(),
+  upstreamRef: TrimmedNonEmptyString.optional(),
   current: z.boolean(),
   isDefault: z.boolean(),
   worktreePath: TrimmedNonEmptyString.nullable(),
@@ -45,7 +46,8 @@ export const VcsCreateWorktreeInput = z.looseObject({
   refName: TrimmedNonEmptyString,
   newRefName: TrimmedNonEmptyString.optional(),
   baseRefName: TrimmedNonEmptyString.optional(),
-  path: TrimmedNonEmptyString.nullable(),
+  /** Required on the wire; the server selects the managed worktree folder. */
+  path: z.null(),
 });
 export type VcsCreateWorktreeInput = z.infer<typeof VcsCreateWorktreeInput>;
 export const VcsRemoveWorktreeInput = z.looseObject({
@@ -98,6 +100,7 @@ export const VcsStatusLocalShape = {
   refName: TrimmedNonEmptyString.nullable(),
   hasWorkingTreeChanges: z.boolean(),
   workingTree: z.looseObject({
+    rootPath: z.string().min(1).optional(),
     files: z.array(
       z.looseObject({
         path: z.string().min(1),
@@ -133,6 +136,7 @@ export const VcsStatusStreamEvent = taggedUnionWithUnknown("_tag", [
 ]);
 export type VcsStatusStreamEvent = z.infer<typeof VcsStatusStreamEvent>;
 export const VcsListRefsResult = z.looseObject({
+  isAtRepositoryRoot: z.boolean().optional(),
   refs: z.array(VcsRef),
   isRepo: z.boolean(),
   hasPrimaryRemote: z.boolean(),

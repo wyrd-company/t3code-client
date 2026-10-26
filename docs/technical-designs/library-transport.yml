@@ -11,7 +11,7 @@ relationships:
     - releasing
 proposed-design:
   high-level-overview: >-
-    The library implements stock T3 Code 0.1.0 and orchestration protocol 2.
+    The library implements stock T3 Code 0.1.2 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade
     contracts. The library architecture links the canonical design family.
   errors-ts: |
@@ -239,16 +239,17 @@ proposed-design:
     export type StreamItem<T> = { kind: "item"; value: T } | { kind: "decode-error"; error: T3DecodeError }
     ```
 
-    Registry coverage for this version, all typed: the fifteen orchestration
-    methods; `projects.mutate`; `mcpApps.callTool`, `mcpApps.toolInfo`,
+    Registry coverage for this version, all typed: the sixteen orchestration
+    methods, including the `orchestration.subscribeCommandOutput` stream; `projects.mutate`; `mcpApps.callTool`, `mcpApps.toolInfo`,
     `mcpApps.readResource`, `mcpApps.updateModelContext`; `server.probe`, `server.getConfig`,
-    `server.getSettings`, `server.refreshProviders`, `subscribeServerConfig`,
-    `subscribeServerLifecycle`, `subscribeAuthAccess`; `vcs.listRefs`,
+    `server.getSettings`, `server.refreshProviders`, `server.getDatabaseStorage`,
+    `subscribeServerConfig`, `subscribeServerLifecycle`, `subscribeAuthAccess`; `vcs.listRefs`,
     `vcs.refreshStatus`, `vcs.createWorktree`, `vcs.removeWorktree`,
     `vcs.createRef`, `vcs.switchRef`, `subscribeVcsStatus`,
     `subscribeWorktreeSetup`, `worktreeSetup.cancel`; `projects.listEntries`,
-    `projects.readFile`, `projects.writeFile`, `projects.searchEntries`,
-    `projects.searchContents`, `projects.ensureScratch`, `projects.createNew`;
+    `projects.listIgnoredFiles`, `projects.readFile`, `projects.writeFile`,
+    `projects.searchEntries`, `projects.searchContents`, `projects.ensureScratch`,
+    `projects.createNew`;
     `terminal.open`, `terminal.attach`, `terminal.write`, `terminal.resize`,
     `terminal.close`, `subscribeTerminalEvents`. Everything else goes through
     `callRaw` and `streamRaw` until it is added; adding a method is one entry in

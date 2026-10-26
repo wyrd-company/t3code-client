@@ -50,6 +50,7 @@ import {
   OrchestrationGetTurnDiffError,
   OrchestrationGetWorkflowScriptError,
   OrchestrationSearchThreadsError,
+  OrchestrationV2CommandOutputError,
   OrchestrationV2DispatchCommandError,
   OrchestrationV2GetShellSnapshotError,
   OrchestrationV2GetThreadProjectionError,
@@ -221,6 +222,7 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   OrchestrationSearchThreadsError,
   OrchestrationGetWorkflowScriptError,
   OrchestrationV2StopWorkflowError,
+  OrchestrationV2CommandOutputError,
   OrchestrationV2SearchThreadError,
   McpAppRequestError,
 ]);

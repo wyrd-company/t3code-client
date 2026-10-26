@@ -5,17 +5,18 @@
       "createdBy": "user",
       "creationSource": "web",
       "id": "11111111-2222-4333-8444-555555555555",
-      "projectId": "0d24a842-0858-42aa-b893-b85e32a80ad3",
+      "projectId": "9fd48526-08b8-4ed6-8e65-a69599198109",
       "title": "Example thread",
       "providerInstanceId": "codex",
       "modelSelection": {
         "instanceId": "codex",
-        "model": "gpt-5.6-luna"
+        "model": "gpt-6-luna"
       },
       "runtimeMode": "auto",
       "interactionMode": "default",
       "branch": null,
       "worktreePath": null,
+      "pullRequests": [],
       "activeProviderThreadId": null,
       "lineage": {
         "parentThreadId": null,
@@ -23,8 +24,8 @@
         "rootThreadId": "11111111-2222-4333-8444-555555555555"
       },
       "forkedFrom": null,
-      "createdAt": "2026-10-16T05:33:28.507Z",
-      "updatedAt": "2026-10-16T05:33:28.507Z",
+      "createdAt": "2026-10-25T03:46:57.330Z",
+      "updatedAt": "2026-10-25T03:46:57.330Z",
       "archivedAt": null,
       "settledOverride": null,
       "settledAt": null,
@@ -49,6 +50,6 @@
     "contextHandoffs": [],
     "contextTransfers": [],
     "visibleTurnItems": [],
-    "updatedAt": "2026-10-16T05:33:28.507Z"
+    "updatedAt": "2026-10-25T03:46:57.330Z"
   }
 }

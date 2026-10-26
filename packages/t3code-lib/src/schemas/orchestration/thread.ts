@@ -100,6 +100,7 @@ export const OrchestrationV2AppThread = z.looseObject({
   unsettledAt: IsoDateTime.nullable().optional(),
   snoozedUntil: IsoDateTime.nullable().optional(),
   snoozedAt: IsoDateTime.nullable().optional(),
+  lastSnoozeWakeAt: IsoDateTime.nullable().optional(),
   limitRecovery: OrchestrationV2LimitRecovery.nullable().optional(),
   pinnedAt: IsoDateTime.nullable().optional(),
   autoSettleDisabledAt: IsoDateTime.nullable().optional(),

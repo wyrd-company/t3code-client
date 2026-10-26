@@ -36,6 +36,7 @@ export const OrchestrationV2WorkflowAgent = z.looseObject({
   durationMs: NonNegativeInt.optional(),
   queuedAt: NonNegativeInt.optional(),
   startedAt: NonNegativeInt.optional(),
+  completedAt: NonNegativeInt.optional(),
   /** Capped excerpts of the agent's prompt and answer. */
   prompt: z.string().min(1).optional(),
   result: z.string().min(1).optional(),

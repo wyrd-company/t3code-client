@@ -35,7 +35,7 @@ it("composes profiles, issued-token import, pairing and resolved auth against th
     try {
       expect((await client.auth.sessionState()).authenticated).toBe(true);
       expect(await client.auth.hasScope("orchestration:read")).toBe(true);
-      expect((await client.auth.descriptor()).serverVersion).toBe("0.1.0");
+      expect((await client.auth.descriptor()).serverVersion).toBe("0.1.2");
       await client.shell.snapshot();
       if (process.env["T3_LIVE_AGENT"] === "1") {
         const { projectId } = await client.projects.ensureScratch();

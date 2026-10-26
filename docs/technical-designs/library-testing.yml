@@ -30,7 +30,27 @@ proposed-design:
     `pnpm run test:live` runs `test/live/**` against a real server.
     `test/live/globalSetup.ts` starts the `t3` devDependency on a free loopback
     port with its own data directory, issues a bearer token, and stops the server
-    when the run ends. The `t3` version is the server build this library targets,
+    when the run ends. Both owned server and token-issuance processes omit
+    `T3_SERVICE_LAUNCHER_CONTEXT` without reading its value, so an app launcher
+    context cannot attach the test server to the app service lifecycle. The parent
+    environment and explicit external-server selection remain intact.
+    Linux process evidence captures the owned launcher's descendant identities.
+    If a proc entry disappears and a signal-zero check confirms that PID is
+    absent, the roster retains its PID, available identity fields and
+    `absentDuringCapture: true`. Surviving siblings retain complete identities.
+    Missing proc data for an existing PID and other capture errors fail setup.
+    Teardown checks every recorded PID for absence, including partial rows.
+    Startup failures report the failed setup stage, process exit/signal and an
+    allowlisted system error code. Raw server logs and dependency error payloads
+    are never read or embedded in startup diagnostics; they can contain pairing
+    credentials and QR output. The stopped server's owned home remains available
+    for explicit diagnosis. Failure reporting preserves lifecycle evidence errors.
+    Successful teardown also withholds server output from retained evidence;
+    text redaction cannot remove credentials encoded in QR rendering. The
+    evidence log contains an explicit omission marker. Readiness, stopped-process
+    and home-removal records remain available. `T3_LIVE_KEEP=1` preserves the
+    owned home and raw log for explicit diagnosis without copying it to evidence.
+    The `t3` version is the server build this library targets,
     so the live suite is the check that the client still matches it.
 
     | Variable          | Meaning                                                             |

@@ -11,7 +11,7 @@ relationships:
     - releasing
 proposed-design:
   high-level-overview: >-
-    The library implements stock T3 Code 0.1.0 and orchestration protocol 2.
+    The library implements stock T3 Code 0.1.2 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade
     contracts. The library architecture links the canonical design family.
   api-facades: |
@@ -19,6 +19,10 @@ proposed-design:
     inputs with the schemas, fill server-required bookkeeping fields
     (`commandId`, `messageId`, `createdBy`, `creationSource`) so callers never
     hand-build a command, and translate stream items into domain items.
+
+    Project repository identities can include `origin.remoteUrl`, an optional
+    trimmed nonempty string naming the checkout remote when its repository differs
+    from the canonical repository. Omission does not imply a missing remote.
 
     ```ts
     export class ProjectsApi {
@@ -32,7 +36,7 @@ proposed-design:
       delete(projectId, options?: { force?: boolean }): Promise<void>  // idempotent: not found resolves
       ensureScratch(): Promise<ProjectEnsureScratchResult>             // server finds or creates the Scratch project
       createNew(input: { name: string }): Promise<ProjectCreateNewResult>  // server makes the folder, first commit, and project
-      files: { list, read, write, searchEntries, searchContents }      // thin typed RPC wrappers
+      files: { list, listIgnored, read, write, searchEntries, searchContents }  // thin typed RPC wrappers
     }
 
     export class ThreadsApi {
@@ -56,6 +60,7 @@ proposed-design:
       dismissUserInput(input: { threadId; requestId }): Promise<void>
       pendingRequests(threadId): Promise<PendingRequest[]>                         // pending runtime requests joined with their turn items
       watch(threadId, options?: WatchOptions): AsyncIterable<ThreadWatchItem>       // resumable live view
+      watchCommandOutput({ threadId, itemId }, options?: { signal? }): AsyncIterable<DecodedStreamItem<OrchestrationV2CommandOutputFrame>>  // orchestration.subscribeCommandOutput stream
       phase(thread: OrchestrationV2ThreadShell): ThreadPhase                        // pure; "waiting_for_approval" | "waiting_for_input" | "failed" | "starting" | "running" | "completed" | "idle"
       dispatch(command: OrchestrationV2Command): Promise<DispatchResult>
     }
@@ -147,6 +152,7 @@ proposed-design:
       refreshProviders(input?);
       watchConfig();
       watchLifecycle();
+      watchDatabaseStorage(options?); // server.getDatabaseStorage stream
       environment();
     }
     export class VcsApi {
@@ -166,3 +172,610 @@ proposed-design:
       close;
     }
     ```
+
+  optional-environment-theme-capability: |
+    `ExecutionEnvironmentCapabilities.environmentThemes` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises environment-theme publication through
+    configuration streams; false and omission are preserved without inference.
+    Omission does not advertise support. Non-boolean supplied values fail decoding.
+
+  optional-usage-limit-source-capability: |
+    `ExecutionEnvironmentCapabilities.usageLimitSources` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises quota streaming from configured usage-limit
+    sources; false and omission are preserved without inference. Omission does
+    not advertise support. Non-boolean supplied values fail decoding. This flag
+    is distinct from the usage-limit-source snapshots and subscription input.
+
+  optional-usage-limit-account-workspace: |
+    Usage-limit source accounts expose optional `workspaceId`: the workspace the
+    quota belongs to, as a trimmed nonempty string without a format or length
+    restriction. Accounts reach `usageLimitSourcesUpdated` events from
+    `server.watchConfig({ usageLimitSources: true })` and configuration reads that
+    carry `usageLimitSources`. Omission stays absent and unknown account metadata
+    is preserved. Malformed values invalidate their account records; the existing
+    forward-compatible account array omits those records and keeps later valid
+    accounts, sources and stream chunks. Reading this metadata does not select a
+    workspace, redeem reset credits or change usage-limit polling.
+
+  optional-usage-price-override-capability: |
+    `ExecutionEnvironmentCapabilities.usagePriceOverrides` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises custom model rate persistence and application
+    to usage summaries; false and omission are preserved without inference. Omission
+    does not advertise support. Non-boolean supplied values fail decoding. This
+    metadata flag does not configure custom model rates.
+
+  optional-usage-model-alias-capability: |
+    `ExecutionEnvironmentCapabilities.usageModelAliases` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises model-name mapping through configured usage
+    aliases; false and omission are preserved without inference. Omission does
+    not advertise support. Non-boolean supplied values fail decoding. This
+    metadata flag does not configure usage aliases.
+
+  optional-thread-pinning-capability: |
+    `ExecutionEnvironmentCapabilities.threadPinning` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises support for pinning threads; false and
+    omission are preserved without inference. Omission does not advertise support.
+    Non-boolean supplied values fail decoding. This metadata flag does not pin
+    a thread.
+
+  optional-thread-pin-reorder-capability: |
+    `ExecutionEnvironmentCapabilities.threadPinReorder` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises support for reordering pinned threads;
+    false and omission are preserved without inference. Omission does not
+    advertise support. Non-boolean supplied values fail decoding. This metadata
+    flag does not reorder a thread.
+
+  optional-thread-active-reorder-capability: |
+    `ExecutionEnvironmentCapabilities.threadActiveReorder` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises persistence of manual Active thread order;
+    false and omission are preserved without inference. Omission does not
+    advertise support. Non-boolean supplied values fail decoding. This metadata
+    flag does not reorder a thread.
+
+  optional-thread-auto-settle-opt-out-capability: |
+    `ExecutionEnvironmentCapabilities.threadAutoSettleOptOut` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises support for disabling auto-settle per thread;
+    false and omission are preserved without inference. Omission does not
+    advertise support. Non-boolean supplied values fail decoding. This metadata
+    flag does not change auto-settle.
+
+  optional-thread-title-regeneration-capability: |
+    `ExecutionEnvironmentCapabilities.threadTitleRegeneration` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises support for regenerating thread titles through
+    thread metadata updates; false and omission are preserved without inference.
+    Omission does not advertise support. Non-boolean supplied values fail decoding.
+    This metadata flag does not regenerate a title.
+
+  optional-thread-pull-request-linking-capability: |
+    `ExecutionEnvironmentCapabilities.threadPullRequestLinking` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises support for linking pull requests to threads;
+    false and omission are preserved without inference. Omission does not advertise
+    support. Non-boolean supplied values fail decoding. This metadata flag does
+    not link a pull request.
+
+  optional-thread-pull-requests-capability: |
+    `ExecutionEnvironmentCapabilities.threadPullRequests` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises support for thread pull requests; false and
+    omission are preserved without inference. Omission does not advertise support.
+    Non-boolean supplied values fail decoding.
+
+  optional-pull-request-checks-capability: |
+    `ExecutionEnvironmentCapabilities.pullRequestChecks` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises support for pull request checks. False and
+    omission are preserved; omission does not advertise support. Supplied
+    non-boolean values fail decoding. Unknown capability fields remain intact.
+    This metadata flag does not fetch or run checks.
+
+  optional-thread-snooze-capability: |
+    `ExecutionEnvironmentCapabilities.threadSnooze` is an optional boolean available
+    through `server.environment`, `server.getConfig` and configuration stream
+    snapshots. True advertises support for snoozing threads. False and omission
+    are preserved; omission does not advertise support. Supplied non-boolean
+    values fail decoding. Unknown capability fields remain intact. This metadata
+    flag does not snooze a thread.
+
+  optional-thread-restart-continuation-capability: |
+    `ExecutionEnvironmentCapabilities.threadRestartContinuation` is an optional
+    boolean available through `server.environment`, `server.getConfig` and
+    configuration stream snapshots. True advertises persistence of the opt-in for
+    continuing interrupted threads after restarts. False and omission are
+    preserved; omission does not advertise support. Supplied non-boolean values
+    fail decoding. Unknown capability fields remain intact. This metadata flag
+    does not configure or trigger continuation.
+
+  optional-project-settings-overrides-capability: |
+    `ExecutionEnvironmentCapabilities.projectSettingsOverrides` is an optional
+    boolean available through `server.environment`, `server.getConfig` and
+    configuration stream snapshots. True advertises support for resolving project
+    settings overrides. False and omission are preserved; omission does not
+    advertise support. Supplied non-boolean values fail decoding. Unknown
+    capability fields remain intact. This metadata flag does not change settings.
+
+  optional-project-provider-instance-overrides-capability: |
+    `ExecutionEnvironmentCapabilities.projectProviderInstanceOverrides` is an
+    optional boolean available through `server.environment`, `server.getConfig`
+    and configuration stream snapshots. True advertises support for resolving a
+    project's provider instance overrides. False and omission are preserved;
+    omission does not advertise support. Supplied non-boolean values fail decoding.
+    Unknown capability fields remain intact. This metadata flag does not change
+    provider settings.
+
+  optional-project-clone-tracking-capability: |
+    `ExecutionEnvironmentCapabilities.projectCloneTracking` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises support for tracking project clones and
+    streaming their progress. False and omission are preserved; omission does not
+    advertise support. Supplied non-boolean values fail decoding. Unknown capability
+    fields remain intact. This metadata flag does not start or track a clone.
+
+  optional-environment-icon-capability: |
+    `ExecutionEnvironmentCapabilities.environmentIcon` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises support for a custom environment icon.
+    False and omission are preserved; omission does not advertise support.
+    Supplied non-boolean values fail decoding. Unknown capability fields remain
+    intact. This metadata flag does not select or change an icon.
+
+  optional-thread-auto-settlement-capability: |
+    `ExecutionEnvironmentCapabilities.threadAutoSettlement` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises server evaluation of merge and inactivity
+    settlement without a client. False and omission are preserved; omission does
+    not advertise support. Supplied non-boolean values fail decoding. Unknown
+    capability fields remain intact. This metadata flag does not change settlement
+    settings or settle a thread.
+
+  optional-required-worktree-bootstrap-capability: |
+    `ExecutionEnvironmentCapabilities.requiredWorktreeBootstrap` is an optional
+    boolean available through `server.environment`, `server.getConfig` and
+    configuration stream snapshots. True advertises support for required worktree
+    bootstrap. False and omission are preserved; omission does not advertise
+    support. Supplied non-boolean values fail decoding. Unknown capability fields
+    remain intact. This metadata flag does not enforce bootstrap or change policy.
+
+  optional-command-output-streaming-capability: |
+    `ExecutionEnvironmentCapabilities.commandOutputStreaming` is an optional
+    boolean available through `server.environment`, `server.getConfig` and
+    configuration stream snapshots. True advertises support for streaming command
+    output. False and omission are preserved; omission does not advertise support.
+    Supplied non-boolean values fail decoding. Unknown capability fields remain
+    intact. This metadata flag does not subscribe to command output.
+
+  command-output-stream: |
+    `threads.watchCommandOutput({ threadId, itemId }, { signal? })` mirrors the
+    stream `orchestration.subscribeCommandOutput` with scope `orchestration:read`
+    for one `command_execution` row. Both ids are trimmed nonempty strings and
+    are validated before sending; unknown input keys pass through. Each frame
+    has required `kind`, `text`, `truncated` and `running`. `replace` carries
+    the whole bounded tail (the first frame, or after the client fell behind)
+    and `append` extends it; a future `kind` string remains available. `text`
+    is terminal output with its cursor and style escapes, passed through
+    unchanged; the library does not render it. `truncated` reports that
+    earlier output was dropped. The stream ends after a frame with
+    `running: false`; a settled row sends one `replace` frame. Unknown frame
+    fields remain available. A malformed frame is delivered as a decode error,
+    recognised by its `error` being a `T3DecodeError` because a frame `kind`
+    is an open string, and later frames continue. A missing thread, a missing
+    row or a row that is not a command fails with
+    `OrchestrationV2CommandOutputError` (`threadId`, plain `message`, optional
+    `cause`). Returning early or aborting the signal ends the subscription;
+    the facade does not resubscribe. Servers that support the stream
+    advertise `commandOutputStreaming`; callers check that flag before
+    subscribing on an older server. The library adds no capability or version
+    check.
+
+  optional-ignored-file-listing-capability: |
+    `ExecutionEnvironmentCapabilities.ignoredFileListing` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises support for listing ignored files. False
+    and omission are preserved; omission does not advertise support. Supplied
+    non-boolean values fail decoding. Unknown capability fields remain intact.
+    This metadata flag does not list ignored files.
+
+  optional-database-storage-capability: |
+    `ExecutionEnvironmentCapabilities.databaseStorage` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises streaming database size and reclaimable
+    space. False and omission are preserved; omission does not advertise support.
+    Supplied non-boolean values fail decoding. Unknown capability fields remain
+    intact. This metadata flag does not read database storage.
+
+  database-storage-stream: |
+    `server.watchDatabaseStorage({ signal? })` mirrors the stream
+    `server.getDatabaseStorage` with an empty payload and scope
+    `orchestration:read`. Each item is the state database's status or `null`
+    until the server first reads the file. A status has required
+    `databaseBytes` and `reclaimableBytes` numbers (finite, with no integer or
+    sign bound), a required boolean `incrementalVacuumEnabled` and a required
+    plain string `compactCommand`, the host command that reclaims the space
+    offline. Unknown status fields remain available. The server sends the
+    current value when the stream opens and again after its maintenance passes
+    change it. A malformed item is delivered as a decode error and later items
+    continue. Returning early or aborting the signal ends the subscription. The
+    library adds no capability or version check and runs no reclaim or compact
+    command.
+
+  optional-storage-cleanup-capability: |
+    `ExecutionEnvironmentCapabilities.storageCleanup` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises storage cleanup support. False and omission
+    are preserved; omission does not advertise support. Supplied non-boolean
+    values fail decoding. Unknown capability fields remain intact. This metadata
+    flag does not perform storage cleanup.
+
+  optional-project-file-reads: |
+    `projects.files.read` mirrors `projects.readFile`. Its optional `allowMissing`
+    input is a boolean. When true, an absent file returns empty contents, zero
+    byteLength, truncated false and exists false. Omitted or false retains the
+    server's missing-file error. The optional boolean result field `exists` can
+    be omitted by the server; callers must not infer absence from omission.
+
+  ignored-file-listing: |
+    `projects.files.listIgnored({ cwd }, signal?)` mirrors
+    `projects.listIgnoredFiles` with scope `filesystem:read`. The input `cwd` is
+    a trimmed nonempty string. The result has a required `files` array and a
+    required boolean `truncated`. Each file has a trimmed nonempty `path` and a
+    nonnegative integer `byteLength`. The server lists the untracked files git
+    ignores, leaves out wholly ignored folders and ignored symbolic links, and
+    caps the list; `truncated` is true when more files matched than it returned.
+    A directory outside a repository returns no files. A missing or
+    non-directory `cwd` fails with `ProjectListEntriesError`. A malformed file
+    entry is left out and the other entries remain. Unknown input, file and
+    result fields remain available. The library adds no capability or version
+    check; the server owns git, the limit and its timeout.
+
+  optional-repository-root-detection: |
+    `vcs.listRefs` returns an optional boolean `isAtRepositoryRoot` that reports
+    whether the requested `cwd` is the repository root. Omission does not mean
+    false. Unknown result fields remain available for forward compatibility.
+
+  optional-upstream-references: |
+    Each reference from `vcs.listRefs` can include `upstreamRef`, an optional
+    trimmed nonempty string containing the full Git ref, such as
+    `refs/remotes/origin/main`. Callers must handle omission. Unknown reference
+    fields remain available for forward compatibility.
+
+  optional-working-tree-root: |
+    `vcs.status` and local status from `vcs.watchStatus` snapshots and updates
+    expose `workingTree.rootPath` as an optional nonempty string. It contains
+    the absolute worktree root on the server environment; each
+    `workingTree.files[].path` is relative to that root. Paths preserve
+    whitespace. The server omits the root when it cannot resolve it; callers
+    must handle omission. Unknown working-tree fields remain available.
+
+  optional-git-command-failure-reason: |
+    A `GitCommandError` record from a rejected VCS call (for example
+    `vcs.createRef` or `vcs.switchRef`), read through `T3RpcError.record`,
+    exposes optional
+    `reason`: a growing literal set of Git failure tags (`authentication_failed`,
+    `branch_already_exists`, `branch_checked_out_in_worktree`,
+    `host_key_unverified`, `not_a_repository`, `path_already_exists`,
+    `push_rejected_by_remote`, `push_rejected_non_fast_forward`, `ref_not_found`,
+    `remote_unreachable`, `tag_would_be_clobbered`). The server sends it only
+    when it recognises the failure; omission stays absent. An unknown reason
+    string is preserved. A non-string reason makes the record unrecognised, so
+    `T3RpcError.is("GitCommandError")` is false while `tag` and `detail` keep the
+    raw failure. Reading the reason does not retry or change any Git operation.
+
+  terminal-attach: |
+    `terminal.attach` accepts optional boolean `resume`. With `resume: true`,
+    resubscriptions preserve closed, exited and evicted terminals instead of
+    restarting them, even with `restartIfNotRunning: true`. Unknown terminal IDs
+    can recover when `cwd` is supplied, including after a server restart.
+    Omission and `false` retain ordinary attach behavior. Unknown IDs without
+    `cwd` fail lookup. The stock server owns terminal lifecycle behavior.
+  provider-installed-version: |
+    Provider records in server configuration reads, provider lists and config
+    streams expose `installedVersion` as an optional nullable trimmed nonempty
+    string. It reports the installed CLI version for a local provider with a
+    separate server. Null means unknown; omission leaves legacy snapshots on
+    `version`. The library does not infer a value or enforce a version policy.
+  provider-workspace-options: |
+    Provider workspace snapshots in configuration reads, provider lists and config
+    streams expose optional `optionDescriptors` arrays. Each entry uses the
+    existing boolean/select provider option descriptor union. Omission means no
+    descriptor snapshot was supplied; an empty array supplies no options.
+    Unknown descriptor types decode to `{ unknown: true, raw }`; malformed known
+    types fail decoding. The library does not infer workspace options.
+  provider-workspace-slash-commands: |
+    Provider workspace snapshots in configuration reads, provider lists and config
+    streams expose optional boolean `slashCommandsPending`. True marks pending
+    slash-command discovery; the stock server can retain previous slash commands
+    while discovery is pending. False and omission are preserved without inference.
+    Non-boolean supplied values fail decoding.
+
+  optional-storage-cleanup-run-capability: |
+    `ExecutionEnvironmentCapabilities.storageCleanupRun` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises support for running storage cleanup; false
+    and omission are preserved without inference. Omission does not advertise
+    support. Non-boolean supplied values fail decoding. This metadata flag does
+    not run storage cleanup.
+
+  optional-otlp-endpoint-check-capability: |
+    `ExecutionEnvironmentCapabilities.otlpEndpointCheck` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises support for checking OTLP endpoints for
+    telemetry export settings; false and omission are preserved without inference.
+    Omission does not advertise support. Non-boolean supplied values fail decoding.
+    This metadata flag does not check an endpoint.
+
+  optional-pull-request-stack-actions-capability: |
+    `ExecutionEnvironmentCapabilities.pullRequestStackActions` is an optional
+    boolean available through `server.environment`, `server.getConfig` and
+    configuration stream snapshots. True advertises support for pull request
+    stack actions; false and omission are preserved without inference. Omission
+    does not advertise support. Non-boolean supplied values fail decoding.
+    This metadata flag does not perform a pull request stack action.
+
+  optional-agent-activity-publishing-capability: |
+    `ExecutionEnvironmentCapabilities.agentActivityPublishing` is an optional
+    boolean available through `server.environment`, `server.getConfig` and
+    configuration stream snapshots. True reports that agent activity publishing
+    is enabled and relay link credentials are configured. False and omission are
+    preserved without inference; older servers can omit this field while still
+    publishing. Non-boolean supplied values fail decoding. This metadata flag
+    does not configure or publish agent activity.
+
+  optional-pull-requests-capability: |
+    `ExecutionEnvironmentCapabilities.pullRequests` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises server pull request support. False and
+    omission are preserved; omission does not advertise support. Supplied
+    non-boolean values fail decoding. This metadata flag performs no pull request
+    operation.
+
+  optional-desktop-app-update-capability: |
+    `ExecutionEnvironmentCapabilities.desktopAppUpdate` is an optional boolean
+    available through `server.environment`, `server.getConfig` and configuration
+    stream snapshots. True advertises a desktop app update through the supervising
+    desktop app. False and omission are preserved; omission does not advertise
+    support. Supplied non-boolean values fail decoding. Unknown capability fields
+    remain intact. This metadata flag does not update or restart the desktop app
+    or server.
+
+  optional-server-self-update-progress-capability: |
+    `ExecutionEnvironmentCapabilities.serverSelfUpdateProgress` is an optional
+    boolean available through `server.environment`, `server.getConfig` and
+    configuration stream snapshots. True advertises streaming self-update progress
+    before restart acknowledgement. False and omission are preserved; omission
+    does not advertise streaming support. Supplied non-boolean values fail decoding.
+    Unknown capability fields remain intact. This metadata flag does not start an
+    update, subscribe to progress or restart the server.
+
+  optional-server-update-thread-continuation-capability: |
+    `ExecutionEnvironmentCapabilities.serverUpdateThreadContinuation` is an optional
+    boolean available through `server.environment`, `server.getConfig` and
+    configuration stream snapshots. True advertises continuation of running provider
+    turns after a server update. False and omission are preserved; omission does not
+    advertise support. Supplied non-boolean values fail decoding. Unknown capability
+    fields remain intact. This metadata flag does not start an update, restart the
+    server or continue a turn.
+
+  optional-thread-stop-capability: |
+    `ExecutionEnvironmentCapabilities.threadStop` is an optional boolean available
+    through `server.environment`, `server.getConfig` and configuration stream
+    snapshots. True advertises support for the upstream thread-stop command.
+    False and omission are preserved; omission does not advertise support.
+    Supplied non-boolean values fail decoding. Unknown fields remain intact.
+    This metadata flag does not dispatch a command or change `threads.stop`.
+    Callers send the `thread.stop` command itself through `threads.dispatch`.
+
+  optional-server-self-update-capability: |
+    `ExecutionEnvironmentCapabilities.serverSelfUpdate` is an optional growing
+    literal available through `server.environment`, `server.getConfig` and
+    configuration stream snapshots. `boot-service`, `respawn` and `desktop-managed`
+    identify the advertised server update path. Omission is preserved and advertises
+    no update path. Unknown strings are preserved for forward compatibility;
+    supplied non-string values fail decoding. Unknown fields remain intact.
+    This metadata does not start an update or restart a server or desktop app.
+
+  optional-theme-canvas: |
+    `EnvironmentTheme.canvas` is an optional string matching #RGB or #RRGGBB.
+    Letter case is preserved; whitespace and other strings are invalid. Omission
+    remains absent. Null and non-string values fail decoding. The member is typed
+    in configuration theme arrays and `environmentThemesUpdated` payloads. Unknown
+    theme metadata survives. Reading the seed color does not apply a theme.
+  optional-theme-accent: |
+    `EnvironmentTheme.accent` is an optional string matching #RGB or #RRGGBB.
+    Decoding preserves the exact color and case, and keeps omission distinct from
+    a present value. Malformed present values fail decoding. The field is typed
+    in configuration theme arrays and `environmentThemesUpdated` payloads. Unknown
+    theme metadata is preserved. Reading accent does not apply a theme.
+  optional-theme-version: |
+    `EnvironmentTheme.version` is an optional literal number 1. It is theme-file
+    metadata in configuration theme arrays and `environmentThemesUpdated`
+    payloads. Omission stays absent; other values are malformed. Unknown theme
+    metadata is preserved. Reading it does not apply a theme or check the server version.
+
+  optional-theme-colors: |
+    `EnvironmentTheme.colors` is an optional palette map. Keys match
+    /^[a-zA-Z][a-zA-Z0-9]{0,63}$/; values are trimmed, nonempty strings of at most
+    64 characters after trimming. Values are not restricted to hexadecimal colors.
+    Empty maps are valid, omission stays absent and unknown theme metadata is
+    preserved. Configuration reads and snapshots reject malformed maps. Theme
+    update streams report decode errors and continue to later valid events.
+    Reading palette metadata does not apply a theme.
+
+  optional-theme-variants: |
+    `EnvironmentTheme.variants` is an optional object with independently optional
+    `light` and `dark` palette maps. Keys match /^[a-zA-Z][a-zA-Z0-9]{0,63}$/;
+    values are trimmed nonempty strings of at most 64 characters, including CSS
+    forms beyond hex. Empty variants and empty palettes are valid; omission stays
+    absent. Unknown theme and variant metadata is preserved. Configuration reads
+    and snapshots reject malformed known palettes; theme stream decode-errors
+    remain recoverable. Reading this metadata does not apply a theme.
+  provider-icon-url: |
+    Provider records in configuration reads, provider lists and configuration
+    streams expose optional `iconUrl`: a trimmed nonempty string of at most
+    2,048 characters. Omission stays absent. Malformed provider records are
+    omitted by existing forward-compatible arrays in reads and streams. Unknown provider
+    metadata is preserved. Reading this metadata does not fetch or render icons;
+    consumers that render remote icons must validate the owning driver origin.
+  provider-setup-documentation: |
+    Provider setup records in configuration reads, provider lists and configuration
+    streams expose optional `documentationUrl`: a trimmed nonempty string of at
+    most 2,048 characters. Setup and field omission stay absent. Malformed provider
+    records are omitted by existing forward-compatible arrays; later valid records
+    remain available. Unknown setup and provider metadata is preserved. Reading
+    this metadata does not fetch or open documentation.
+  provider-configurability: |
+    Provider records in configuration reads, provider lists and configuration
+    streams expose optional boolean `configurableProviders`: true advertises that
+    the provider accepts provider configuration. False and omission are preserved;
+    omission does not advertise support. Non-boolean values make the provider
+    record malformed; existing forward-compatible arrays omit it and later valid
+    records remain available. Unknown provider metadata is preserved. Reading this
+    flag does not add or call provider configuration operations.
+  provider-supported-runtime-modes: |
+    Provider records in configuration reads, provider lists and configuration
+    streams expose optional `supportedRuntimeModes` arrays using the existing
+    RuntimeMode literal set. Omission stays absent; empty arrays stay empty.
+    Known modes and unknown strings, including duplicates, retain their order.
+    Malformed array entries are dropped. A non-array field makes the provider
+    record malformed; existing forward-compatible arrays omit that record while
+    later valid records remain available. Unknown provider metadata is preserved.
+    This metadata does not select a mode or change runtime defaults or policy.
+  provider-native-sessions: |
+    Provider records in configuration reads, provider lists and configuration
+    streams expose optional `nativeSessions` metadata. When present, `canList`,
+    `canLoad` and `canResume` are required booleans; `canDelete` is optional.
+    False and omission are preserved, and omission does not advertise support.
+    Unknown nested and provider metadata is preserved. Malformed native-session
+    metadata makes the provider record malformed; existing forward-compatible
+    arrays omit it while later valid records remain available. Reading this
+    metadata does not perform a native-session operation.
+
+  observability-url-metadata: |
+    Configuration observability exposes optional `otlpTracesUrl`,
+    `otlpMetricsUrl` and `otlpLogsUrl`: trimmed nonempty strings without a URL-format
+    or length restriction. Omission stays
+    absent. Null, blank and non-string values fail configuration decoding;
+    unknown observability metadata is preserved. Configuration snapshots use
+    the same schema, and later valid stream chunks remain available after a
+    decode error. Reading this metadata does not configure telemetry or contact
+    an endpoint.
+  provider-auth-can-logout: |
+    Provider auth records in configuration reads, provider lists and configuration
+    snapshots/providerStatuses expose optional boolean `canLogout`. True, false
+    and omission are preserved; omission does not advertise support. Unknown auth
+    and provider metadata is preserved. Non-boolean values make the provider record
+    malformed; existing forward-compatible arrays omit it while later valid records
+    remain available. Reading this metadata does not log out or change authentication.
+
+  provider-auth-action: |
+    Provider auth records in configuration reads, provider lists and configuration
+    snapshots/providerStatuses expose optional `action` metadata. The object requires
+    `elicitationId` (trimmed nonempty string, maximum 256 characters), `url` (string,
+    maximum 2048) and `message` (string, maximum 1024). Optional `createdAt` and
+    `expiresAt` are strings of at most 128 characters. Only the elicitation id is
+    trimmed; the other strings permit empty and arbitrary text. Omission stays
+    absent. Unknown action, auth and provider metadata is preserved. Malformed
+    action metadata makes the provider record malformed; existing forward-compatible
+    arrays omit it while later valid records remain available. Reading this metadata
+    does not open a URL, authenticate or change authentication state.
+
+  optional-app-thread-wake-metadata: |
+    App-thread records expose optional nullable `lastSnoozeWakeAt` through
+    `threads.detail`, `threads.projection`, watch snapshots and thread-state
+    events. The timestamp records a manual wake without changing the sidebar
+    sort position. Date-time strings and null survive, omission stays absent,
+    and nonstring nonnull values fail decoding under the existing IsoDateTime
+    representation. Unknown metadata survives. Shell records retain their
+    separate timestamp field. Reading this metadata does not wake a thread
+    or change a timer.
+  remote-open-username-metadata: |
+    Configuration reads and snapshots expose optional `RemoteOpenTarget.username`
+    as a trimmed nonempty string, without an extra format or length constraint.
+    Omission remains absent. Unknown target metadata and growing kind strings
+    are preserved. Null, blank and non-string values invalidate the target
+    record; the existing forward-compatible array decoder omits malformed records
+    and preserves later valid rows and stream chunks. Reading this metadata
+    does not look up a username, build a remote link or open an SSH connection.
+
+  optional-idle-compaction-metadata: |
+    Configuration reads, snapshots and settings updates expose optional
+    `settings.idleCompaction`: `onReturn`, `beforeCacheExpires` or `off`.
+    Growing strings, omission and unknown settings metadata remain intact.
+    Non-string values fail decoding; later valid chunks remain available.
+    Reading this metadata does not compact threads or change defaults or timing.
+    Other settings remain loose; settings mutation stays outside the facade.
+
+  configuration-issues: |
+    Configuration reads, configuration snapshots and `keybindingsUpdated`
+    payloads type `issues` as a growing union keyed by `kind`.
+    `keybindings.malformed-config` requires a trimmed nonempty `message`.
+    `keybindings.invalid-entry` requires the same `message` and a numeric `index`
+    with no integer or sign bound. Unknown kinds decode as `{ unknown: true, raw }`;
+    extra issue metadata is preserved. The existing forward-compatible array
+    omits malformed records and keeps later valid records; empty arrays stay
+    empty and a non-array `issues` fails decoding, with later valid stream chunks
+    still available. Reading issues does not read, write or repair a
+    keybindings file.
+
+  resolved-keybindings: |
+    Configuration reads, configuration snapshots and `keybindingsUpdated`
+    payloads type `keybindings` as resolved rules: required `command` and
+    `shortcut`, optional `whenAst`. `command` is a growing string; the static
+    command names of the pinned server, including the effort commands, keep
+    their literal types, and script commands and newer commands remain strings.
+    `shortcut.key` is trimmed to between 1 and 64 characters, and `metaKey`,
+    `ctrlKey`, `shiftKey`, `altKey` and `modKey` are required Booleans.
+    `whenAst` is a recursive union keyed by `type`: `identifier` with a
+    nonempty untrimmed `name`, `not` with `node`, and `and` or `or` with `left`
+    and `right`. Unknown node types decode as `{ unknown: true, raw }` at any
+    depth, and the union has no depth bound. Extra rule, shortcut and node
+    metadata is preserved. A node's `type` alone decides whether it is known,
+    so `unknown` and `raw` keys on a known node stay metadata. A malformed
+    rule, including one with a malformed known node at any depth, is omitted
+    and later rules are kept. More than 256 rules left after omission, or a
+    non-array `keybindings`, fail decoding, with later valid stream chunks
+    still available. Reading keybindings does not write, add or remove a rule.
+
+  optional-observability-log-export-flag: |
+    Configuration reads and snapshots expose optional Boolean
+    `observability.otlpLogsEnabled`. False, omission and unknown observability
+    metadata are preserved. Malformed non-Booleans fail decoding; later valid
+    stream chunks remain available. Reading the flag does not configure telemetry
+    or enable log export.
+
+  optional-observability-trace-export-flag: |
+    Configuration reads and snapshots expose optional Boolean
+    `observability.otlpTracesEnabled`. False, omission and unknown observability
+    metadata are preserved. Malformed non-Booleans fail decoding; later valid
+    stream chunks remain available. Reading the flag does not configure telemetry
+    or enable trace export.
+
+  optional-observability-metric-export-flag: |
+    Configuration reads and snapshots expose optional Boolean
+    `observability.otlpMetricsEnabled`. False, omission and unknown observability
+    metadata are preserved. Malformed non-Booleans fail decoding; later valid
+    stream chunks remain available. Reading the flag does not configure telemetry
+    or enable metric export.
+
+  optional-observability-local-tracing-flag: |
+    Configuration reads and snapshots expose optional Boolean
+    `observability.localTracingEnabled`. False, omission and unknown observability
+    metadata are preserved. Malformed non-Booleans fail decoding; later valid
+    stream chunks remain available. Reading the flag does not configure telemetry
+    or enable local tracing.
+
+  optional-observability-logs-directory-path: |
+    Configuration reads and snapshots expose optional `observability.logsDirectoryPath`:
+    the server log directory as a trimmed nonempty string, without a path-format
+    or length restriction. Omission stays absent. Null, blank and non-string
+    values fail decoding; later valid stream chunks remain available. The
+    observability object stays loose and preserves unknown metadata. Reading
+    this metadata does not open, read or create the directory.

@@ -52,6 +52,7 @@ export type {
   ThreadHistoryPageOptions,
   ThreadListOptions,
   ThreadMetaUpdate,
+  WatchCommandOutputOptions,
   WatchOptions,
 } from "./api/threads.ts";
 export type {
@@ -74,7 +75,11 @@ export {
   type ShellWatchOptions,
 } from "./api/shell.ts";
 export { ServerApi } from "./api/server.ts";
-export type { WatchServerConfigOptions, WatchServerLifecycleOptions } from "./api/server.ts";
+export type {
+  WatchDatabaseStorageOptions,
+  WatchServerConfigOptions,
+  WatchServerLifecycleOptions,
+} from "./api/server.ts";
 export { VcsApi } from "./api/vcs.ts";
 export { TerminalApi } from "./api/terminal.ts";
 export type { DecodedStreamItem } from "./api/streamItems.ts";

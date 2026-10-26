@@ -7,7 +7,13 @@ import type { RpcMethods } from "../rpc/registry.ts";
 import type { RpcPayload, RpcSuccess } from "../rpc/spec.ts";
 import { unwrapStreamItems, type DecodedStreamItem } from "./streamItems.ts";
 
-/** Repository references, worktrees and status. */
+/**
+ * Repository references, worktrees and status. A failed Git command rejects
+ * with a `T3RpcError` whose `GitCommandError` record can carry optional
+ * `reason`: a growing set of Git failure tags such as `branch_already_exists`
+ * or `ref_not_found`. Omission means the server did not recognise the cause;
+ * an unknown reason string is preserved.
+ */
 export class VcsApi {
   readonly rpc: RpcClient<RpcMethods>;
 
@@ -15,7 +21,13 @@ export class VcsApi {
     this.rpc = rpc;
   }
 
-  /** List repository references. */
+  /**
+   * List repository references. The optional boolean `isAtRepositoryRoot`
+   * reports whether `cwd` is the repository root. Omission does not mean false.
+   * Each reference can include `upstreamRef`, an optional trimmed nonempty string
+   * containing the full Git ref (for example `refs/remotes/origin/main`).
+   * The field can be omitted; callers must handle omission.
+   */
   listRefs(
     input: RpcPayload<RpcMethods, "vcs.listRefs">,
     signal?: AbortSignal,
@@ -23,7 +35,12 @@ export class VcsApi {
     return this.rpc.call("vcs.listRefs", input, signal);
   }
 
-  /** Refresh repository status. */
+  /**
+   * Refresh repository status. `workingTree.rootPath` is an optional nonempty
+   * string containing the absolute worktree root on the server environment.
+   * Each `workingTree.files[].path` is relative to that root. Paths preserve
+   * whitespace; the root is omitted when the server cannot resolve it.
+   */
   status(
     input: RpcPayload<RpcMethods, "vcs.refreshStatus">,
     signal?: AbortSignal,
@@ -31,7 +48,7 @@ export class VcsApi {
     return this.rpc.call("vcs.refreshStatus", input, signal);
   }
 
-  /** Create a worktree through the server. */
+  /** Create a worktree in the server's managed folder. Supply `path: null`. */
   createWorktree(
     input: RpcPayload<RpcMethods, "vcs.createWorktree">,
     signal?: AbortSignal,
@@ -63,7 +80,11 @@ export class VcsApi {
     return this.rpc.call("vcs.switchRef", input, signal);
   }
 
-  /** Subscribe to repository status changes. */
+  /**
+   * Subscribe to repository status changes. Local status in snapshots and updates
+   * carries the same optional `workingTree.rootPath` contract as `status`:
+   * the absolute server-side root for relative file paths, omitted if unresolved.
+   */
   watchStatus(
     input: RpcPayload<RpcMethods, "subscribeVcsStatus">,
     options?: { readonly signal?: AbortSignal },

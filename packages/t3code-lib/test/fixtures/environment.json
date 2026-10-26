@@ -1,12 +1,12 @@
 {
-  "environmentId": "4873ab5f-5938-4af7-b390-c468b25a49c1",
+  "environmentId": "f5eae31b-b450-4c1c-9c75-49afe3e64951",
   "label": "sample-environment",
   "platform": {
     "os": "linux",
     "arch": "x64",
     "machine": "desktop"
   },
-  "serverVersion": "0.1.0",
+  "serverVersion": "0.1.2",
   "orchestrationProtocolVersion": 2,
   "capabilities": {
     "repositoryIdentity": true,
@@ -24,6 +24,7 @@
     "threadAutoSettlement": true,
     "storageCleanup": true,
     "storageCleanupRun": true,
+    "databaseStorage": true,
     "otlpEndpointCheck": true,
     "projectWorktreeCleanup": true,
     "settledWorktreeCleanup": true,
@@ -45,12 +46,15 @@
     "threadVisitedTracking": true,
     "threadPullRequestLinking": true,
     "serverResolvedCommandContext": true,
+    "threadStop": true,
     "threadPullRequests": true,
     "threadPullRequestWatch": true,
     "pullRequestStackActions": true,
     "agentActivityPublishing": false,
     "projectCloneTracking": true,
+    "ignoredFileListing": true,
     "environmentIcon": true,
+    "commandOutputStreaming": true,
     "serverBrowser": true
   }
 }

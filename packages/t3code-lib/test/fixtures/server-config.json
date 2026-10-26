@@ -1,13 +1,13 @@
 {
   "environment": {
-    "environmentId": "4873ab5f-5938-4af7-b390-c468b25a49c1",
+    "environmentId": "f5eae31b-b450-4c1c-9c75-49afe3e64951",
     "label": "sample-environment",
     "platform": {
       "os": "linux",
       "arch": "x64",
       "machine": "desktop"
     },
-    "serverVersion": "0.1.0",
+    "serverVersion": "0.1.2",
     "orchestrationProtocolVersion": 2,
     "capabilities": {
       "repositoryIdentity": true,
@@ -25,6 +25,7 @@
       "threadAutoSettlement": true,
       "storageCleanup": true,
       "storageCleanupRun": true,
+      "databaseStorage": true,
       "otlpEndpointCheck": true,
       "projectWorktreeCleanup": true,
       "settledWorktreeCleanup": true,
@@ -46,12 +47,15 @@
       "threadVisitedTracking": true,
       "threadPullRequestLinking": true,
       "serverResolvedCommandContext": true,
+      "threadStop": true,
       "threadPullRequests": true,
       "threadPullRequestWatch": true,
       "pullRequestStackActions": true,
       "agentActivityPublishing": false,
       "projectCloneTracking": true,
+      "ignoredFileListing": true,
       "environmentIcon": true,
+      "commandOutputStreaming": true,
       "serverBrowser": true
     }
   },
@@ -59,7 +63,7 @@
     "policy": "loopback-browser",
     "bootstrapMethods": ["one-time-token"],
     "sessionMethods": ["browser-session-cookie", "bearer-access-token", "dpop-access-token"],
-    "sessionCookieName": "t3_session_45667_7d081839a6cd",
+    "sessionCookieName": "t3_session_37681_03c202072f77",
     "serverUpdateScope": "environment:maintain"
   },
   "cwd": "/srv/sample",
@@ -1575,9 +1579,13 @@
       },
       "showInteractionModeToggle": true,
       "reportsContextWindow": true,
+      "setup": {
+        "canAuthenticate": false,
+        "canInstall": false
+      },
       "enabled": true,
       "installed": true,
-      "version": "0.163.0",
+      "version": "0.164.0",
       "status": "ready",
       "auth": {
         "status": "authenticated",
@@ -1586,7 +1594,7 @@
         "email": "user@example.test",
         "workspaceId": "00000000-0000-4000-8000-000000000001"
       },
-      "checkedAt": "2026-10-16T05:33:25.580Z",
+      "checkedAt": "2026-10-25T03:46:56.292Z",
       "models": [
         {
           "slug": "gpt-6.1-sol",
@@ -2009,30 +2017,30 @@
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-10-16T05:33:25.580Z",
+        "checkedAt": "2026-10-25T03:46:56.292Z",
         "windows": [
           {
             "id": "primary",
             "kind": "weekly",
             "label": "Weekly",
-            "usedPercent": 2,
-            "resetsAt": "2026-10-22T06:13:18.000Z",
+            "usedPercent": 15,
+            "resetsAt": "2026-10-30T20:08:26.000Z",
             "windowDurationMins": 10080
           }
         ],
         "resetCredits": {
-          "availableCount": 3,
-          "nextExpiresAt": "2026-10-22T20:51:23.000Z"
+          "availableCount": 2,
+          "nextExpiresAt": "2026-10-29T19:04:26.000Z"
         }
       },
       "versionAdvisory": {
         "status": "current",
-        "currentVersion": "0.163.0",
-        "latestVersion": "0.163.0",
+        "currentVersion": "0.164.0",
+        "latestVersion": "0.164.0",
         "updateCommand": "/home/sample/.local/bin/codex update",
         "canUpdate": true,
         "canInstallVersion": false,
-        "checkedAt": "2026-10-16T05:33:26.508Z",
+        "checkedAt": "2026-10-25T03:46:57.165Z",
         "message": null
       },
       "compatibilityAdvisory": {
@@ -2052,9 +2060,13 @@
       },
       "showInteractionModeToggle": true,
       "reportsContextWindow": true,
+      "setup": {
+        "canAuthenticate": false,
+        "canInstall": false
+      },
       "enabled": true,
       "installed": true,
-      "version": "2.1.301",
+      "version": "2.1.310",
       "status": "ready",
       "auth": {
         "status": "authenticated",
@@ -2063,7 +2075,7 @@
         "email": "user@example.test",
         "workspaceId": "00000000-0000-4000-8000-000000000001"
       },
-      "checkedAt": "2026-10-16T05:33:25.581Z",
+      "checkedAt": "2026-10-25T03:46:56.293Z",
       "models": [
         {
           "slug": "claude-opus-5-5",
@@ -2670,7 +2682,8 @@
               {
                 "id": "thinking",
                 "label": "Thinking",
-                "type": "boolean"
+                "type": "boolean",
+                "currentValue": true
               }
             ]
           }
@@ -2679,47 +2692,42 @@
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-10-16T05:33:25.581Z",
+        "checkedAt": "2026-10-25T03:46:56.779Z",
         "windows": [
           {
             "id": "five_hour",
             "kind": "session",
             "label": "Session",
-            "usedPercent": 2,
-            "resetsAt": "2026-10-16T07:49:59.964Z",
+            "usedPercent": 9,
+            "resetsAt": "2026-10-25T06:09:59.869Z",
             "windowDurationMins": 300
           },
           {
             "id": "seven_day",
             "kind": "weekly",
             "label": "Weekly",
-            "usedPercent": 7,
-            "resetsAt": "2026-10-21T16:59:59.964Z",
+            "usedPercent": 41,
+            "resetsAt": "2026-10-28T16:59:59.869Z",
             "windowDurationMins": 10080
           },
           {
             "id": "seven_day_fable",
             "kind": "weekly",
             "label": "Weekly · Fable",
-            "usedPercent": 3,
-            "resetsAt": "2026-10-21T16:59:59.964Z",
+            "usedPercent": 1,
+            "resetsAt": "2026-10-28T16:59:59.869Z",
             "windowDurationMins": 10080
           }
-        ],
-        "resetCredits": {
-          "availableCount": 1,
-          "nextExpiresAt": "2026-10-22T16:00:00.000Z",
-          "nextCreditId": "opus55-launch-promax-20260921"
-        }
+        ]
       },
       "versionAdvisory": {
         "status": "current",
-        "currentVersion": "2.1.301",
-        "latestVersion": "2.1.301",
+        "currentVersion": "2.1.310",
+        "latestVersion": "2.1.310",
         "updateCommand": "/home/sample/.local/bin/claude update",
         "canUpdate": true,
         "canInstallVersion": false,
-        "checkedAt": "2026-10-16T05:33:26.655Z",
+        "checkedAt": "2026-10-25T03:46:57.318Z",
         "message": null
       },
       "compatibilityAdvisory": {
@@ -2751,7 +2759,7 @@
         "status": "unknown",
         "canLogout": true
       },
-      "checkedAt": "2026-10-16T05:33:25.612Z",
+      "checkedAt": "2026-10-25T03:46:56.320Z",
       "message": "Cursor is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -2767,6 +2775,10 @@
       "showInteractionModeToggle": false,
       "supportedRuntimeModes": ["approval-required", "auto", "full-access"],
       "supportsConversationRollback": false,
+      "setup": {
+        "canAuthenticate": false,
+        "canInstall": false
+      },
       "enabled": false,
       "installed": false,
       "version": null,
@@ -2774,7 +2786,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-16T05:33:25.610Z",
+      "checkedAt": "2026-10-25T03:46:56.319Z",
       "message": "Grok is disabled in T3 Code settings.",
       "models": [
         {
@@ -2797,6 +2809,10 @@
         "groupKey": "opencode:instance:opencode"
       },
       "showInteractionModeToggle": false,
+      "setup": {
+        "canAuthenticate": false,
+        "canInstall": false
+      },
       "enabled": false,
       "installed": false,
       "version": null,
@@ -2804,13 +2820,13 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-16T05:33:25.610Z",
+      "checkedAt": "2026-10-25T03:46:56.320Z",
       "message": "OpenCode is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-10-16T05:33:25.610Z",
+        "checkedAt": "2026-10-25T03:46:56.320Z",
         "windows": [],
         "unavailable": {
           "reason": "unsupported"
@@ -2839,7 +2855,7 @@
         "status": "unknown",
         "type": "oauth-personal"
       },
-      "checkedAt": "2026-10-16T05:33:25.620Z",
+      "checkedAt": "2026-10-25T03:46:56.335Z",
       "message": "Antigravity is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -2856,6 +2872,10 @@
       "showInteractionModeToggle": false,
       "reportsContextWindow": true,
       "supportedRuntimeModes": ["approval-required", "full-access"],
+      "setup": {
+        "canAuthenticate": false,
+        "canInstall": false
+      },
       "enabled": false,
       "installed": false,
       "version": null,
@@ -2863,7 +2883,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-16T05:33:25.625Z",
+      "checkedAt": "2026-10-25T03:46:56.340Z",
       "message": "Muse Code is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -2880,6 +2900,10 @@
       "reportsContextWindow": true,
       "supportedRuntimeModes": ["approval-required", "auto-accept-edits", "full-access"],
       "requiresNewThreadForModelChange": false,
+      "setup": {
+        "canAuthenticate": false,
+        "canInstall": false
+      },
       "enabled": false,
       "installed": false,
       "version": null,
@@ -2887,7 +2911,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-16T05:33:25.625Z",
+      "checkedAt": "2026-10-25T03:46:56.339Z",
       "message": "Pi is disabled in T3 Code settings.",
       "models": [
         {
@@ -2946,7 +2970,10 @@
     "enableDeviceSupport": false,
     "deviceOnboardingCompleted": false,
     "deviceHosts": [],
+    "easDeviceHosts": [],
     "sidebarAutoSettleAfterDays": 3,
+    "compactIdleThreads": false,
+    "idleCompaction": "onReturn",
     "snoozeLimitedThreads": false,
     "autoResumeLimitedThreads": false,
     "sidebarAutoSettleKeepPullRequests": false,

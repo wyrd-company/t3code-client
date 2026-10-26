@@ -18,7 +18,7 @@ The [native command surface](https://github.com/wyrd-company/t3code-client/blob/
 commands, positional arguments, options and input relationships. This guide
 explains their use. `t3c` runs on Node >=22.16. Startup checks the Node minimum
 and prints a clear error when it is unmet. Argument parsing uses commander.
-The target server is stock T3 Code 0.1.0 with orchestration protocol 2.
+The target server is stock T3 Code 0.1.2 with orchestration protocol 2.
 
 ## Connection and profiles
 

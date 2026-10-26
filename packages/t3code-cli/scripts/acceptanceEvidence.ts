@@ -34,7 +34,7 @@ export async function verifyServerEvidence(directory: string) {
     assert.equal(start.pid, server.pid);
     assert.equal(stop.pid, server.pid);
     assert.equal(cleanup.root, server.root);
-    assert.equal(server.serverVersion, "0.1.0");
+    assert.equal(server.serverVersion, "0.1.2");
     assert.equal(server.protocol, 2);
     assert.equal(stop.pidAbsent, true);
     assert.equal(cleanup.rootAbsent, true);

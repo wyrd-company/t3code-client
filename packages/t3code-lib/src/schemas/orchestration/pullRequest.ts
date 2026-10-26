@@ -36,6 +36,7 @@ export const ThreadPullRequestLinkSource = forwardCompatibleLiteral([
 ]);
 export type ThreadPullRequestLinkSource = z.infer<typeof ThreadPullRequestLinkSource>;
 export const PullRequestActor = z.looseObject({
+  isBot: z.boolean().optional(),
   login: TrimmedNonEmptyString,
   name: z.string().nullable(),
   avatarUrl: z.string().nullable(),
@@ -107,10 +108,14 @@ export type ThreadPullRequestWatch = z.infer<typeof ThreadPullRequestWatch>;
 export const ThreadPullRequestLink = z.looseObject({
   ...ThreadPullRequestKey.shape,
   url: TrimmedNonEmptyString,
+  /** Browser or clone URL supplied by the server; older links can omit it. */
+  repositoryWebUrl: TrimmedNonEmptyString.optional(),
   source: ThreadPullRequestLinkSource,
   linkedAt: IsoDateTime,
   snapshot: ThreadPullRequestSnapshot.nullable(),
   stack: ThreadPullRequestStack.nullable(),
   watch: ThreadPullRequestWatch.optional(),
+  /** The last watch as it ended; older links can omit it. */
+  endedWatch: ThreadPullRequestWatch.optional(),
 });
 export type ThreadPullRequestLink = z.infer<typeof ThreadPullRequestLink>;

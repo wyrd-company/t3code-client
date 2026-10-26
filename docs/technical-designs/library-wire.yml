@@ -1,7 +1,7 @@
 $schema: https://refinery.systems/ontology/technical-design
 title: T3 Code HTTP and WebSocket protocol
 objective: >-
-  Implement library authentication, requests, responses and event handling against the verified protocol 2 interfaces of stock T3 Code 0.1.0.
+  Implement library authentication, requests, responses and event handling against the verified protocol 2 interfaces of stock T3 Code 0.1.2.
 relationships:
   related-to:
     - library
@@ -11,10 +11,31 @@ relationships:
     - releasing
 proposed-design:
   high-level-overview: >-
-    The library implements stock T3 Code 0.1.0 and orchestration protocol 2.
+    The library implements stock T3 Code 0.1.2 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade
     contracts. The library architecture links the canonical design family.
   wire-facts-verified-against-t-code: |
+    Provider-turn token usage exposes optional positive integer
+    `autoCompactThreshold` through thread detail, projection and stream reads.
+    It reports provider auto-compaction metadata in tokens. Omission stays absent;
+    malformed values fail decoding and extra metadata survives. Reading this value
+    does not enforce compaction or change timing. This is separate from the
+    thread-level token usage snapshot.
+
+    Provider-turn token usage also exposes optional string `promptCacheExpiresAt`
+    through thread detail, projection and stream reads. It reports the provider's
+    prompt cache expiry metadata. Empty and other strings pass through; omission
+    stays absent, malformed values fail decoding and unknown metadata survives.
+    Reading the field does not expire a cache or schedule compaction.
+
+    Server configuration reads and stream snapshots expose optional
+    `directEndpoints`: a forward-compatible array of address hints with `kind`
+    (`lan` or `tailnet`) and nonempty `httpBaseUrl`. Unknown kind strings and
+    extra metadata survive; malformed entries are dropped. Omission and an empty
+    array are distinct; non-array values fail decoding. Consumers verify that an
+    address answers as this environment before use. The library does not choose
+    or connect to an endpoint from this metadata.
+
     The server speaks orchestration protocol 2 and refuses other clients. The
     `/ws` upgrade must carry `?orchestrationProtocol=2` (a 426 answers an upgrade
     without it), and the orchestration HTTP routes must carry the header
@@ -112,6 +133,7 @@ proposed-design:
     | `orchestration.subscribeArchivedShell`   | orch:read    | stream of `OrchestrationV2ArchivedShellStreamItem`                                                                                                    |
     | `orchestration.subscribeShell`           | orch:read    | `{afterSequence?, requestCompletionMarker?}` → stream of `OrchestrationV2ShellStreamItem`                                                             |
     | `orchestration.subscribeThread`          | orch:read    | `{threadId, afterSequence?, requestCompletionMarker?, acceptBoundedSnapshot?, acceptCompactTurnItems?}` → stream of `OrchestrationV2ThreadStreamItem` |
+    | `orchestration.subscribeCommandOutput`   | orch:read    | `{threadId, itemId}` → stream of `{kind, text, truncated, running}` frames, ending after `running: false`; fails `OrchestrationV2CommandOutputError`    |
 
     Projects are not orchestration commands: `projects.mutate` (orch:operate)
     takes a `ProjectMutation` (`project.create`, `project.update`,
@@ -121,9 +143,53 @@ proposed-design:
     scripts run on the host. The shell stream reports projects as
     `project.updated` and `project.removed`.
 
+    Context transfers in thread projections, HTTP detail snapshots and
+    `context-transfer.created` / `context-transfer.updated` events expose optional
+    `sourceTokenUsage` metadata with the provider-turn usage shape. Native forks
+    can retain the source turn's usage; older transfers and portable handoffs can
+    omit it. Nested usage values are validated and unknown metadata survives.
+    Reading this metadata does not enforce a context budget or perform a fork.
+
+    Subagent turn items expose optional `progress` through thread projections,
+    HTTP detail snapshots, visible rows and turn-item events. Strings, including
+    empty strings, and null are preserved. Omission stays absent; other values
+    fail decoding. Null represents unavailable progress in stock server projections.
+    Reading this metadata does not stop work or change completion policy.
+
+    Approval-request turn items expose optional string `reason` through thread
+    projections, detail snapshots and turn-item events. Empty and arbitrary strings
+    are valid. Omission stays absent, malformed values fail decoding, and unknown
+    metadata survives. Reading the reason does not answer the approval or change
+    permissions.
+
+    User-input question options expose optional string `preview` through thread
+    projections, HTTP detail snapshots and `turn-item.updated` events. Empty and
+    arbitrary strings are valid; older servers and provider reports can omit it.
+    Unknown option metadata survives decoding. Reading preview metadata does not
+    answer a question or change its response policy.
+
+    Pending background tasks in provider-thread projections, HTTP detail snapshots,
+    provider-thread events and thread shells expose optional `parentTaskId` metadata.
+    It identifies the subagent task that started the work and waits on it. Values
+    are trimmed nonempty strings for every task kind, including fallback kinds.
+    Omission stays absent, malformed values fail decoding, and unknown metadata
+    survives. Reading the field does not start work or change completion policy.
+
+    Pending subagent tasks expose optional `providerInstanceId` through these
+    same reads and events. Derived shell work identifies the owning provider
+    thread's instance. Values use the open provider-instance slug contract:
+    trimmed, at most 64 characters, starting with a letter and containing only
+    letters, digits, hyphens and underscores. Omission stays absent and malformed
+    subagent values fail decoding. Other task kinds keep this key as unknown
+    metadata. Reading it does not select a provider or start work.
+
     A workflow run is a subagent whose `workflow` field carries the provider's
     replace-in-full view of the run: an append-only phase list and one entry
-    per agent. `orchestration.stopWorkflow` stops the run by that subagent; the
+    per agent. Workflow agents expose optional nonnegative integer `completedAt`
+    metadata in epoch milliseconds through projection/detail reads and subagent
+    updates. Zero and omission are preserved; malformed values fail decoding,
+    and unknown metadata survives. Reading it does not change workflow completion.
+    `orchestration.stopWorkflow` stops the run by that subagent; the
     `subagent.stop` command stops one provider-native child while its run keeps
     working. The server advertises thread find with `threadFind` and
     `threadFindProgressive` in `ServerConfig`.
@@ -152,6 +218,57 @@ proposed-design:
     shared `threadPullRequests` keys them: host and repository case-insensitively,
     with a Forgejo link's port and the Azure DevOps host forms folded in.
 
+    Thread pull request links in app and shell threads, projections and
+    `thread.pull-request-link-updated` events expose optional nonempty string
+    `repositoryWebUrl` metadata. It carries the supplied browser or clone URL;
+    older links can omit it. Malformed values fail decoding and unknown metadata
+    survives. Reading the field does not fetch a repository.
+
+    The same links expose optional `endedWatch` using `ThreadPullRequestWatch`:
+    start and remark timestamps, nullable head SHA, check and remark arrays,
+    pass/conflict flags and wake count. Omission stays absent; missing
+    `passedChecks` decodes to an empty array. Malformed watch records fail
+    decoding and unknown metadata survives. Reading the field does not restart a watch.
+
+    Linked pull request snapshot authors expose optional boolean `isBot` through
+    app and shell threads, detail and projection reads, thread snapshots and
+    `thread.pull-request-link-updated` events, and shell snapshots and updates.
+    True and false survive; omission stays absent and unknown actor metadata
+    survives. Malformed values fail decoding; later valid stream items remain
+    available. Reading this metadata does not change author permissions.
+
+    The existing `thread.pull-request.link` command accepts optional nonempty
+    string `repositoryWebUrl` metadata through `threads.dispatch`. Browser URLs,
+    clone URLs and other nonempty strings retain the tagged wire type; omission
+    leaves the metadata unsupplied. Malformed values fail before dispatch and
+    unknown command metadata survives. Sending the field does not fetch a repository.
+
+    The optional `link` on the existing `thread.pull-request.watch` command also
+    accepts optional nonempty string `repositoryWebUrl` through `threads.dispatch`.
+    Browser URLs, clone URLs and other nonempty strings pass through; omission
+    leaves it unsupplied, malformed values fail before sending, and unknown nested
+    metadata survives. This metadata does not change watch policy.
+
+    `thread.metadata.update` and `threads.update` accept optional nullable
+    nonempty string `expectedBranch` metadata. The server compares a supplied
+    value with the current branch and rejects a mismatch. Null expects no branch;
+    omission leaves this precondition unsupplied. Strings are trimmed, malformed
+    values fail before sending, and unknown metadata survives.
+
+    Conversation messages in projections and `message.updated` events expose
+    optional boolean `workflowScript` metadata. True identifies a provider-native
+    workflow script, false identifies ordinary text, and omission preserves older
+    servers and producers that do not supply the classification. Malformed values
+    fail decoding; unknown metadata survives. Reading the field does not execute a
+    workflow, change message text or choose a display policy.
+
+    User-message turn items in projections, transcript/history rows and
+    `turn-item.updated` events expose optional boolean `workflowScript` metadata.
+    True identifies a provider-native workflow script, false identifies ordinary
+    text, and omission preserves producers that do not supply the classification.
+    Malformed values fail decoding; unknown metadata survives. Reading the field
+    does not execute a workflow, change message text or choose a display policy.
+
     The transcript route answers with the thread's `visibleTurnItems`, its
     `title`, and `updatedAt` in one read. It refuses a thread whose transcript is
     larger than the server's file attachment limit.
@@ -170,13 +287,50 @@ proposed-design:
     create something; the server stamps `createdBy: "user"` on everything a
     client dispatches.
 
+    `thread.stop` carries `commandId`, `threadId` and an optional `reason`
+    string. `threads.dispatch` and typed `rpc.call` validate and send it: any
+    string reason passes unchanged, omission stays absent, unknown metadata
+    survives, and malformed fields fail before sending. A server that accepts
+    it advertises `threadStop`; the library does not check that flag. A missing
+    thread fails with `OrchestrationV2DispatchCommandError`. `threads.stop`
+    still sends `run.interrupt` with `holdQueue`.
+
+    `queued-run.start` carries `commandId`, `threadId` and `runId`, all
+    required. `threads.dispatch` and typed `rpc.call` validate and send it:
+    ids use the same trimmed normalization as the other queued-run commands,
+    unknown metadata survives, and malformed or missing ids fail before
+    sending. The server starts the selected run only while the thread is
+    stopped, the run is a queued plain user message and no other run blocks
+    it. A missing thread or an unknown run fails with
+    `OrchestrationV2DispatchCommandError`. No capability flag advertises it,
+    and no facade method sends it. `queue.resume` is unchanged.
+
     The thread shell carries `status` (`idle` or the latest run's status),
     `activeRunId`, `pendingRuntimeRequest`, and `latestVisibleMessage`, so a
-    list view needs no projection. The shell snapshot has `threads` and
+    list view needs no projection. Its optional boolean `latestRunStopRequested`
+    reports whether the latest run has an interruption request; older servers can
+    omit it. Reading this metadata does not request a stop. The optional boolean
+    `blockedOnThreadWait` reports whether the active run is blocked on thread-wait
+    work; older servers can omit it. Reading it does not change wait behavior.
+    The optional nullable string `lastErrorCode` reports the current provider
+    failure code, or null when none applies; older servers can omit it.
+    A non-null `pendingRuntimeRequest` summary has optional boolean `blocking`: false
+    for an async question the run keeps working past. Older servers can omit it.
+    Null and nonboolean values fail decoding; unknown summary metadata survives.
+    Reading this metadata does not answer the request or change run behavior.
+    The shell snapshot has `threads` and
     `archivedThreads`, but the server fills `archivedThreads` only on the socket
     snapshot; archived threads are read with
     `orchestration.getArchivedShellSnapshot`, and `thread.updated` items for
     them arrive on `orchestration.subscribeArchivedShell`.
+
+    `ServerConfig.lastEventLoopStall` is optional recent server event-loop stall
+    metadata in configuration reads and configuration stream snapshots. Its
+    `detectedAt` is a string, `durationMs` is a nonnegative integer, `cpuCount` is
+    a positive integer and `loadAverage` is an optional number (absent on Windows).
+    Omission means no recent stall was supplied. Null and malformed objects fail
+    decoding; unknown metadata is preserved. Detection and expiry belong to the
+    server; reads do not cache the value or change timing.
 
     `projects.ensureScratch` finds or creates the environment's Scratch project,
     rooted at `ServerConfig.scratchWorkspaceRoot`; the server sends that field
@@ -185,3 +339,28 @@ proposed-design:
     `ServerConfig.newProjectsRoot` with a README, an icon and a first commit,
     then creates the project; a failed commit is reported in `commitError` and
     keeps the project.
+
+  approval-full-access-override: >-
+    Approval-request turn items expose optional fullAccessOverride metadata through
+    thread projections, detail snapshots and turn-item events. The known values
+    ask_rule and provider_check describe why the provider requested approval in
+    full-access mode. Future string values survive; omission stays absent and
+    nonstring values fail decoding. Reading this metadata does not answer an
+    approval or change permissions.
+
+  native-fork-head-metadata: >-
+    Provider-thread native metadata exposes optional forkHeadMessageId through
+    thread projections, detail snapshots and provider-thread.updated events.
+    It identifies the native message at a fork head. Strings are trimmed and
+    must be nonempty; omission stays absent, malformed values fail decoding
+    and unknown metadata survives. Reading this field does not create or
+    resume a fork.
+
+  thread-context-usage-cost: >-
+    Provider-thread contextUsage exposes optional cost through thread projections,
+    HTTP detail snapshots and provider-thread.updated events. The loose cost object
+    requires a finite numeric amount and a trimmed nonempty currency string of at
+    most 32 characters. Negative, zero and fractional amounts are valid; currency
+    has no format restriction. Omission stays absent, malformed values fail decoding
+    and unknown cost and usage metadata survives. Reading this metadata does not
+    price usage, convert currencies or start provider work.

@@ -107,6 +107,16 @@ export const ServerProviderAuthStatus = forwardCompatibleLiteral([
 ]);
 export type ServerProviderAuthStatus = z.infer<typeof ServerProviderAuthStatus>;
 export const ServerProviderAuth = z.looseObject({
+  action: z
+    .looseObject({
+      elicitationId: TrimmedNonEmptyString.max(256),
+      url: z.string().max(2_048),
+      message: z.string().max(1_024),
+      createdAt: z.string().max(128).optional(),
+      expiresAt: z.string().max(128).optional(),
+    })
+    .optional(),
+  canLogout: z.boolean().optional(),
   status: ServerProviderAuthStatus,
   type: TrimmedNonEmptyString.optional(),
   label: TrimmedNonEmptyString.optional(),
@@ -259,7 +269,9 @@ export const ServerProviderWorkspaceSnapshot = z.looseObject({
   cwd: TrimmedNonEmptyString,
   checkedAt: IsoDateTime,
   slashCommands: z.array(ServerProviderSlashCommand),
+  slashCommandsPending: z.boolean().optional(),
   skills: z.array(ServerProviderSkill),
+  optionDescriptors: z.array(ProviderOptionDescriptor).optional(),
 });
 export type ServerProviderWorkspaceSnapshot = z.infer<typeof ServerProviderWorkspaceSnapshot>;
 export const ServerProvider = z.looseObject({
@@ -267,14 +279,31 @@ export const ServerProvider = z.looseObject({
   driver: ProviderDriverKind,
   displayName: TrimmedNonEmptyString.optional(),
   accentColor: TrimmedNonEmptyString.optional(),
+  iconUrl: TrimmedNonEmptyString.max(2_048).optional(),
   badgeLabel: TrimmedNonEmptyString.optional(),
   continuation: ServerProviderContinuation.optional(),
   showInteractionModeToggle: z.boolean().optional(),
   reportsContextWindow: z.boolean().optional(),
+  supportedRuntimeModes: forwardCompatibleArray(RuntimeMode).optional(),
   requiresNewThreadForModelChange: z.boolean().optional(),
   supportsConversationRollback: z.boolean().optional(),
   supportsTextGeneration: z.boolean().optional(),
-  setup: z.looseObject({ canAuthenticate: z.boolean(), canInstall: z.boolean() }).optional(),
+  setup: z
+    .looseObject({
+      canAuthenticate: z.boolean(),
+      canInstall: z.boolean(),
+      documentationUrl: TrimmedNonEmptyString.max(2_048).optional(),
+    })
+    .optional(),
+  nativeSessions: z
+    .looseObject({
+      canList: z.boolean(),
+      canLoad: z.boolean(),
+      canResume: z.boolean(),
+      canDelete: z.boolean().optional(),
+    })
+    .optional(),
+  configurableProviders: z.boolean().optional(),
   runtimePaths: z
     .looseObject({
       homePath: TrimmedNonEmptyString,
@@ -284,6 +313,8 @@ export const ServerProvider = z.looseObject({
   enabled: z.boolean(),
   installed: z.boolean(),
   version: TrimmedNonEmptyString.nullable(),
+  /** Installed CLI version for a local provider with a separate server; null means unknown. */
+  installedVersion: TrimmedNonEmptyString.nullable().optional(),
   status: ServerProviderState,
   auth: ServerProviderAuth,
   checkedAt: IsoDateTime,

@@ -61,21 +61,515 @@ TypeScript declarations ship with the package.
 </dd>
 <dt><a href="#ProjectsApi">ProjectsApi</a></dt>
 <dd><p>Project discovery, creation, mutations and files.</p>
+<p>Project repository identities can include <code>origin.remoteUrl</code>, an optional
+trimmed nonempty string naming the checkout remote when its repository differs
+from the canonical repository. Omission does not imply a missing remote.</p>
+<p><code>projects.files.read({ cwd, relativePath, allowMissing: true })</code> returns
+empty contents, zero byteLength, truncated false and <code>exists: false</code> for an
+absent file. Omitted or false <code>allowMissing</code> retains the missing-file error.
+The optional boolean result field <code>exists</code> can be omitted by the server;
+omission does not mean that the file is absent.</p>
+<p><code>projects.files.listIgnored({ cwd })</code> lists the untracked files git ignores
+under <code>cwd</code>, each with a trimmed nonempty <code>path</code> and a nonnegative integer
+<code>byteLength</code>. The server leaves out wholly ignored folders and ignored
+symbolic links, and caps the list; <code>truncated</code> is true when more files
+matched than it returned. A directory outside a repository returns no files.
+A malformed file entry is left out and the other entries remain. A missing or
+non-directory <code>cwd</code> fails with <code>ProjectListEntriesError</code>.</p>
 </dd>
 <dt><a href="#ThreadsApi">ThreadsApi</a></dt>
-<dd><p>Thread lifecycle, history, runs and pending requests.</p>
+<dd><p>Thread lifecycle, history, runs and pending requests.
+App-thread records expose optional nullable <code>lastSnoozeWakeAt</code> through detail,
+projection and thread-state watch events. Timestamp strings and null survive;
+omission stays absent and nonstring nonnull values fail decoding. Unknown
+metadata survives. This field records a manual wake without changing sort order.
+Pending background tasks expose optional <code>parentTaskId</code> through provider-thread
+projections, detail snapshots, provider-thread events and thread shells. It
+identifies the subagent task that started the work and waits on it. Values are
+trimmed nonempty strings for every kind, including fallback kinds. Omission
+stays absent, malformed values fail decoding and unknown metadata survives.
+Reading this field does not start work or change completion policy.
+Pending subagent tasks also expose optional <code>providerInstanceId</code> through these
+reads and events. Derived shell work identifies the owning provider thread&#39;s
+instance. Values are trimmed provider slugs: at most 64 characters, starting
+with a letter, then letters, digits, hyphens or underscores. Omission stays
+absent; malformed subagent values fail decoding. Other task kinds preserve
+this key as unknown metadata. Reading it does not select a provider or start work.
+Provider-thread native metadata exposes optional <code>forkHeadMessageId</code> through
+projections, detail snapshots and provider-thread events. It identifies the
+native message at a fork head. Strings are trimmed and must be nonempty;
+omission stays absent, malformed values fail decoding and unknown metadata
+survives. Reading this field does not create or resume a fork.
+Subagent turn-item <code>progress</code> is an optional string or null through projections,
+detail snapshots, visible rows and turn-item events. Strings and null survive;
+omission stays absent and other values fail decoding. Null represents unavailable
+progress in stock server projections. Reading it does not stop work or change policy.
+Approval-request turn items expose optional <code>fullAccessOverride</code> through
+projections, detail snapshots and turn-item events. Known values <code>ask_rule</code>
+and <code>provider_check</code> describe why the provider requested approval in full-access
+mode. Future strings survive; omission stays absent and nonstrings fail decoding.
+Reading this metadata does not answer an approval or change permissions.</p>
+<p>Approval-request turn items expose optional string <code>reason</code> through projection,
+detail and turn-item events. Empty and arbitrary strings are valid; omission
+stays absent and malformed values fail decoding. Reading this metadata does
+not answer an approval or change permissions.</p>
+<p>User-input question options expose optional string <code>preview</code> through projections,
+detail snapshots and turn-item events. Empty and arbitrary strings are valid;
+provider reports and older servers can omit it. Reading it does not answer the
+question or change its response policy.</p>
+<p>Provider-thread context usage exposes optional <code>cost</code> in detail, projection
+and provider-thread update events. Its amount is finite, including negative,
+zero and fractional values; currency is trimmed, nonempty and at most 32
+characters. Omission stays absent and unknown cost metadata survives.
+Malformed values fail decoding. Reading cost does not price or convert usage.</p>
+<p>Linked pull request snapshot authors expose optional boolean <code>isBot</code> in
+detail, projection and link-update events. True and false survive; omission
+stays absent and unknown actor metadata survives. Malformed values fail
+decoding. Reading this metadata does not change author permissions.</p>
+<p>Provider-turn token usage exposes optional positive integer <code>autoCompactThreshold</code>
+through detail, projection and stream reads. It reports provider auto-compaction
+metadata in tokens. Omission stays absent, malformed values fail decoding, and
+unknown metadata survives. Reading it does not enforce compaction or change timing.
+Provider-turn usage also exposes optional string <code>promptCacheExpiresAt</code> through
+the same reads. It reports the provider&#39;s prompt cache expiry metadata. Empty
+and other strings pass through; omission stays absent and malformed values fail
+decoding. Reading the field does not expire a cache or schedule compaction.
+<code>update</code> and <code>dispatch</code> accept optional nullable nonempty string <code>expectedBranch</code>
+on metadata updates. The server rejects an update if its current branch differs;
+null expects no branch, and omission leaves this precondition unsupplied.
+String values are trimmed; malformed values fail before sending.
+Linked pull requests expose optional nonempty string <code>repositoryWebUrl</code> metadata
+in thread reads and link update events. It carries a browser or clone URL when
+supplied; older links can omit it. Reading it does not fetch the repository.
+Context transfers in projections, HTTP detail snapshots and context-transfer
+events expose optional <code>sourceTokenUsage</code> with the provider-turn usage shape.
+Native forks can retain source usage; older transfers and portable handoffs
+can omit it. Nested usage is validated; unknown metadata survives. Reading it
+does not enforce a context budget or perform a fork.</p>
+<p>Linked pull requests also expose optional <code>endedWatch</code> records in thread reads
+and link-update events. The record uses the existing watch timestamps, nullable
+head SHA, check/remark arrays, pass/conflict flags and wake count. Omission
+stays absent; missing <code>passedChecks</code> defaults to an empty array. Malformed
+records fail decoding, and unknown metadata survives. Reading it does not restart a watch.
+<code>dispatch</code> accepts optional nonempty string <code>repositoryWebUrl</code> on
+<code>thread.pull-request.link</code>: browser or clone URLs and other nonempty strings
+pass through, omission leaves it unsupplied, and malformed values fail before sending.
+Unknown command metadata survives; sending the field does not fetch a repository.
+The optional <code>link</code> on <code>thread.pull-request.watch</code> also accepts optional
+nonempty string <code>repositoryWebUrl</code>; omission and unknown metadata survive,
+and malformed values fail before sending. This metadata does not change watch policy.
+Projection conversation messages and user-message turn items in projections,
+history/transcript rows and turn-item updates expose optional boolean <code>workflowScript</code>
+metadata: true marks a provider-native workflow script, false marks ordinary
+text, and older servers or other producers can omit it. Reading this metadata
+does not execute a workflow or change message text.
+Workflow agents in projection/detail reads and subagent updates expose optional
+nonnegative integer <code>completedAt</code> epoch milliseconds. Zero and omission are
+preserved, malformed values fail decoding, and unknown metadata survives.
+Reading it does not change workflow completion.
+<code>dispatch</code> accepts the <code>thread.stop</code> command with <code>commandId</code>, <code>threadId</code> and
+an optional <code>reason</code> string. Any string reason passes unchanged, omission stays
+absent, unknown command metadata survives, and malformed fields fail before
+sending. Servers that accept it advertise <code>threadStop</code>; <code>dispatch</code> does not
+check that flag. <code>stop</code> still sends <code>run.interrupt</code> with <code>holdQueue</code>.
+<code>dispatch</code> also accepts the <code>queued-run.start</code> command with <code>commandId</code>,
+<code>threadId</code> and <code>runId</code>. Ids use the same trimmed normalization as the other
+queued-run commands, unknown command metadata survives, and malformed or
+missing ids fail before sending. The server starts only a queued plain user
+message on a stopped thread; otherwise it fails with
+<code>OrchestrationV2DispatchCommandError</code>. No facade method sends it.</p>
+<p><code>watchCommandOutput</code> follows <code>orchestration.subscribeCommandOutput</code> for one
+<code>command_execution</code> row (<code>{ threadId, itemId }</code>, trimmed nonempty ids). Each
+frame has <code>kind</code> (<code>replace</code> carries the bounded tail, <code>append</code> extends it;
+future strings survive), terminal <code>text</code> with its escapes passed through
+unchanged, <code>truncated</code> and <code>running</code>. All four fields are required and
+unknown fields survive. The stream ends after a frame with <code>running: false</code>;
+a settled row sends one <code>replace</code> frame. A malformed frame is delivered as a
+decode error, recognised by its <code>error</code> being a <code>T3DecodeError</code> because a
+frame&#39;s <code>kind</code> is an open string, and later frames continue. A missing
+thread, a missing row or a row that is not a command fails with
+<code>OrchestrationV2CommandOutputError</code>. Returning early or aborting the signal
+ends the subscription; there is no resubscription. Servers that support it
+advertise <code>commandOutputStreaming</code>; check that flag before subscribing on an
+older server. The library does not render terminal output.</p>
 </dd>
 <dt><a href="#ShellApi">ShellApi</a></dt>
-<dd><p>Live and archived cross-thread snapshots.</p>
+<dd><p>Live and archived cross-thread snapshots. Thread shells carry optional
+<code>latestRunStopRequested</code>: whether the latest run has an interruption request.
+Optional <code>blockedOnThreadWait</code> reports whether the active run is blocked on
+thread-wait work. Older servers can omit these fields. Reading them does not
+request a stop or change wait behavior. Optional <code>lastErrorCode</code> is the current
+provider failure code, or null when none applies; older servers can omit it.
+A pending runtime request summary carries optional boolean <code>blocking</code>: false
+for an async question the run can keep working past. Older servers can omit
+it. Reading this metadata does not answer a request or change run behavior.
+Linked pull request snapshot authors carry optional boolean <code>isBot</code> through
+shell snapshots and updates. True, false, omission and unknown actor metadata
+survive; malformed values fail decoding. This metadata does not grant permissions.</p>
 </dd>
 <dt><a href="#ServerApi">ServerApi</a></dt>
-<dd><p>Server environment, configuration and providers.</p>
+<dd><p>Server environment, configuration and providers.
+Configuration reads, snapshots and <code>keybindingsUpdated</code> payloads type
+<code>keybindings</code> as resolved rules with <code>command</code>, <code>shortcut</code> and optional
+<code>whenAst</code>. Known command names keep their literal types; script and newer
+commands remain strings. <code>shortcut.key</code> is trimmed to 1 to 64 characters and
+the five modifier flags are required Booleans. <code>whenAst</code> is a recursive union
+of <code>identifier</code>, <code>not</code>, <code>and</code> and <code>or</code> nodes without a depth bound; unknown node
+types decode as <code>{ unknown: true, raw }</code> at any depth and extra metadata is
+preserved. A node&#39;s <code>type</code> alone decides whether it is known, so <code>unknown</code>
+and <code>raw</code> keys on a known node stay metadata. Malformed rules are omitted and later rules kept; more than 256
+remaining rules or a non-array fail decoding, and later valid stream chunks
+remain available. Reading keybindings does not add or remove a rule.
+Configuration reads, snapshots and <code>keybindingsUpdated</code> payloads type
+<code>issues</code>: <code>keybindings.malformed-config</code> with a trimmed nonempty <code>message</code>,
+and <code>keybindings.invalid-entry</code> with the same <code>message</code> and a numeric
+<code>index</code> without an integer or sign bound. Unknown kinds decode as
+<code>{ unknown: true, raw }</code> and extra issue metadata is preserved. Malformed
+records are omitted, later valid records and stream chunks remain available,
+and a non-array <code>issues</code> fails decoding. Reading issues does not change keybindings.
+Configuration reads, snapshots and settings updates expose optional
+<code>settings.idleCompaction</code>: onReturn, beforeCacheExpires or off. Growing string
+values, omission and unknown settings metadata are preserved. Non-string
+values fail decoding; later valid stream chunks remain available. Reading
+this metadata does not compact threads or change defaults or timing.
+Configuration reads and snapshots expose optional <code>RemoteOpenTarget.username</code>
+as a trimmed nonempty string without an extra format or length constraint.
+Omission stays absent; unknown target metadata and growing kind strings remain.
+Malformed usernames invalidate their target records; the existing compatible
+array decoder omits those records and preserves later valid rows and chunks.
+Reading this metadata does not look up a username or open an SSH connection.
+Configuration reads and snapshots expose optional Boolean
+<code>observability.otlpLogsEnabled</code>. False and omission stay intact; malformed
+non-Booleans fail decoding, and later valid stream chunks remain available.
+This metadata does not enable or configure log export.
+Configuration reads and snapshots expose optional Boolean
+<code>observability.otlpTracesEnabled</code>. False and omission stay intact; malformed
+non-Booleans fail decoding, and later valid stream chunks remain available.
+This metadata does not enable or configure trace export.
+Configuration reads and snapshots expose optional Boolean
+<code>observability.otlpMetricsEnabled</code>. False and omission stay intact; malformed
+non-Booleans fail decoding, and later valid stream chunks remain available.
+This metadata does not enable or configure metric export.
+Configuration reads and snapshots expose optional Boolean
+<code>observability.localTracingEnabled</code>. False and omission stay intact; malformed
+non-Booleans fail decoding, and later valid stream chunks remain available.
+This metadata does not enable or configure local tracing.
+Configuration reads and snapshots expose optional <code>observability.logsDirectoryPath</code>:
+the server log directory as a trimmed nonempty string without a path-format or
+length restriction. Omission stays absent; null, blank and non-string values fail
+decoding, and later valid stream chunks remain available. Reading this metadata
+does not open, read or create the directory.
+Configuration observability exposes optional <code>otlpTracesUrl</code>,
+<code>otlpMetricsUrl</code> and <code>otlpLogsUrl</code>: trimmed nonempty strings without a URL-format
+or length restriction. Omission stays
+absent. Null, blank and non-string values fail configuration decoding;
+unknown observability metadata is preserved. Configuration snapshots use
+the same schema, and later valid stream chunks remain available after a
+decode error. Reading this metadata does not configure telemetry or contact
+an endpoint.
+Configuration reads and snapshots expose optional <code>directEndpoints</code>: address
+hints with <code>kind</code> (lan or tailnet) and nonempty <code>httpBaseUrl</code>. Empty arrays and
+omission are distinct. Unknown kind strings and extra metadata are preserved;
+malformed entries are dropped, while a non-array field fails decoding.
+These are hints only: consumers must verify that an address answers as this
+environment before using it. Reading them does not select or connect to one.
+Configuration reads and configuration snapshots expose optional
+<code>lastEventLoopStall</code>: the latest recent noticeable server event-loop stall.
+It contains string <code>detectedAt</code>, nonnegative integer <code>durationMs</code>, positive
+integer <code>cpuCount</code> and optional numeric <code>loadAverage</code> (absent on Windows).
+Omission means no recent stall was supplied; null and malformed objects fail
+decoding. Unknown metadata is preserved. The server controls detection and
+expiry; reading this metadata does not cache it or change timing.
+Environment capabilities include optional boolean <code>environmentThemes</code>: true
+advertises environment-theme publication through configuration streams. False
+and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding.
+Provider auth records also expose optional <code>action</code> metadata with required
+<code>elicitationId</code> (trimmed nonempty string, max 256), <code>url</code> (string, max 2048)
+and <code>message</code> (string, max 1024). Optional <code>createdAt</code> and <code>expiresAt</code> are
+strings of at most 128 characters. Only the elicitation id is trimmed;
+other strings permit empty and arbitrary text. Omission and unknown nested
+metadata are preserved. Malformed actions make provider records malformed;
+existing arrays omit them while later valid records remain available.
+Reading this metadata does not open a URL or change authentication state.
+Provider auth records expose optional boolean <code>canLogout</code> metadata. True,
+false and omission are preserved; omission does not advertise support.
+Unknown auth and provider metadata is preserved. Non-boolean values make
+the provider record malformed; existing forward-compatible arrays omit it
+in reads and streams while later valid records remain available. Reading
+this metadata does not log out or change authentication.
+Provider records expose optional <code>nativeSessions</code> metadata. When present,
+<code>canList</code>, <code>canLoad</code> and <code>canResume</code> are required booleans; <code>canDelete</code> is
+optional. False and omission are preserved; omission does not advertise
+support. Unknown nested and provider metadata is preserved. Malformed native
+session metadata makes the provider record malformed; existing arrays omit
+it in reads and streams while later valid records remain available. Reading
+this metadata does not perform a native-session operation.
+Provider records expose optional <code>supportedRuntimeModes</code> arrays using the
+existing RuntimeMode literal set. Omission stays absent; empty arrays stay
+empty. Known modes and unknown strings, including duplicates, retain order.
+Malformed array entries are dropped. Non-array fields make a provider record
+malformed; existing forward-compatible arrays omit it while later valid
+records remain available. This metadata does not select a mode or change
+runtime defaults or policy.
+Provider records expose optional boolean <code>configurableProviders</code>: true
+advertises that the provider accepts provider configuration. False and
+omission are preserved; omission does not advertise support. Supplied
+non-boolean values make the provider record malformed, and existing
+forward-compatible arrays omit it in reads and streams. Reading this flag
+does not add or call provider configuration operations.</p>
+<p>Provider setup records expose optional <code>documentationUrl</code>: a trimmed nonempty
+string of at most 2,048 characters. Setup and field omission stay absent.
+Malformed provider records are omitted by existing forward-compatible arrays
+in reads and streams; unknown setup metadata is preserved. Reading this
+metadata does not fetch or open documentation.</p>
+<p>Provider records expose optional <code>iconUrl</code>: a trimmed nonempty string of at
+most 2,048 characters. Omission stays absent. Malformed provider records are
+omitted by the existing forward-compatible arrays in config reads and streams.
+Unknown provider metadata is preserved. This field does not fetch or render
+an icon; consumers that display remote icons must validate the driver origin.
+Published environment themes expose optional <code>canvas</code>: a seed color written
+as #RGB or #RRGGBB, with either letter case preserved. Omission stays absent;
+whitespace, other strings, null and non-string values fail decoding. Available
+in configuration theme arrays and environmentThemesUpdated stream payloads.
+Published themes also expose optional <code>accent</code> with the same #RGB/#RRGGBB
+format, exact color and case preservation, omission and malformed-value rules
+through configuration arrays and environmentThemesUpdated payloads.
+Published themes expose optional <code>version</code>: the literal number 1. Omission
+stays absent in configuration theme arrays and environmentThemesUpdated
+stream payloads. This is theme-file metadata, not a server version check.
+Published themes expose optional <code>colors</code>: a palette map whose keys match
+/^[a-zA-Z][a-zA-Z0-9]{0,63}$/ and whose string values are trimmed, nonempty
+and at most 64 characters after trimming. Empty maps are valid; omission stays
+absent. Malformed maps fail decoding in config reads and snapshots; theme
+streams report decode errors and continue. Values are not restricted to hex.
+Published themes expose optional <code>variants</code> with independently optional <code>light</code>
+and <code>dark</code> palette maps. Palette keys match /^[a-zA-Z][a-zA-Z0-9]{0,63}$/;
+values are trimmed nonempty strings of at most 64 characters, including CSS
+color forms beyond hex. Empty variants and empty palettes are valid. Omission
+stays absent; malformed known palettes fail config decoding and produce
+recoverable stream decode-errors. Unknown theme and variant metadata is preserved.
+Reading these palette variants does not apply a theme.
+Environment capabilities also include optional boolean <code>usageLimitSources</code>:
+true advertises quota streaming from configured usage-limit sources. False
+and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding.
+Usage-limit source accounts expose optional <code>workspaceId</code>: the workspace the
+quota belongs to, as a trimmed nonempty string without a format or length
+restriction. They reach <code>watchConfig({ usageLimitSources: true })</code> updates and
+configuration reads that carry <code>usageLimitSources</code>. Omission stays absent and
+unknown account metadata is preserved. Malformed values invalidate their
+account records; the existing compatible array decoder omits those accounts
+and preserves later valid accounts, sources and stream chunks. Reading this
+metadata does not select a workspace or change usage-limit polling.
+Environment capabilities also include optional boolean <code>usagePriceOverrides</code>:
+true advertises custom model rate persistence and application to usage summaries.
+False and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding. This flag does not configure rates.
+Environment capabilities also include optional boolean <code>usageModelAliases</code>:
+true advertises model-name mapping through configured usage aliases. False
+and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding. This flag does not configure aliases.
+Environment capabilities also include optional boolean <code>threadPinning</code>:
+true advertises support for pinning threads. False and omission are preserved;
+omission does not advertise support. Available through environment reads,
+configuration reads and configuration snapshots. Supplied non-boolean values
+fail decoding. This metadata flag does not pin a thread.
+Environment capabilities also include optional boolean <code>threadPinReorder</code>:
+true advertises support for reordering pinned threads. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not reorder a thread.
+Environment capabilities also include optional boolean <code>threadActiveReorder</code>:
+true advertises persistence of manual Active thread order. False and omission
+are preserved; omission does not advertise support. Available through
+environment reads, configuration reads and configuration snapshots. Supplied
+non-boolean values fail decoding. This metadata flag does not reorder a thread.
+Environment capabilities also include optional boolean <code>threadAutoSettleOptOut</code>:
+true advertises support for disabling auto-settle per thread. False and omission
+are preserved; omission does not advertise support. Available through
+environment reads, configuration reads and configuration snapshots. Supplied
+non-boolean values fail decoding. This metadata flag does not change auto-settle.
+Environment capabilities also include optional boolean <code>threadTitleRegeneration</code>:
+true advertises support for regenerating thread titles through thread metadata
+updates. False and omission are preserved; omission does not advertise support.
+Available through environment reads, configuration reads and configuration
+snapshots. Supplied non-boolean values fail decoding. This metadata flag does
+not regenerate a title.
+Environment capabilities also include optional boolean <code>threadPullRequestLinking</code>:
+true advertises support for linking pull requests to threads. False and omission
+are preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not link a pull request.
+Environment capabilities also include optional boolean <code>threadPullRequests</code>:
+true advertises support for thread pull requests. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding.
+Environment capabilities also include optional boolean <code>pullRequestChecks</code>:
+true advertises support for pull request checks. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not fetch or run checks.
+Environment capabilities also include optional boolean <code>threadSnooze</code>:
+true advertises support for snoozing threads. False and omission are preserved;
+omission does not advertise support. Available through environment reads,
+configuration reads and configuration snapshots. Supplied non-boolean values
+fail decoding. This metadata flag does not snooze a thread.
+Environment capabilities also include optional boolean <code>threadRestartContinuation</code>:
+true advertises persistence of the opt-in for continuing interrupted threads
+after restarts. False and omission are preserved; omission does not advertise
+support. Available through environment reads, configuration reads and
+configuration snapshots. Supplied non-boolean values fail decoding.
+This metadata flag does not configure or trigger continuation.
+Environment capabilities also include optional boolean <code>projectSettingsOverrides</code>:
+true advertises support for resolving project settings overrides. False and
+omission are preserved; omission does not advertise support. Available through
+environment reads, configuration reads and configuration snapshots. Supplied
+non-boolean values fail decoding. This metadata flag does not change settings.
+Environment capabilities also include optional boolean <code>projectProviderInstanceOverrides</code>:
+true advertises support for resolving a project&#39;s provider instance overrides.
+False and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding. This metadata flag does not change
+provider settings.
+Environment capabilities also include optional boolean <code>projectCloneTracking</code>:
+true advertises support for tracking project clones and streaming their progress.
+False and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding. This metadata flag does not start or
+track a clone.
+Environment capabilities also include optional boolean <code>environmentIcon</code>:
+true advertises support for a custom environment icon. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not select or change an icon.
+Environment capabilities also include optional boolean <code>threadAutoSettlement</code>:
+true advertises server evaluation of merge and inactivity settlement without a
+client. False and omission are preserved; omission does not advertise support.
+Available through environment reads, configuration reads and configuration
+snapshots. Supplied non-boolean values fail decoding. This metadata flag does
+not change settlement settings or settle a thread.
+Environment capabilities also include optional boolean <code>requiredWorktreeBootstrap</code>:
+true advertises support for required worktree bootstrap. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not enforce bootstrap or change
+policy.
+Environment capabilities also include optional boolean <code>commandOutputStreaming</code>:
+true advertises support for streaming command output. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not subscribe to command output.
+Environment capabilities also include optional boolean <code>ignoredFileListing</code>:
+true advertises support for listing ignored files. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not list ignored files.
+Provider <code>installedVersion</code> is an optional nullable trimmed nonempty string:
+the installed CLI version for a local provider with a separate server.
+Null means unknown; omission leaves legacy snapshots on <code>version</code>.
+This metadata is available through configuration reads, provider lists and
+configuration streams; it does not enforce a provider version policy.
+Provider workspace snapshots expose optional <code>optionDescriptors</code> arrays using
+the existing boolean/select descriptor union. Omission means no descriptor
+snapshot was supplied; an empty array supplies no options. Unknown descriptor
+types decode to <code>{ unknown: true, raw }</code>; malformed known types fail decoding.
+Workspace <code>slashCommandsPending</code> is an optional boolean: true marks pending
+slash-command discovery; false and omission are preserved without inference.
+A pending snapshot can retain the previous slash commands.
+Environment capabilities also include optional boolean <code>databaseStorage</code>:
+true advertises streaming database size and reclaimable space. False and omission
+are preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not read database storage.
+Environment capabilities include optional boolean <code>storageCleanup</code>: true
+advertises storage cleanup support. False and omission are preserved; omission
+does not advertise support. Available through environment reads, configuration
+reads and configuration snapshots. Supplied non-boolean values fail decoding.
+This metadata flag does not perform storage cleanup.
+Environment capabilities include optional boolean <code>storageCleanupRun</code>: true
+advertises support for running storage cleanup. False and omission are preserved;
+omission does not advertise support. Available through environment reads,
+configuration reads and configuration snapshots. Supplied non-boolean values
+fail decoding. This metadata flag does not run storage cleanup.
+Environment capabilities also include optional boolean <code>otlpEndpointCheck</code>:
+true advertises support for checking OTLP endpoints for telemetry export settings.
+False and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding. This metadata flag does not check an endpoint.
+Environment capabilities also include optional boolean <code>pullRequestStackActions</code>:
+true advertises support for pull request stack actions. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not perform a pull request stack action.
+Environment capabilities also include optional boolean <code>pullRequests</code>: true
+advertises server pull request support. False and omission are preserved; omission
+does not advertise support. Available through environment reads, configuration
+reads and configuration snapshots. Supplied non-boolean values fail decoding.
+This metadata flag performs no pull request operation.
+Environment capabilities also include optional boolean <code>threadStop</code>:
+true advertises support for the upstream thread-stop command. False and
+omission are preserved; omission does not advertise support. Supplied
+non-boolean values fail decoding. Available through environment reads,
+configuration reads and configuration snapshots; unknown fields remain intact.
+This metadata flag does not dispatch a command or change <code>threads.stop</code>.
+Environment capabilities also include optional boolean <code>serverUpdateThreadContinuation</code>:
+true advertises continuation of running provider turns after a server update.
+False and omission are preserved; omission does not advertise support.
+Supplied non-boolean values fail decoding. Unknown fields remain intact.
+This metadata flag does not start an update, restart the server or continue a turn.</p>
+<p>Environment capabilities also include optional <code>serverSelfUpdate</code>: <code>boot-service</code>,
+<code>respawn</code> or <code>desktop-managed</code> identifies the advertised server update path.
+Omission is preserved and advertises no update path. Unknown strings are preserved
+for forward compatibility; supplied non-string values fail decoding. Available
+through environment reads, configuration reads and configuration snapshots.
+This metadata does not start an update or restart a server or desktop app.</p>
+<p>Environment capabilities also include optional boolean <code>serverSelfUpdateProgress</code>:
+true advertises streaming self-update progress before restart acknowledgement.
+False and omission are preserved; omission does not advertise streaming support.
+Available through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding. This metadata flag does not start
+an update, subscribe to progress or restart the server.
+Environment capabilities also include optional boolean <code>desktopAppUpdate</code>:
+true advertises a desktop app update through the supervising desktop app.
+False and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding. This metadata flag does not update
+or restart the desktop app or server.
+Environment capabilities also include optional boolean <code>agentActivityPublishing</code>:
+true reports that agent activity publishing is enabled and relay link credentials
+are configured. False and omission are preserved; older servers can omit this
+field while still publishing. Available through environment reads, configuration
+reads and configuration snapshots. Supplied non-boolean values fail decoding.
+This metadata flag does not configure or publish agent activity.
+<code>watchDatabaseStorage</code> follows <code>server.getDatabaseStorage</code>: each item is the
+state database&#39;s <code>databaseBytes</code>, <code>reclaimableBytes</code>, <code>incrementalVacuumEnabled</code>
+and <code>compactCommand</code>, or <code>null</code> until the server first reads the file. The
+numbers are finite without an integer or sign bound and <code>compactCommand</code> is a
+plain string; all four fields are required and unknown fields are preserved.
+A malformed item is delivered as a decode error and later items continue.
+Returning early or aborting the signal ends the subscription. Watching does not
+reclaim space or run the compact command.</p>
 </dd>
 <dt><a href="#VcsApi">VcsApi</a></dt>
-<dd><p>Repository references, worktrees and status.</p>
+<dd><p>Repository references, worktrees and status. A failed Git command rejects
+with a <code>T3RpcError</code> whose <code>GitCommandError</code> record can carry optional
+<code>reason</code>: a growing set of Git failure tags such as <code>branch_already_exists</code>
+or <code>ref_not_found</code>. Omission means the server did not recognise the cause;
+an unknown reason string is preserved.</p>
 </dd>
 <dt><a href="#TerminalApi">TerminalApi</a></dt>
-<dd><p>Server terminal operations and event streams.</p>
+<dd><p>Server terminal operations and event streams.
+<code>attach</code> accepts optional boolean <code>resume</code>. With <code>resume: true</code>, resubscriptions
+preserve closed, exited and evicted terminals instead of restarting them,
+even when <code>restartIfNotRunning: true</code>. Unknown terminal IDs can recover when
+<code>cwd</code> is supplied, including after a server restart. Omission and <code>false</code>
+retain ordinary attach behavior; unknown IDs without <code>cwd</code> fail lookup.</p>
 </dd>
 <dt><a href="#CommandDispatcher">CommandDispatcher</a></dt>
 <dd><p>Validated orchestration dispatch and bookkeeping ids.</p>
@@ -746,6 +1240,24 @@ async ensureScopes(required: AuthEnvironmentScopeType[]): Promise<void>;
 
 Project discovery, creation, mutations and files.
 
+Project repository identities can include `origin.remoteUrl`, an optional
+trimmed nonempty string naming the checkout remote when its repository differs
+from the canonical repository. Omission does not imply a missing remote.
+
+`projects.files.read({ cwd, relativePath, allowMissing: true })` returns
+empty contents, zero byteLength, truncated false and `exists: false` for an
+absent file. Omitted or false `allowMissing` retains the missing-file error.
+The optional boolean result field `exists` can be omitted by the server;
+omission does not mean that the file is absent.
+
+`projects.files.listIgnored({ cwd })` lists the untracked files git ignores
+under `cwd`, each with a trimmed nonempty `path` and a nonnegative integer
+`byteLength`. The server leaves out wholly ignored folders and ignored
+symbolic links, and caps the list; `truncated` is true when more files
+matched than it returned. A directory outside a repository returns no files.
+A malformed file entry is left out and the other entries remain. A missing or
+non-directory `cwd` fails with `ProjectListEntriesError`.
+
 **Kind**: global class
 
 - [ProjectsApi](#ProjectsApi)
@@ -892,6 +1404,126 @@ async delete(
 ## ThreadsApi
 
 Thread lifecycle, history, runs and pending requests.
+App-thread records expose optional nullable `lastSnoozeWakeAt` through detail,
+projection and thread-state watch events. Timestamp strings and null survive;
+omission stays absent and nonstring nonnull values fail decoding. Unknown
+metadata survives. This field records a manual wake without changing sort order.
+Pending background tasks expose optional `parentTaskId` through provider-thread
+projections, detail snapshots, provider-thread events and thread shells. It
+identifies the subagent task that started the work and waits on it. Values are
+trimmed nonempty strings for every kind, including fallback kinds. Omission
+stays absent, malformed values fail decoding and unknown metadata survives.
+Reading this field does not start work or change completion policy.
+Pending subagent tasks also expose optional `providerInstanceId` through these
+reads and events. Derived shell work identifies the owning provider thread's
+instance. Values are trimmed provider slugs: at most 64 characters, starting
+with a letter, then letters, digits, hyphens or underscores. Omission stays
+absent; malformed subagent values fail decoding. Other task kinds preserve
+this key as unknown metadata. Reading it does not select a provider or start work.
+Provider-thread native metadata exposes optional `forkHeadMessageId` through
+projections, detail snapshots and provider-thread events. It identifies the
+native message at a fork head. Strings are trimmed and must be nonempty;
+omission stays absent, malformed values fail decoding and unknown metadata
+survives. Reading this field does not create or resume a fork.
+Subagent turn-item `progress` is an optional string or null through projections,
+detail snapshots, visible rows and turn-item events. Strings and null survive;
+omission stays absent and other values fail decoding. Null represents unavailable
+progress in stock server projections. Reading it does not stop work or change policy.
+Approval-request turn items expose optional `fullAccessOverride` through
+projections, detail snapshots and turn-item events. Known values `ask_rule`
+and `provider_check` describe why the provider requested approval in full-access
+mode. Future strings survive; omission stays absent and nonstrings fail decoding.
+Reading this metadata does not answer an approval or change permissions.
+
+Approval-request turn items expose optional string `reason` through projection,
+detail and turn-item events. Empty and arbitrary strings are valid; omission
+stays absent and malformed values fail decoding. Reading this metadata does
+not answer an approval or change permissions.
+
+User-input question options expose optional string `preview` through projections,
+detail snapshots and turn-item events. Empty and arbitrary strings are valid;
+provider reports and older servers can omit it. Reading it does not answer the
+question or change its response policy.
+
+Provider-thread context usage exposes optional `cost` in detail, projection
+and provider-thread update events. Its amount is finite, including negative,
+zero and fractional values; currency is trimmed, nonempty and at most 32
+characters. Omission stays absent and unknown cost metadata survives.
+Malformed values fail decoding. Reading cost does not price or convert usage.
+
+Linked pull request snapshot authors expose optional boolean `isBot` in
+detail, projection and link-update events. True and false survive; omission
+stays absent and unknown actor metadata survives. Malformed values fail
+decoding. Reading this metadata does not change author permissions.
+
+Provider-turn token usage exposes optional positive integer `autoCompactThreshold`
+through detail, projection and stream reads. It reports provider auto-compaction
+metadata in tokens. Omission stays absent, malformed values fail decoding, and
+unknown metadata survives. Reading it does not enforce compaction or change timing.
+Provider-turn usage also exposes optional string `promptCacheExpiresAt` through
+the same reads. It reports the provider's prompt cache expiry metadata. Empty
+and other strings pass through; omission stays absent and malformed values fail
+decoding. Reading the field does not expire a cache or schedule compaction.
+`update` and `dispatch` accept optional nullable nonempty string `expectedBranch`
+on metadata updates. The server rejects an update if its current branch differs;
+null expects no branch, and omission leaves this precondition unsupplied.
+String values are trimmed; malformed values fail before sending.
+Linked pull requests expose optional nonempty string `repositoryWebUrl` metadata
+in thread reads and link update events. It carries a browser or clone URL when
+supplied; older links can omit it. Reading it does not fetch the repository.
+Context transfers in projections, HTTP detail snapshots and context-transfer
+events expose optional `sourceTokenUsage` with the provider-turn usage shape.
+Native forks can retain source usage; older transfers and portable handoffs
+can omit it. Nested usage is validated; unknown metadata survives. Reading it
+does not enforce a context budget or perform a fork.
+
+Linked pull requests also expose optional `endedWatch` records in thread reads
+and link-update events. The record uses the existing watch timestamps, nullable
+head SHA, check/remark arrays, pass/conflict flags and wake count. Omission
+stays absent; missing `passedChecks` defaults to an empty array. Malformed
+records fail decoding, and unknown metadata survives. Reading it does not restart a watch.
+`dispatch` accepts optional nonempty string `repositoryWebUrl` on
+`thread.pull-request.link`: browser or clone URLs and other nonempty strings
+pass through, omission leaves it unsupplied, and malformed values fail before sending.
+Unknown command metadata survives; sending the field does not fetch a repository.
+The optional `link` on `thread.pull-request.watch` also accepts optional
+nonempty string `repositoryWebUrl`; omission and unknown metadata survive,
+and malformed values fail before sending. This metadata does not change watch policy.
+Projection conversation messages and user-message turn items in projections,
+history/transcript rows and turn-item updates expose optional boolean `workflowScript`
+metadata: true marks a provider-native workflow script, false marks ordinary
+text, and older servers or other producers can omit it. Reading this metadata
+does not execute a workflow or change message text.
+Workflow agents in projection/detail reads and subagent updates expose optional
+nonnegative integer `completedAt` epoch milliseconds. Zero and omission are
+preserved, malformed values fail decoding, and unknown metadata survives.
+Reading it does not change workflow completion.
+`dispatch` accepts the `thread.stop` command with `commandId`, `threadId` and
+an optional `reason` string. Any string reason passes unchanged, omission stays
+absent, unknown command metadata survives, and malformed fields fail before
+sending. Servers that accept it advertise `threadStop`; `dispatch` does not
+check that flag. `stop` still sends `run.interrupt` with `holdQueue`.
+`dispatch` also accepts the `queued-run.start` command with `commandId`,
+`threadId` and `runId`. Ids use the same trimmed normalization as the other
+queued-run commands, unknown command metadata survives, and malformed or
+missing ids fail before sending. The server starts only a queued plain user
+message on a stopped thread; otherwise it fails with
+`OrchestrationV2DispatchCommandError`. No facade method sends it.
+
+`watchCommandOutput` follows `orchestration.subscribeCommandOutput` for one
+`command_execution` row (`{ threadId, itemId }`, trimmed nonempty ids). Each
+frame has `kind` (`replace` carries the bounded tail, `append` extends it;
+future strings survive), terminal `text` with its escapes passed through
+unchanged, `truncated` and `running`. All four fields are required and
+unknown fields survive. The stream ends after a frame with `running: false`;
+a settled row sends one `replace` frame. A malformed frame is delivered as a
+decode error, recognised by its `error` being a `T3DecodeError` because a
+frame's `kind` is an open string, and later frames continue. A missing
+thread, a missing row or a row that is not a command fails with
+`OrchestrationV2CommandOutputError`. Returning early or aborting the signal
+ends the subscription; there is no resubscription. Servers that support it
+advertise `commandOutputStreaming`; check that flag before subscribing on an
+older server. The library does not render terminal output.
 
 **Kind**: global class
 
@@ -922,6 +1554,7 @@ Thread lifecycle, history, runs and pending requests.
   - [.dismissUserInput()](#ThreadsApi+dismissUserInput)
   - [.pendingRequests()](#ThreadsApi+pendingRequests)
   - [.watch()](#ThreadsApi+watch)
+  - [.watchCommandOutput()](#ThreadsApi+watchCommandOutput)
   - [.phase()](#ThreadsApi+phase)
   - [.dispatch()](#ThreadsApi+dispatch)
 
@@ -1250,6 +1883,20 @@ watch(threadId: ThreadId, options: WatchOptions = {}): AsyncIterable<ThreadWatch
 ```
 
 **Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+watchCommandOutput"></a>
+
+### threadsApi.watchCommandOutput()
+
+Follow one command row's output; decode failures remain stream items.
+
+```ts
+watchCommandOutput(
+    input: OrchestrationV2SubscribeCommandOutputInput,
+    options: WatchCommandOutputOptions = {},
+  ): AsyncIterable<DecodedStreamItem<OrchestrationV2CommandOutputFrame>>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
 <a name="ThreadsApi+phase"></a>
 
 ### threadsApi.phase()
@@ -1276,7 +1923,18 @@ dispatch(command: OrchestrationV2Command, signal?: AbortSignal): Promise<Dispatc
 
 ## ShellApi
 
-Live and archived cross-thread snapshots.
+Live and archived cross-thread snapshots. Thread shells carry optional
+`latestRunStopRequested`: whether the latest run has an interruption request.
+Optional `blockedOnThreadWait` reports whether the active run is blocked on
+thread-wait work. Older servers can omit these fields. Reading them does not
+request a stop or change wait behavior. Optional `lastErrorCode` is the current
+provider failure code, or null when none applies; older servers can omit it.
+A pending runtime request summary carries optional boolean `blocking`: false
+for an async question the run can keep working past. Older servers can omit
+it. Reading this metadata does not answer a request or change run behavior.
+Linked pull request snapshot authors carry optional boolean `isBot` through
+shell snapshots and updates. True, false, omission and unknown actor metadata
+survive; malformed values fail decoding. This metadata does not grant permissions.
 
 **Kind**: global class
 
@@ -1337,6 +1995,356 @@ watchArchived(
 ## ServerApi
 
 Server environment, configuration and providers.
+Configuration reads, snapshots and `keybindingsUpdated` payloads type
+`keybindings` as resolved rules with `command`, `shortcut` and optional
+`whenAst`. Known command names keep their literal types; script and newer
+commands remain strings. `shortcut.key` is trimmed to 1 to 64 characters and
+the five modifier flags are required Booleans. `whenAst` is a recursive union
+of `identifier`, `not`, `and` and `or` nodes without a depth bound; unknown node
+types decode as `{ unknown: true, raw }` at any depth and extra metadata is
+preserved. A node's `type` alone decides whether it is known, so `unknown`
+and `raw` keys on a known node stay metadata. Malformed rules are omitted and later rules kept; more than 256
+remaining rules or a non-array fail decoding, and later valid stream chunks
+remain available. Reading keybindings does not add or remove a rule.
+Configuration reads, snapshots and `keybindingsUpdated` payloads type
+`issues`: `keybindings.malformed-config` with a trimmed nonempty `message`,
+and `keybindings.invalid-entry` with the same `message` and a numeric
+`index` without an integer or sign bound. Unknown kinds decode as
+`{ unknown: true, raw }` and extra issue metadata is preserved. Malformed
+records are omitted, later valid records and stream chunks remain available,
+and a non-array `issues` fails decoding. Reading issues does not change keybindings.
+Configuration reads, snapshots and settings updates expose optional
+`settings.idleCompaction`: onReturn, beforeCacheExpires or off. Growing string
+values, omission and unknown settings metadata are preserved. Non-string
+values fail decoding; later valid stream chunks remain available. Reading
+this metadata does not compact threads or change defaults or timing.
+Configuration reads and snapshots expose optional `RemoteOpenTarget.username`
+as a trimmed nonempty string without an extra format or length constraint.
+Omission stays absent; unknown target metadata and growing kind strings remain.
+Malformed usernames invalidate their target records; the existing compatible
+array decoder omits those records and preserves later valid rows and chunks.
+Reading this metadata does not look up a username or open an SSH connection.
+Configuration reads and snapshots expose optional Boolean
+`observability.otlpLogsEnabled`. False and omission stay intact; malformed
+non-Booleans fail decoding, and later valid stream chunks remain available.
+This metadata does not enable or configure log export.
+Configuration reads and snapshots expose optional Boolean
+`observability.otlpTracesEnabled`. False and omission stay intact; malformed
+non-Booleans fail decoding, and later valid stream chunks remain available.
+This metadata does not enable or configure trace export.
+Configuration reads and snapshots expose optional Boolean
+`observability.otlpMetricsEnabled`. False and omission stay intact; malformed
+non-Booleans fail decoding, and later valid stream chunks remain available.
+This metadata does not enable or configure metric export.
+Configuration reads and snapshots expose optional Boolean
+`observability.localTracingEnabled`. False and omission stay intact; malformed
+non-Booleans fail decoding, and later valid stream chunks remain available.
+This metadata does not enable or configure local tracing.
+Configuration reads and snapshots expose optional `observability.logsDirectoryPath`:
+the server log directory as a trimmed nonempty string without a path-format or
+length restriction. Omission stays absent; null, blank and non-string values fail
+decoding, and later valid stream chunks remain available. Reading this metadata
+does not open, read or create the directory.
+Configuration observability exposes optional `otlpTracesUrl`,
+`otlpMetricsUrl` and `otlpLogsUrl`: trimmed nonempty strings without a URL-format
+or length restriction. Omission stays
+absent. Null, blank and non-string values fail configuration decoding;
+unknown observability metadata is preserved. Configuration snapshots use
+the same schema, and later valid stream chunks remain available after a
+decode error. Reading this metadata does not configure telemetry or contact
+an endpoint.
+Configuration reads and snapshots expose optional `directEndpoints`: address
+hints with `kind` (lan or tailnet) and nonempty `httpBaseUrl`. Empty arrays and
+omission are distinct. Unknown kind strings and extra metadata are preserved;
+malformed entries are dropped, while a non-array field fails decoding.
+These are hints only: consumers must verify that an address answers as this
+environment before using it. Reading them does not select or connect to one.
+Configuration reads and configuration snapshots expose optional
+`lastEventLoopStall`: the latest recent noticeable server event-loop stall.
+It contains string `detectedAt`, nonnegative integer `durationMs`, positive
+integer `cpuCount` and optional numeric `loadAverage` (absent on Windows).
+Omission means no recent stall was supplied; null and malformed objects fail
+decoding. Unknown metadata is preserved. The server controls detection and
+expiry; reading this metadata does not cache it or change timing.
+Environment capabilities include optional boolean `environmentThemes`: true
+advertises environment-theme publication through configuration streams. False
+and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding.
+Provider auth records also expose optional `action` metadata with required
+`elicitationId` (trimmed nonempty string, max 256), `url` (string, max 2048)
+and `message` (string, max 1024). Optional `createdAt` and `expiresAt` are
+strings of at most 128 characters. Only the elicitation id is trimmed;
+other strings permit empty and arbitrary text. Omission and unknown nested
+metadata are preserved. Malformed actions make provider records malformed;
+existing arrays omit them while later valid records remain available.
+Reading this metadata does not open a URL or change authentication state.
+Provider auth records expose optional boolean `canLogout` metadata. True,
+false and omission are preserved; omission does not advertise support.
+Unknown auth and provider metadata is preserved. Non-boolean values make
+the provider record malformed; existing forward-compatible arrays omit it
+in reads and streams while later valid records remain available. Reading
+this metadata does not log out or change authentication.
+Provider records expose optional `nativeSessions` metadata. When present,
+`canList`, `canLoad` and `canResume` are required booleans; `canDelete` is
+optional. False and omission are preserved; omission does not advertise
+support. Unknown nested and provider metadata is preserved. Malformed native
+session metadata makes the provider record malformed; existing arrays omit
+it in reads and streams while later valid records remain available. Reading
+this metadata does not perform a native-session operation.
+Provider records expose optional `supportedRuntimeModes` arrays using the
+existing RuntimeMode literal set. Omission stays absent; empty arrays stay
+empty. Known modes and unknown strings, including duplicates, retain order.
+Malformed array entries are dropped. Non-array fields make a provider record
+malformed; existing forward-compatible arrays omit it while later valid
+records remain available. This metadata does not select a mode or change
+runtime defaults or policy.
+Provider records expose optional boolean `configurableProviders`: true
+advertises that the provider accepts provider configuration. False and
+omission are preserved; omission does not advertise support. Supplied
+non-boolean values make the provider record malformed, and existing
+forward-compatible arrays omit it in reads and streams. Reading this flag
+does not add or call provider configuration operations.
+
+Provider setup records expose optional `documentationUrl`: a trimmed nonempty
+string of at most 2,048 characters. Setup and field omission stay absent.
+Malformed provider records are omitted by existing forward-compatible arrays
+in reads and streams; unknown setup metadata is preserved. Reading this
+metadata does not fetch or open documentation.
+
+Provider records expose optional `iconUrl`: a trimmed nonempty string of at
+most 2,048 characters. Omission stays absent. Malformed provider records are
+omitted by the existing forward-compatible arrays in config reads and streams.
+Unknown provider metadata is preserved. This field does not fetch or render
+an icon; consumers that display remote icons must validate the driver origin.
+Published environment themes expose optional `canvas`: a seed color written
+as #RGB or #RRGGBB, with either letter case preserved. Omission stays absent;
+whitespace, other strings, null and non-string values fail decoding. Available
+in configuration theme arrays and environmentThemesUpdated stream payloads.
+Published themes also expose optional `accent` with the same #RGB/#RRGGBB
+format, exact color and case preservation, omission and malformed-value rules
+through configuration arrays and environmentThemesUpdated payloads.
+Published themes expose optional `version`: the literal number 1. Omission
+stays absent in configuration theme arrays and environmentThemesUpdated
+stream payloads. This is theme-file metadata, not a server version check.
+Published themes expose optional `colors`: a palette map whose keys match
+/^[a-zA-Z][a-zA-Z0-9]{0,63}$/ and whose string values are trimmed, nonempty
+and at most 64 characters after trimming. Empty maps are valid; omission stays
+absent. Malformed maps fail decoding in config reads and snapshots; theme
+streams report decode errors and continue. Values are not restricted to hex.
+Published themes expose optional `variants` with independently optional `light`
+and `dark` palette maps. Palette keys match /^[a-zA-Z][a-zA-Z0-9]{0,63}$/;
+values are trimmed nonempty strings of at most 64 characters, including CSS
+color forms beyond hex. Empty variants and empty palettes are valid. Omission
+stays absent; malformed known palettes fail config decoding and produce
+recoverable stream decode-errors. Unknown theme and variant metadata is preserved.
+Reading these palette variants does not apply a theme.
+Environment capabilities also include optional boolean `usageLimitSources`:
+true advertises quota streaming from configured usage-limit sources. False
+and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding.
+Usage-limit source accounts expose optional `workspaceId`: the workspace the
+quota belongs to, as a trimmed nonempty string without a format or length
+restriction. They reach `watchConfig({ usageLimitSources: true })` updates and
+configuration reads that carry `usageLimitSources`. Omission stays absent and
+unknown account metadata is preserved. Malformed values invalidate their
+account records; the existing compatible array decoder omits those accounts
+and preserves later valid accounts, sources and stream chunks. Reading this
+metadata does not select a workspace or change usage-limit polling.
+Environment capabilities also include optional boolean `usagePriceOverrides`:
+true advertises custom model rate persistence and application to usage summaries.
+False and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding. This flag does not configure rates.
+Environment capabilities also include optional boolean `usageModelAliases`:
+true advertises model-name mapping through configured usage aliases. False
+and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding. This flag does not configure aliases.
+Environment capabilities also include optional boolean `threadPinning`:
+true advertises support for pinning threads. False and omission are preserved;
+omission does not advertise support. Available through environment reads,
+configuration reads and configuration snapshots. Supplied non-boolean values
+fail decoding. This metadata flag does not pin a thread.
+Environment capabilities also include optional boolean `threadPinReorder`:
+true advertises support for reordering pinned threads. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not reorder a thread.
+Environment capabilities also include optional boolean `threadActiveReorder`:
+true advertises persistence of manual Active thread order. False and omission
+are preserved; omission does not advertise support. Available through
+environment reads, configuration reads and configuration snapshots. Supplied
+non-boolean values fail decoding. This metadata flag does not reorder a thread.
+Environment capabilities also include optional boolean `threadAutoSettleOptOut`:
+true advertises support for disabling auto-settle per thread. False and omission
+are preserved; omission does not advertise support. Available through
+environment reads, configuration reads and configuration snapshots. Supplied
+non-boolean values fail decoding. This metadata flag does not change auto-settle.
+Environment capabilities also include optional boolean `threadTitleRegeneration`:
+true advertises support for regenerating thread titles through thread metadata
+updates. False and omission are preserved; omission does not advertise support.
+Available through environment reads, configuration reads and configuration
+snapshots. Supplied non-boolean values fail decoding. This metadata flag does
+not regenerate a title.
+Environment capabilities also include optional boolean `threadPullRequestLinking`:
+true advertises support for linking pull requests to threads. False and omission
+are preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not link a pull request.
+Environment capabilities also include optional boolean `threadPullRequests`:
+true advertises support for thread pull requests. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding.
+Environment capabilities also include optional boolean `pullRequestChecks`:
+true advertises support for pull request checks. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not fetch or run checks.
+Environment capabilities also include optional boolean `threadSnooze`:
+true advertises support for snoozing threads. False and omission are preserved;
+omission does not advertise support. Available through environment reads,
+configuration reads and configuration snapshots. Supplied non-boolean values
+fail decoding. This metadata flag does not snooze a thread.
+Environment capabilities also include optional boolean `threadRestartContinuation`:
+true advertises persistence of the opt-in for continuing interrupted threads
+after restarts. False and omission are preserved; omission does not advertise
+support. Available through environment reads, configuration reads and
+configuration snapshots. Supplied non-boolean values fail decoding.
+This metadata flag does not configure or trigger continuation.
+Environment capabilities also include optional boolean `projectSettingsOverrides`:
+true advertises support for resolving project settings overrides. False and
+omission are preserved; omission does not advertise support. Available through
+environment reads, configuration reads and configuration snapshots. Supplied
+non-boolean values fail decoding. This metadata flag does not change settings.
+Environment capabilities also include optional boolean `projectProviderInstanceOverrides`:
+true advertises support for resolving a project's provider instance overrides.
+False and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding. This metadata flag does not change
+provider settings.
+Environment capabilities also include optional boolean `projectCloneTracking`:
+true advertises support for tracking project clones and streaming their progress.
+False and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding. This metadata flag does not start or
+track a clone.
+Environment capabilities also include optional boolean `environmentIcon`:
+true advertises support for a custom environment icon. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not select or change an icon.
+Environment capabilities also include optional boolean `threadAutoSettlement`:
+true advertises server evaluation of merge and inactivity settlement without a
+client. False and omission are preserved; omission does not advertise support.
+Available through environment reads, configuration reads and configuration
+snapshots. Supplied non-boolean values fail decoding. This metadata flag does
+not change settlement settings or settle a thread.
+Environment capabilities also include optional boolean `requiredWorktreeBootstrap`:
+true advertises support for required worktree bootstrap. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not enforce bootstrap or change
+policy.
+Environment capabilities also include optional boolean `commandOutputStreaming`:
+true advertises support for streaming command output. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not subscribe to command output.
+Environment capabilities also include optional boolean `ignoredFileListing`:
+true advertises support for listing ignored files. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not list ignored files.
+Provider `installedVersion` is an optional nullable trimmed nonempty string:
+the installed CLI version for a local provider with a separate server.
+Null means unknown; omission leaves legacy snapshots on `version`.
+This metadata is available through configuration reads, provider lists and
+configuration streams; it does not enforce a provider version policy.
+Provider workspace snapshots expose optional `optionDescriptors` arrays using
+the existing boolean/select descriptor union. Omission means no descriptor
+snapshot was supplied; an empty array supplies no options. Unknown descriptor
+types decode to `{ unknown: true, raw }`; malformed known types fail decoding.
+Workspace `slashCommandsPending` is an optional boolean: true marks pending
+slash-command discovery; false and omission are preserved without inference.
+A pending snapshot can retain the previous slash commands.
+Environment capabilities also include optional boolean `databaseStorage`:
+true advertises streaming database size and reclaimable space. False and omission
+are preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not read database storage.
+Environment capabilities include optional boolean `storageCleanup`: true
+advertises storage cleanup support. False and omission are preserved; omission
+does not advertise support. Available through environment reads, configuration
+reads and configuration snapshots. Supplied non-boolean values fail decoding.
+This metadata flag does not perform storage cleanup.
+Environment capabilities include optional boolean `storageCleanupRun`: true
+advertises support for running storage cleanup. False and omission are preserved;
+omission does not advertise support. Available through environment reads,
+configuration reads and configuration snapshots. Supplied non-boolean values
+fail decoding. This metadata flag does not run storage cleanup.
+Environment capabilities also include optional boolean `otlpEndpointCheck`:
+true advertises support for checking OTLP endpoints for telemetry export settings.
+False and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding. This metadata flag does not check an endpoint.
+Environment capabilities also include optional boolean `pullRequestStackActions`:
+true advertises support for pull request stack actions. False and omission are
+preserved; omission does not advertise support. Available through environment
+reads, configuration reads and configuration snapshots. Supplied non-boolean
+values fail decoding. This metadata flag does not perform a pull request stack action.
+Environment capabilities also include optional boolean `pullRequests`: true
+advertises server pull request support. False and omission are preserved; omission
+does not advertise support. Available through environment reads, configuration
+reads and configuration snapshots. Supplied non-boolean values fail decoding.
+This metadata flag performs no pull request operation.
+Environment capabilities also include optional boolean `threadStop`:
+true advertises support for the upstream thread-stop command. False and
+omission are preserved; omission does not advertise support. Supplied
+non-boolean values fail decoding. Available through environment reads,
+configuration reads and configuration snapshots; unknown fields remain intact.
+This metadata flag does not dispatch a command or change `threads.stop`.
+Environment capabilities also include optional boolean `serverUpdateThreadContinuation`:
+true advertises continuation of running provider turns after a server update.
+False and omission are preserved; omission does not advertise support.
+Supplied non-boolean values fail decoding. Unknown fields remain intact.
+This metadata flag does not start an update, restart the server or continue a turn.
+
+Environment capabilities also include optional `serverSelfUpdate`: `boot-service`,
+`respawn` or `desktop-managed` identifies the advertised server update path.
+Omission is preserved and advertises no update path. Unknown strings are preserved
+for forward compatibility; supplied non-string values fail decoding. Available
+through environment reads, configuration reads and configuration snapshots.
+This metadata does not start an update or restart a server or desktop app.
+
+Environment capabilities also include optional boolean `serverSelfUpdateProgress`:
+true advertises streaming self-update progress before restart acknowledgement.
+False and omission are preserved; omission does not advertise streaming support.
+Available through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding. This metadata flag does not start
+an update, subscribe to progress or restart the server.
+Environment capabilities also include optional boolean `desktopAppUpdate`:
+true advertises a desktop app update through the supervising desktop app.
+False and omission are preserved; omission does not advertise support. Available
+through environment reads, configuration reads and configuration snapshots.
+Supplied non-boolean values fail decoding. This metadata flag does not update
+or restart the desktop app or server.
+Environment capabilities also include optional boolean `agentActivityPublishing`:
+true reports that agent activity publishing is enabled and relay link credentials
+are configured. False and omission are preserved; older servers can omit this
+field while still publishing. Available through environment reads, configuration
+reads and configuration snapshots. Supplied non-boolean values fail decoding.
+This metadata flag does not configure or publish agent activity.
+`watchDatabaseStorage` follows `server.getDatabaseStorage`: each item is the
+state database's `databaseBytes`, `reclaimableBytes`, `incrementalVacuumEnabled`
+and `compactCommand`, or `null` until the server first reads the file. The
+numbers are finite without an integer or sign bound and `compactCommand` is a
+plain string; all four fields are required and unknown fields are preserved.
+A malformed item is delivered as a decode error and later items continue.
+Returning early or aborting the signal ends the subscription. Watching does not
+reclaim space or run the compact command.
 
 **Kind**: global class
 
@@ -1347,6 +2355,7 @@ Server environment, configuration and providers.
   - [.refreshProviders()](#ServerApi+refreshProviders)
   - [.watchConfig()](#ServerApi+watchConfig)
   - [.watchLifecycle()](#ServerApi+watchLifecycle)
+  - [.watchDatabaseStorage()](#ServerApi+watchDatabaseStorage)
   - [.environment()](#ServerApi+environment)
   - [.providers()](#ServerApi+providers)
   - [.findModel()](#ServerApi+findModel)
@@ -1424,6 +2433,19 @@ watchLifecycle(
 ```
 
 **Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
+<a name="ServerApi+watchDatabaseStorage"></a>
+
+### serverApi.watchDatabaseStorage()
+
+Follow the state database's size and reclaimable space; decode failures remain stream items.
+
+```ts
+watchDatabaseStorage(
+    options: WatchDatabaseStorageOptions = {},
+  ): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "server.getDatabaseStorage">>>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
 <a name="ServerApi+environment"></a>
 
 ### serverApi.environment()
@@ -1466,7 +2488,11 @@ async findModel(
 
 ## VcsApi
 
-Repository references, worktrees and status.
+Repository references, worktrees and status. A failed Git command rejects
+with a `T3RpcError` whose `GitCommandError` record can carry optional
+`reason`: a growing set of Git failure tags such as `branch_already_exists`
+or `ref_not_found`. Omission means the server did not recognise the cause;
+an unknown reason string is preserved.
 
 **Kind**: global class
 
@@ -1483,7 +2509,11 @@ Repository references, worktrees and status.
 
 ### vcsApi.listRefs()
 
-List repository references.
+List repository references. The optional boolean `isAtRepositoryRoot`
+reports whether `cwd` is the repository root. Omission does not mean false.
+Each reference can include `upstreamRef`, an optional trimmed nonempty string
+containing the full Git ref (for example `refs/remotes/origin/main`).
+The field can be omitted; callers must handle omission.
 
 ```ts
 listRefs(
@@ -1497,7 +2527,10 @@ listRefs(
 
 ### vcsApi.status()
 
-Refresh repository status.
+Refresh repository status. `workingTree.rootPath` is an optional nonempty
+string containing the absolute worktree root on the server environment.
+Each `workingTree.files[].path` is relative to that root. Paths preserve
+whitespace; the root is omitted when the server cannot resolve it.
 
 ```ts
 status(
@@ -1511,7 +2544,7 @@ status(
 
 ### vcsApi.createWorktree()
 
-Create a worktree through the server.
+Create a worktree in the server's managed folder. Supply `path: null`.
 
 ```ts
 createWorktree(
@@ -1567,7 +2600,9 @@ switchRef(
 
 ### vcsApi.watchStatus()
 
-Subscribe to repository status changes.
+Subscribe to repository status changes. Local status in snapshots and updates
+carries the same optional `workingTree.rootPath` contract as `status`:
+the absolute server-side root for relative file paths, omitted if unresolved.
 
 ```ts
 watchStatus(
@@ -1582,6 +2617,11 @@ watchStatus(
 ## TerminalApi
 
 Server terminal operations and event streams.
+`attach` accepts optional boolean `resume`. With `resume: true`, resubscriptions
+preserve closed, exited and evicted terminals instead of restarting them,
+even when `restartIfNotRunning: true`. Unknown terminal IDs can recover when
+`cwd` is supplied, including after a server restart. Omission and `false`
+retain ordinary attach behavior; unknown IDs without `cwd` fail lookup.
 
 **Kind**: global class
 

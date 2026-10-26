@@ -1,3 +1,7 @@
+// ---
+// relationships:
+//   implements: library-facades
+// ---
 import { z } from "zod";
 
 import { EnvironmentId, TrimmedNonEmptyString, forwardCompatibleLiteral } from "./common.ts";
@@ -39,14 +43,58 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   questionAttachments: z.boolean().optional(),
   fileAttachments: z.looseObject({ maxUploadBytes: z.number().int().min(1) }).optional(),
   inlineMessageContext: z.boolean().optional(),
+  /** Server publishes environment themes through configuration streams. */
+  environmentThemes: z.boolean().optional(),
+  /** Server streams quota from configured usage-limit sources. */
+  usageLimitSources: z.boolean().optional(),
+  /** Server persists custom model rates and applies them to usage summaries. */
+  usagePriceOverrides: z.boolean().optional(),
+  /** Server maps model names through configured usage aliases. */
+  usageModelAliases: z.boolean().optional(),
+  /** Server supports pinning threads. */
+  threadPinning: z.boolean().optional(),
+  threadPinReorder: z.boolean().optional(),
+  threadActiveReorder: z.boolean().optional(),
+  threadAutoSettleOptOut: z.boolean().optional(),
+  threadTitleRegeneration: z.boolean().optional(),
+  threadPullRequestLinking: z.boolean().optional(),
+  threadPullRequests: z.boolean().optional(),
+  pullRequestChecks: z.boolean().optional(),
+  pullRequests: z.boolean().optional(),
+  threadSnooze: z.boolean().optional(),
+  threadRestartContinuation: z.boolean().optional(),
+  projectSettingsOverrides: z.boolean().optional(),
+  projectProviderInstanceOverrides: z.boolean().optional(),
+  projectCloneTracking: z.boolean().optional(),
+  environmentIcon: z.boolean().optional(),
+  requiredWorktreeBootstrap: z.boolean().optional(),
+  commandOutputStreaming: z.boolean().optional(),
+  ignoredFileListing: z.boolean().optional(),
+  databaseStorage: z.boolean().optional(),
+  storageCleanup: z.boolean().optional(),
+  storageCleanupRun: z.boolean().optional(),
+  otlpEndpointCheck: z.boolean().optional(),
+  pullRequestStackActions: z.boolean().optional(),
+  agentActivityPublishing: z.boolean().optional(),
+  serverSelfUpdate: forwardCompatibleLiteral([
+    "boot-service",
+    "respawn",
+    "desktop-managed",
+  ]).optional(),
+  serverSelfUpdateProgress: z.boolean().optional(),
+  serverUpdateThreadContinuation: z.boolean().optional(),
+  desktopAppUpdate: z.boolean().optional(),
   threadSettlement: z.boolean().optional(),
   threadVisitedTracking: z.boolean().optional(),
   threadPullRequestWatch: z.boolean().optional(),
   serverResolvedCommandContext: z.boolean().optional(),
+  threadStop: z.boolean().optional(),
   serverBrowser: z.boolean().optional(),
   projectWorktreeCleanup: z.boolean().optional(),
   settledWorktreeCleanup: z.boolean().optional(),
   worktreesDirectory: z.boolean().optional(),
+  /** Server evaluates merge and inactivity settlement without a client. */
+  threadAutoSettlement: z.boolean().optional(),
   /** Server can exclude pull-request-linked threads from inactivity settlement. */
   threadAutoSettlementScope: z.boolean().optional(),
   serverInstallation: ServerInstallation.optional().catch(undefined),
@@ -67,6 +115,7 @@ export type ExecutionEnvironmentDescriptor = z.infer<typeof ExecutionEnvironment
 /** The checkout's own remote when it names a different repository than the canonical one. */
 export const RepositoryOrigin = z.looseObject({
   canonicalKey: TrimmedNonEmptyString,
+  remoteUrl: TrimmedNonEmptyString.optional(),
   displayName: TrimmedNonEmptyString.optional(),
 });
 export type RepositoryOrigin = z.infer<typeof RepositoryOrigin>;

@@ -45,7 +45,7 @@ it.skipIf(!enabled)(
     let worktreePath: string | undefined;
     try {
       const descriptor = await client.auth.descriptor();
-      expect(descriptor).toMatchObject({ serverVersion: "0.1.0", orchestrationProtocolVersion: 2 });
+      expect(descriptor).toMatchObject({ serverVersion: "0.1.2", orchestrationProtocolVersion: 2 });
       project = await client.projects.createNew({ name: "Sample cleanup" });
       const status = await client.vcs.status({ cwd: project.workspaceRoot });
       const created = await client.vcs.createWorktree({

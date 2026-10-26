@@ -8,6 +8,7 @@ import {
   IsoDateTime,
   NonNegativeInt,
   ProjectId,
+  PositiveInt,
   ThreadId,
   TrimmedNonEmptyString,
   forwardCompatibleArray,
@@ -15,11 +16,34 @@ import {
   taggedUnionWithUnknown,
 } from "./common.ts";
 import { ExecutionEnvironmentDescriptor } from "./environment.ts";
+import { ResolvedKeybindingsConfig } from "./keybindings.ts";
 import { ServerProviders, ServerProviderUsageLimits } from "./provider.ts";
 
 export const EditorId = forwardCompatibleLiteral(["cursor", "vscode", "zed", "file-manager"]);
 export type EditorId = z.infer<typeof EditorId>;
+const EnvironmentThemeVariantColors = z.record(
+  z.string().regex(/^[a-zA-Z][a-zA-Z0-9]{0,63}$/),
+  TrimmedNonEmptyString.max(64),
+);
 export const EnvironmentTheme = z.looseObject({
+  variants: z
+    .looseObject({
+      light: EnvironmentThemeVariantColors.optional(),
+      dark: EnvironmentThemeVariantColors.optional(),
+    })
+    .optional(),
+  colors: z
+    .record(z.string().regex(/^[a-zA-Z][a-zA-Z0-9]{0,63}$/), TrimmedNonEmptyString.max(64))
+    .optional(),
+  version: z.literal(1).optional(),
+  accent: z
+    .string()
+    .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/)
+    .optional(),
+  canvas: z
+    .string()
+    .regex(/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/)
+    .optional(),
   id: z.string(),
   name: z.string(),
   appearance: forwardCompatibleLiteral(["light", "dark"]),
@@ -32,21 +56,48 @@ export type RemoteOpenTargetKind = z.infer<typeof RemoteOpenTargetKind>;
 export const RemoteOpenTarget = z.looseObject({
   kind: RemoteOpenTargetKind,
   host: TrimmedNonEmptyString,
+  username: TrimmedNonEmptyString.optional(),
 });
 export type RemoteOpenTarget = z.infer<typeof RemoteOpenTarget>;
-export const ResolvedKeybindingsConfig = z.array(z.looseObject({}));
-export type ResolvedKeybindingsConfig = z.infer<typeof ResolvedKeybindingsConfig>;
-export const ServerConfigIssues = z.array(z.looseObject({}));
+export { ResolvedKeybindingsConfig };
+const KeybindingsMalformedConfigIssue = z.looseObject({
+  kind: z.literal("keybindings.malformed-config"),
+  message: TrimmedNonEmptyString,
+});
+const KeybindingsInvalidEntryIssue = z.looseObject({
+  kind: z.literal("keybindings.invalid-entry"),
+  message: TrimmedNonEmptyString,
+  index: z.number(),
+});
+/** A configuration problem the server reports; unknown kinds decode as `{ unknown: true, raw }`. */
+export const ServerConfigIssue = taggedUnionWithUnknown("kind", [
+  KeybindingsMalformedConfigIssue,
+  KeybindingsInvalidEntryIssue,
+]);
+export type ServerConfigIssue = z.infer<typeof ServerConfigIssue>;
+export const ServerConfigIssues = forwardCompatibleArray(ServerConfigIssue);
 export type ServerConfigIssues = z.infer<typeof ServerConfigIssues>;
-export const ServerObservability = z.looseObject({});
+export const ServerObservability = z.looseObject({
+  logsDirectoryPath: TrimmedNonEmptyString.optional(),
+  localTracingEnabled: z.boolean().optional(),
+  otlpTracesEnabled: z.boolean().optional(),
+  otlpMetricsEnabled: z.boolean().optional(),
+  otlpLogsEnabled: z.boolean().optional(),
+  otlpTracesUrl: TrimmedNonEmptyString.optional(),
+  otlpMetricsUrl: TrimmedNonEmptyString.optional(),
+  otlpLogsUrl: TrimmedNonEmptyString.optional(),
+});
 export type ServerObservability = z.infer<typeof ServerObservability>;
-export const ServerSettings = z.looseObject({});
+export const ServerSettings = z.looseObject({
+  idleCompaction: forwardCompatibleLiteral(["onReturn", "beforeCacheExpires", "off"]).optional(),
+});
 export type ServerSettings = z.infer<typeof ServerSettings>;
 export const UsageLimitSourceAccount = z.looseObject({
   id: TrimmedNonEmptyString,
   driver: TrimmedNonEmptyString,
   email: TrimmedNonEmptyString.optional(),
   plan: TrimmedNonEmptyString.optional(),
+  workspaceId: TrimmedNonEmptyString.optional(),
   usageLimits: ServerProviderUsageLimits,
 });
 export type UsageLimitSourceAccount = z.infer<typeof UsageLimitSourceAccount>;
@@ -61,6 +112,20 @@ export const UsageLimitSourceSnapshot = z.looseObject({
 export type UsageLimitSourceSnapshot = z.infer<typeof UsageLimitSourceSnapshot>;
 export const UsageLimitSourceSnapshots = forwardCompatibleArray(UsageLimitSourceSnapshot);
 export type UsageLimitSourceSnapshots = z.infer<typeof UsageLimitSourceSnapshots>;
+export const ServerDirectEndpointKind = forwardCompatibleLiteral(["lan", "tailnet"]);
+export type ServerDirectEndpointKind = z.infer<typeof ServerDirectEndpointKind>;
+export const ServerDirectEndpoint = z.looseObject({
+  kind: ServerDirectEndpointKind,
+  httpBaseUrl: TrimmedNonEmptyString,
+});
+export type ServerDirectEndpoint = z.infer<typeof ServerDirectEndpoint>;
+export const ServerEventLoopStall = z.looseObject({
+  detectedAt: IsoDateTime,
+  durationMs: NonNegativeInt,
+  loadAverage: z.number().optional(),
+  cpuCount: PositiveInt,
+});
+export type ServerEventLoopStall = z.infer<typeof ServerEventLoopStall>;
 export const ServerConfig = z.looseObject({
   environment: ExecutionEnvironmentDescriptor,
   auth: ServerAuthDescriptor,
@@ -71,6 +136,7 @@ export const ServerConfig = z.looseObject({
   providers: ServerProviders,
   availableEditors: forwardCompatibleArray(EditorId),
   remoteOpenTargets: forwardCompatibleArray(RemoteOpenTarget).optional(),
+  directEndpoints: forwardCompatibleArray(ServerDirectEndpoint).optional(),
   observability: ServerObservability,
   settings: ServerSettings,
   shellResumeCompletionMarker: z.boolean().optional(),
@@ -91,6 +157,7 @@ export const ServerConfig = z.looseObject({
   scratchWorkspaceRoot: TrimmedNonEmptyString.optional(),
   /** Folder that holds projects started from just a name (`projects.createNew`). */
   newProjectsRoot: TrimmedNonEmptyString.optional(),
+  lastEventLoopStall: ServerEventLoopStall.optional(),
   environmentThemes: z.array(EnvironmentTheme).optional(),
   usageLimitSources: UsageLimitSourceSnapshots.optional(),
 });
@@ -241,3 +308,4 @@ export const ServerProviderUpdatedPayload = z.looseObject({ providers: ServerPro
 export type ServerProviderUpdatedPayload = z.infer<typeof ServerProviderUpdatedPayload>;
 
 export { ServerProvider, ServerProviders } from "./provider.ts";
+export * from "./databaseStorage.ts";

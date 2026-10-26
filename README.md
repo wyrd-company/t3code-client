@@ -2,7 +2,7 @@
 
 ![t3c pairs a profile, starts and waits for a thread, and lists projects](docs/user/t3c/assets/demo.gif)
 
-A pnpm workspace for stock T3 Code 0.1.0, orchestration protocol 2.
+A pnpm workspace for stock T3 Code 0.1.2, orchestration protocol 2.
 
 - [`@wyrd-company/t3code-lib`](packages/t3code-lib/README.md): TypeScript library
   with HTTP, WebSocket RPC, thread/run facades and auth control plane.

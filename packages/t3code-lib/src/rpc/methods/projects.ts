@@ -12,6 +12,8 @@ import {
   ProjectEnsureScratchResult,
   ProjectListEntriesInput,
   ProjectListEntriesResult,
+  ProjectListIgnoredFilesInput,
+  ProjectListIgnoredFilesResult,
   ProjectReadFileInput,
   ProjectReadFileResult,
   ProjectSearchContentsInput,
@@ -37,6 +39,12 @@ export const projectsMethods = {
   "projects.listEntries": defineMethod({
     payload: ProjectListEntriesInput,
     success: ProjectListEntriesResult,
+    stream: false,
+    scope: "filesystem:read",
+  }),
+  "projects.listIgnoredFiles": defineMethod({
+    payload: ProjectListIgnoredFilesInput,
+    success: ProjectListIgnoredFilesResult,
     stream: false,
     scope: "filesystem:read",
   }),

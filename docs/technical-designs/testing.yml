@@ -135,7 +135,7 @@ proposed-design:
     command arguments, generic prompt inputs, stdout, stderr, exit codes and linked
     thread/run identities. Pairing arguments are redacted. Its server directory
     records the launcher and native server PID/start identities, actual version and
-    protocol, stop observations, sanitized log and home removal. The acceptance
+    protocol, stop observations, an explicit server-output omission marker and home removal. The acceptance
     command checks those lifecycle records before it reports success. Temporary
     profile and workspace homes are removed with the acceptance root; evidence is
     retained only when the output directory is outside that root.

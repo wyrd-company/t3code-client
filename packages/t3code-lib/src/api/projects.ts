@@ -22,6 +22,8 @@ import {
   type ProjectEnsureScratchResult,
   type ProjectListEntriesInput,
   type ProjectListEntriesResult,
+  type ProjectListIgnoredFilesInput,
+  type ProjectListIgnoredFilesResult,
   type ProjectReadFileInput,
   type ProjectReadFileResult,
   type ProjectScript,
@@ -58,7 +60,12 @@ export interface ProjectFilesApi {
   /** List active project summaries from the shell snapshot. */
   /** List workspace entries. */
   list(input: ProjectListEntriesInput, signal?: AbortSignal): Promise<ProjectListEntriesResult>;
-  /** Read a workspace file. */
+  /** List untracked files git ignores under `cwd`, without wholly ignored folders. */
+  listIgnored(
+    input: ProjectListIgnoredFilesInput,
+    signal?: AbortSignal,
+  ): Promise<ProjectListIgnoredFilesResult>;
+  /** Read a file; `allowMissing` returns an empty result with `exists: false` for an absent file. */
   read(input: ProjectReadFileInput, signal?: AbortSignal): Promise<ProjectReadFileResult>;
   /** Write a workspace file. */
   write(input: ProjectWriteFileInput, signal?: AbortSignal): Promise<ProjectWriteFileResult>;
@@ -80,7 +87,27 @@ export function normalizeWorkspaceRoot(workspaceRoot: string): string {
   return NodePath.resolve(trimmed.length === 0 ? "/" : trimmed);
 }
 
-/** Project discovery, creation, mutations and files. */
+/**
+ * Project discovery, creation, mutations and files.
+ *
+ * Project repository identities can include `origin.remoteUrl`, an optional
+ * trimmed nonempty string naming the checkout remote when its repository differs
+ * from the canonical repository. Omission does not imply a missing remote.
+ *
+ * `projects.files.read({ cwd, relativePath, allowMissing: true })` returns
+ * empty contents, zero byteLength, truncated false and `exists: false` for an
+ * absent file. Omitted or false `allowMissing` retains the missing-file error.
+ * The optional boolean result field `exists` can be omitted by the server;
+ * omission does not mean that the file is absent.
+ *
+ * `projects.files.listIgnored({ cwd })` lists the untracked files git ignores
+ * under `cwd`, each with a trimmed nonempty `path` and a nonnegative integer
+ * `byteLength`. The server leaves out wholly ignored folders and ignored
+ * symbolic links, and caps the list; `truncated` is true when more files
+ * matched than it returned. A directory outside a repository returns no files.
+ * A malformed file entry is left out and the other entries remain. A missing or
+ * non-directory `cwd` fails with `ProjectListEntriesError`.
+ */
 export class ProjectsApi {
   readonly files: ProjectFilesApi;
 
@@ -94,6 +121,7 @@ export class ProjectsApi {
     this.dispatcher = dispatcher;
     this.files = {
       list: (input, signal) => rpc.call("projects.listEntries", input, signal),
+      listIgnored: (input, signal) => rpc.call("projects.listIgnoredFiles", input, signal),
       read: (input, signal) => rpc.call("projects.readFile", input, signal),
       write: (input, signal) => rpc.call("projects.writeFile", input, signal),
       searchEntries: (input, signal) => rpc.call("projects.searchEntries", input, signal),

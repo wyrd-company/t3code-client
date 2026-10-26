@@ -27,6 +27,7 @@ export const ThreadPullRequestLinkCommand = z.looseObject({
   ...ThreadPullRequestKey.shape,
   url: TrimmedNonEmptyString,
   source: ThreadPullRequestLinkSource,
+  repositoryWebUrl: TrimmedNonEmptyString.optional(),
 });
 export const ThreadPullRequestUnlinkCommand = z.looseObject({
   type: z.literal("thread.pull-request.unlink"),
@@ -47,7 +48,11 @@ export const ThreadPullRequestWatchCommand = z.looseObject({
   ...ThreadPullRequestKey.shape,
   watching: z.boolean(),
   link: z
-    .looseObject({ url: TrimmedNonEmptyString, source: ThreadPullRequestLinkSource })
+    .looseObject({
+      url: TrimmedNonEmptyString,
+      source: ThreadPullRequestLinkSource,
+      repositoryWebUrl: TrimmedNonEmptyString.optional(),
+    })
     .optional(),
 });
 export const ThreadPullRequestSyncCommand = z.looseObject({

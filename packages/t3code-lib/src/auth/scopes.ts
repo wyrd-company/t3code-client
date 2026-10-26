@@ -5,12 +5,7 @@
 import { T3AuthError } from "../errors.ts";
 import type { AuthEnvironmentScope, AuthGrantedScope } from "../schemas/auth.ts";
 
-export {
-  AuthAdministrativeScopes,
-  AuthLegacyScopes,
-  AuthStandardClientScopes,
-  grantedScopes,
-} from "../schemas/auth.ts";
+export { AuthLegacyScopes, AuthStandardClientScopes, grantedScopes } from "../schemas/auth.ts";
 
 export const AuthOrchestrationReadScope = "orchestration:read" as const;
 export const AuthOrchestrationOperateScope = "orchestration:operate" as const;

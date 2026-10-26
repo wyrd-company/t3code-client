@@ -13,7 +13,7 @@ validation-criteria: >-
   this artifact against the specification type's defined fields. Compare help
   and command registration with the native input. Verify source-to-built surface
   equality, supported golden paths and likely failures. Verify real commands
-  against stock T3 Code 0.1.0/protocol 2 in fresh external owned homes with
+  against stock T3 Code 0.1.2/protocol 2 in fresh external owned homes with
   gpt-6-luna subjects and operational overrides cleared. Verify Dagu stdin,
   continuation, output, timeout and exit behavior through the installed CLI.
   Workspace task check is the handoff gate.

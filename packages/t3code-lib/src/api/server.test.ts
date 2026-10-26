@@ -1,6 +1,8 @@
 import * as NodeFS from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
+import { T3DecodeError } from "../errors.ts";
+import { ServerConfigStreamEvent } from "../schemas/server.ts";
 import { FakeT3Server } from "../../test/support/fakeServer.ts";
 import { RpcClient } from "../rpc/client.ts";
 import { rpcMethods } from "../rpc/registry.ts";
@@ -69,6 +71,87 @@ describe("ServerApi", () => {
         credentialFingerprint: "fingerprint-1",
       }).credentialFingerprint,
     ).toBe("fingerprint-1");
+  });
+
+  it("reads recent stall metadata and preserves stream decode errors before a later snapshot", async () => {
+    const config = fixture("server-config") as Record<string, unknown>;
+    const stall = {
+      detectedAt: "2026-01-01T00:00:00.000Z",
+      durationMs: 2500,
+      cpuCount: 2,
+      loadAverage: 1.5,
+      future: "preserved",
+    };
+    const present = { ...config, lastEventLoopStall: stall };
+    const malformed = { ...config, lastEventLoopStall: null };
+    server.respond("server.getConfig", present);
+    await expect(api.getConfig()).resolves.toMatchObject({ lastEventLoopStall: stall });
+    server.respond("server.getConfig", malformed);
+    await expect(api.getConfig()).rejects.toBeInstanceOf(T3DecodeError);
+    server.handle("subscribeServerConfig", () => ({
+      kind: "stream",
+      chunks: [config, malformed, present].map((config) => [
+        { version: 1, type: "snapshot", config },
+      ]),
+    }));
+    const snapshots = [];
+    let errors = 0;
+    for await (const item of api.watchConfig()) {
+      if ("kind" in item && item.kind === "decode-error" && "error" in item) {
+        expect(item.error).toBeInstanceOf(T3DecodeError);
+        errors += 1;
+        continue;
+      }
+      const event = ServerConfigStreamEvent.parse(item);
+      if ("unknown" in event) throw new Error("Expected a known config event");
+      if (event.type !== "snapshot") throw new Error("Expected a config snapshot");
+      snapshots.push(event.config);
+    }
+    expect(errors).toBe(1);
+    expect(snapshots).toHaveLength(2);
+    expect(Object.hasOwn(snapshots[0] ?? {}, "lastEventLoopStall")).toBe(false);
+    expect(snapshots[1]?.lastEventLoopStall).toEqual(stall);
+  });
+
+  it("reads direct endpoint metadata and preserves stream decode errors before a later snapshot", async () => {
+    const config = fixture("server-config") as Record<string, unknown>;
+    delete config["directEndpoints"];
+    const endpoints = [
+      {
+        kind: "lan",
+        httpBaseUrl: "http://192.168.1.2:3000/",
+        future: "preserved",
+      },
+    ];
+    const present = { ...config, directEndpoints: endpoints };
+    const malformed = { ...config, directEndpoints: null };
+    server.respond("server.getConfig", present);
+    await expect(api.getConfig()).resolves.toMatchObject({ directEndpoints: endpoints });
+    server.respond("server.getConfig", malformed);
+    await expect(api.getConfig()).rejects.toBeInstanceOf(T3DecodeError);
+    server.handle("subscribeServerConfig", () => ({
+      kind: "stream",
+      chunks: [config, malformed, present].map((config) => [
+        { version: 1, type: "snapshot", config },
+      ]),
+    }));
+    const snapshots = [];
+    let errors = 0;
+    for await (const item of api.watchConfig()) {
+      if ("kind" in item && item.kind === "decode-error" && "error" in item) {
+        expect(item.error).toBeInstanceOf(T3DecodeError);
+        errors += 1;
+        continue;
+      }
+      const event = ServerConfigStreamEvent.parse(item);
+      if ("unknown" in event) throw new Error("Expected a known config event");
+      if (event.type !== "snapshot") throw new Error("Expected a config snapshot");
+      snapshots.push(event.config);
+    }
+    expect(errors).toBe(1);
+    expect(snapshots).toHaveLength(2);
+    expect(Object.hasOwn(snapshots[0] ?? {}, "directEndpoints")).toBe(false);
+    expect(snapshots[1]?.directEndpoints).toEqual(endpoints);
   });
 
   it("finds a provider model by slug or alias", async () => {

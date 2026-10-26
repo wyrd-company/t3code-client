@@ -22,7 +22,7 @@ Read [the specification](../../docs/specifications/command-line.yml) and
 - Compose library facades, `ProfileManager`, and `T3Error` subclasses. The library
   owns HTTP, WebSocket RPC, profiles, credential exchange and storage.
 - Application code uses native library APIs. Build and test tools own server processes.
-- Target stock T3 Code 0.1.0 and orchestration protocol 2. Version reporting is
+- Target stock T3 Code 0.1.2 and orchestration protocol 2. Version reporting is
   informational; runtime code accepts compatible servers without pinned checks.
 - Pass a supplied runtime mode through. Preserve the server's mode when omitted.
 - Keep assistant output on stdout and progress, thread identity, warnings and the

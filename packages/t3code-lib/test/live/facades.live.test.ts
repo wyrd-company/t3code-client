@@ -17,7 +17,7 @@ import type { ShellWatchItem } from "../../src/api/shell.ts";
 import { T3Client } from "../../src/client.ts";
 import { T3RpcError } from "../../src/errors.ts";
 import type { WebSocketConstructor } from "../../src/internal/websocket.ts";
-import { threadId, type ProjectId, type ThreadId } from "../../src/schemas/common.ts";
+import { messageId, threadId, type ProjectId, type ThreadId } from "../../src/schemas/common.ts";
 
 const baseUrl = process.env["T3_LIVE_URL"];
 const token = process.env["T3_LIVE_TOKEN"];
@@ -58,12 +58,112 @@ describe.skipIf(!enabled)("live facades", () => {
     }
   });
 
+  it("observes stock event-loop stall metadata through public configuration", async () => {
+    const config = await client.server.getConfig();
+    expect(Object.hasOwn(config, "lastEventLoopStall")).toBe(false);
+    expect(config.lastEventLoopStall).toBeUndefined();
+  });
+
+  it("observes stock direct endpoint metadata through public config", async () => {
+    const config = await client.server.getConfig();
+    expect(Object.hasOwn(config, "directEndpoints")).toBe(true);
+    expect(config["directEndpoints"]).toEqual([]);
+  });
+
+  it("reads stock server self-update omission through public facades", async () => {
+    const environment = await client.server.environment();
+    const config = await client.server.getConfig();
+    for (const capabilities of [environment.capabilities, config.environment.capabilities]) {
+      expect(capabilities.serverSelfUpdate).toBeUndefined();
+      expect(Object.hasOwn(capabilities, "serverSelfUpdate")).toBe(false);
+    }
+  });
+
+  it("reads the stock thread-stop metadata through public facades", async () => {
+    const environment = await client.server.environment();
+    expect(environment.capabilities.threadStop).toBe(true);
+    const config = await client.server.getConfig();
+    expect(config.environment.capabilities.threadStop).toBe(true);
+  });
+
   it("speaks orchestration protocol 2 and reads the granular permissions", async () => {
     const environment = await client.auth.descriptor();
     expect(environment.orchestrationProtocolVersion).toBe(2);
     const session = await client.auth.sessionState();
     expect(session.permissions).toContain("filesystem:read");
     expect(session.auth.serverUpdateScope).toBe("environment:maintain");
+  });
+
+  it("reads the stock environment-theme capability through public facades", async () => {
+    const environment = await client.server.environment();
+    expect(environment.capabilities.environmentThemes).toBe(true);
+    const config = await client.server.getConfig();
+    expect(config.environment.capabilities.environmentThemes).toBe(true);
+  });
+
+  it("reads the stock usage-limit-source capability through public facades", async () => {
+    const environment = await client.server.environment();
+    expect(environment.capabilities.usageLimitSources).toBe(true);
+    const config = await client.server.getConfig();
+    expect(config.environment.capabilities.usageLimitSources).toBe(true);
+  });
+
+  it("reads the stock usage-price-override capability through public facades", async () => {
+    const environment = await client.server.environment();
+    expect(environment.capabilities.usagePriceOverrides).toBe(true);
+    const config = await client.server.getConfig();
+    expect(config.environment.capabilities.usagePriceOverrides).toBe(true);
+  });
+
+  it("reads stock usage-alias and thread-pin capabilities through public facades", async () => {
+    const environment = await client.server.environment();
+    expect(environment.capabilities.threadPinning).toBe(true);
+    expect(environment.capabilities.threadPinReorder).toBe(true);
+    expect(environment.capabilities.threadActiveReorder).toBe(true);
+    expect(environment.capabilities.threadAutoSettleOptOut).toBe(true);
+    expect(environment.capabilities.threadTitleRegeneration).toBe(true);
+    expect(environment.capabilities.threadPullRequestLinking).toBe(true);
+    expect(environment.capabilities.threadPullRequests).toBe(true);
+    expect(environment.capabilities.pullRequestChecks).toBe(true);
+    expect(environment.capabilities.threadSnooze).toBe(true);
+    expect(environment.capabilities.threadRestartContinuation).toBe(true);
+    expect(environment.capabilities.projectSettingsOverrides).toBe(true);
+    expect(environment.capabilities.projectProviderInstanceOverrides).toBe(true);
+    expect(environment.capabilities.projectCloneTracking).toBe(true);
+    expect(environment.capabilities.environmentIcon).toBe(true);
+    expect(environment.capabilities.threadAutoSettlement).toBe(true);
+    expect(environment.capabilities.requiredWorktreeBootstrap).toBe(true);
+    expect(environment.capabilities.commandOutputStreaming).toBe(true);
+    expect(environment.capabilities.ignoredFileListing).toBe(true);
+    expect(environment.capabilities.databaseStorage).toBe(true);
+    expect(environment.capabilities.storageCleanup).toBe(true);
+    expect(environment.capabilities.storageCleanupRun).toBe(true);
+    expect(environment.capabilities.otlpEndpointCheck).toBe(true);
+    expect(environment.capabilities.usageModelAliases).toBe(true);
+    const config = await client.server.getConfig();
+    expect(config.environment.capabilities.threadPinning).toBe(true);
+    expect(config.environment.capabilities.threadPinReorder).toBe(true);
+    expect(config.environment.capabilities.threadActiveReorder).toBe(true);
+    expect(config.environment.capabilities.threadAutoSettleOptOut).toBe(true);
+    expect(config.environment.capabilities.threadTitleRegeneration).toBe(true);
+    expect(config.environment.capabilities.threadPullRequestLinking).toBe(true);
+    expect(config.environment.capabilities.threadPullRequests).toBe(true);
+    expect(config.environment.capabilities.pullRequestChecks).toBe(true);
+    expect(config.environment.capabilities.threadSnooze).toBe(true);
+    expect(config.environment.capabilities.threadRestartContinuation).toBe(true);
+    expect(config.environment.capabilities.projectSettingsOverrides).toBe(true);
+    expect(config.environment.capabilities.projectProviderInstanceOverrides).toBe(true);
+    expect(config.environment.capabilities.projectCloneTracking).toBe(true);
+    expect(config.environment.capabilities.environmentIcon).toBe(true);
+    expect(config.environment.capabilities.threadAutoSettlement).toBe(true);
+    expect(config.environment.capabilities.requiredWorktreeBootstrap).toBe(true);
+    expect(config.environment.capabilities.commandOutputStreaming).toBe(true);
+    expect(config.environment.capabilities.ignoredFileListing).toBe(true);
+    expect(config.environment.capabilities.databaseStorage).toBe(true);
+    expect(config.environment.capabilities.storageCleanup).toBe(true);
+    expect(config.environment.capabilities.storageCleanupRun).toBe(true);
+    expect(config.environment.capabilities.otlpEndpointCheck).toBe(true);
+    expect(config.environment.capabilities.usageModelAliases).toBe(true);
   });
 
   it("ensures a project idempotently", async () => {
@@ -103,6 +203,22 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(thread.runtimeMode).toBe("auto");
     expect(thread.createdBy).toBe("user");
     expect(thread.status).toBe("idle");
+    expect(thread.blockedOnThreadWait).toBe(false);
+    expect(Object.hasOwn(thread, "blockedOnThreadWait")).toBe(true);
+    const observedShell = (await client.shell.snapshot()).threads.find((row) => row.id === id);
+    expect(observedShell?.blockedOnThreadWait).toBe(false);
+    expect(Object.hasOwn(observedShell ?? {}, "blockedOnThreadWait")).toBe(true);
+    expect(thread.latestRunStopRequested).toBe(false);
+    expect(Object.hasOwn(thread, "latestRunStopRequested")).toBe(true);
+    expect(
+      (await client.shell.snapshot()).threads.find((row) => row.id === id)?.latestRunStopRequested,
+    ).toBe(false);
+    expect(Object.hasOwn(thread, "lastErrorCode")).toBe(true);
+    expect(thread.lastErrorCode).toBeNull();
+    const errorShell = (await client.shell.snapshot()).threads.find((row) => row.id === id);
+    expect(errorShell).toBeDefined();
+    expect(Object.hasOwn(errorShell ?? {}, "lastErrorCode")).toBe(true);
+    expect(errorShell?.lastErrorCode).toBeNull();
     const again = await client.threads.ensure({ ...input, title: "ignored" });
     expect(again.title).toBe("live sample thread");
     const detail = await client.threads.detail(id);
@@ -114,6 +230,196 @@ describe.skipIf(!enabled)("live facades", () => {
     expect(projection.thread.title).toBe("live sample thread");
     expect(client.threads.phase(thread)).toBe("idle");
     expect(await client.threads.pendingRequests(id)).toEqual([]);
+  });
+
+  it("observes stock expected-branch metadata without starting a provider", async () => {
+    const original = (await client.threads.projection(id)).thread;
+    expect(original.branch).toBeNull();
+    await client.threads.update(id, { expectedBranch: null, branch: "sample-branch" });
+    expect((await client.threads.projection(id)).thread.branch).toBe("sample-branch");
+    await expect(
+      client.threads.update(id, { expectedBranch: null, title: "Rejected title" }),
+    ).rejects.toBeInstanceOf(T3RpcError);
+    expect((await client.threads.projection(id)).thread.title).toBe(original.title);
+    await client.threads.update(id, { expectedBranch: "sample-branch", branch: null });
+    expect((await client.threads.projection(id)).thread.branch).toBeNull();
+    await client.threads.update(id, { title: original.title });
+  });
+
+  it("observes stock conversation workflow-script omission without starting a provider", async () => {
+    const mid = messageId(NodeCrypto.randomUUID());
+    await client.threads.dispatch({
+      type: "message.dispatch",
+      commandId: client.threads.dispatcher.newCommandId(),
+      messageId: mid,
+      threadId: id,
+      createdBy: "user",
+      creationSource: "web",
+      text: "Sample message",
+      attachments: [],
+      dispatchMode: { type: "defer_start" },
+    });
+    const projection = await client.threads.projection(id);
+    const message = projection.messages.find((row) => row.id === mid);
+    expect(message).toBeDefined();
+    expect(message?.text).toBe("Sample message");
+    expect(Object.hasOwn(message ?? {}, "workflowScript")).toBe(false);
+    expect(message?.["workflowScript"]).toBeUndefined();
+    const item = projection.turnItems.find(
+      (row) => row.type === "user_message" && row.messageId === mid,
+    );
+    expect(item).toBeDefined();
+    expect(Object.hasOwn(item ?? {}, "workflowScript")).toBe(false);
+    expect(item?.["workflowScript"]).toBeUndefined();
+    expect(projection.runs.find((run) => run.userMessageId === mid)?.status).toBe("preparing");
+  });
+
+  it("observes stock linked pull request repository URL metadata", async () => {
+    for (const [number, repositoryWebUrl] of [
+      [41, undefined],
+      [42, "https://example.invalid/sample/repository"],
+    ] as const) {
+      await client.threads.dispatch({
+        type: "thread.pull-request.link",
+        commandId: client.threads.dispatcher.newCommandId(),
+        threadId: id,
+        host: "example.invalid",
+        repository: "sample/repository",
+        number,
+        url: `https://example.invalid/sample/repository/pull/${number}`,
+        source: "manual",
+        ...(repositoryWebUrl === undefined ? {} : { repositoryWebUrl }),
+      });
+      const thread = (await client.threads.projection(id)).thread;
+      const link = thread.pullRequests?.find((entry) => entry.number === number);
+      expect(link).toBeDefined();
+      expect(Object.hasOwn(link ?? {}, "repositoryWebUrl")).toBe(repositoryWebUrl !== undefined);
+      expect(link?.["repositoryWebUrl"]).toBe(repositoryWebUrl);
+      await client.threads.dispatch({
+        type: "thread.pull-request.unlink",
+        commandId: client.threads.dispatcher.newCommandId(),
+        threadId: id,
+        host: "example.invalid",
+        repository: "sample/repository",
+        number,
+      });
+    }
+  });
+
+  it("independently observes stock direct link command repository URL input", async () => {
+    for (const [number, repositoryWebUrl] of [
+      [41, undefined],
+      [42, "https://example.invalid/sample/repository"],
+    ] as const) {
+      await client.threads.dispatch({
+        type: "thread.pull-request.link",
+        commandId: client.threads.dispatcher.newCommandId(),
+        threadId: id,
+        host: "example.invalid",
+        repository: "sample/repository",
+        number,
+        url: `https://example.invalid/sample/repository/pull/${number}`,
+        source: "manual",
+        ...(repositoryWebUrl === undefined ? {} : { repositoryWebUrl }),
+      });
+      const thread = (await client.threads.projection(id)).thread;
+      const link = thread.pullRequests?.find((entry) => entry.number === number);
+      expect(link).toBeDefined();
+      expect(Object.hasOwn(link ?? {}, "repositoryWebUrl")).toBe(repositoryWebUrl !== undefined);
+      expect(link?.["repositoryWebUrl"]).toBe(repositoryWebUrl);
+      await client.threads.dispatch({
+        type: "thread.pull-request.unlink",
+        commandId: client.threads.dispatcher.newCommandId(),
+        threadId: id,
+        host: "example.invalid",
+        repository: "sample/repository",
+        number,
+      });
+    }
+  });
+
+  it("independently observes stock nested watch link command repository URL input", async () => {
+    for (const [number, repositoryWebUrl] of [
+      [41, undefined],
+      [42, "https://example.invalid/sample/repository"],
+    ] as const) {
+      await client.threads.dispatch({
+        type: "thread.pull-request.watch",
+        watching: true,
+        commandId: client.threads.dispatcher.newCommandId(),
+        threadId: id,
+        host: "example.invalid",
+        repository: "sample/repository",
+        number,
+        link: {
+          url: `https://example.invalid/sample/repository/pull/${number}`,
+          source: "manual",
+          ...(repositoryWebUrl === undefined ? {} : { repositoryWebUrl }),
+        },
+      });
+      const thread = (await client.threads.projection(id)).thread;
+      const link = thread.pullRequests?.find((entry) => entry.number === number);
+      expect(link).toBeDefined();
+      expect(Object.hasOwn(link ?? {}, "repositoryWebUrl")).toBe(repositoryWebUrl !== undefined);
+      expect(link?.["repositoryWebUrl"]).toBe(repositoryWebUrl);
+      await client.threads.dispatch({
+        type: "thread.pull-request.unlink",
+        commandId: client.threads.dispatcher.newCommandId(),
+        threadId: id,
+        host: "example.invalid",
+        repository: "sample/repository",
+        number,
+      });
+    }
+  });
+
+  it("independently observes stock ended-watch output metadata", async () => {
+    const key = { host: "example.invalid", repository: "sample/repository", number: 43 };
+    await client.threads.dispatch({
+      type: "thread.pull-request.link",
+      commandId: client.threads.dispatcher.newCommandId(),
+      threadId: id,
+      ...key,
+      url: "https://example.invalid/sample/repository/pull/43",
+      source: "manual",
+    });
+    const readLink = async () =>
+      (await client.threads.projection(id)).thread.pullRequests?.find(
+        (entry) => entry.number === key.number,
+      );
+    try {
+      const initial = await readLink();
+      expect(initial).toBeDefined();
+      expect(Object.hasOwn(initial ?? {}, "endedWatch")).toBe(false);
+      expect(initial?.["endedWatch"]).toBeUndefined();
+      await client.threads.dispatch({
+        type: "thread.pull-request.watch",
+        watching: true,
+        commandId: client.threads.dispatcher.newCommandId(),
+        threadId: id,
+        ...key,
+      });
+      const watching = await readLink();
+      expect(watching?.watch).toBeDefined();
+      await client.threads.dispatch({
+        type: "thread.pull-request.watch",
+        watching: false,
+        commandId: client.threads.dispatcher.newCommandId(),
+        threadId: id,
+        ...key,
+      });
+      const ended = await readLink();
+      expect(Object.hasOwn(ended ?? {}, "watch")).toBe(false);
+      expect(Object.hasOwn(ended ?? {}, "endedWatch")).toBe(true);
+      expect(ended?.["endedWatch"]).toEqual(watching?.watch);
+    } finally {
+      await client.threads.dispatch({
+        type: "thread.pull-request.unlink",
+        commandId: client.threads.dispatcher.newCommandId(),
+        threadId: id,
+        ...key,
+      });
+    }
   });
 
   it("finds within a thread and refuses workflow and app requests it cannot serve", async () => {

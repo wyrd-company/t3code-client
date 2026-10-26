@@ -57,7 +57,20 @@ export function loadShellSnapshot(
   });
 }
 
-/** Live and archived cross-thread snapshots. */
+/**
+ * Live and archived cross-thread snapshots. Thread shells carry optional
+ * `latestRunStopRequested`: whether the latest run has an interruption request.
+ * Optional `blockedOnThreadWait` reports whether the active run is blocked on
+ * thread-wait work. Older servers can omit these fields. Reading them does not
+ * request a stop or change wait behavior. Optional `lastErrorCode` is the current
+ * provider failure code, or null when none applies; older servers can omit it.
+ * A pending runtime request summary carries optional boolean `blocking`: false
+ * for an async question the run can keep working past. Older servers can omit
+ * it. Reading this metadata does not answer a request or change run behavior.
+ * Linked pull request snapshot authors carry optional boolean `isBot` through
+ * shell snapshots and updates. True, false, omission and unknown actor metadata
+ * survive; malformed values fail decoding. This metadata does not grant permissions.
+ */
 export class ShellApi {
   readonly http: HttpTransport;
   readonly rpc: RpcClient<RpcMethods>;

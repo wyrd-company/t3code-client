@@ -20,7 +20,7 @@ relationships:
     - threadWatch
 proposed-design:
   high-level-overview: >-
-    The library implements stock T3 Code 0.1.0 and orchestration protocol 2.
+    The library implements stock T3 Code 0.1.2 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade
     contracts. The library architecture links the canonical design family.
   overview: |
@@ -75,10 +75,12 @@ proposed-design:
         auth.ts                 scopes, descriptors, session state, tokens, pairing links, clients
         environment.ts          ExecutionEnvironmentDescriptor, repository identity, protocol constants
         httpErrors.ts           Environment*Error records
+        keybindings.ts          resolved keybinding rules: commands, shortcuts, when nodes
         rpcErrors.ts            RpcErrorRecord: every tagged error the registered RPC methods declare
         rpcErrors/              orchestration, MCP app, vcs, and terminal error records, shared tagged-error helpers
         mcpApps.ts              MCP App tool calls, tool info, resource reads, model context
         projects.ts             Project, ProjectMutation, icons and scripts, file entries, read/write/search
+        projectsIgnoredFiles.ts ignored file listing input, file entries and result (re-exported by projects.ts)
         orchestration/          mirrors orchestrationV2.ts and the files it imports
           model.ts              ModelSelection, modes, decisions, answers, actor and creation source, ProviderRef
           attachments.ts        ChatAttachment family
@@ -100,8 +102,10 @@ proposed-design:
           threadFind.ts         find within one thread
           shell.ts              project and thread shells, shell snapshot and stream items
           stream.ts             thread stream items, RPC inputs and outputs, launch
+          commandOutput.ts      command output subscription input and frames
           commands.ts           OrchestrationV2Command union (commands/*.ts by family)
-        server.ts               ServerConfig (providers typed, settings loose), config/lifecycle stream events
+        server.ts               ServerConfig (providers, keybindings, issues and idleCompaction typed; other settings loose), config/lifecycle stream events
+        databaseStorage.ts      database storage status stream items (re-exported by server.ts)
         provider.ts             provider snapshot, models, auth status
         vcs.ts                  refs, status, worktree inputs/results
         terminal.ts             open/attach/write/events
@@ -123,9 +127,10 @@ proposed-design:
         authClient.ts           AuthClient: exchange, ticket, session state, pairing links, clients, scopes
         scopes.ts               scope constants, hasScope, grantedScopes
       api/                      facades composed by T3Client
-        server.ts               getConfig, probe, watchConfig, watchLifecycle
+        server.ts               getConfig, probe, watchConfig, watchLifecycle, watchDatabaseStorage
         projects.ts             list, get, snapshot, create, update, delete, ensure, ensureScratch, createNew, files
-        threads.ts              list, get, detail, projection, historyPage, transcript, create, ensure, launch, update, archive, delete, startTurn, interrupt, stop, respond*, watch
+        threads.ts              list, get, detail, projection, historyPage, transcript, create, ensure, launch, update, archive, delete, startTurn, interrupt, stop, respond*, watch, watchCommandOutput
+        commandOutput.ts        watchCommandOutput: one command row's output stream
         threadReads.ts          shell lookups with the archived fallback; detail, history page, transcript routes
         threadCreation.ts       create and launch inputs and payloads
         threadCommands.ts       command builders

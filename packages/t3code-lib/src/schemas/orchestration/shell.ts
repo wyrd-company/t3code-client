@@ -81,6 +81,8 @@ export const OrchestrationV2PendingRuntimeRequestSummary = z.looseObject({
   id: RuntimeRequestId,
   kind: OrchestrationV2RuntimeRequestKind,
   createdAt: IsoDateTime,
+  /** False for async questions the run keeps working past; older servers can omit it. */
+  blocking: z.boolean().optional(),
 });
 export type OrchestrationV2PendingRuntimeRequestSummary = z.infer<
   typeof OrchestrationV2PendingRuntimeRequestSummary
@@ -117,14 +119,17 @@ export const OrchestrationV2ThreadShell = z.looseObject({
   latestRunRequestedAt: IsoDateTime.nullable().optional(),
   latestRunStartedAt: IsoDateTime.nullable().optional(),
   latestRunCompletedAt: IsoDateTime.nullable().optional(),
+  latestRunStopRequested: z.boolean().optional(),
   activeRunId: RunId.nullable(),
   activityRunStartedAt: IsoDateTime.nullable().optional(),
   activityRunStatus: forwardCompatibleLiteral(["preparing", "starting", "running", "waiting"])
     .nullable()
     .optional(),
+  blockedOnThreadWait: z.boolean().optional(),
   status: OrchestrationV2ShellThreadStatus,
   lastError: z.string().nullable().optional(),
   lastErrorClass: OrchestrationV2ProviderFailureClass.nullable().optional(),
+  lastErrorCode: z.string().nullable().optional(),
   usageLimitResetAt: IsoDateTime.nullable().optional(),
   pendingRuntimeRequest: OrchestrationV2PendingRuntimeRequestSummary.nullable(),
   latestVisibleMessage: OrchestrationV2LatestVisibleMessageSummary.nullable(),
