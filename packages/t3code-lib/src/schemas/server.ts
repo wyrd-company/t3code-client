@@ -82,6 +82,7 @@ export const UsageLimitSourceAccount = z.looseObject({
   driver: TrimmedNonEmptyString,
   email: TrimmedNonEmptyString.optional(),
   plan: TrimmedNonEmptyString.optional(),
+  workspaceId: TrimmedNonEmptyString.optional(),
   usageLimits: ServerProviderUsageLimits,
 });
 export type UsageLimitSourceAccount = z.infer<typeof UsageLimitSourceAccount>;

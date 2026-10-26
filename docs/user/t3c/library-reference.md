@@ -306,6 +306,14 @@ true advertises quota streaming from configured usage-limit sources. False
 and omission are preserved; omission does not advertise support. Available
 through environment reads, configuration reads and configuration snapshots.
 Supplied non-boolean values fail decoding.
+Usage-limit source accounts expose optional <code>workspaceId</code>: the workspace the
+quota belongs to, as a trimmed nonempty string without a format or length
+restriction. They reach <code>watchConfig({ usageLimitSources: true })</code> updates and
+configuration reads that carry <code>usageLimitSources</code>. Omission stays absent and
+unknown account metadata is preserved. Malformed values invalidate their
+account records; the existing compatible array decoder omits those accounts
+and preserves later valid accounts, sources and stream chunks. Reading this
+metadata does not select a workspace or change usage-limit polling.
 Environment capabilities also include optional boolean <code>usagePriceOverrides</code>:
 true advertises custom model rate persistence and application to usage summaries.
 False and omission are preserved; omission does not advertise support. Available
@@ -2007,6 +2015,14 @@ true advertises quota streaming from configured usage-limit sources. False
 and omission are preserved; omission does not advertise support. Available
 through environment reads, configuration reads and configuration snapshots.
 Supplied non-boolean values fail decoding.
+Usage-limit source accounts expose optional `workspaceId`: the workspace the
+quota belongs to, as a trimmed nonempty string without a format or length
+restriction. They reach `watchConfig({ usageLimitSources: true })` updates and
+configuration reads that carry `usageLimitSources`. Omission stays absent and
+unknown account metadata is preserved. Malformed values invalidate their
+account records; the existing compatible array decoder omits those accounts
+and preserves later valid accounts, sources and stream chunks. Reading this
+metadata does not select a workspace or change usage-limit polling.
 Environment capabilities also include optional boolean `usagePriceOverrides`:
 true advertises custom model rate persistence and application to usage summaries.
 False and omission are preserved; omission does not advertise support. Available

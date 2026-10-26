@@ -186,6 +186,17 @@ proposed-design:
     not advertise support. Non-boolean supplied values fail decoding. This flag
     is distinct from the usage-limit-source snapshots and subscription input.
 
+  optional-usage-limit-account-workspace: |
+    Usage-limit source accounts expose optional `workspaceId`: the workspace the
+    quota belongs to, as a trimmed nonempty string without a format or length
+    restriction. Accounts reach `usageLimitSourcesUpdated` events from
+    `server.watchConfig({ usageLimitSources: true })` and configuration reads that
+    carry `usageLimitSources`. Omission stays absent and unknown account metadata
+    is preserved. Malformed values invalidate their account records; the existing
+    forward-compatible account array omits those records and keeps later valid
+    accounts, sources and stream chunks. Reading this metadata does not select a
+    workspace, redeem reset credits or change usage-limit polling.
+
   optional-usage-price-override-capability: |
     `ExecutionEnvironmentCapabilities.usagePriceOverrides` is an optional boolean
     available through `server.environment`, `server.getConfig` and configuration
