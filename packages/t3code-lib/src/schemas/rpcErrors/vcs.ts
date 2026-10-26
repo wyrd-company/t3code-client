@@ -3,7 +3,7 @@
  * `git.ts` and `sourceControl.ts`.
  */
 import { z } from "zod";
-import { PositiveInt, TrimmedNonEmptyString } from "../common.ts";
+import { PositiveInt, TrimmedNonEmptyString, forwardCompatibleLiteral } from "../common.ts";
 import { SourceControlProviderKind } from "../vcs.ts";
 import { Defect, taggedError } from "./shared.ts";
 
@@ -16,6 +16,19 @@ export const GitCommandError = taggedError("GitCommandError", {
   stdoutLength: z.number().optional(),
   stderrLength: z.number().optional(),
   outputLength: z.number().optional(),
+  reason: forwardCompatibleLiteral([
+    "authentication_failed",
+    "branch_already_exists",
+    "branch_checked_out_in_worktree",
+    "host_key_unverified",
+    "not_a_repository",
+    "path_already_exists",
+    "push_rejected_by_remote",
+    "push_rejected_non_fast_forward",
+    "ref_not_found",
+    "remote_unreachable",
+    "tag_would_be_clobbered",
+  ]).optional(),
   detail: z.string(),
   cause: Defect.optional(),
 });

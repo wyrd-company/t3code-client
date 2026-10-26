@@ -7,7 +7,13 @@ import type { RpcMethods } from "../rpc/registry.ts";
 import type { RpcPayload, RpcSuccess } from "../rpc/spec.ts";
 import { unwrapStreamItems, type DecodedStreamItem } from "./streamItems.ts";
 
-/** Repository references, worktrees and status. */
+/**
+ * Repository references, worktrees and status. A failed Git command rejects
+ * with a `T3RpcError` whose `GitCommandError` record can carry optional
+ * `reason`: a growing set of Git failure tags such as `branch_already_exists`
+ * or `ref_not_found`. Omission means the server did not recognise the cause;
+ * an unknown reason string is preserved.
+ */
 export class VcsApi {
   readonly rpc: RpcClient<RpcMethods>;
 

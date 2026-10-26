@@ -499,7 +499,11 @@ reads and configuration snapshots. Supplied non-boolean values fail decoding.
 This metadata flag does not configure or publish agent activity.</p>
 </dd>
 <dt><a href="#VcsApi">VcsApi</a></dt>
-<dd><p>Repository references, worktrees and status.</p>
+<dd><p>Repository references, worktrees and status. A failed Git command rejects
+with a <code>T3RpcError</code> whose <code>GitCommandError</code> record can carry optional
+<code>reason</code>: a growing set of Git failure tags such as <code>branch_already_exists</code>
+or <code>ref_not_found</code>. Omission means the server did not recognise the cause;
+an unknown reason string is preserved.</p>
 </dd>
 <dt><a href="#TerminalApi">TerminalApi</a></dt>
 <dd><p>Server terminal operations and event streams.
@@ -2337,7 +2341,11 @@ async findModel(
 
 ## VcsApi
 
-Repository references, worktrees and status.
+Repository references, worktrees and status. A failed Git command rejects
+with a `T3RpcError` whose `GitCommandError` record can carry optional
+`reason`: a growing set of Git failure tags such as `branch_already_exists`
+or `ref_not_found`. Omission means the server did not recognise the cause;
+an unknown reason string is preserved.
 
 **Kind**: global class
 

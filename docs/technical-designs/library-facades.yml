@@ -401,6 +401,20 @@ proposed-design:
     whitespace. The server omits the root when it cannot resolve it; callers
     must handle omission. Unknown working-tree fields remain available.
 
+  optional-git-command-failure-reason: |
+    A `GitCommandError` record from a rejected VCS call (for example
+    `vcs.createRef` or `vcs.switchRef`), read through `T3RpcError.record`,
+    exposes optional
+    `reason`: a growing literal set of Git failure tags (`authentication_failed`,
+    `branch_already_exists`, `branch_checked_out_in_worktree`,
+    `host_key_unverified`, `not_a_repository`, `path_already_exists`,
+    `push_rejected_by_remote`, `push_rejected_non_fast_forward`, `ref_not_found`,
+    `remote_unreachable`, `tag_would_be_clobbered`). The server sends it only
+    when it recognises the failure; omission stays absent. An unknown reason
+    string is preserved. A non-string reason makes the record unrecognised, so
+    `T3RpcError.is("GitCommandError")` is false while `tag` and `detail` keep the
+    raw failure. Reading the reason does not retry or change any Git operation.
+
   terminal-attach: |
     `terminal.attach` accepts optional boolean `resume`. With `resume: true`,
     resubscriptions preserve closed, exited and evicted terminals instead of
