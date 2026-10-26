@@ -9,7 +9,7 @@ A pnpm workspace for stock T3 Code 0.1.0, orchestration protocol 2.
 - [`@wyrd-company/t3code-cli`](packages/t3code-cli/README.md): `t3c` for conversations,
   named server profiles, thread inspection and automation.
 
-Both release units have independent versions and target an initial 0.1.0.
+Both release units have independent versions.
 Node >=22.16 and pnpm 11 are required. The root package is private.
 
 ```bash
