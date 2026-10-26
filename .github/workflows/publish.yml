@@ -1,14 +1,39 @@
 name: Publish
 
-# Annotated `t3code-lib@X.Y.Z` and `t3code-cli@X.Y.Z` records start publication. Every
-# job is safe to rerun: an npm version or GitHub Release that already exists
-# is verified instead of recreated.
+# Annotated `t3code-lib@X.Y.Z` and `t3code-cli@X.Y.Z` records start package
+# publication. Every job is safe to rerun: an npm version or GitHub Release
+# that already exists is verified instead of recreated.
+#
+# Documentation publishes to wyrd.foo through the reusable workflow, on a CLI
+# record (after its GitHub Release exists), on a `t3c-docs@X.Y.Z` record, or on
+# a manual run. A `t3c-docs` record pushed with a CLI record is published by the
+# CLI run. There is no publish on a plain push to main.
+# See docs/technical-designs/releasing.yml.
 
 on:
   push:
     tags:
       - "t3code-lib@*"
       - "t3code-cli@*"
+      - "t3c-docs@*"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Tag or commit to publish
+        required: true
+      feature:
+        description: Feature a product on the front page
+        type: boolean
+        default: false
+      feature-product:
+        description: The product key to feature; empty when the repo has one product
+        default: ""
+      feature-days:
+        description: How long the feature lasts, in days
+        default: "14"
+      feature-reason:
+        description: For example "New MCP server"; default "New release"
+        default: ""
 
 permissions: {}
 
@@ -17,10 +42,50 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  plan:
+    name: Plan the documentation publish
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      publish: ${{ steps.plan.outputs.publish }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Decide whether this run publishes documentation
+        id: plan
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          publish=false
+          case "$EVENT_NAME:$REF_NAME" in
+            workflow_dispatch:*) publish=true ;;
+            push:t3code-cli@0.0.0) ;; # a baseline record is not a release
+            push:t3code-cli@*) publish=true ;;
+            push:t3c-docs@*)
+              # Pushed with a CLI record, the docs record waits for that run:
+              # the product page needs the CLI's GitHub Release first.
+              if [[ -z "$(git tag --list 't3code-cli@*' --points-at "$GITHUB_SHA")" ]]; then
+                publish=true
+              fi
+              ;;
+          esac
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+
   build:
     name: Build and verify
     # The baseline record establishes release authority; it is not a release.
-    if: github.ref_name != 't3code-lib@0.0.0' && github.ref_name != 't3code-cli@0.0.0'
+    # Docs records and manual runs have no package to build.
+    if: >-
+      github.event_name == 'push'
+      && (startsWith(github.ref_name, 't3code-lib@') || startsWith(github.ref_name, 't3code-cli@'))
+      && github.ref_name != 't3code-lib@0.0.0' && github.ref_name != 't3code-cli@0.0.0'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -134,21 +199,22 @@ jobs:
         run: scripts/release/ensure-github-release.sh "$GITHUB_REF_NAME" "$RUNNER_TEMP/package"
 
   docs:
-    name: Publish CLI and library documentation
-    needs: [build, npm]
-    if: startsWith(github.ref_name, 't3code-cli@')
-    runs-on: ubuntu-24.04
+    name: Publish documentation to wyrd.foo
+    needs: [plan, build, npm, github-release]
+    # Package records publish after their GitHub Release; docs records and
+    # manual runs skip the package jobs.
+    if: ${{ !cancelled() && !failure() && needs.plan.outputs.publish == 'true' }}
     permissions:
       contents: read
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Publish documentation
-        uses: wyrd-company/wyrd.foo/.github/actions/publish-docs@v1
-        with:
-          docs-dir: docs
-          app-id: ${{ secrets.WYRD_TOOLS_DOCS_PUBLISHER_APP_ID }}
-          private-key: ${{ secrets.WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY }}
+    uses: wyrd-company/wyrd.foo/.github/workflows/publish-docs.yml@v2
+    with:
+      ref: ${{ inputs.ref || github.ref_name }}
+      feature: ${{ inputs.feature || false }}
+      feature-product: ${{ inputs.feature-product || '' }}
+      feature-days: ${{ inputs.feature-days || '14' }}
+      feature-reason: ${{ inputs.feature-reason || '' }}
+    # Only the two secrets the reusable workflow declares; the repo's npm and
+    # release secrets stay out of the called workflow.
+    secrets:
+      WYRD_TOOLS_DOCS_PUBLISHER_APP_ID: ${{ secrets.WYRD_TOOLS_DOCS_PUBLISHER_APP_ID }}
+      WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY: ${{ secrets.WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY }}
