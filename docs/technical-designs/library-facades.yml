@@ -682,11 +682,12 @@ proposed-design:
     nonempty untrimmed `name`, `not` with `node`, and `and` or `or` with `left`
     and `right`. Unknown node types decode as `{ unknown: true, raw }` at any
     depth, and the union has no depth bound. Extra rule, shortcut and node
-    metadata is preserved. A malformed rule, including one with a malformed
-    known node at any depth, is omitted and later rules are kept. More than 256
-    rules left after omission, or a non-array `keybindings`, fail decoding, with
-    later valid stream chunks still available. Reading keybindings does not
-    write, add or remove a rule.
+    metadata is preserved. A node's `type` alone decides whether it is known,
+    so `unknown` and `raw` keys on a known node stay metadata. A malformed
+    rule, including one with a malformed known node at any depth, is omitted
+    and later rules are kept. More than 256 rules left after omission, or a
+    non-array `keybindings`, fail decoding, with later valid stream chunks
+    still available. Reading keybindings does not write, add or remove a rule.
 
   optional-observability-log-export-flag: |
     Configuration reads and snapshots expose optional Boolean

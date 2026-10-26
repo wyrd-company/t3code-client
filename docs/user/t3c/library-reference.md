@@ -184,7 +184,8 @@ commands remain strings. <code>shortcut.key</code> is trimmed to 1 to 64 charact
 the five modifier flags are required Booleans. <code>whenAst</code> is a recursive union
 of <code>identifier</code>, <code>not</code>, <code>and</code> and <code>or</code> nodes without a depth bound; unknown node
 types decode as <code>{ unknown: true, raw }</code> at any depth and extra metadata is
-preserved. Malformed rules are omitted and later rules kept; more than 256
+preserved. A node&#39;s <code>type</code> alone decides whether it is known, so <code>unknown</code>
+and <code>raw</code> keys on a known node stay metadata. Malformed rules are omitted and later rules kept; more than 256
 remaining rules or a non-array fail decoding, and later valid stream chunks
 remain available. Reading keybindings does not add or remove a rule.
 Configuration reads, snapshots and <code>keybindingsUpdated</code> payloads type
@@ -1912,7 +1913,8 @@ commands remain strings. `shortcut.key` is trimmed to 1 to 64 characters and
 the five modifier flags are required Booleans. `whenAst` is a recursive union
 of `identifier`, `not`, `and` and `or` nodes without a depth bound; unknown node
 types decode as `{ unknown: true, raw }` at any depth and extra metadata is
-preserved. Malformed rules are omitted and later rules kept; more than 256
+preserved. A node's `type` alone decides whether it is known, so `unknown`
+and `raw` keys on a known node stay metadata. Malformed rules are omitted and later rules kept; more than 256
 remaining rules or a non-array fail decoding, and later valid stream chunks
 remain available. Reading keybindings does not add or remove a rule.
 Configuration reads, snapshots and `keybindingsUpdated` payloads type

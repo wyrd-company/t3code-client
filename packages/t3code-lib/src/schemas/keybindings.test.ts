@@ -36,6 +36,7 @@ const shortcut = {
 const rule = { command: "sidebar.toggle", shortcut };
 const id = (name: string) => ({ type: "identifier", name });
 const futureNode = { type: "future.node", detail: { retained: true } };
+const marks = [{ unknown: true }, { unknown: true, raw: { type: "identifier" } }];
 const flags = ["metaKey", "ctrlKey", "shiftKey", "altKey", "modKey"] as const;
 const without = (record: Record<string, unknown>, key: string) =>
   Object.fromEntries(Object.entries(record).filter(([name]) => name !== key));
@@ -190,13 +191,71 @@ it("rejects rules whose known when nodes are malformed at any depth", () => {
 
 it("preserves unknown rule, shortcut and node metadata", () => {
   const extra = { future: { retained: true } };
-  const decorated = {
-    ...rule,
-    ...extra,
-    shortcut: { ...shortcut, ...extra },
-    whenAst: { type: "not", node: { ...id("sampleFocus"), ...extra }, ...extra },
-  };
-  expect(ResolvedKeybindingRule.parse(decorated)).toEqual(decorated);
+  const leaf = { ...id("sampleFocus"), ...extra };
+  const not = { type: "not", node: leaf, ...extra };
+  const and = { type: "and", left: not, right: leaf, ...extra };
+  const or = { type: "or", left: leaf, right: not, ...extra };
+  for (const whenAst of [not, and, or, { type: "or", left: and, right: or, ...extra }]) {
+    const decorated = { ...rule, ...extra, shortcut: { ...shortcut, ...extra }, whenAst };
+    expect(ResolvedKeybindingRule.parse(decorated)).toEqual(decorated);
+  }
+});
+
+it("keeps unknown and raw metadata on known nodes at any depth", () => {
+  for (const mark of marks) {
+    const leaf = { ...id("sampleFocus"), ...mark };
+    const nodes = [
+      leaf,
+      { type: "not", node: leaf, ...mark },
+      { type: "and", left: leaf, right: id("sampleFocus"), ...mark },
+      { type: "or", left: id("sampleFocus"), right: leaf, ...mark },
+    ];
+    for (const node of nodes) {
+      for (const whenAst of [
+        node,
+        { type: "not", node },
+        { type: "and", left: id("sampleFocus"), right: node },
+        { type: "or", left: node, right: id("sampleFocus") },
+        {
+          type: "or",
+          left: { type: "and", left: { type: "not", node }, right: node },
+          right: node,
+        },
+      ]) {
+        expect(KeybindingWhenNode.parse(whenAst), JSON.stringify(whenAst)).toEqual(whenAst);
+        const rules = [{ ...rule, whenAst }, rule];
+        expect(ResolvedKeybindingsConfig.parse(rules)).toEqual(rules);
+      }
+    }
+  }
+});
+
+it("wraps unknown node types that carry unknown and raw metadata", () => {
+  for (const mark of marks) {
+    const future = { ...futureNode, ...mark };
+    const wrapped = { unknown: true, raw: future };
+    const leaf = { ...id("sampleFocus"), ...mark };
+    expect(KeybindingWhenNode.parse(future)).toEqual(wrapped);
+    expect(KeybindingWhenNode.parse({ type: "and", left: leaf, right: future })).toEqual({
+      type: "and",
+      left: leaf,
+      right: wrapped,
+    });
+  }
+});
+
+it("rejects malformed known nodes that carry unknown and raw metadata", () => {
+  const mark = { unknown: true, raw: futureNode };
+  const leaf = id("sampleFocus");
+  for (const whenAst of [
+    { ...id(""), ...mark },
+    { type: "not", ...mark },
+    { type: "and", left: leaf, ...mark },
+    { type: "or", right: leaf, ...mark },
+  ]) {
+    expect(ok({ ...rule, whenAst }), JSON.stringify(whenAst)).toBe(false);
+    expect(ok({ ...rule, whenAst: { type: "not", node: whenAst } })).toBe(false);
+  }
 });
 
 it("bounds the decoded list at 256 rules after omitting malformed ones", () => {

@@ -54,9 +54,33 @@ const malformed = [
   { command: "chat.new", shortcut, whenAst: { type: "not", node: { type: "and" } } },
 ];
 const many = (count: number) => Array.from({ length: count }, () => script);
+const marked = [{ unknown: true }, { unknown: true, raw: { type: "identifier" } }].map((mark) => {
+  const leaf = { type: "identifier", name: "sampleFocus", ...mark };
+  const and = { type: "and", left: { type: "not", node: leaf, ...mark }, right: leaf, ...mark };
+  const rule = {
+    command: "chat.new",
+    shortcut,
+    whenAst: { type: "or", left: and, right: futureNode, ...mark },
+  };
+  const wrapped = {
+    ...rule,
+    whenAst: { ...rule.whenAst, right: { unknown: true, raw: futureNode } },
+  };
+  return { rule, decoded: [wrapped, script] };
+});
 
 type ConfigWatchItem =
   ReturnType<ServerApi["watchConfig"]> extends AsyncIterable<infer Item> ? Item : never;
+const keybindingsOf = (item: ConfigWatchItem | undefined) => {
+  if (item === undefined || "kind" in item || "unknown" in item)
+    throw new Error("Expected a known event");
+  if (item.type === "snapshot") return item.config.keybindings;
+  if (item.type === "keybindingsUpdated") return item.payload.keybindings;
+  throw new Error("Expected a keybinding-bearing event");
+};
+const updated = (keybindings: unknown) => [
+  { version: 1, type: "keybindingsUpdated", payload: { keybindings, issues: [] } },
+];
 
 let server: FakeT3Server;
 let connection: RpcConnection;
@@ -109,9 +133,6 @@ it("counts the 256 rule bound after omission on configuration reads", async () =
 
 it("keeps later snapshot and keybinding update chunks usable after malformed keybindings", async () => {
   const valid = [...malformed, known, script];
-  const updated = (keybindings: unknown) => [
-    { version: 1, type: "keybindingsUpdated", payload: { keybindings, issues: [] } },
-  ];
   server.handle("subscribeServerConfig", () => ({
     kind: "stream",
     chunks: [
@@ -133,13 +154,32 @@ it("keeps later snapshot and keybinding update chunks usable after malformed key
     "decode-error",
     "item",
   ]);
-  const keybindingsOf = (item: ConfigWatchItem | undefined) => {
-    if (item === undefined || "kind" in item || "unknown" in item)
-      throw new Error("Expected a known event");
-    if (item.type === "snapshot") return item.config.keybindings;
-    if (item.type === "keybindingsUpdated") return item.payload.keybindings;
-    throw new Error("Expected a keybinding-bearing event");
-  };
   expect(keybindingsOf(seen[2])).toEqual(decoded);
   expect(keybindingsOf(seen[5])).toEqual(decoded);
+});
+
+it("keeps unknown and raw metadata on known when nodes on configuration reads", async () => {
+  for (const { rule, decoded: rules } of marked) {
+    server.respond("server.getConfig", configFor([rule, script]));
+    expect((await api.getConfig()).keybindings).toEqual(rules);
+  }
+});
+
+it("keeps snapshot and keybinding update chunks with known node metadata and later chunks", async () => {
+  server.handle("subscribeServerConfig", () => ({
+    kind: "stream",
+    chunks: [
+      ...marked.flatMap(({ rule }) => [
+        [{ version: 1, type: "snapshot", config: configFor([rule, script]) }],
+        updated([rule, script]),
+      ]),
+      updated([known, script]),
+    ],
+  }));
+  const seen: ConfigWatchItem[] = [];
+  for await (const item of api.watchConfig()) seen.push(item);
+  expect(seen.map(keybindingsOf)).toEqual([
+    ...marked.flatMap(({ decoded: rules }) => [rules, rules]),
+    decoded,
+  ]);
 });

@@ -32,7 +32,8 @@ export interface WatchServerLifecycleOptions {
  * the five modifier flags are required Booleans. `whenAst` is a recursive union
  * of `identifier`, `not`, `and` and `or` nodes without a depth bound; unknown node
  * types decode as `{ unknown: true, raw }` at any depth and extra metadata is
- * preserved. Malformed rules are omitted and later rules kept; more than 256
+ * preserved. A node's `type` alone decides whether it is known, so `unknown`
+ * and `raw` keys on a known node stay metadata. Malformed rules are omitted and later rules kept; more than 256
  * remaining rules or a non-array fail decoding, and later valid stream chunks
  * remain available. Reading keybindings does not add or remove a rule.
  * Configuration reads, snapshots and `keybindingsUpdated` payloads type

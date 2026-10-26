@@ -12,7 +12,6 @@ import {
   TrimmedNonEmptyString,
   forwardCompatibleArray,
   forwardCompatibleLiteral,
-  taggedUnionWithUnknown,
   type KnownOr,
   type UnknownVariant,
 } from "./common.ts";
@@ -139,15 +138,31 @@ export type KnownKeybindingWhenNode =
 export type KeybindingWhenNode = KnownKeybindingWhenNode | UnknownVariant<"type">;
 
 const whenNode = z.lazy((): z.ZodType<KeybindingWhenNode> => KeybindingWhenNode);
-/**
- * The parsed `when` condition. Unknown node types decode as `{ unknown: true, raw }`
- * at any depth; a malformed known node fails, so its rule is dropped.
- */
-export const KeybindingWhenNode: z.ZodType<KeybindingWhenNode> = taggedUnionWithUnknown("type", [
+const knownWhenNodes = [
   z.looseObject({ type: z.literal("identifier"), name: z.string().min(1) }),
   z.looseObject({ type: z.literal("not"), node: whenNode }),
   z.looseObject({ type: z.literal("and"), left: whenNode, right: whenNode }),
   z.looseObject({ type: z.literal("or"), left: whenNode, right: whenNode }),
+] as const;
+const knownWhenNodeTypes = new Set<string>(knownWhenNodes.map((node) => node.shape.type.value));
+/**
+ * A node's `type` alone selects its schema, so a known node keeps extra
+ * `unknown` and `raw` keys as metadata instead of reading as an unknown variant.
+ */
+const unknownWhenNode = z
+  .looseObject({
+    type: z.string().refine((type) => !knownWhenNodeTypes.has(type), {
+      message: "Known when node type did not match its schema",
+    }),
+  })
+  .transform((raw) => ({ unknown: true as const, raw }));
+/**
+ * The parsed `when` condition. Unknown node types decode as `{ unknown: true, raw }`
+ * at any depth; a malformed known node fails, so its rule is dropped.
+ */
+export const KeybindingWhenNode: z.ZodType<KeybindingWhenNode> = z.union([
+  z.discriminatedUnion("type", knownWhenNodes),
+  unknownWhenNode,
 ]);
 
 export const ResolvedKeybindingRule = z.looseObject({
