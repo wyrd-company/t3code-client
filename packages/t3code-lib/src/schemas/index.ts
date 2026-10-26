@@ -17,6 +17,7 @@ export * as vcs from "./vcs.ts";
 export * as worktreeSetup from "./worktreeSetup.ts";
 export * as orchestrationAttachments from "./orchestration/attachments.ts";
 export * as orchestrationBoundedSnapshot from "./orchestration/boundedSnapshot.ts";
+export * as orchestrationCommandOutput from "./orchestration/commandOutput.ts";
 export * as orchestrationCommands from "./orchestration/commands.ts";
 export * as orchestrationContext from "./orchestration/context.ts";
 export * as orchestrationEvents from "./orchestration/events.ts";

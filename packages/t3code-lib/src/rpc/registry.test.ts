@@ -24,6 +24,7 @@ const expected = {
   "orchestration.subscribeArchivedShell": [true, "orchestration:read"],
   "orchestration.subscribeShell": [true, "orchestration:read"],
   "orchestration.subscribeThread": [true, "orchestration:read"],
+  "orchestration.subscribeCommandOutput": [true, "orchestration:read"],
   "server.probe": [false, "orchestration:read"],
   "server.getConfig": [false, "orchestration:read"],
   "server.getSettings": [false, "orchestration:read"],

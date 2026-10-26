@@ -15,6 +15,10 @@ import type { RunId, ThreadId } from "../schemas/common.ts";
 import type { OrchestrationV2Command } from "../schemas/orchestration/commands.ts";
 import type { ThreadMetadataUpdatePayload } from "../schemas/orchestration/commands/thread.ts";
 import type {
+  OrchestrationV2CommandOutputFrame,
+  OrchestrationV2SubscribeCommandOutputInput,
+} from "../schemas/orchestration/commandOutput.ts";
+import type {
   ModelSelection,
   ProviderInteractionMode,
   RuntimeMode,
@@ -31,6 +35,7 @@ import type {
   OrchestrationV2ThreadLaunchResult,
 } from "../schemas/orchestration/stream.ts";
 import type { HttpTransport } from "../transport/http.ts";
+import { watchCommandOutput, type WatchCommandOutputOptions } from "./commandOutput.ts";
 import { isMissingResourceError, type CommandDispatcher } from "./dispatch.ts";
 import {
   ThreadCommands,
@@ -61,10 +66,12 @@ import {
   type PendingRequest,
   type ThreadPhase,
 } from "./threadProjection.ts";
+import type { DecodedStreamItem } from "./streamItems.ts";
 import { startThreadTurn } from "./threadTurnStart.ts";
 import { watchThread, type ThreadWatchItem, type ThreadWatchOptions } from "./threadWatch.ts";
 import type { StartTurnInput, TurnHandle } from "./turns.ts";
 
+export type { WatchCommandOutputOptions } from "./commandOutput.ts";
 export type { ThreadCreateInput, ThreadLaunchInput } from "./threadCreation.ts";
 export type { ThreadHistoryPageOptions, ThreadListOptions } from "./threadReads.ts";
 
@@ -179,6 +186,21 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
  * missing ids fail before sending. The server starts only a queued plain user
  * message on a stopped thread; otherwise it fails with
  * `OrchestrationV2DispatchCommandError`. No facade method sends it.
+ *
+ * `watchCommandOutput` follows `orchestration.subscribeCommandOutput` for one
+ * `command_execution` row (`{ threadId, itemId }`, trimmed nonempty ids). Each
+ * frame has `kind` (`replace` carries the bounded tail, `append` extends it;
+ * future strings survive), terminal `text` with its escapes passed through
+ * unchanged, `truncated` and `running`. All four fields are required and
+ * unknown fields survive. The stream ends after a frame with `running: false`;
+ * a settled row sends one `replace` frame. A malformed frame is delivered as a
+ * decode error, recognised by its `error` being a `T3DecodeError` because a
+ * frame's `kind` is an open string, and later frames continue. A missing
+ * thread, a missing row or a row that is not a command fails with
+ * `OrchestrationV2CommandOutputError`. Returning early or aborting the signal
+ * ends the subscription; there is no resubscription. Servers that support it
+ * advertise `commandOutputStreaming`; check that flag before subscribing on an
+ * older server. The library does not render terminal output.
  */
 export class ThreadsApi {
   readonly #commands: ThreadCommands;
@@ -403,6 +425,14 @@ export class ThreadsApi {
       ...options,
       snapshotLoader: (signal) => this.detail(threadId, signal),
     });
+  }
+
+  /** Follow one command row's output; decode failures remain stream items. */
+  watchCommandOutput(
+    input: OrchestrationV2SubscribeCommandOutputInput,
+    options: WatchCommandOutputOptions = {},
+  ): AsyncIterable<DecodedStreamItem<OrchestrationV2CommandOutputFrame>> {
+    return watchCommandOutput(this.rpc, input, options);
   }
 
   /** Derive the visible phase from a thread summary. */

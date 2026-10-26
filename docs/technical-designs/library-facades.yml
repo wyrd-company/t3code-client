@@ -60,6 +60,7 @@ proposed-design:
       dismissUserInput(input: { threadId; requestId }): Promise<void>
       pendingRequests(threadId): Promise<PendingRequest[]>                         // pending runtime requests joined with their turn items
       watch(threadId, options?: WatchOptions): AsyncIterable<ThreadWatchItem>       // resumable live view
+      watchCommandOutput({ threadId, itemId }, options?: { signal? }): AsyncIterable<DecodedStreamItem<OrchestrationV2CommandOutputFrame>>  // orchestration.subscribeCommandOutput stream
       phase(thread: OrchestrationV2ThreadShell): ThreadPhase                        // pure; "waiting_for_approval" | "waiting_for_input" | "failed" | "starting" | "running" | "completed" | "idle"
       dispatch(command: OrchestrationV2Command): Promise<DispatchResult>
     }
@@ -351,6 +352,29 @@ proposed-design:
     output. False and omission are preserved; omission does not advertise support.
     Supplied non-boolean values fail decoding. Unknown capability fields remain
     intact. This metadata flag does not subscribe to command output.
+
+  command-output-stream: |
+    `threads.watchCommandOutput({ threadId, itemId }, { signal? })` mirrors the
+    stream `orchestration.subscribeCommandOutput` with scope `orchestration:read`
+    for one `command_execution` row. Both ids are trimmed nonempty strings and
+    are validated before sending; unknown input keys pass through. Each frame
+    has required `kind`, `text`, `truncated` and `running`. `replace` carries
+    the whole bounded tail (the first frame, or after the client fell behind)
+    and `append` extends it; a future `kind` string remains available. `text`
+    is terminal output with its cursor and style escapes, passed through
+    unchanged; the library does not render it. `truncated` reports that
+    earlier output was dropped. The stream ends after a frame with
+    `running: false`; a settled row sends one `replace` frame. Unknown frame
+    fields remain available. A malformed frame is delivered as a decode error,
+    recognised by its `error` being a `T3DecodeError` because a frame `kind`
+    is an open string, and later frames continue. A missing thread, a missing
+    row or a row that is not a command fails with
+    `OrchestrationV2CommandOutputError` (`threadId`, plain `message`, optional
+    `cause`). Returning early or aborting the signal ends the subscription;
+    the facade does not resubscribe. Servers that support the stream
+    advertise `commandOutputStreaming`; callers check that flag before
+    subscribing on an older server. The library adds no capability or version
+    check.
 
   optional-ignored-file-listing-capability: |
     `ExecutionEnvironmentCapabilities.ignoredFileListing` is an optional boolean

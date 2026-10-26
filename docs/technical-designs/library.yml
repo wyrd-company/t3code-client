@@ -102,6 +102,7 @@ proposed-design:
           threadFind.ts         find within one thread
           shell.ts              project and thread shells, shell snapshot and stream items
           stream.ts             thread stream items, RPC inputs and outputs, launch
+          commandOutput.ts      command output subscription input and frames
           commands.ts           OrchestrationV2Command union (commands/*.ts by family)
         server.ts               ServerConfig (providers, keybindings, issues and idleCompaction typed; other settings loose), config/lifecycle stream events
         databaseStorage.ts      database storage status stream items (re-exported by server.ts)
@@ -128,7 +129,8 @@ proposed-design:
       api/                      facades composed by T3Client
         server.ts               getConfig, probe, watchConfig, watchLifecycle, watchDatabaseStorage
         projects.ts             list, get, snapshot, create, update, delete, ensure, ensureScratch, createNew, files
-        threads.ts              list, get, detail, projection, historyPage, transcript, create, ensure, launch, update, archive, delete, startTurn, interrupt, stop, respond*, watch
+        threads.ts              list, get, detail, projection, historyPage, transcript, create, ensure, launch, update, archive, delete, startTurn, interrupt, stop, respond*, watch, watchCommandOutput
+        commandOutput.ts        watchCommandOutput: one command row's output stream
         threadReads.ts          shell lookups with the archived fallback; detail, history page, transcript routes
         threadCreation.ts       create and launch inputs and payloads
         threadCommands.ts       command builders

@@ -133,6 +133,7 @@ proposed-design:
     | `orchestration.subscribeArchivedShell`   | orch:read    | stream of `OrchestrationV2ArchivedShellStreamItem`                                                                                                    |
     | `orchestration.subscribeShell`           | orch:read    | `{afterSequence?, requestCompletionMarker?}` → stream of `OrchestrationV2ShellStreamItem`                                                             |
     | `orchestration.subscribeThread`          | orch:read    | `{threadId, afterSequence?, requestCompletionMarker?, acceptBoundedSnapshot?, acceptCompactTurnItems?}` → stream of `OrchestrationV2ThreadStreamItem` |
+    | `orchestration.subscribeCommandOutput`   | orch:read    | `{threadId, itemId}` → stream of `{kind, text, truncated, running}` frames, ending after `running: false`; fails `OrchestrationV2CommandOutputError`    |
 
     Projects are not orchestration commands: `projects.mutate` (orch:operate)
     takes a `ProjectMutation` (`project.create`, `project.update`,

@@ -52,6 +52,7 @@ export type {
   ThreadHistoryPageOptions,
   ThreadListOptions,
   ThreadMetaUpdate,
+  WatchCommandOutputOptions,
   WatchOptions,
 } from "./api/threads.ts";
 export type {

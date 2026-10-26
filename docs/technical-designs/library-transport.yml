@@ -239,8 +239,8 @@ proposed-design:
     export type StreamItem<T> = { kind: "item"; value: T } | { kind: "decode-error"; error: T3DecodeError }
     ```
 
-    Registry coverage for this version, all typed: the fifteen orchestration
-    methods; `projects.mutate`; `mcpApps.callTool`, `mcpApps.toolInfo`,
+    Registry coverage for this version, all typed: the sixteen orchestration
+    methods, including the `orchestration.subscribeCommandOutput` stream; `projects.mutate`; `mcpApps.callTool`, `mcpApps.toolInfo`,
     `mcpApps.readResource`, `mcpApps.updateModelContext`; `server.probe`, `server.getConfig`,
     `server.getSettings`, `server.refreshProviders`, `server.getDatabaseStorage`,
     `subscribeServerConfig`, `subscribeServerLifecycle`, `subscribeAuthAccess`; `vcs.listRefs`,

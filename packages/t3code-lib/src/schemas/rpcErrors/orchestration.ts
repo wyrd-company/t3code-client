@@ -71,6 +71,12 @@ export const OrchestrationV2StopWorkflowError = taggedError("OrchestrationV2Stop
   reason: forwardCompatibleLiteral(["not-running", "unsupported", "unavailable", "stop-failed"]),
   cause: Defect.optional(),
 });
+/** Raised by `orchestration.subscribeCommandOutput`, for example when the row is not a command. */
+export const OrchestrationV2CommandOutputError = taggedError("OrchestrationV2CommandOutputError", {
+  threadId: ThreadId,
+  message: z.string(),
+  cause: Defect.optional(),
+});
 export const OrchestrationV2SearchThreadError = taggedError("OrchestrationV2SearchThreadError", {
   cause: Defect,
 });

@@ -4,6 +4,10 @@
 // ---
 import { z } from "zod";
 import { defineMethod } from "../spec.ts";
+import {
+  OrchestrationV2CommandOutputFrame,
+  OrchestrationV2SubscribeCommandOutputInput,
+} from "../../schemas/orchestration/commandOutput.ts";
 import { OrchestrationV2Command } from "../../schemas/orchestration/commands.ts";
 import { OrchestrationV2ThreadProjection } from "../../schemas/orchestration/projection.ts";
 import {
@@ -132,6 +136,13 @@ export const orchestrationMethods = {
   "orchestration.subscribeThread": defineMethod({
     payload: OrchestrationV2SubscribeThreadInput,
     success: OrchestrationV2ThreadStreamItem,
+    stream: true,
+    scope: read,
+  }),
+  /** One command row's output; the stream ends after a frame with `running: false`. */
+  "orchestration.subscribeCommandOutput": defineMethod({
+    payload: OrchestrationV2SubscribeCommandOutputInput,
+    success: OrchestrationV2CommandOutputFrame,
     stream: true,
     scope: read,
   }),

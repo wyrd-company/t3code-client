@@ -173,6 +173,20 @@ queued-run commands, unknown command metadata survives, and malformed or
 missing ids fail before sending. The server starts only a queued plain user
 message on a stopped thread; otherwise it fails with
 <code>OrchestrationV2DispatchCommandError</code>. No facade method sends it.</p>
+<p><code>watchCommandOutput</code> follows <code>orchestration.subscribeCommandOutput</code> for one
+<code>command_execution</code> row (<code>{ threadId, itemId }</code>, trimmed nonempty ids). Each
+frame has <code>kind</code> (<code>replace</code> carries the bounded tail, <code>append</code> extends it;
+future strings survive), terminal <code>text</code> with its escapes passed through
+unchanged, <code>truncated</code> and <code>running</code>. All four fields are required and
+unknown fields survive. The stream ends after a frame with <code>running: false</code>;
+a settled row sends one <code>replace</code> frame. A malformed frame is delivered as a
+decode error, recognised by its <code>error</code> being a <code>T3DecodeError</code> because a
+frame&#39;s <code>kind</code> is an open string, and later frames continue. A missing
+thread, a missing row or a row that is not a command fails with
+<code>OrchestrationV2CommandOutputError</code>. Returning early or aborting the signal
+ends the subscription; there is no resubscription. Servers that support it
+advertise <code>commandOutputStreaming</code>; check that flag before subscribing on an
+older server. The library does not render terminal output.</p>
 </dd>
 <dt><a href="#ShellApi">ShellApi</a></dt>
 <dd><p>Live and archived cross-thread snapshots. Thread shells carry optional
@@ -1491,6 +1505,21 @@ missing ids fail before sending. The server starts only a queued plain user
 message on a stopped thread; otherwise it fails with
 `OrchestrationV2DispatchCommandError`. No facade method sends it.
 
+`watchCommandOutput` follows `orchestration.subscribeCommandOutput` for one
+`command_execution` row (`{ threadId, itemId }`, trimmed nonempty ids). Each
+frame has `kind` (`replace` carries the bounded tail, `append` extends it;
+future strings survive), terminal `text` with its escapes passed through
+unchanged, `truncated` and `running`. All four fields are required and
+unknown fields survive. The stream ends after a frame with `running: false`;
+a settled row sends one `replace` frame. A malformed frame is delivered as a
+decode error, recognised by its `error` being a `T3DecodeError` because a
+frame's `kind` is an open string, and later frames continue. A missing
+thread, a missing row or a row that is not a command fails with
+`OrchestrationV2CommandOutputError`. Returning early or aborting the signal
+ends the subscription; there is no resubscription. Servers that support it
+advertise `commandOutputStreaming`; check that flag before subscribing on an
+older server. The library does not render terminal output.
+
 **Kind**: global class
 
 - [ThreadsApi](#ThreadsApi)
@@ -1520,6 +1549,7 @@ message on a stopped thread; otherwise it fails with
   - [.dismissUserInput()](#ThreadsApi+dismissUserInput)
   - [.pendingRequests()](#ThreadsApi+pendingRequests)
   - [.watch()](#ThreadsApi+watch)
+  - [.watchCommandOutput()](#ThreadsApi+watchCommandOutput)
   - [.phase()](#ThreadsApi+phase)
   - [.dispatch()](#ThreadsApi+dispatch)
 
@@ -1845,6 +1875,20 @@ Resumable live view; the projection is seeded from the HTTP detail when resuming
 
 ```ts
 watch(threadId: ThreadId, options: WatchOptions = {}): AsyncIterable<ThreadWatchItem>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+watchCommandOutput"></a>
+
+### threadsApi.watchCommandOutput()
+
+Follow one command row's output; decode failures remain stream items.
+
+```ts
+watchCommandOutput(
+    input: OrchestrationV2SubscribeCommandOutputInput,
+    options: WatchCommandOutputOptions = {},
+  ): AsyncIterable<DecodedStreamItem<OrchestrationV2CommandOutputFrame>>;
 ```
 
 **Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
