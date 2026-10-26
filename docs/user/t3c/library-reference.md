@@ -69,6 +69,13 @@ empty contents, zero byteLength, truncated false and <code>exists: false</code> 
 absent file. Omitted or false <code>allowMissing</code> retains the missing-file error.
 The optional boolean result field <code>exists</code> can be omitted by the server;
 omission does not mean that the file is absent.</p>
+<p><code>projects.files.listIgnored({ cwd })</code> lists the untracked files git ignores
+under <code>cwd</code>, each with a trimmed nonempty <code>path</code> and a nonnegative integer
+<code>byteLength</code>. The server leaves out wholly ignored folders and ignored
+symbolic links, and caps the list; <code>truncated</code> is true when more files
+matched than it returned. A directory outside a repository returns no files.
+A malformed file entry is left out and the other entries remain. A missing or
+non-directory <code>cwd</code> fails with <code>ProjectListEntriesError</code>.</p>
 </dd>
 <dt><a href="#ThreadsApi">ThreadsApi</a></dt>
 <dd><p>Thread lifecycle, history, runs and pending requests.
@@ -1220,6 +1227,14 @@ empty contents, zero byteLength, truncated false and `exists: false` for an
 absent file. Omitted or false `allowMissing` retains the missing-file error.
 The optional boolean result field `exists` can be omitted by the server;
 omission does not mean that the file is absent.
+
+`projects.files.listIgnored({ cwd })` lists the untracked files git ignores
+under `cwd`, each with a trimmed nonempty `path` and a nonnegative integer
+`byteLength`. The server leaves out wholly ignored folders and ignored
+symbolic links, and caps the list; `truncated` is true when more files
+matched than it returned. A directory outside a repository returns no files.
+A malformed file entry is left out and the other entries remain. A missing or
+non-directory `cwd` fails with `ProjectListEntriesError`.
 
 **Kind**: global class
 

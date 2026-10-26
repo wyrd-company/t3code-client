@@ -42,6 +42,7 @@ const expected = {
   "worktreeSetup.cancel": [false, "orchestration:operate"],
   "projects.mutate": [false, "orchestration:operate"],
   "projects.listEntries": [false, "filesystem:read"],
+  "projects.listIgnoredFiles": [false, "filesystem:read"],
   "projects.readFile": [false, "filesystem:read"],
   "projects.writeFile": [false, "filesystem:write"],
   "projects.searchEntries": [false, "filesystem:read"],

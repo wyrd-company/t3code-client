@@ -36,7 +36,7 @@ proposed-design:
       delete(projectId, options?: { force?: boolean }): Promise<void>  // idempotent: not found resolves
       ensureScratch(): Promise<ProjectEnsureScratchResult>             // server finds or creates the Scratch project
       createNew(input: { name: string }): Promise<ProjectCreateNewResult>  // server makes the folder, first commit, and project
-      files: { list, read, write, searchEntries, searchContents }      // thin typed RPC wrappers
+      files: { list, listIgnored, read, write, searchEntries, searchContents }  // thin typed RPC wrappers
     }
 
     export class ThreadsApi {
@@ -381,6 +381,20 @@ proposed-design:
     byteLength, truncated false and exists false. Omitted or false retains the
     server's missing-file error. The optional boolean result field `exists` can
     be omitted by the server; callers must not infer absence from omission.
+
+  ignored-file-listing: |
+    `projects.files.listIgnored({ cwd }, signal?)` mirrors
+    `projects.listIgnoredFiles` with scope `filesystem:read`. The input `cwd` is
+    a trimmed nonempty string. The result has a required `files` array and a
+    required boolean `truncated`. Each file has a trimmed nonempty `path` and a
+    nonnegative integer `byteLength`. The server lists the untracked files git
+    ignores, leaves out wholly ignored folders and ignored symbolic links, and
+    caps the list; `truncated` is true when more files matched than it returned.
+    A directory outside a repository returns no files. A missing or
+    non-directory `cwd` fails with `ProjectListEntriesError`. A malformed file
+    entry is left out and the other entries remain. Unknown input, file and
+    result fields remain available. The library adds no capability or version
+    check; the server owns git, the limit and its timeout.
 
   optional-repository-root-detection: |
     `vcs.listRefs` returns an optional boolean `isAtRepositoryRoot` that reports

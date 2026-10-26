@@ -80,6 +80,7 @@ proposed-design:
         rpcErrors/              orchestration, MCP app, vcs, and terminal error records, shared tagged-error helpers
         mcpApps.ts              MCP App tool calls, tool info, resource reads, model context
         projects.ts             Project, ProjectMutation, icons and scripts, file entries, read/write/search
+        projectsIgnoredFiles.ts ignored file listing input, file entries and result (re-exported by projects.ts)
         orchestration/          mirrors orchestrationV2.ts and the files it imports
           model.ts              ModelSelection, modes, decisions, answers, actor and creation source, ProviderRef
           attachments.ts        ChatAttachment family

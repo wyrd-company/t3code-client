@@ -18,6 +18,8 @@ import {
 import { RepositoryIdentity, ThreadEnvMode } from "./environment.ts";
 import { ModelSelection } from "./orchestration/model.ts";
 
+export * from "./projectsIgnoredFiles.ts";
+
 export const PROJECT_SEARCH_ENTRIES_MAX_LIMIT = 200;
 export const ProjectEntryKind = forwardCompatibleLiteral(["file", "directory"]);
 export type ProjectEntryKind = z.infer<typeof ProjectEntryKind>;

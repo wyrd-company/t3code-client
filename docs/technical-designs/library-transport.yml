@@ -247,8 +247,9 @@ proposed-design:
     `vcs.refreshStatus`, `vcs.createWorktree`, `vcs.removeWorktree`,
     `vcs.createRef`, `vcs.switchRef`, `subscribeVcsStatus`,
     `subscribeWorktreeSetup`, `worktreeSetup.cancel`; `projects.listEntries`,
-    `projects.readFile`, `projects.writeFile`, `projects.searchEntries`,
-    `projects.searchContents`, `projects.ensureScratch`, `projects.createNew`;
+    `projects.listIgnoredFiles`, `projects.readFile`, `projects.writeFile`,
+    `projects.searchEntries`, `projects.searchContents`, `projects.ensureScratch`,
+    `projects.createNew`;
     `terminal.open`, `terminal.attach`, `terminal.write`, `terminal.resize`,
     `terminal.close`, `subscribeTerminalEvents`. Everything else goes through
     `callRaw` and `streamRaw` until it is added; adding a method is one entry in
