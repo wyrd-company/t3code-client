@@ -23,11 +23,11 @@ describe("workflow agreements", () => {
     const paths = [...publish().matchAll(/path: (\$\{\{ runner.temp \}\}\/package)/g)];
     expect(paths).toHaveLength(3);
   });
-  it("publishes only the two new unit tag families", () => {
+  it("publishes only the three unit tag families", () => {
     const patterns = [...publish().matchAll(/^      - "([^"]+@\*)"$/gm)]
       .map((match) => match[1])
       .sort();
-    expect(patterns).toEqual(["t3code-cli@*", "t3code-lib@*"]);
+    expect(patterns).toEqual(["t3c-docs@*", "t3code-cli@*", "t3code-lib@*"]);
   });
   it("uses one saved plan for validation, apply and record creation", () => {
     const workflow = release();
@@ -75,14 +75,23 @@ describe("release foundation wiring", () => {
 });
 
 describe("distribution workflow agreements", () => {
-  it("publishes the CLI docs only after its package succeeds", () => {
-    const job = publish().split("  docs:")[1];
-    expect(job).toContain("needs: [build, npm]");
-    expect(job).toContain("if: startsWith(github.ref_name, 't3code-cli@')");
-    expect(job).toContain("wyrd-company/wyrd.foo/.github/actions/publish-docs@v1");
-    expect(job).toContain("docs-dir: docs");
+  it("publishes the docs through the v2 reusable workflow after the GitHub Release", () => {
+    const job = publish().split("\n  docs:")[1];
+    expect(job).toContain("needs: [plan, build, npm, github-release]");
+    expect(job).toContain("needs.plan.outputs.publish == 'true'");
+    expect(job).toContain("uses: wyrd-company/wyrd.foo/.github/workflows/publish-docs.yml@v2");
+    expect(job).not.toContain("docs-dir");
+    expect(job).not.toContain("secrets: inherit");
     expect(job).toContain("secrets.WYRD_TOOLS_DOCS_PUBLISHER_APP_ID");
     expect(job).toContain("secrets.WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY");
+  });
+  it("does not publish docs on a plain push to main and builds packages only for package records", () => {
+    const workflow = publish();
+    expect(workflow.split("\njobs:")[0]).not.toContain("branches:");
+    expect(workflow).toContain("workflow_dispatch:");
+    const build = workflow.split("\n  build:")[1]!.split("\n  npm:")[0]!;
+    expect(build).toContain("github.event_name == 'push'");
+    expect(build).toContain("startsWith(github.ref_name, 't3code-cli@')");
   });
   it("regenerates shrinkwrap after applying release versions before the commit", () => {
     const workflow = release();
