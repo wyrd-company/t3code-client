@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1
+
+### Fixes
+
+- Publish the t3c docs from docs/user in the wyrd.foo format.
+- Report stock T3 Code 0.1.2 as the target server and verify CLI compatibility.
+
 ## 0.1.0
 
 ### Features

@@ -7,8 +7,8 @@ assets:
 products:
   t3c:
     name: t3c
-    version: 0.1.0
-    docs-version: 0.1.0
+    version: 0.1.1
+    docs-version: 0.2.0
     release-unit: t3code-cli
     tagline: Run T3 Code conversations from your terminal and automation.
     blurb: >-
