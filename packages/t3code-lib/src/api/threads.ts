@@ -168,6 +168,11 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
  * nonnegative integer `completedAt` epoch milliseconds. Zero and omission are
  * preserved, malformed values fail decoding, and unknown metadata survives.
  * Reading it does not change workflow completion.
+ * `dispatch` accepts the `thread.stop` command with `commandId`, `threadId` and
+ * an optional `reason` string. Any string reason passes unchanged, omission stays
+ * absent, unknown command metadata survives, and malformed fields fail before
+ * sending. Servers that accept it advertise `threadStop`; `dispatch` does not
+ * check that flag. `stop` still sends `run.interrupt` with `holdQueue`.
  */
 export class ThreadsApi {
   readonly #commands: ThreadCommands;

@@ -25,6 +25,18 @@ import { OrchestrationV2LimitRecoveryUpdate } from "../thread.ts";
 
 const stamped = { commandId: CommandId, threadId: ThreadId } as const;
 
+/**
+ * Stop a thread's work on a server that advertises the `threadStop`
+ * capability. `reason` is any string the caller supplies; it is never
+ * trimmed or bounded. `ThreadsApi.stop` keeps sending `run.interrupt`.
+ */
+export const ThreadStopCommand = z.looseObject({
+  type: z.literal("thread.stop"),
+  ...stamped,
+  reason: z.string().optional(),
+});
+export type ThreadStopCommand = z.infer<typeof ThreadStopCommand>;
+
 export const ThreadCreateCommand = z.looseObject({
   type: z.literal("thread.create"),
   ...OrchestrationV2CreationFields,
@@ -164,6 +176,7 @@ export const ProviderSessionDetachCommand = z.looseObject({
 });
 
 export const threadCommandMembers = [
+  ThreadStopCommand,
   ThreadCreateCommand,
   ThreadArchiveCommand,
   ThreadUnarchiveCommand,

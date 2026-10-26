@@ -154,7 +154,12 @@ does not execute a workflow or change message text.
 Workflow agents in projection/detail reads and subagent updates expose optional
 nonnegative integer <code>completedAt</code> epoch milliseconds. Zero and omission are
 preserved, malformed values fail decoding, and unknown metadata survives.
-Reading it does not change workflow completion.</p>
+Reading it does not change workflow completion.
+<code>dispatch</code> accepts the <code>thread.stop</code> command with <code>commandId</code>, <code>threadId</code> and
+an optional <code>reason</code> string. Any string reason passes unchanged, omission stays
+absent, unknown command metadata survives, and malformed fields fail before
+sending. Servers that accept it advertise <code>threadStop</code>; <code>dispatch</code> does not
+check that flag. <code>stop</code> still sends <code>run.interrupt</code> with <code>holdQueue</code>.</p>
 </dd>
 <dt><a href="#ShellApi">ShellApi</a></dt>
 <dd><p>Live and archived cross-thread snapshots. Thread shells carry optional
@@ -1445,6 +1450,11 @@ Workflow agents in projection/detail reads and subagent updates expose optional
 nonnegative integer `completedAt` epoch milliseconds. Zero and omission are
 preserved, malformed values fail decoding, and unknown metadata survives.
 Reading it does not change workflow completion.
+`dispatch` accepts the `thread.stop` command with `commandId`, `threadId` and
+an optional `reason` string. Any string reason passes unchanged, omission stays
+absent, unknown command metadata survives, and malformed fields fail before
+sending. Servers that accept it advertise `threadStop`; `dispatch` does not
+check that flag. `stop` still sends `run.interrupt` with `holdQueue`.
 
 **Kind**: global class
 

@@ -286,6 +286,14 @@ proposed-design:
     create something; the server stamps `createdBy: "user"` on everything a
     client dispatches.
 
+    `thread.stop` carries `commandId`, `threadId` and an optional `reason`
+    string. `threads.dispatch` and typed `rpc.call` validate and send it: any
+    string reason passes unchanged, omission stays absent, unknown metadata
+    survives, and malformed fields fail before sending. A server that accepts
+    it advertises `threadStop`; the library does not check that flag. A missing
+    thread fails with `OrchestrationV2DispatchCommandError`. `threads.stop`
+    still sends `run.interrupt` with `holdQueue`.
+
     The thread shell carries `status` (`idle` or the latest run's status),
     `activeRunId`, `pendingRuntimeRequest`, and `latestVisibleMessage`, so a
     list view needs no projection. Its optional boolean `latestRunStopRequested`

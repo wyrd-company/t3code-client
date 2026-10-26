@@ -517,6 +517,7 @@ proposed-design:
     False and omission are preserved; omission does not advertise support.
     Supplied non-boolean values fail decoding. Unknown fields remain intact.
     This metadata flag does not dispatch a command or change `threads.stop`.
+    Callers send the `thread.stop` command itself through `threads.dispatch`.
 
   optional-server-self-update-capability: |
     `ExecutionEnvironmentCapabilities.serverSelfUpdate` is an optional growing
