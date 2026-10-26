@@ -21,7 +21,8 @@ Read `docs/technical-designs/testing.yml` and `docs/technical-designs/releasing.
 - `scripts/release`: shared unit-aware pack, validation and publication steps.
 - `.intentional`: independent unit projections and one pre-0.1.0 intent per unit.
 - `docs/user`: the published wyrd.foo docs, in the v2 format. Release unit
-  `t3c-docs` (tag-only) versions them; `docs/user/docs.yml` versions are hand-set.
+  `t3c-docs` (tag-only) versions them. Intentional projects the `t3c` `version`
+  and `docs-version` into `docs/user/docs.yml`.
 
 ## Conventions
 

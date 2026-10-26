@@ -33,6 +33,12 @@ function setup() {
       `packages/${unit}/package.json`,
       JSON.stringify({ name: `@wyrd-company/${unit}`, version: "0.0.0" }),
     );
+  // docs.yml holds the product versions as Intentional projections.
+  write(
+    root,
+    "docs/user/docs.yml",
+    "schemaVersion: 1\nproducts:\n  t3c:\n    version: 0.0.0\n    docs-version: 0.1.0\n",
+  );
   command(root, "git", ["init", "--quiet", "--initial-branch=main"]);
   command(root, "git", ["config", "user.name", "Agent"]);
   command(root, "git", ["config", "user.email", "agent@example.invalid"]);
@@ -73,6 +79,22 @@ describe("Intentional record agreement", () => {
     ).toBe("0.0.0");
     const checked = run(root, "verify-release-tag.sh", ["t3code-lib@0.1.0"]);
     expect(checked.status, checked.stderr).toBe(0);
+  });
+  it("projects the command and docs versions into docs.yml", () => {
+    const root = setup();
+    command(root, "intentional", [
+      "add",
+      "--release-unit",
+      "t3code-cli:minor",
+      "--release-unit",
+      "t3c-docs:patch",
+      "--message",
+      "Provide command.",
+    ]);
+    command(root, "intentional", ["apply"]);
+    const manifest = NodeFS.readFileSync(`${root}/docs/user/docs.yml`, "utf8");
+    expect(manifest).toContain("    version: 0.1.0\n");
+    expect(manifest).toContain("    docs-version: 0.1.1\n");
   });
   it("refuses apply after pending inputs drift from the saved plan", () => {
     const root = setup();
@@ -115,11 +137,6 @@ describe("Intentional record agreement", () => {
   it("baselines a missing docs unit at its docs-version without tagging the source repository", () => {
     const root = setup();
     command(root, "git", ["tag", "-d", "t3c-docs@0.1.0"]);
-    write(
-      root,
-      "docs/user/docs.yml",
-      "schemaVersion: 1\nproducts:\n  t3c:\n    version: 0.0.0\n    docs-version: 0.1.0\n",
-    );
     const result = run(root, "check-intents.sh");
     expect(result.status, result.stderr).toBe(0);
     expect(command(root, "git", ["tag", "--list", "t3c-docs@*"]).trim()).toBe("");
@@ -127,6 +144,7 @@ describe("Intentional record agreement", () => {
   it("refuses a missing docs unit baseline when docs.yml holds no docs-version", () => {
     const root = setup();
     command(root, "git", ["tag", "-d", "t3c-docs@0.1.0"]);
+    write(root, "docs/user/docs.yml", "schemaVersion: 1\nproducts:\n  t3c:\n    version: 0.0.0\n");
     const result = run(root, "check-intents.sh");
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("Missing authoritative baseline for t3c-docs");
