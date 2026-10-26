@@ -24,12 +24,11 @@ proposed-design:
     | `t3c-docs`   | `docs/user/docs.yml`               | none (tag-only)            | `t3c-docs@X.Y.Z`   |
 
     `t3c-docs` is the docs unit of the `t3c` product. Its path is `docs/user/t3c`
-    and it depends on `t3code-cli`, so a CLI release plans a docs release too. It
-    is tag-only: it has no package and no GitHub Release. Its version and the CLI's
-    version are the `docs-version` and `version` of the `t3c` product in
-    `docs/user/docs.yml`. Intentional does not project into that file from outside
-    the unit path, so both are set by hand: before dispatching Release, set them to
-    the versions `intentional plan` computes.
+    and it depends on `t3code-cli`. It is tag-only: it has no package and no
+    GitHub Release. Intentional projects the `t3code-cli` version into
+    `/products/t3c/version` and the `t3c-docs` version into
+    `/products/t3c/docs-version` of `docs/user/docs.yml`, so `intentional apply`
+    writes both.
 
     The root CHANGELOG.md and `t3code-client@*` tags are historical records for the
     retired package. Keep them intact. Bob owns deprecation of the old npm name.
@@ -51,8 +50,8 @@ proposed-design:
     `task intents` and CI use a disposable clone, overlay the current configuration
     and manifests, and create local-only baselines for missing zero-version units.
     These clones never push. The working repository's tags remain intact. The units
-    and their projection files come from `.intentional/config.yml`; a tag-only unit
-    is baselined at its `docs-version`.
+    and their projection files come from `.intentional/config.yml`; a docs unit
+    is baselined at the version its `docs/user/docs.yml` projection holds.
 
     Only at staged epic finalization, after Bob's UAT, client default-branch merge
     and epic retrospective, establish
@@ -93,7 +92,8 @@ proposed-design:
     Intentional applies the whole pending plan. It has no per-unit apply switch.
     Release compares the entire planned record set against the expected set and
     fails on any difference. To release only one unit, only that unit may be pending;
-    name only its record. A CLI release always plans a `t3c-docs` record with it;
+    name only its record. `depends-on` does not bump `t3c-docs`: a CLI intent
+    names `t3c-docs` too, so a CLI release plans a `t3c-docs` record with it;
     a docs-only change plans only `t3c-docs`. No unrelated unit is bumped
     implicitly. Versions are independent even when a single dispatch releases
     several units.
