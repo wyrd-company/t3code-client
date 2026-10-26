@@ -21,6 +21,15 @@ proposed-design:
     | ------------ | ---------------------------------- | -------------------------- | ------------------ |
     | `t3code-lib` | `packages/t3code-lib/package.json` | `@wyrd-company/t3code-lib` | `t3code-lib@X.Y.Z` |
     | `t3code-cli` | `packages/t3code-cli/package.json` | `@wyrd-company/t3code-cli` | `t3code-cli@X.Y.Z` |
+    | `t3c-docs`   | `docs/user/docs.yml`               | none (tag-only)            | `t3c-docs@X.Y.Z`   |
+
+    `t3c-docs` is the docs unit of the `t3c` product. Its path is `docs/user/t3c`
+    and it depends on `t3code-cli`, so a CLI release plans a docs release too. It
+    is tag-only: it has no package and no GitHub Release. Its version and the CLI's
+    version are the `docs-version` and `version` of the `t3c` product in
+    `docs/user/docs.yml`. Intentional does not project into that file from outside
+    the unit path, so both are set by hand: before dispatching Release, set them to
+    the versions `intentional plan` computes.
 
     The root CHANGELOG.md and `t3code-client@*` tags are historical records for the
     retired package. Keep them intact. Bob owns deprecation of the old npm name.
@@ -41,7 +50,9 @@ proposed-design:
     Manifests start at 0.0.0. No authoritative tags are made on an epic branch.
     `task intents` and CI use a disposable clone, overlay the current configuration
     and manifests, and create local-only baselines for missing zero-version units.
-    These clones never push. The working repository's tags remain intact.
+    These clones never push. The working repository's tags remain intact. The units
+    and their projection files come from `.intentional/config.yml`; a tag-only unit
+    is baselined at its `docs-version`.
 
     Only at staged epic finalization, after Bob's UAT, client default-branch merge
     and epic retrospective, establish
@@ -57,6 +68,15 @@ proposed-design:
     ```
 
     Each minor intent computes 0.1.0. Baseline records do not start publication.
+    The tag-only docs unit starts at the `docs-version` in `docs/user/docs.yml`:
+
+    ```bash
+    intentional tag --baseline --version t3c-docs=0.1.0
+    git push origin refs/tags/t3c-docs@0.1.0
+    ```
+
+    A `t3c-docs` record starts a documentation publish, so the first push publishes
+    the docs.
     The CLI scaffold removes `private` and supplies its executable, build, tests,
     license, README and npm shrinkwrap before finalization. Private placeholders
     cannot be packed or released. First publication is pre-approved only at that
@@ -67,14 +87,16 @@ proposed-design:
 
     ```bash
     gh workflow run release.yml --ref main \
-      -f 'expected-records=t3code-lib@0.1.0 t3code-cli@0.1.0'
+      -f 'expected-records=t3code-lib@0.1.0 t3code-cli@0.1.0 t3c-docs@0.1.1'
     ```
 
     Intentional applies the whole pending plan. It has no per-unit apply switch.
     Release compares the entire planned record set against the expected set and
     fails on any difference. To release only one unit, only that unit may be pending;
-    name only its record. No unrelated unit is bumped implicitly. Versions are
-    independent even when a single dispatch releases both.
+    name only its record. A CLI release always plans a `t3c-docs` record with it;
+    a docs-only change plans only `t3c-docs`. No unrelated unit is bumped
+    implicitly. Versions are independent even when a single dispatch releases
+    several units.
 
     Release checks main, validates intents, runs the checks, saves the canonical
     plan and verifies the exact record set and public package identities. It
@@ -106,6 +128,21 @@ proposed-design:
     publishes with npm provenance, and creates the GitHub Release with the same
     tarball and the package's changelog section. A rerun verifies an existing npm
     integrity value and GitHub asset bytes instead of replacing them.
+
+    Documentation publishes to wyrd.foo through the reusable workflow
+    `wyrd-company/wyrd.foo/.github/workflows/publish-docs.yml@v2`, called by the
+    `docs` job of **Publish**. A plan job decides whether a run publishes:
+
+    - a `t3code-cli@X.Y.Z` record publishes after its GitHub Release exists, because
+      the product page reads that Release;
+    - a `t3c-docs@X.Y.Z` record publishes alone for a docs-only release; pushed with
+      a CLI record, it waits for the CLI run;
+    - a `t3code-lib` record and the zero baseline records publish nothing;
+    - a manual run publishes the `ref` it is given, and may feature the product.
+
+    A plain push to main does not publish. The package jobs run only for package
+    records. The call passes only the two publisher secrets, not the repository's
+    other secrets.
   tracking-t-code: |
     The library pins the `t3` devDependency. Main targets the newest release;
     a preparation branch targets the newest nightly. Upstream release tags are
@@ -138,13 +175,16 @@ proposed-design:
     | `WYRD_CI_APP_ID`          | Release | GitHub App pushing commits and records |
     | `WYRD_CI_APP_PRIVATE_KEY` | Release | App key                                |
     | `NPM_TOKEN`               | Publish | npm automation token for both packages |
+    | `WYRD_TOOLS_DOCS_PUBLISHER_APP_ID` | Publish | Organization secret; mints the wyrd.foo publisher token |
+    | `WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY` | Publish | Organization secret; the publisher App key |
 
     The App needs Contents write. Publish requires an Intentional release record
     whose commit is on main. A tag ruleset allowing only the App to create
-    `t3code-lib@*` and `t3code-cli@*` records enforces that release authority.
+    `t3code-lib@*`, `t3code-cli@*` and `t3c-docs@*` records enforces that release
+    authority.
   documentation-and-homebrew-finalization: |
-    The CLI tag publishes `docs/user` to wyrd.foo.
-    Everything under `docs/user` is published, and assets are listed in
+    The CLI record, the docs record and a manual run publish `docs/user` to wyrd.foo
+    (see publication). Everything under `docs/user` is published, and assets are listed in
     `docs/user/docs.yml`; other `docs` folders stay private.
     `task docs` generates the library API source and published reference through
     `task lib:docs` and the CLI projection. Command, output and Dagu usage pages

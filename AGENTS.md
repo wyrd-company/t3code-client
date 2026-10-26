@@ -20,6 +20,8 @@ Read `docs/technical-designs/testing.yml` and `docs/technical-designs/releasing.
   `t3c`. Shared composition and handler ownership are in `docs/technical-designs/composition.yml`.
 - `scripts/release`: shared unit-aware pack, validation and publication steps.
 - `.intentional`: independent unit projections and one pre-0.1.0 intent per unit.
+- `docs/user`: the published wyrd.foo docs, in the v2 format. Release unit
+  `t3c-docs` (tag-only) versions them; `docs/user/docs.yml` versions are hand-set.
 
 ## Conventions
 
