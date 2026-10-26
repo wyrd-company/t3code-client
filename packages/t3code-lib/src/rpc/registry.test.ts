@@ -28,6 +28,7 @@ const expected = {
   "server.getConfig": [false, "orchestration:read"],
   "server.getSettings": [false, "orchestration:read"],
   "server.refreshProviders": [false, "orchestration:read"],
+  "server.getDatabaseStorage": [true, "orchestration:read"],
   subscribeServerConfig: [true, "orchestration:read"],
   subscribeServerLifecycle: [true, "orchestration:read"],
   subscribeAuthAccess: [true, "access:read"],

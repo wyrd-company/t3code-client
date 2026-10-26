@@ -242,8 +242,8 @@ proposed-design:
     Registry coverage for this version, all typed: the fifteen orchestration
     methods; `projects.mutate`; `mcpApps.callTool`, `mcpApps.toolInfo`,
     `mcpApps.readResource`, `mcpApps.updateModelContext`; `server.probe`, `server.getConfig`,
-    `server.getSettings`, `server.refreshProviders`, `subscribeServerConfig`,
-    `subscribeServerLifecycle`, `subscribeAuthAccess`; `vcs.listRefs`,
+    `server.getSettings`, `server.refreshProviders`, `server.getDatabaseStorage`,
+    `subscribeServerConfig`, `subscribeServerLifecycle`, `subscribeAuthAccess`; `vcs.listRefs`,
     `vcs.refreshStatus`, `vcs.createWorktree`, `vcs.removeWorktree`,
     `vcs.createRef`, `vcs.switchRef`, `subscribeVcsStatus`,
     `subscribeWorktreeSetup`, `worktreeSetup.cancel`; `projects.listEntries`,

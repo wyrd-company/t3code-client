@@ -6,6 +6,7 @@ import { z } from "zod";
 import { defineMethod } from "../spec.ts";
 import { ProviderInstanceId, TrimmedNonEmptyString } from "../../schemas/common.ts";
 import {
+  DatabaseStorageStatusUpdate,
   ServerConfig,
   ServerConfigStreamEvent,
   ServerLifecycleStreamEvent,
@@ -42,6 +43,12 @@ export const serverMethods = {
     }),
     success: ServerProviderUpdatedPayload,
     stream: false,
+    scope: "orchestration:read",
+  }),
+  "server.getDatabaseStorage": defineMethod({
+    payload: z.looseObject({}),
+    success: DatabaseStorageStatusUpdate,
+    stream: true,
     scope: "orchestration:read",
   }),
   subscribeServerConfig: defineMethod({

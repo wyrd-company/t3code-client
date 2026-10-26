@@ -151,6 +151,7 @@ proposed-design:
       refreshProviders(input?);
       watchConfig();
       watchLifecycle();
+      watchDatabaseStorage(options?); // server.getDatabaseStorage stream
       environment();
     }
     export class VcsApi {
@@ -366,6 +367,21 @@ proposed-design:
     space. False and omission are preserved; omission does not advertise support.
     Supplied non-boolean values fail decoding. Unknown capability fields remain
     intact. This metadata flag does not read database storage.
+
+  database-storage-stream: |
+    `server.watchDatabaseStorage({ signal? })` mirrors the stream
+    `server.getDatabaseStorage` with an empty payload and scope
+    `orchestration:read`. Each item is the state database's status or `null`
+    until the server first reads the file. A status has required
+    `databaseBytes` and `reclaimableBytes` numbers (finite, with no integer or
+    sign bound), a required boolean `incrementalVacuumEnabled` and a required
+    plain string `compactCommand`, the host command that reclaims the space
+    offline. Unknown status fields remain available. The server sends the
+    current value when the stream opens and again after its maintenance passes
+    change it. A malformed item is delivered as a decode error and later items
+    continue. Returning early or aborting the signal ends the subscription. The
+    library adds no capability or version check and runs no reclaim or compact
+    command.
 
   optional-storage-cleanup-capability: |
     `ExecutionEnvironmentCapabilities.storageCleanup` is an optional boolean

@@ -104,6 +104,7 @@ proposed-design:
           stream.ts             thread stream items, RPC inputs and outputs, launch
           commands.ts           OrchestrationV2Command union (commands/*.ts by family)
         server.ts               ServerConfig (providers, keybindings, issues and idleCompaction typed; other settings loose), config/lifecycle stream events
+        databaseStorage.ts      database storage status stream items (re-exported by server.ts)
         provider.ts             provider snapshot, models, auth status
         vcs.ts                  refs, status, worktree inputs/results
         terminal.ts             open/attach/write/events
@@ -125,7 +126,7 @@ proposed-design:
         authClient.ts           AuthClient: exchange, ticket, session state, pairing links, clients, scopes
         scopes.ts               scope constants, hasScope, grantedScopes
       api/                      facades composed by T3Client
-        server.ts               getConfig, probe, watchConfig, watchLifecycle
+        server.ts               getConfig, probe, watchConfig, watchLifecycle, watchDatabaseStorage
         projects.ts             list, get, snapshot, create, update, delete, ensure, ensureScratch, createNew, files
         threads.ts              list, get, detail, projection, historyPage, transcript, create, ensure, launch, update, archive, delete, startTurn, interrupt, stop, respond*, watch
         threadReads.ts          shell lookups with the archived fallback; detail, history page, transcript routes

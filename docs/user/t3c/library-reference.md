@@ -532,7 +532,15 @@ true reports that agent activity publishing is enabled and relay link credential
 are configured. False and omission are preserved; older servers can omit this
 field while still publishing. Available through environment reads, configuration
 reads and configuration snapshots. Supplied non-boolean values fail decoding.
-This metadata flag does not configure or publish agent activity.</p>
+This metadata flag does not configure or publish agent activity.
+<code>watchDatabaseStorage</code> follows <code>server.getDatabaseStorage</code>: each item is the
+state database&#39;s <code>databaseBytes</code>, <code>reclaimableBytes</code>, <code>incrementalVacuumEnabled</code>
+and <code>compactCommand</code>, or <code>null</code> until the server first reads the file. The
+numbers are finite without an integer or sign bound and <code>compactCommand</code> is a
+plain string; all four fields are required and unknown fields are preserved.
+A malformed item is delivered as a decode error and later items continue.
+Returning early or aborting the signal ends the subscription. Watching does not
+reclaim space or run the compact command.</p>
 </dd>
 <dt><a href="#VcsApi">VcsApi</a></dt>
 <dd><p>Repository references, worktrees and status. A failed Git command rejects
@@ -2285,6 +2293,14 @@ are configured. False and omission are preserved; older servers can omit this
 field while still publishing. Available through environment reads, configuration
 reads and configuration snapshots. Supplied non-boolean values fail decoding.
 This metadata flag does not configure or publish agent activity.
+`watchDatabaseStorage` follows `server.getDatabaseStorage`: each item is the
+state database's `databaseBytes`, `reclaimableBytes`, `incrementalVacuumEnabled`
+and `compactCommand`, or `null` until the server first reads the file. The
+numbers are finite without an integer or sign bound and `compactCommand` is a
+plain string; all four fields are required and unknown fields are preserved.
+A malformed item is delivered as a decode error and later items continue.
+Returning early or aborting the signal ends the subscription. Watching does not
+reclaim space or run the compact command.
 
 **Kind**: global class
 
@@ -2295,6 +2311,7 @@ This metadata flag does not configure or publish agent activity.
   - [.refreshProviders()](#ServerApi+refreshProviders)
   - [.watchConfig()](#ServerApi+watchConfig)
   - [.watchLifecycle()](#ServerApi+watchLifecycle)
+  - [.watchDatabaseStorage()](#ServerApi+watchDatabaseStorage)
   - [.environment()](#ServerApi+environment)
   - [.providers()](#ServerApi+providers)
   - [.findModel()](#ServerApi+findModel)
@@ -2369,6 +2386,19 @@ Subscribe to server lifecycle events.
 watchLifecycle(
     options: WatchServerLifecycleOptions = {},
   ): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "subscribeServerLifecycle">>>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
+<a name="ServerApi+watchDatabaseStorage"></a>
+
+### serverApi.watchDatabaseStorage()
+
+Follow the state database's size and reclaimable space; decode failures remain stream items.
+
+```ts
+watchDatabaseStorage(
+    options: WatchDatabaseStorageOptions = {},
+  ): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "server.getDatabaseStorage">>>;
 ```
 
 **Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  

@@ -23,6 +23,10 @@ export interface WatchServerLifecycleOptions {
   readonly signal?: AbortSignal;
 }
 
+export interface WatchDatabaseStorageOptions {
+  readonly signal?: AbortSignal;
+}
+
 /**
  * Server environment, configuration and providers.
  * Configuration reads, snapshots and `keybindingsUpdated` payloads type
@@ -367,6 +371,14 @@ export interface WatchServerLifecycleOptions {
  * field while still publishing. Available through environment reads, configuration
  * reads and configuration snapshots. Supplied non-boolean values fail decoding.
  * This metadata flag does not configure or publish agent activity.
+ * `watchDatabaseStorage` follows `server.getDatabaseStorage`: each item is the
+ * state database's `databaseBytes`, `reclaimableBytes`, `incrementalVacuumEnabled`
+ * and `compactCommand`, or `null` until the server first reads the file. The
+ * numbers are finite without an integer or sign bound and `compactCommand` is a
+ * plain string; all four fields are required and unknown fields are preserved.
+ * A malformed item is delivered as a decode error and later items continue.
+ * Returning early or aborting the signal ends the subscription. Watching does not
+ * reclaim space or run the compact command.
  */
 export class ServerApi {
   readonly rpc: RpcClient<RpcMethods>;
@@ -424,6 +436,19 @@ export class ServerApi {
     return unwrapStreamItems(
       this.rpc.stream(
         "subscribeServerLifecycle",
+        {},
+        options.signal === undefined ? undefined : { signal: options.signal },
+      ),
+    );
+  }
+
+  /** Follow the state database's size and reclaimable space; decode failures remain stream items. */
+  watchDatabaseStorage(
+    options: WatchDatabaseStorageOptions = {},
+  ): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "server.getDatabaseStorage">>> {
+    return unwrapStreamItems(
+      this.rpc.stream(
+        "server.getDatabaseStorage",
         {},
         options.signal === undefined ? undefined : { signal: options.signal },
       ),
