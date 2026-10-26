@@ -24,7 +24,9 @@ proposed-design:
     adds publishing metadata; `cli:docs:check` compares the complete result.
     `task check` runs both freshness checks. `docs/user/docs.yml` registers the existing GIF.
     Publish consumes `docs/user` on CLI and docs release records and on manual runs;
-    every page under it is published and each asset is registered. The `assets` list is relative to
+    the docs release changelog at `docs/user/t3c/CHANGELOG.md` is ingested as a
+    changelog, not as a page. Published pages and registered assets remain separate
+    inputs. The `assets` list is relative to
     `docs/user`; the product fields (`media`, `logo`, `favicon`, `social-image`)
     are relative to the product folder `docs/user/t3c`. Internal structured
     artifacts stay outside `docs/user`.

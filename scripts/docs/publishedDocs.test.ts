@@ -8,10 +8,24 @@ import { parse } from "yaml";
 import { expect, it } from "vite-plus/test";
 const user = NodePath.resolve(import.meta.dirname, "../../docs/user");
 const root = NodePath.join(user, "t3c");
-const published = NodeFS.readdirSync(user, { recursive: true })
-  .map(String)
-  .filter((name) => name.endsWith(".md"));
+const repository = NodePath.resolve(import.meta.dirname, "../..");
+const config = parse(
+  NodeFS.readFileSync(NodePath.join(repository, ".intentional/config.yml"), "utf8"),
+) as { "release-units": Record<string, { path: string }> };
+const docsChangelog = NodePath.relative(
+  user,
+  NodePath.resolve(repository, config["release-units"]["t3c-docs"]!.path, "CHANGELOG.md"),
+);
+const markdownPages = (files: string[]) =>
+  files.filter((name) => name.endsWith(".md") && name !== docsChangelog);
+const published = markdownPages(NodeFS.readdirSync(user, { recursive: true }).map(String));
 const read = (path: string) => NodeFS.readFileSync(NodePath.join(user, path), "utf8");
+
+it("does not treat the configured docs changelog as a published page", () => {
+  const inventory = [docsChangelog, "t3c/getting-started.md", "t3c/policy.md"];
+  expect(markdownPages(inventory)).toEqual(["t3c/getting-started.md", "t3c/policy.md"]);
+});
+
 it("publishes the complete CLI navigation and generated library page with unique ordering", () => {
   expect(published.sort()).toEqual([
     "t3c/auth.md",
