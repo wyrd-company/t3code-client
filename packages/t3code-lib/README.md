@@ -236,6 +236,25 @@ to resume from a sequence you stored.
 the message when a run is active, `steer` and `restart` target the active
 run, `queue` waits behind it, and `start` insists on a new run.
 
+## Stop and queue controls
+
+Native thread controls are available through `client.threads`:
+
+- `stopThread(threadId, options?: {reason?: string}, signal?)` sends native Stop
+  without an active-run lookup. It works for idle, queued and background work.
+  Any reason string, including empty or padded text, passes unchanged.
+- `resumeQueue(threadId, signal?)` resumes held queued messages.
+- `startQueuedRun(threadId, runId, signal?)` selects a queued plain user message
+  on a stopped thread. Select `runId` from `status(threadId).queuedRuns` or
+  stock MCP's `queuedRunId`.
+
+Resume and selected Start clear the hold on **all** queued runs. Selected Start
+chooses that message first; other queued messages may follow. Each method
+resolves on command acknowledgement, forwards cancellation and propagates
+server dispatch errors. No capability or version gate or fallback is applied.
+The legacy `stop(threadId, signal?)` keeps its active-run interruption with
+`holdQueue`, including a no-op when idle.
+
 ## Development
 
 ```bash

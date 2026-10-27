@@ -36,11 +36,15 @@ it("negotiates and advertises only the complementary tool contract with accurate
   expect(client.getServerVersion()?.name).toBe("t3code-mcp");
   const { tools } = await client.listTools();
   expect(tools.map((tool) => tool.name)).toEqual(toolNames);
-  expect(tools).toHaveLength(13);
+  expect(tools).toHaveLength(16);
   for (const tool of tools) {
-    const mutation = ["configure_scheduled_task", "rotate_scheduled_task_webhook"].includes(
-      tool.name,
-    );
+    const mutation = [
+      "configure_scheduled_task",
+      "rotate_scheduled_task_webhook",
+      "thread_stop",
+      "thread_queue_resume",
+      "thread_queue_start",
+    ].includes(tool.name);
     expect(tool.annotations).toMatchObject({ readOnlyHint: !mutation, destructiveHint: mutation });
   }
   expect(provider.get).not.toHaveBeenCalled();

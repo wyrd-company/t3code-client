@@ -933,7 +933,8 @@
             }
           ],
           "notes": [
-            "Read the full HTTP thread detail and the thread shell. JSON data is the library ThreadStatus: thread, snapshotSequence, activeRun, latestRun, queuedRuns, queueHeld, pendingRequests {approvals, questions} and backgroundWork. backgroundWork is null when the shell does not list the thread. A missing thread is not found (exit 10), not an empty status."
+            "Read the full HTTP thread detail and the thread shell. JSON data is the library ThreadStatus: thread, snapshotSequence, activeRun, latestRun, queuedRuns, queueHeld, pendingRequests {approvals, questions} and backgroundWork. backgroundWork is null when the shell does not list the thread. A missing thread is not found (exit 10), not an empty status.",
+            "Text output includes a queuedRun row with each queued run id, status and ordinal for selection with thread queue start."
           ]
         },
         {
@@ -1112,6 +1113,82 @@
               "name": "response",
               "members": ["answer", "accept", "reject"],
               "rule": "exactly-one"
+            }
+          ]
+        },
+        {
+          "name": "stop",
+          "summary": "Request native Stop for the thread.",
+          "positional-arguments": [
+            {
+              "name": "threadId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "options": [
+            {
+              "name": "reason",
+              "flags": ["--reason"],
+              "kind": "option",
+              "description": "Optional reason, preserved exactly including empty or padded text.",
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "notes": [
+            "Send thread.stop directly without an active-run lookup, capability gate or fallback. Works for idle, queued and background work. Success acknowledges the request; it does not assert terminal state. JSON data is {threadId}. Existing interrupt, signal and timeout behavior is unchanged."
+          ]
+        },
+        {
+          "name": "queue",
+          "summary": "Control queued messages.",
+          "subcommands": [
+            {
+              "name": "resume",
+              "summary": "Request Resume for all held queued messages.",
+              "positional-arguments": [
+                {
+                  "name": "threadId",
+                  "position": 0,
+                  "required": true,
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "notes": [
+                "Send queue.resume. The stock server clears queueHeld on all queued runs, allowing queued messages to run. JSON data is {threadId}; success acknowledges the request, not completion."
+              ]
+            },
+            {
+              "name": "start",
+              "summary": "Request Start for a selected queued message.",
+              "positional-arguments": [
+                {
+                  "name": "threadId",
+                  "position": 0,
+                  "required": true,
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "name": "runId",
+                  "position": 1,
+                  "required": true,
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "notes": [
+                "Send queued-run.start for a queued plain user message on a stopped thread. Select runId from thread status queuedRuns (text queuedRun rows) or stock MCP queuedRunId. The stock server selects this message first and clears queueHeld on ALL queued runs, so other messages may follow. It does not cancel other messages or keep them held. JSON data is {threadId, runId}; success acknowledges the request, not completion. Invalid selections retain the server dispatch error."
+              ]
             }
           ]
         }

@@ -91,6 +91,7 @@ it("prints thread status as the JSON envelope and concise text", async () => {
   expect(text.code).toBe(0);
   expect(text.stdout).toContain("active\trun-1\trunning\t#1\n");
   expect(text.stdout).toContain("queued\t1\theld\n");
+  expect(text.stdout).toContain("queuedRun\trun-2\tqueued\t#2\n");
   expect(text.stdout).toContain("requests\tapprovals 1\tquestions 1\n");
   expect(text.stdout).toContain("background\tunavailable\n");
 });

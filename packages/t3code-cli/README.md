@@ -41,6 +41,25 @@ provider diagnostics. `usage summary --since-day YYYY-MM-DD --until-day YYYY-MM-
 --time-zone Etc/UTC` reads historical usage. See [schedules, providers and usage](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/automation.md)
 for execution selections, webhook input and hourly usage options.
 
+Native Stop and queue controls acknowledge requests:
+
+```sh
+t3c thread stop <threadId> [--reason text]
+t3c thread queue resume <threadId>
+t3c thread status <threadId>
+t3c thread queue start <threadId> <runId>
+```
+
+Stop sends the native thread command even for idle, queued or background work.
+The optional reason is preserved exactly. Queue Start selects a queued plain
+user message on a stopped thread. Select its ID from the `queuedRun` rows in
+text status, `queuedRuns` in JSON status, or stock MCP's `queuedRunId`.
+Both queue Resume and selected Start clear the hold on **all** queued runs;
+selected Start chooses that message first, and other messages may follow.
+Success reports request acknowledgement, not completion. JSON uses the normal
+`{data, exitCode, error?}` envelope with `threadId` and, for Start, `runId`.
+`thread interrupt` and run signal/timeout handling retain their behavior.
+
 Read [getting started](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/getting-started.md), [auth/profiles](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/auth.md),
 [commands](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/commands.md), [output and exit codes](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/policy.md),
 [the Dagu harness](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/dagu.md), and [the library API](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/library-reference.md).

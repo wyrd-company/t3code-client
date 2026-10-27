@@ -75,6 +75,7 @@ export {
 export type {
   ApprovalResponseInput,
   InterruptOptions,
+  StopThreadOptions,
   UserInputDismissInput,
   UserInputResponseInput,
 } from "./api/threadCommands.ts";

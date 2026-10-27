@@ -41,6 +41,7 @@ import {
   ThreadCommands,
   type ApprovalResponseInput,
   type InterruptOptions,
+  type StopThreadOptions,
   type UserInputDismissInput,
   type UserInputResponseInput,
 } from "./threadCommands.ts";
@@ -220,7 +221,8 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
  * queued-run commands, unknown command metadata survives, and malformed or
  * missing ids fail before sending. The server starts only a queued plain user
  * message on a stopped thread; otherwise it fails with
- * `OrchestrationV2DispatchCommandError`. No facade method sends it.
+ * `OrchestrationV2DispatchCommandError`. `startQueuedRun` sends it. Both it and
+ * `resumeQueue` clear the hold on all queued runs; other queued messages may follow.
  *
  * `watchCommandOutput` follows `orchestration.subscribeCommandOutput` for one
  * `command_execution` row (`{ threadId, itemId }`, trimmed nonempty ids). Each
@@ -450,9 +452,37 @@ export class ThreadsApi {
     await this.dispatch(this.#commands.interrupt(threadId, target, options), signal);
   }
 
-  /** The Stop button: interrupts the active run and holds the queue. Nothing active is a no-op. */
+  /** Legacy stop: interrupts the active run and holds the queue. Nothing active is a no-op. */
   stop(threadId: ThreadId, signal?: AbortSignal): Promise<void> {
     return this.interrupt(threadId, undefined, { holdQueue: true }, signal);
+  }
+
+  /**
+   * Request native Stop, including idle, queued and background work, without an
+   * active-run lookup. Resolves on command acknowledgement, not terminal state.
+   * Any reason string is preserved. No capability gate or fallback is applied.
+   */
+  async stopThread(
+    threadId: ThreadId,
+    options: StopThreadOptions = {},
+    signal?: AbortSignal,
+  ): Promise<void> {
+    await this.dispatch(this.#commands.stopThread(threadId, options), signal);
+  }
+
+  /** Resume the queue, clearing the hold on all queued runs. Acknowledgement only. */
+  async resumeQueue(threadId: ThreadId, signal?: AbortSignal): Promise<void> {
+    await this.dispatch(this.#commands.simple("queue.resume", threadId), signal);
+  }
+
+  /**
+   * Start a selected queued plain user message on a stopped thread. The server
+   * clears the hold on all queued runs, so other messages may follow. Resolves
+   * on acknowledgement; invalid selections propagate the server's dispatch error.
+   * Select runId from status().queuedRuns or stock MCP queuedRunId.
+   */
+  async startQueuedRun(threadId: ThreadId, runId: RunId, signal?: AbortSignal): Promise<void> {
+    await this.dispatch(this.#commands.startQueuedRun(threadId, runId), signal);
   }
 
   /** Answer a pending approval request. */

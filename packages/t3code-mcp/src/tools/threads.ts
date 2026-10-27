@@ -17,6 +17,36 @@ const range = z
 
 export const threadTools = [
   defineTool(
+    "thread_stop",
+    "Request native Stop for active, queued or background work, including an idle thread. Returns acknowledgement, not terminal state.",
+    z.strictObject({ threadId, reason: z.string().optional() }),
+    async ({ threadId, reason }, client, signal) => {
+      await client.threads.stopThread(threadId, reason === undefined ? {} : { reason }, signal);
+      return { threadId };
+    },
+    false,
+  ),
+  defineTool(
+    "thread_queue_resume",
+    "Request queue Resume. Clears the hold on all queued runs; queued messages may run. Returns acknowledgement, not completion.",
+    threadInput,
+    async ({ threadId }, client, signal) => {
+      await client.threads.resumeQueue(threadId, signal);
+      return { threadId };
+    },
+    false,
+  ),
+  defineTool(
+    "thread_queue_start",
+    "Request Start for a selected queued plain user message on a stopped thread. Select runId from thread_status queuedRuns or stock queuedRunId. Clears the hold on ALL queued runs: the selected message goes first and others may follow. Returns acknowledgement, not completion.",
+    z.strictObject({ threadId, runId: schemas.common.RunId }),
+    async ({ threadId, runId }, client, signal) => {
+      await client.threads.startQueuedRun(threadId, runId, signal);
+      return { threadId, runId };
+    },
+    false,
+  ),
+  defineTool(
     "thread_status",
     "Read structured active/latest runs, queued runs, held state, pending request counts and server-derived background work.",
     threadInput,

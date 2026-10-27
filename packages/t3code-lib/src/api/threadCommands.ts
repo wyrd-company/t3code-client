@@ -31,6 +31,10 @@ export interface UserInputDismissInput {
   readonly requestId: RuntimeRequestId;
 }
 
+export interface StopThreadOptions {
+  readonly reason?: string;
+}
+
 export interface InterruptOptions {
   readonly reason?: string;
   /** The Stop button: also hold the queue, end pull request watches, and stop delegated tasks. */
@@ -113,6 +117,19 @@ export class ThreadCommands {
       ...(options.reason === undefined ? {} : { reason: options.reason }),
       ...(options.holdQueue === undefined ? {} : { holdQueue: options.holdQueue }),
     };
+  }
+
+  stopThread(threadId: ThreadId, options: StopThreadOptions = {}): OrchestrationV2Command {
+    return {
+      type: "thread.stop",
+      commandId: this.dispatcher.newCommandId(),
+      threadId,
+      ...(options.reason === undefined ? {} : { reason: options.reason }),
+    };
+  }
+
+  startQueuedRun(threadId: ThreadId, runId: RunId): OrchestrationV2Command {
+    return { type: "queued-run.start", commandId: this.dispatcher.newCommandId(), threadId, runId };
   }
 
   respondToApproval(input: ApprovalResponseInput): OrchestrationV2Command {

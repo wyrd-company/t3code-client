@@ -47,6 +47,7 @@ function statusText(status: ThreadStatus): string {
     runLine("active", status.activeRun),
     runLine("latest", status.latestRun),
     `queued\t${queued}${status.queueHeld ? "\theld" : ""}`,
+    ...status.queuedRuns.map((run) => runLine("queuedRun", run)),
     `requests\tapprovals ${status.pendingRequests.approvals}\tquestions ${status.pendingRequests.questions}`,
     `background\t${status.backgroundWork === null ? "unavailable" : status.backgroundWork.length}`,
   ].join("\n");

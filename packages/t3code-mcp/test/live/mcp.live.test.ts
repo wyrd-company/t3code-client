@@ -91,6 +91,21 @@ it("serves additive tools through stdio against an isolated stock server without
     expect(old.status).toBe(404);
     const threadInput = { threadId: thread.id };
     expect((await call("thread_status", threadInput))["activeRun"]).toBeNull();
+    expect(await call("thread_stop", { ...threadInput, reason: "" })).toEqual(threadInput);
+    expect(await call("thread_queue_resume", threadInput)).toEqual(threadInput);
+    const invalidStart = await mcp.callTool({
+      name: "thread_queue_start",
+      arguments: { ...threadInput, runId: "sample-absent-run" },
+    });
+    expect(invalidStart).toMatchObject({
+      isError: true,
+      structuredContent: { error: { code: "rpc_failed" } },
+    });
+    const afterControls = await upstream.threads.projection(thread.id);
+    expect(afterControls.runs).toEqual([]);
+    expect(afterControls.providerThreads).toEqual([]);
+    expect(afterControls.messages).toEqual([]);
+    expect((await upstream.threads.get(thread.id))?.status).toBe("idle");
     expect((await call("thread_approvals", threadInput))["approvals"]).toEqual([]);
     expect((await call("thread_usage", threadInput))["providerTurns"]).toEqual([]);
     expect((await call("thread_diff", threadInput))["diff"]).toBe("");

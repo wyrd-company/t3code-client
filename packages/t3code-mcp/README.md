@@ -31,6 +31,7 @@ until a tool is called. `t3code-mcp tools` lists names without connecting.
 | `scheduled_task_deliveries`, `scheduled_task_delivery`     | Webhook outcomes, request details and errors                    |
 | `rotate_scheduled_task_webhook`                            | Replace the URL token; the previous URL stops working           |
 | `scheduled_task_configuration`, `configure_scheduled_task` | Full read and execution-only updates                            |
+| `thread_stop`, `thread_queue_resume`, `thread_queue_start` | Native Stop, queue Resume and selected queued-message Start     |
 | `thread_status`, `thread_approvals`                        | Active/queued runs, background work and pending human approvals |
 | `thread_usage`, `thread_diff`, `thread_search_content`     | Usage records, checkpoint diffs and within-thread search        |
 | `provider_status`, `usage_summary`                         | Provider availability/limits and historical usage buckets       |
@@ -55,6 +56,19 @@ Target changes validate that a bound thread belongs to the effective project.
 is the thread start. `thread_search_content` returns a count and one match with
 native navigation positions. Usage retains source and pricing metadata; missing
 values are not zero, and overlapping session counts must not be added together.
+
+`thread_stop` accepts `{threadId, reason?}` and preserves any reason string,
+including empty or padded text. It sends native Stop without an active-run lookup
+and supports idle, queued and background work. `thread_queue_resume` accepts
+`{threadId}`. `thread_queue_start` accepts `{threadId, runId}` for a queued plain
+user message on a stopped thread. Select the run ID from `thread_status`'s
+`queuedRuns` or stock MCP's `queuedRunId`.
+
+Both Resume and selected Start clear the hold on **all** queued runs. Selected
+Start chooses that message first; other messages may follow. These tools return
+request acknowledgement IDs, not a terminal state or completion guarantee.
+They require `orchestration:operate`. Stock tools retain queue list/read/edit/
+cancel/reorder/promote ownership.
 
 Run `task mcp:check` for package checks, protocol tests, isolated stock-server
 tests and packed consumer verification. No agent runs are required.
