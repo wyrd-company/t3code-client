@@ -111,7 +111,7 @@ The lookup searches active and archived threads and earlier provider sessions
 after a provider switch. It does not require the provider to remain registered.
 Multiple matching T3 threads fail with exit `2`. Read, auth and connection
 failures keep their normal errors; they do not mean no match. The library reads
-the shell and each thread projection, so lookup cost grows with the number of
+the shell and each full HTTP thread detail, so lookup cost grows with the number of
 threads. The lookup does not import, resume or launch a session.
 
 `thread interrupt <threadId>` requests interruption through the library.

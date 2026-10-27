@@ -83,9 +83,10 @@ proposed-design:
     output, error context, shrinkwrap and Taskfile ownership interfaces.
   native-session-lookup: |
     `threadSessionLookup.test.ts` exercises native session lookup through the
-    fake HTTP shell and typed WebSocket projection boundaries. It covers exact
+    fake HTTP shell, full HTTP detail and typed archived-shell RPC boundaries. It covers exact
     provider instances, absent sessions, archived threads, detached historical
-    sessions, duplicate matches, deleted threads and failed reads. CLI unit tests
+    sessions outside the bounded RPC projection window, duplicate matches,
+    deleted threads and failed reads. CLI unit tests
     verify argument validation, text and JSON null results, and error mapping.
     `threadFind.live.test.ts` checks no-match output against stock T3 Code; its
     `T3_LIVE_AGENT=1` case resolves a real Luna session before and after archiving

@@ -7,7 +7,7 @@ import type { RpcClient } from "../rpc/client.ts";
 import type { RpcMethods } from "../rpc/registry.ts";
 import { ProviderInstanceId, TrimmedNonEmptyString, type ThreadId } from "../schemas/common.ts";
 import type { HttpTransport } from "../transport/http.ts";
-import { listThreads } from "./threadReads.ts";
+import { listThreads, loadThreadDetail } from "./threadReads.ts";
 
 /** Find the owning app thread across current and historical provider threads. */
 export async function findThreadByNativeSession(
@@ -28,11 +28,8 @@ export async function findThreadByNativeSession(
   let found: ThreadId | null = null;
   for (const thread of threads) {
     if (thread.deletedAt !== null) continue;
-    const projection = await rpc.call(
-      "orchestration.getThreadProjection",
-      { threadId: thread.id },
-      signal,
-    );
+    // The RPC projection omits historical provider threads outside its timeline window.
+    const { projection } = await loadThreadDetail(http, thread.id, signal);
     if (projection.thread.deletedAt !== null) continue;
     const matches = projection.providerThreads.some(
       (candidate) =>

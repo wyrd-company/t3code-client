@@ -778,7 +778,7 @@
           ],
           "notes": [
             "Search active and archived threads, including earlier sessions after a provider switch. Match providerThreads.providerInstanceId and nativeThreadRef.nativeId, not T3 providerSessions ids. Provider means an exact provider instance id; no live provider registration is required.",
-            "Text output is the matching T3 Code thread id or literal null. JSON output is {data: threadIdOrNull, exitCode: 0}. No match is a successful lookup. Multiple matching threads are a precondition error (exit 2); read, auth and transport failures retain their normal errors. The lookup reads each thread projection and does not import, resume or launch a session."
+            "Text output is the matching T3 Code thread id or literal null. JSON output is {data: threadIdOrNull, exitCode: 0}. No match is a successful lookup. Multiple matching threads are a precondition error (exit 2); read, auth and transport failures retain their normal errors. The lookup reads each full HTTP thread detail and does not import, resume or launch a session."
           ]
         },
         {

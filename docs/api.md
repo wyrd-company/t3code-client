@@ -1588,7 +1588,7 @@ Resolve a provider instance and its native session id to a T3 Code thread id.
 Searches active and archived threads, including earlier provider sessions.
 Returns null only when no match exists; multiple matching threads raise
 T3PreconditionError. Read and transport failures propagate. This reads the
-shell and each thread projection; it does not resume or import a session.
+shell and each full HTTP thread detail; it does not resume or import a session.
 
 ```ts
 findByNativeSession(
