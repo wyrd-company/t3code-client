@@ -138,7 +138,7 @@ proposed-design:
     The local Homebrew gate installs the matching library and CLI tarballs together;
     the public formula resolves the library through the registry.
 
-    The package upload/download artifact is named `package-${github.ref_name}`;
+    The package upload/download artifact is named `package-<selected-record>`;
     all jobs consume that same artifact. Publish checks tarball identity again,
     publishes with npm provenance, and creates the GitHub Release with the same
     tarball and the package's changelog section. A rerun verifies an existing npm
