@@ -1,0 +1,77 @@
+$schema: https://refinery.systems/ontology/technical-design
+title: Complementary T3 Code MCP server
+objective: >-
+  Supply agent tools for stock T3 Code capabilities absent from its built-in
+  MCP surface, using the shared client library.
+relationships:
+  references:
+    - library
+    - automation-capabilities
+    - profiles
+    - testing
+    - releasing
+proposed-design:
+  package: |
+    `packages/t3code-mcp` is the independent `@wyrd-company/t3code-mcp` npm
+    package and `t3code-mcp` executable. It provides a stdio MCP server using the
+    official @modelcontextprotocol/server SDK. Protocol transport and validation
+    belong to the SDK; integrations belong to @wyrd-company/t3code-lib. Native
+    application code does not spawn commands to implement integrations.
+  connection: |
+    One MCP process selects one T3 environment. It shares the t3c ProfileManager,
+    credential stores and server/token environment inputs. `--server` and
+    `--credentials` follow t3c connection semantics. `--profile` selects an exact
+    saved profile and conflicts with direct connection overrides. Pairing and
+    credential administration use t3c. The factory accepts an injected client
+    provider so unit and protocol tests exercise the public tool boundary.
+
+    Connections are lazy, concurrent first use shares initialization and failed
+    initialization permits a later retry. Shutdown closes initialized clients
+    and handles clients whose initialization is still pending. Cancellation is
+    forwarded to library operations. Existing library connection behavior supplies
+    its own open-timeout option; the MCP layer adds no tool or user deadline.
+    Stdout contains MCP protocol messages; diagnostics use stderr.
+  tools: |
+    The additive tool set is:
+    - scheduled_task_endpoint: direct path/URL and optional Connect URL.
+    - scheduled_task_deliveries: webhook delivery outcomes and diagnostic rows.
+    - scheduled_task_delivery: one delivery's body, headers, rendered prompt and errors.
+    - rotate_scheduled_task_webhook: rotate the URL token and return the new endpoint.
+    - scheduled_task_configuration: full execution configuration and run diagnostics.
+    - configure_scheduled_task: update execution model/options, workspace, target and modes.
+    - thread_status: active/queued runs, queue-held state and background work.
+    - thread_approvals: structured pending approval requests for human review.
+    - thread_usage: context, token and cost records with ownership and provenance.
+    - thread_diff: full-thread or turn-range diff.
+    - thread_search_content: search within one thread with server result bounds.
+    - provider_status: provider authentication, installation, availability and limits.
+    - usage_summary: historical usage buckets, pricing and source diagnostics.
+
+    Stock MCP owns basic schedule CRUD, run-now, cross-thread search, question
+    responses, ordinary launches and provider/model catalog discovery. The tool
+    inventory is tested against the pinned stock tool set and the explicit
+    complementary contract. Tools compose library facades. Read-only/destructive
+    annotations reflect the actual operation. Structured results and text JSON
+    describe the same value; failures use isError with stable codes.
+  credentials-and-errors: |
+    The selected T3 credential and its granted scopes remain the authority for
+    every operation. Scheduler endpoint and delivery access preserve upstream
+    operate requirements. Signing secret values remain write-only. Explicit
+    endpoint and delivery tools return their requested sensitive data; diagnostics
+    and unrelated errors do not echo bearer credentials, webhook tokens or bodies.
+    Credential/configuration failures use fixed messages. Unknown errors withhold
+    their raw text. No approval-response or permission-escalation tool is exposed.
+  source-and-distribution: |
+    The server factory, stdio lifecycle and safe error patterns derive from the
+    package snapshot at 1c6407b. The tools and public contract implement the shared
+    automation capabilities. The package has its own release unit, initial minor
+    intent, package verification and CI check. It starts at version 0.0.0;
+    Intentional owns version and changelog changes. Publication requires the
+    user's release approval.
+  verification: |
+    SDK client tests exercise initialize, tools/list, tool calls, structured
+    failures, cancellation and stdio shutdown. Inventory tests reject collisions
+    with stock MCP and assert the complementary tool names. Fake-library tests
+    prove facade inputs and safe failures. Isolated stock-server tests exercise
+    schedule endpoints/configuration/deliveries and usage. A consumer installs
+    the local MCP and library tarballs together and runs the executable.

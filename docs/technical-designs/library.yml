@@ -10,6 +10,7 @@ relationships:
     - library-auth
     - library-facades
   references:
+    - automation-capabilities
     - profiles
     - api
     - testing
