@@ -163,3 +163,37 @@ When a server is reachable it also prints server version, protocol and a
 `match`, `newer` or `older` version verdict. The verdict is informational and
 does not gate execution. `--version` prints only `t3c <cli-version>`; a 0.1.0
 release prints `t3c 0.1.0`. Library and CLI version independently.
+
+## Structured thread inspection
+
+`thread status <id>` reports active/latest runs, queue position and held state,
+request counts and server-derived background work. `thread requests <id>` reads
+pending approvals and questions with their prompt details. It does not answer
+requests. `thread usage <id>` reads context and provider-turn token/cost records
+with their owning ids. Missing usage remains absent or null; it is not zero.
+
+`thread diff <id>` reads through the highest ready checkpoint from a completed
+run. Use `--from-turn N --to-turn N` together for an explicit checkpoint range;
+zero is the thread start. Unavailable checkpoints retain the server error.
+`thread search <query> --limit N` searches across threads (default and maximum
+50). A result at its limit can omit matches. `--thread <id>` instead searches
+inside one thread and returns the native count and first match. It conflicts
+with `--limit`.
+
+## Model options and workspaces
+
+`run`, `thread start` and `thread send` accept repeatable
+`--model-option key=value`. Keys and values must match the selected model's live
+option descriptors. Boolean values must be `true` or `false`; select values use
+advertised choice ids. Duplicate keys fail. Inherited options apply only to the
+same provider instance and model. Explicit values replace matching inherited
+keys. `--clear-model-options` clears inheritance and can be combined with explicit
+entries. Continuation sends no model selection unless a selection flag is given.
+
+New worktrees accept `--branch <name>` and `--start-from-origin` or
+`--no-start-from-origin`; these require `--worktree`. When neither origin flag is
+given, the server applies its default. `--existing-worktree <dir>` selects a
+worktree reported by the server, including its checked-out branch. It conflicts
+with new-worktree flags. `--thread` retains its workspace and rejects relocation
+flags. Paths identify server workspaces; existing-worktree matching resolves a
+relative path against the CLI's current directory.

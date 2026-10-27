@@ -1,3 +1,8 @@
+---
+relationships:
+  references: [library, command-line, mcp, testing, releasing]
+---
+
 # t3code-client
 
 ![t3c pairs a profile, starts and waits for a thread, and lists projects](docs/user/t3c/assets/demo.gif)
@@ -8,8 +13,10 @@ A pnpm workspace for stock T3 Code 0.1.2, orchestration protocol 2.
   with HTTP, WebSocket RPC, thread/run facades and auth control plane.
 - [`@wyrd-company/t3code-cli`](packages/t3code-cli/README.md): `t3c` for conversations,
   named server profiles, thread inspection and automation.
+- [`@wyrd-company/t3code-mcp`](packages/t3code-mcp/README.md): complementary stdio
+  tools for scheduler endpoints, webhook diagnostics, inspection and usage.
 
-Both release units have independent versions.
+The release units have independent versions.
 Node >=22.16 and pnpm 11 are required. The root package is private.
 
 `t3c thread find --provider <instanceId> --session <nativeSessionId>` resolves a
@@ -24,13 +31,15 @@ task check
 # Run one package directly:
 task lib:check
 task cli:check
+task mcp:check
 ```
 
 User guide: [getting started](docs/user/t3c/getting-started.md),
 [profiles](docs/user/t3c/auth.md),
 [command behavior](docs/user/t3c/commands.md),
 [output and exits](docs/user/t3c/policy.md),
-[Dagu](docs/user/t3c/dagu.md), and
+[Dagu](docs/user/t3c/dagu.md),
+[MCP tools](docs/user/t3c/mcp.md), and
 [library API](docs/user/t3c/library-reference.md).
 
 `task docs` generates the JSDoc library API and published reference.

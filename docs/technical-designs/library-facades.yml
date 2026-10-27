@@ -9,6 +9,7 @@ relationships:
     - profiles
     - testing
     - releasing
+    - automation-capabilities
 proposed-design:
   native-session-lookup: |
     `threads.findByNativeSession(providerInstanceId, nativeSessionId, signal?)`
@@ -62,6 +63,11 @@ proposed-design:
       get(threadId): Promise<OrchestrationV2ThreadShell | undefined>  // active first, then the archived shell
       detail(threadId): Promise<OrchestrationV2ThreadDetailSnapshot>  // HTTP, the full projection; T3NotFoundError
       projection(threadId): Promise<OrchestrationV2ThreadProjection>  // RPC, bounded timeline window
+      status(threadId, signal?): Promise<ThreadStatus>  // full detail plus shell-derived background work
+      usage(threadId, signal?): Promise<ThreadUsage>  // historical provider records, no invented totals
+      diff(threadId, range?, signal?): Promise<ThreadDiff>  // completed ready checkpoint or explicit turn-count range
+      search({ query, limit? }, signal?): Promise<ThreadSearchResult>  // bounded matches plus applied limit
+      searchContent(input, signal?): Promise<ThreadContentSearchResult>  // within-thread count and selected match
       historyPage(threadId, cursor, options?: { throughEntryId?; view?: "conversation" | "activity" }): Promise<OrchestrationV2ThreadHistoryPage>
       transcript(threadId): Promise<OrchestrationV2ThreadTranscript>  // HTTP, the visible timeline; T3NotFoundError, T3HttpError thread_transcript_too_large
       create(input: ThreadCreateInput): Promise<OrchestrationV2ThreadShell>   // caller may pass threadId; else generated

@@ -62,9 +62,8 @@ proposed-design:
     Credential/configuration failures use fixed messages. Unknown errors withhold
     their raw text. No approval-response or permission-escalation tool is exposed.
   source-and-distribution: |
-    The server factory, stdio lifecycle and safe error patterns derive from the
-    package snapshot at 1c6407b. The tools and public contract implement the shared
-    automation capabilities. The package has its own release unit, initial minor
+    The tools and public contract implement the shared automation capabilities.
+    The package has its own release unit, initial minor
     intent, package verification and CI check. It starts at version 0.0.0;
     Intentional owns version and changelog changes. Publication requires the
     user's release approval.

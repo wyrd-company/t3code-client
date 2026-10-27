@@ -5,7 +5,7 @@ relationships:
   references: [command-line, cli-surface, library, api, library-reference, releasing]
 proposed-design:
   high-level-overview: >-
-    `docs/user/t3c` contains six ordered published pages and the registered demo
+    `docs/user/t3c` contains seven ordered published pages and the registered demo
     GIF, and `docs/user/docs.yml` describes the t3c product.
     Authored guides explain the CLI specification and library behavior. Structured
     technical designs describe implementation ownership and operating mechanisms.
@@ -22,6 +22,7 @@ proposed-design:
     `cli:docs`, which runs `lib:docs` before projecting the complete `docs/api.md`
     into `docs/user/t3c/library-reference.md` at order 6. Its generator rewrites links and
     adds publishing metadata; `cli:docs:check` compares the complete result.
+    `mcp.md` is the authored complementary MCP guide at order 7.
     `task check` runs both freshness checks. `docs/user/docs.yml` registers the existing GIF.
     Publish consumes `docs/user` on CLI and docs release records and on manual runs;
     the docs release changelog at `docs/user/t3c/CHANGELOG.md` is ingested as a

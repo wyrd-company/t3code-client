@@ -563,6 +563,12 @@ with a <code>T3RpcError</code> whose <code>GitCommandError</code> record can car
 or <code>ref_not_found</code>. Omission means the server did not recognise the cause;
 an unknown reason string is preserved.</p>
 </dd>
+<dt><a href="#ScheduledTasksApi">ScheduledTasksApi</a></dt>
+<dd><p>Scheduled tasks: interval, fixed-time and webhook triggers that start agent
+runs. Reading needs orchestration:read; the server removes webhook endpoints
+from a reader&#39;s results. Mutations, webhook endpoints and delivery records
+need orchestration:operate. Signing secrets are write-only.</p>
+</dd>
 <dt><a href="#TerminalApi">TerminalApi</a></dt>
 <dd><p>Server terminal operations and event streams.
 <code>attach</code> accepts optional boolean <code>resume</code>. With <code>resume: true</code>, resubscriptions
@@ -584,15 +590,29 @@ transport failures retain connection and rejected credentials retain auth_invali
 </dd>
 </dl>
 
+## Members
+
+<dl>
+<dt><a href="#threadId">threadId</a></dt>
+<dd><p>Omit or null to start a new thread per run.</p>
+</dd>
+</dl>
+
 ## Constants
 
 <dl>
+<dt><a href="#THREAD_SEARCH_MAX_LIMIT">THREAD_SEARCH_MAX_LIMIT</a></dt>
+<dd><p>The server&#39;s default and maximum <code>orchestration.searchThreads</code> limit.</p>
+</dd>
 <dt><a href="#AuthEnvironmentScope">AuthEnvironmentScope</a></dt>
 <dd><p>Strict: validates the scopes a caller asks for.</p>
 </dd>
 <dt><a href="#AuthLegacyScopes">AuthLegacyScopes</a></dt>
 <dd><p>The scopes clients released before granular permissions knew. Servers
 report <code>scopes</code> filtered to these and the full grant as <code>permissions</code>.</p>
+</dd>
+<dt><a href="#SecretRef">SecretRef</a></dt>
+<dd><p>A one-use handle to a secret the user entered for an agent; the agent never sees the value.</p>
 </dd>
 <dt><a href="#threadId">threadId</a></dt>
 <dd><p>Brand a trusted string without validation. Use for ids this process generated or already decoded.</p>
@@ -615,8 +635,20 @@ report <code>scopes</code> filtered to these and the full grant as <code>permiss
 <dt><a href="#OrchestrationV2ThreadTranscript">OrchestrationV2ThreadTranscript</a></dt>
 <dd><p>The thread&#39;s visible timeline in one read, for handing a conversation to another reader.</p>
 </dd>
+<dt><a href="#OrchestrationV2PendingBackgroundTask">OrchestrationV2PendingBackgroundTask</a></dt>
+<dd><p>Provider-owned background work that can outlive the root turn. A kind this
+build does not know, or none, loads as <code>background_task</code>, as upstream does.</p>
+</dd>
+<dt><a href="#OrchestrationV2ProviderTurnTokenUsage">OrchestrationV2ProviderTurnTokenUsage</a></dt>
+<dd><p>Live context usage reported by the provider mid-turn.</p>
+</dd>
 <dt><a href="#OrchestrationV2RuntimeRequest">OrchestrationV2RuntimeRequest</a></dt>
 <dd><p>An approval, question, or other request the provider raised and how it was answered.</p>
+</dd>
+<dt><a href="#TurnTokenUsage">TurnTokenUsage</a></dt>
+<dd><p>Normalized main-agent usage for one turn. <code>complete</code> means the provider
+supplied full input and output totals; <code>partial</code> means every included
+count is valid but the full total is not known.</p>
 </dd>
 <dt><a href="#OrchestrationV2TurnItem">OrchestrationV2TurnItem</a></dt>
 <dd><p>A turn item of any type, including a type this build does not know.</p>
@@ -634,6 +666,48 @@ report <code>scopes</code> filtered to these and the full grant as <code>permiss
 <dd><p>One question&#39;s answer: any JSON value, as the contracts allow. The provider
 adapters act on a single choice (a string), several choices (a string
 array), or Codex&#39;s <code>{ answers: string[] }</code>.</p>
+</dd>
+<dt><a href="#ScheduledTaskWebhookEndpoint">ScheduledTaskWebhookEndpoint</a></dt>
+<dd><p>A webhook task&#39;s endpoint. <code>path</code> carries the URL token and is relative to
+the environment; <code>url</code> is the T3 Connect relay URL, null without one. The
+server removes the whole endpoint for a caller without orchestration:operate.</p>
+</dd>
+<dt><a href="#ScheduledTaskWebhookDeliveryOutcome">ScheduledTaskWebhookDeliveryOutcome</a></dt>
+<dd><p>What happened to one webhook request. The set grows; newer outcomes stay strings.</p>
+</dd>
+<dt><a href="#ScheduledTaskWebhookDelivery">ScheduledTaskWebhookDelivery</a></dt>
+<dd><p>One recorded request with its query, headers, (possibly truncated) body and rendered prompt.</p>
+</dd>
+<dt><a href="#ScheduledTaskWebhookDedupe">ScheduledTaskWebhookDedupe</a></dt>
+<dd><p>Replay key (kept 7 days), coalesce key and coalesce window in seconds (server default 120).</p>
+</dd>
+<dt><a href="#ScheduledTaskWebhookFilter">ScheduledTaskWebhookFilter</a></dt>
+<dd><p>A filter as sent. Every filter must match for a request to run the task.</p>
+</dd>
+<dt><a href="#ScheduledTaskWebhookFilterRecord">ScheduledTaskWebhookFilterRecord</a></dt>
+<dd><p>A stored filter; a newer operator decodes as <code>{ unknown: true, raw }</code>.</p>
+</dd>
+<dt><a href="#ScheduledTaskWebhookSignature">ScheduledTaskWebhookSignature</a></dt>
+<dd><p>Stored HMAC-SHA256 check over the raw request body. The secret is never returned.</p>
+</dd>
+<dt><a href="#ScheduledTaskWebhookSignatureInput">ScheduledTaskWebhookSignatureInput</a></dt>
+<dd><p>Signature check as sent. Omit <code>secret</code> and <code>secretRef</code> to keep the stored
+secret; <code>secretRef</code> is consumed by the save that uses it.</p>
+</dd>
+<dt><a href="#ScheduledTaskSchedule">ScheduledTaskSchedule</a></dt>
+<dd><p>A stored trigger. Sub-minute legacy intervals still decode so they can be
+listed, disabled, edited or deleted. A newer trigger type decodes as
+<code>{ unknown: true, raw }</code>.</p>
+</dd>
+<dt><a href="#ScheduledTaskUpsertSchedule">ScheduledTaskUpsertSchedule</a></dt>
+<dd><p>A writable trigger; intervals are at least one minute.</p>
+</dd>
+<dt><a href="#UsageDay">UsageDay</a></dt>
+<dd><p>Calendar day as <code>YYYY-MM-DD</code>.</p>
+</dd>
+<dt><a href="#UsageTokenTotals">UsageTokenTotals</a></dt>
+<dd><p>Cached and cache-creation input tokens are disjoint from uncached input
+tokens. <code>reasoningTokens</code> is a subset of <code>outputTokens</code>; never add it on top.</p>
 </dd>
 <dt><a href="#RpcErrorRecord">RpcErrorRecord</a></dt>
 <dd><p>Every tagged failure a registered RPC method declares. A failure with an
@@ -672,6 +746,14 @@ unrecognised <code>_tag</code> decodes as <code>{ unknown: true, raw }</code>. U
   rpc: RpcClient&lt;RpcMethods&gt;,
   options?: { readonly signal?: AbortSignal },
 ): AsyncIterable&lt;DecodedStreamItem&lt;AuthAccessStreamEvent&gt;&gt;;
+</code></pre>
+</dd>
+<dt><a href="#latestDiffTurnCount">latestDiffTurnCount()</a></dt>
+<dd><p>The highest turn count the server can diff to: the largest app run ordinal of a
+ready checkpoint whose run completed. 0 when there is none.</p>
+<pre><code class="language-ts">export function latestDiffTurnCount(
+  projection: Pick&lt;OrchestrationV2ThreadProjection, &quot;runs&quot; | &quot;checkpoints&quot;&gt;,
+): number;
 </code></pre>
 </dd>
 <dt><a href="#applyThreadEvent">applyThreadEvent()</a></dt>
@@ -1554,6 +1636,11 @@ older server. The library does not render terminal output.
   - [.respondToUserInput()](#ThreadsApi+respondToUserInput)
   - [.dismissUserInput()](#ThreadsApi+dismissUserInput)
   - [.pendingRequests()](#ThreadsApi+pendingRequests)
+  - [.status()](#ThreadsApi+status)
+  - [.usage()](#ThreadsApi+usage)
+  - [.diff()](#ThreadsApi+diff)
+  - [.search()](#ThreadsApi+search)
+  - [.searchContent()](#ThreadsApi+searchContent)
   - [.watch()](#ThreadsApi+watch)
   - [.watchCommandOutput()](#ThreadsApi+watchCommandOutput)
   - [.phase()](#ThreadsApi+phase)
@@ -1889,6 +1976,72 @@ Open approval and user-input requests, derived from the thread's projection.
 
 ```ts
 async pendingRequests(threadId: ThreadId, signal?: AbortSignal): Promise<PendingRequest[]>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+status"></a>
+
+### threadsApi.status()
+
+Runs, queue, pending request counts and background work from the full HTTP
+detail, with the shell's derived background work. Raises `T3NotFoundError`
+when the thread does not exist.
+
+```ts
+async status(threadId: ThreadId, signal?: AbortSignal): Promise<ThreadStatus>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+usage"></a>
+
+### threadsApi.usage()
+
+Provider-thread context usage and provider-turn usage with owning ids, from the full detail.
+
+```ts
+async usage(threadId: ThreadId, signal?: AbortSignal): Promise<ThreadUsage>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+diff"></a>
+
+### threadsApi.diff()
+
+The checkpoint diff for `range`; without one, the full-thread diff through the
+latest completed run checkpoint. Server checkpoint errors propagate.
+
+```ts
+async diff(
+    threadId: ThreadId,
+    range?: ThreadDiffRange,
+    signal?: AbortSignal,
+  ): Promise<ThreadDiff>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+search"></a>
+
+### threadsApi.search()
+
+Substring search of active threads' finished user and assistant messages: one
+match per thread, at most `limit` (default and maximum 50).
+
+```ts
+search(input: ThreadSearchInput, signal?: AbortSignal): Promise<ThreadSearchResult>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+searchContent"></a>
+
+### threadsApi.searchContent()
+
+The server's find-within-thread: the selected match, its ordinal and the total.
+
+```ts
+searchContent(
+    input: ThreadContentSearchInput,
+    signal?: AbortSignal,
+  ): Promise<ThreadContentSearchResult>;
 ```
 
 **Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
@@ -2378,6 +2531,8 @@ reclaim space or run the compact command.
   - [.watchDatabaseStorage()](#ServerApi+watchDatabaseStorage)
   - [.environment()](#ServerApi+environment)
   - [.providers()](#ServerApi+providers)
+  - [.providerStatus()](#ServerApi+providerStatus)
+  - [.usageSummary()](#ServerApi+usageSummary)
   - [.findModel()](#ServerApi+findModel)
 
 <a name="ServerApi+probe"></a>
@@ -2485,6 +2640,34 @@ List configured provider instances.
 
 ```ts
 async providers(signal?: AbortSignal): Promise<ServerProvider[]>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
+<a name="ServerApi+providerStatus"></a>
+
+### serverApi.providerStatus()
+
+Current provider records with auth, installation, availability and usage
+limits, from the live configuration. `instanceId` selects one instance
+exactly; an unknown id yields an empty list. Reading does not log in,
+install, refresh or consume reset credits.
+
+```ts
+async providerStatus(instanceId?: string, signal?: AbortSignal): Promise<ServerProvider[]>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
+<a name="ServerApi+usageSummary"></a>
+
+### serverApi.usageSummary()
+
+Historical token usage and cost from provider transcripts (diagnostics:read).
+Buckets keep provider, model and cost source; sources report scan status.
+The result has no grand total: costs from different sources, and tokens
+of different kinds, are not added together.
+
+```ts
+usageSummary(input: UsageSummaryInput, signal?: AbortSignal): Promise<UsageSummary>;
 ```
 
 **Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
@@ -2632,6 +2815,187 @@ watchStatus(
 ```
 
 **Kind**: instance method of [<code>VcsApi</code>](#VcsApi)  
+<a name="ScheduledTasksApi"></a>
+
+## ScheduledTasksApi
+
+Scheduled tasks: interval, fixed-time and webhook triggers that start agent
+runs. Reading needs orchestration:read; the server removes webhook endpoints
+from a reader's results. Mutations, webhook endpoints and delivery records
+need orchestration:operate. Signing secrets are write-only.
+
+**Kind**: global class
+
+- [ScheduledTasksApi](#ScheduledTasksApi)
+  - [.list()](#ScheduledTasksApi+list)
+  - [.get()](#ScheduledTasksApi+get)
+  - [.upsert()](#ScheduledTasksApi+upsert)
+  - [.update()](#ScheduledTasksApi+update)
+  - [.setEnabled()](#ScheduledTasksApi+setEnabled)
+  - [.delete()](#ScheduledTasksApi+delete)
+  - [.runNow()](#ScheduledTasksApi+runNow)
+  - [.rotateWebhookToken()](#ScheduledTasksApi+rotateWebhookToken)
+  - [.listWebhookDeliveries()](#ScheduledTasksApi+listWebhookDeliveries)
+  - [.getWebhookDelivery()](#ScheduledTasksApi+getWebhookDelivery)
+  - [.watch()](#ScheduledTasksApi+watch)
+  - [.webhookEndpoint()](#ScheduledTasksApi+webhookEndpoint)
+
+<a name="ScheduledTasksApi+list"></a>
+
+### scheduledTasksApi.list()
+
+Every task this client can decode; a task with an unfamiliar shape is left out.
+
+```ts
+async list(signal?: AbortSignal): Promise<ScheduledTask[]>;
+```
+
+**Kind**: instance method of [<code>ScheduledTasksApi</code>](#ScheduledTasksApi)  
+<a name="ScheduledTasksApi+get"></a>
+
+### scheduledTasksApi.get()
+
+One task, or undefined when no task has `id`.
+
+```ts
+async get(id: ScheduledTaskId, signal?: AbortSignal): Promise<ScheduledTask | undefined>;
+```
+
+**Kind**: instance method of [<code>ScheduledTasksApi</code>](#ScheduledTasksApi)  
+<a name="ScheduledTasksApi+upsert"></a>
+
+### scheduledTasksApi.upsert()
+
+Create a task, or replace one by `id`, with the server's upsert semantics.
+
+```ts
+async upsert(input: ScheduledTaskUpsertInput, signal?: AbortSignal): Promise<ScheduledTask>;
+```
+
+**Kind**: instance method of [<code>ScheduledTasksApi</code>](#ScheduledTasksApi)  
+<a name="ScheduledTasksApi+update"></a>
+
+### scheduledTasksApi.update()
+
+Change the given properties of an existing task and keep the rest. This
+reads the task and then saves it with `requireExisting: true`; a task
+deleted in between fails, and a concurrent edit is overwritten.
+
+```ts
+async update(
+    id: ScheduledTaskId,
+    patch: ScheduledTaskPatch,
+    signal?: AbortSignal,
+  ): Promise<ScheduledTask>;
+```
+
+**Kind**: instance method of [<code>ScheduledTasksApi</code>](#ScheduledTasksApi)  
+<a name="ScheduledTasksApi+setEnabled"></a>
+
+### scheduledTasksApi.setEnabled()
+
+Enable or disable a task without changing its execution settings.
+
+```ts
+async setEnabled(
+    id: ScheduledTaskId,
+    enabled: boolean,
+    signal?: AbortSignal,
+  ): Promise<ScheduledTask>;
+```
+
+**Kind**: instance method of [<code>ScheduledTasksApi</code>](#ScheduledTasksApi)  
+<a name="ScheduledTasksApi+delete"></a>
+
+### scheduledTasksApi.delete()
+
+Delete a scheduled task through the server's native mutation.
+
+```ts
+async delete(id: ScheduledTaskId, signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ScheduledTasksApi</code>](#ScheduledTasksApi)  
+<a name="ScheduledTasksApi+runNow"></a>
+
+### scheduledTasksApi.runNow()
+
+Start a run now. The server refuses webhook tasks and a task that is already running.
+
+```ts
+async runNow(id: ScheduledTaskId, signal?: AbortSignal): Promise<ScheduledTask>;
+```
+
+**Kind**: instance method of [<code>ScheduledTasksApi</code>](#ScheduledTasksApi)  
+<a name="ScheduledTasksApi+rotateWebhookToken"></a>
+
+### scheduledTasksApi.rotateWebhookToken()
+
+Replace a webhook task's URL token; the previous URL stops working.
+
+```ts
+async rotateWebhookToken(id: ScheduledTaskId, signal?: AbortSignal): Promise<ScheduledTask>;
+```
+
+**Kind**: instance method of [<code>ScheduledTasksApi</code>](#ScheduledTasksApi)  
+<a name="ScheduledTasksApi+listWebhookDeliveries"></a>
+
+### scheduledTasksApi.listWebhookDeliveries()
+
+Recorded webhook requests; outcomes newer than this client stay strings.
+
+```ts
+async listWebhookDeliveries(
+    id: ScheduledTaskId,
+    signal?: AbortSignal,
+  ): Promise<ScheduledTaskWebhookDeliverySummary[]>;
+```
+
+**Kind**: instance method of [<code>ScheduledTasksApi</code>](#ScheduledTasksApi)  
+<a name="ScheduledTasksApi+getWebhookDelivery"></a>
+
+### scheduledTasksApi.getWebhookDelivery()
+
+Read one webhook request's diagnostic record, including its body and headers.
+
+```ts
+async getWebhookDelivery(
+    id: ScheduledTaskId,
+    deliveryId: ScheduledTaskWebhookDeliveryId,
+    signal?: AbortSignal,
+  ): Promise<ScheduledTaskWebhookDelivery>;
+```
+
+**Kind**: instance method of [<code>ScheduledTasksApi</code>](#ScheduledTasksApi)  
+<a name="ScheduledTasksApi+watch"></a>
+
+### scheduledTasksApi.watch()
+
+The full task list now and after every change; decode failures remain stream items.
+
+```ts
+watch(
+    options: WatchScheduledTasksOptions = {},
+  ): AsyncIterable<DecodedStreamItem<ScheduledTaskListResult>>;
+```
+
+**Kind**: instance method of [<code>ScheduledTasksApi</code>](#ScheduledTasksApi)  
+<a name="ScheduledTasksApi+webhookEndpoint"></a>
+
+### scheduledTasksApi.webhookEndpoint()
+
+A webhook task's endpoint. A missing task fails as not found and another
+trigger type as a precondition. A caller without orchestration:operate
+fails with insufficient scope; the endpoint is never reconstructed.
+
+```ts
+async webhookEndpoint(
+    id: ScheduledTaskId,
+    signal?: AbortSignal,
+  ): Promise<ScheduledTaskWebhookEndpointInfo>;
+```
+
+**Kind**: instance method of [<code>ScheduledTasksApi</code>](#ScheduledTasksApi)  
 <a name="TerminalApi"></a>
 
 ## TerminalApi
@@ -3024,6 +3388,20 @@ async logout(name?: string): Promise<void>;
 ```
 
 **Kind**: instance method of [<code>ProfileManager</code>](#ProfileManager)  
+<a name="threadId"></a>
+
+## threadId
+
+Omit or null to start a new thread per run.
+
+**Kind**: global variable  
+<a name="THREAD_SEARCH_MAX_LIMIT"></a>
+
+## THREAD\_SEARCH\_MAX\_LIMIT
+
+The server's default and maximum `orchestration.searchThreads` limit.
+
+**Kind**: global constant  
 <a name="AuthEnvironmentScope"></a>
 
 ## AuthEnvironmentScope
@@ -3037,6 +3415,13 @@ Strict: validates the scopes a caller asks for.
 
 The scopes clients released before granular permissions knew. Servers
 report `scopes` filtered to these and the full grant as `permissions`.
+
+**Kind**: global constant  
+<a name="SecretRef"></a>
+
+## SecretRef
+
+A one-use handle to a secret the user entered for an agent; the agent never sees the value.
 
 **Kind**: global constant  
 <a name="threadId"></a>
@@ -3088,11 +3473,35 @@ An older timeline page for progressive history. Rows are chronological.
 The thread's visible timeline in one read, for handing a conversation to another reader.
 
 **Kind**: global constant  
+<a name="OrchestrationV2PendingBackgroundTask"></a>
+
+## OrchestrationV2PendingBackgroundTask
+
+Provider-owned background work that can outlive the root turn. A kind this
+build does not know, or none, loads as `background_task`, as upstream does.
+
+**Kind**: global constant  
+<a name="OrchestrationV2ProviderTurnTokenUsage"></a>
+
+## OrchestrationV2ProviderTurnTokenUsage
+
+Live context usage reported by the provider mid-turn.
+
+**Kind**: global constant  
 <a name="OrchestrationV2RuntimeRequest"></a>
 
 ## OrchestrationV2RuntimeRequest
 
 An approval, question, or other request the provider raised and how it was answered.
+
+**Kind**: global constant  
+<a name="TurnTokenUsage"></a>
+
+## TurnTokenUsage
+
+Normalized main-agent usage for one turn. `complete` means the provider
+supplied full input and output totals; `partial` means every included
+count is valid but the full total is not known.
 
 **Kind**: global constant  
 <a name="OrchestrationV2TurnItem"></a>
@@ -3130,6 +3539,96 @@ The historical `{ provider, model }` shape still decodes; `instanceId` is the ro
 One question's answer: any JSON value, as the contracts allow. The provider
 adapters act on a single choice (a string), several choices (a string
 array), or Codex's `{ answers: string[] }`.
+
+**Kind**: global constant  
+<a name="ScheduledTaskWebhookEndpoint"></a>
+
+## ScheduledTaskWebhookEndpoint
+
+A webhook task's endpoint. `path` carries the URL token and is relative to
+the environment; `url` is the T3 Connect relay URL, null without one. The
+server removes the whole endpoint for a caller without orchestration:operate.
+
+**Kind**: global constant  
+<a name="ScheduledTaskWebhookDeliveryOutcome"></a>
+
+## ScheduledTaskWebhookDeliveryOutcome
+
+What happened to one webhook request. The set grows; newer outcomes stay strings.
+
+**Kind**: global constant  
+<a name="ScheduledTaskWebhookDelivery"></a>
+
+## ScheduledTaskWebhookDelivery
+
+One recorded request with its query, headers, (possibly truncated) body and rendered prompt.
+
+**Kind**: global constant  
+<a name="ScheduledTaskWebhookDedupe"></a>
+
+## ScheduledTaskWebhookDedupe
+
+Replay key (kept 7 days), coalesce key and coalesce window in seconds (server default 120).
+
+**Kind**: global constant  
+<a name="ScheduledTaskWebhookFilter"></a>
+
+## ScheduledTaskWebhookFilter
+
+A filter as sent. Every filter must match for a request to run the task.
+
+**Kind**: global constant  
+<a name="ScheduledTaskWebhookFilterRecord"></a>
+
+## ScheduledTaskWebhookFilterRecord
+
+A stored filter; a newer operator decodes as `{ unknown: true, raw }`.
+
+**Kind**: global constant  
+<a name="ScheduledTaskWebhookSignature"></a>
+
+## ScheduledTaskWebhookSignature
+
+Stored HMAC-SHA256 check over the raw request body. The secret is never returned.
+
+**Kind**: global constant  
+<a name="ScheduledTaskWebhookSignatureInput"></a>
+
+## ScheduledTaskWebhookSignatureInput
+
+Signature check as sent. Omit `secret` and `secretRef` to keep the stored
+secret; `secretRef` is consumed by the save that uses it.
+
+**Kind**: global constant  
+<a name="ScheduledTaskSchedule"></a>
+
+## ScheduledTaskSchedule
+
+A stored trigger. Sub-minute legacy intervals still decode so they can be
+listed, disabled, edited or deleted. A newer trigger type decodes as
+`{ unknown: true, raw }`.
+
+**Kind**: global constant  
+<a name="ScheduledTaskUpsertSchedule"></a>
+
+## ScheduledTaskUpsertSchedule
+
+A writable trigger; intervals are at least one minute.
+
+**Kind**: global constant  
+<a name="UsageDay"></a>
+
+## UsageDay
+
+Calendar day as `YYYY-MM-DD`.
+
+**Kind**: global constant  
+<a name="UsageTokenTotals"></a>
+
+## UsageTokenTotals
+
+Cached and cache-creation input tokens are disjoint from uncached input
+tokens. `reasoningTokens` is a subset of `outputTokens`; never add it on top.
 
 **Kind**: global constant  
 <a name="RpcErrorRecord"></a>
@@ -3199,6 +3698,20 @@ export function watchAccess(
   rpc: RpcClient<RpcMethods>,
   options?: { readonly signal?: AbortSignal },
 ): AsyncIterable<DecodedStreamItem<AuthAccessStreamEvent>>;
+```
+
+**Kind**: global function  
+<a name="latestDiffTurnCount"></a>
+
+## latestDiffTurnCount()
+
+The highest turn count the server can diff to: the largest app run ordinal of a
+ready checkpoint whose run completed. 0 when there is none.
+
+```ts
+export function latestDiffTurnCount(
+  projection: Pick<OrchestrationV2ThreadProjection, "runs" | "checkpoints">,
+): number;
 ```
 
 **Kind**: global function  

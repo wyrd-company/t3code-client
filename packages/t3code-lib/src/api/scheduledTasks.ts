@@ -92,6 +92,7 @@ export class ScheduledTasksApi {
     return this.upsert(scheduledTaskUpdateInput(stored, patch), signal);
   }
 
+  /** Enable or disable a task without changing its execution settings. */
   async setEnabled(
     id: ScheduledTaskId,
     enabled: boolean,
@@ -100,6 +101,7 @@ export class ScheduledTasksApi {
     return (await this.rpc.call("scheduledTasks.setEnabled", { id, enabled }, signal)).task;
   }
 
+  /** Delete a scheduled task through the server's native mutation. */
   async delete(id: ScheduledTaskId, signal?: AbortSignal): Promise<void> {
     await this.rpc.call("scheduledTasks.delete", { id }, signal);
   }
@@ -124,6 +126,7 @@ export class ScheduledTasksApi {
       .deliveries;
   }
 
+  /** Read one webhook request's diagnostic record, including its body and headers. */
   async getWebhookDelivery(
     id: ScheduledTaskId,
     deliveryId: ScheduledTaskWebhookDeliveryId,

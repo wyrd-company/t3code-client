@@ -28,9 +28,9 @@ if [[ "$unit" == t3code-cli ]]; then
 fi
 if [[ "$unit" == t3code-mcp ]]; then
   npm install --silent --no-audit --no-fund "$library" "$tarball" "$typescript" "@types/node@24"
-  # Profiles resolve lazily; an empty home keeps the caller's profiles out.
-  export HOME="$consumer/home" XDG_CONFIG_HOME="$consumer/home/.config"
-  mkdir -p "$HOME"
+  # Profiles resolve lazily; a task-owned config root excludes caller profiles.
+  export T3C_CONFIG_HOME="$consumer/profiles"
+  mkdir -p "$T3C_CONFIG_HOME"
   version="$(node -p 'require("@wyrd-company/t3code-mcp/package.json").version')"
   reported="$(./node_modules/.bin/t3code-mcp --version)"
   if [[ "$reported" != *"$version"* ]]; then

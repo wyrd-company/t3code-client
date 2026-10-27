@@ -6,6 +6,7 @@ import * as NodeModule from "node:module";
 import { McpServer } from "@modelcontextprotocol/server";
 import type { ClientProvider } from "./clients.ts";
 import type { ToolRegistration } from "./tool.ts";
+import { tools as defaultTools } from "./tools/index.ts";
 
 export const serverVersion = (
   NodeModule.createRequire(import.meta.url)("../package.json") as { version: string }
@@ -21,7 +22,7 @@ export const instructions =
 
 export function createServer(
   clients: ClientProvider,
-  tools: readonly ToolRegistration[],
+  tools: readonly ToolRegistration[] = defaultTools,
 ): McpServer {
   const server = new McpServer(
     { name: "t3code-mcp", version: serverVersion },

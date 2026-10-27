@@ -10,6 +10,8 @@ relationships:
     - composition
     - releasing
     - library-testing
+    - mcp
+    - automation-capabilities
 proposed-design:
   high-level-overview:
     Workspace gates combine intent validation, static checks, unit tests, pinned-server
@@ -19,6 +21,7 @@ proposed-design:
     `task check` runs release-intent validation, workspace formatting/linting,
     typechecks, unit tests, pinned-server live tests and local pack/consumer checks.
     `task lib:check` runs library gates; `task cli:check` runs the CLI build, lint, typecheck, unit, live and package gates.
+    `task mcp:check` runs MCP build, static, protocol, live and package gates.
     Registered placeholder commands do not count as implementation evidence.
 
     Library source, colocated tests, fixture data, fake server and live harness
@@ -227,3 +230,23 @@ proposed-design:
     server and removes owned server/profile/project/Dagu roots. The readiness
     roster has the lifecycle-evidence-scope limit above. Shared Dagu workflows,
     services and operational server state are outside the verification boundary.
+
+  complementary-automation: |
+    Scheduler library tests cover native RPC payloads, read/operate permissions,
+    omission and clearing semantics, endpoint resolution, future delivery outcomes
+    and failed reads. Live tests keep tasks disabled or reject signatures so they
+    do not start agents. Usage tests assert shapes without logging host transcript
+    paths or usage rows. Thread inspection reads complete HTTP detail and retains
+    ownership, absent metadata and checkpoint bounds. CLI launch tests validate
+    model option descriptors, inheritance and explicit clearing, advertised existing
+    worktrees and omitted/true/false start-from-origin settings.
+
+    MCP tests use official SDK clients over in-memory and stdio transports. They
+    verify initialize, tool inventory, annotations, structured/text agreement,
+    schema rejection before connection, safe failures, per-request cancellation
+    and shutdown. A pinned stock-tool fixture plus an explicit complementary
+    inventory prevents name collisions and accidental tool additions. A fresh
+    stock-server test exercises disabled webhook deliveries, execution changes,
+    endpoint rotation, empty-thread inspection, provider status and usage through
+    the built stdio executable. Local MCP and library tarballs install together
+    for consumer verification.

@@ -33,6 +33,7 @@ it("publishes the complete CLI navigation and generated library page with unique
     "t3c/dagu.md",
     "t3c/getting-started.md",
     "t3c/library-reference.md",
+    "t3c/mcp.md",
     "t3c/policy.md",
   ]);
   const orders = published.map((name) => {
@@ -50,6 +51,7 @@ it("publishes the complete CLI navigation and generated library page with unique
     "t3c/dagu.md": "5",
     "t3c/getting-started.md": "1",
     "t3c/library-reference.md": "6",
+    "t3c/mcp.md": "7",
     "t3c/policy.md": "4",
   });
   expect(read("t3c/library-reference.md")).toContain("T3StorageError");

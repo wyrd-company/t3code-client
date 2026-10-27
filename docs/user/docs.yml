@@ -34,7 +34,7 @@ products:
       - section: Reference
         groups:
           - group: Using t3c
-            pages: [commands, policy, dagu]
+            pages: [commands, policy, dagu, mcp]
           - group: Library
             pages: [library-reference]
     kinds:

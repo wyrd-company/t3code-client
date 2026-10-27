@@ -37,8 +37,7 @@ does not list the thread). `threads.usage(id)` returns provider-thread context
 usage and provider-turn usage with their owning ids; absent usage stays absent.
 `threads.diff(id, range?)` diffs the whole thread through the latest completed
 checkpoint, or the exact `{ fromTurnCount, toTurnCount }` range.
-`threads.search({ query, limit? })` returns at most `limit` (default and maximum
-50) threads, one match each, and reports the limit. `threads.searchContent(input)`
+`threads.search({ query, limit? })` returns at most `limit` (default and maximum 50) threads, one match each, and reports the limit. `threads.searchContent(input)`
 is the server's within-thread find.
 
 See [library architecture](https://github.com/wyrd-company/t3code-client/blob/main/docs/technical-designs/library.yml) for the architecture and
