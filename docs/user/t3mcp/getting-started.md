@@ -14,18 +14,18 @@ status, historical usage and Stop/queue recovery. Use it beside the built-in T3 
 Stock tools handle ordinary schedule CRUD, run-now, launches, global thread
 search, questions, model discovery and queued-message editing.
 
-This package has no public npm release. Build it from this repository before
-configuring the host. It uses Node >=22.16 and the same saved profiles as t3c.
-
-Build the workspace with `task build`. Configure your MCP host to launch Node
-with an absolute path to the built executable:
+Use Node >=22.16 and the same saved profiles as t3c. Configure your MCP host
+to launch the npm package with `npx`:
 
 ```json
 {
-  "command": "node",
-  "args": ["/absolute/path/to/packages/t3code-mcp/dist/cli.js", "--profile", "sample"]
+  "command": "npx",
+  "args": ["-y", "@wyrd-company/t3code-mcp", "--profile", "sample"]
 }
 ```
+
+You can also install the executable with `npm install -g
+@wyrd-company/t3code-mcp` and use `t3code-mcp --profile sample`.
 
 Pair the profile with `t3c auth pair` first. `--profile` selects an exact saved
 profile and ignores environment overrides. Alternatively, `--server` and
@@ -76,3 +76,10 @@ other queued messages can follow. Get ids from `thread_status` or the stock
 queue tools. These tools require `orchestration:operate` and return dispatch
 acknowledgements; inspect status for subsequent state. Stock queue editing,
 cancellation, reordering and promotion remain in the built-in MCP server.
+
+## Build from source
+
+From a repository checkout, run `task install` and `task build`. Configure the
+host to run `node` with the absolute path to
+`packages/t3code-mcp/dist/cli.js`, followed by `--profile sample`. Source builds
+use the same connection settings and tool inventory as the npm package.

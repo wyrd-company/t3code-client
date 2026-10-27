@@ -90,4 +90,5 @@ proposed-design:
     docs unit t3mcp-docs. Setup and tool reference pages live in docs/user/t3mcp;
     the t3c guide links to them. The catalog names the MCP-server kind and its
     exact tool inventory. The product logo and favicon are its square SVG mark.
-    Source-build setup applies before the first npm publication.
+    Hosts launch the npm package with npx or use a globally installed executable.
+    A source-build setup recipe uses the same profiles and tool inventory.

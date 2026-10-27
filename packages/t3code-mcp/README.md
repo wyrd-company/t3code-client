@@ -9,12 +9,12 @@ Complementary stdio MCP tools for stock T3 Code 0.1.2, orchestration protocol 2.
 Node >=22.16 is required. The library owns server integration; the official MCP
 SDK owns protocol transport.
 
-Build locally with `task build`, then configure your MCP host to launch:
+Configure your MCP host to launch the npm package:
 
 ```json
 {
-  "command": "node",
-  "args": ["/absolute/path/to/packages/t3code-mcp/dist/cli.js", "--profile", "sample"]
+  "command": "npx",
+  "args": ["-y", "@wyrd-company/t3code-mcp", "--profile", "sample"]
 }
 ```
 
@@ -76,3 +76,7 @@ tests and packed consumer verification. No agent runs are required.
 The [t3mcp setup guide](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3mcp/getting-started.md) and
 [tool reference](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3mcp/tools.md)
 form the server’s separate wyrd.foo documentation product.
+
+To build from source, run `task install` and `task build` in the repository.
+Configure the host to run `node` with the absolute path to
+`packages/t3code-mcp/dist/cli.js`, then `--profile sample`.

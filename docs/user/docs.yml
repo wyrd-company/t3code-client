@@ -128,9 +128,10 @@ products:
               {
                 "mcpServers": {
                   "t3mcp": {
-                    "command": "node",
+                    "command": "npx",
                     "args": [
-                      "/absolute/path/to/packages/t3code-mcp/dist/cli.js",
+                      "-y",
+                      "@wyrd-company/t3code-mcp",
                       "--profile",
                       "sample"
                     ]
