@@ -4,7 +4,7 @@
 // ---
 import { parseArgs } from "node:util";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
-import { SharedClient, type ConnectionOptions } from "./clients.ts";
+import { SharedClient, type ClientProvider, type ConnectionOptions } from "./clients.ts";
 import { createServer, serverVersion } from "./server.ts";
 import { toolNames } from "./tools/index.ts";
 
@@ -15,6 +15,26 @@ const help = `Usage: t3code-mcp [serve] [--profile NAME | --server URL --credent
 Serve complementary T3 Code tools over stdio. Uses t3c profiles and credentials.
 Pair and manage credentials with t3c. Stdout is reserved for MCP protocol.
 `;
+
+/** Each SDK discovery/session instance owns its upstream client independently. */
+export function startStdio(
+  options: ConnectionOptions,
+  createClient: (options: ConnectionOptions) => ClientProvider = (options) =>
+    new SharedClient(options),
+): { close(): Promise<void> } {
+  const clients = new Set<ClientProvider>();
+  const handle = serveStdio(() => {
+    const owned = createClient(options);
+    clients.add(owned);
+    return createServer(owned);
+  });
+  return {
+    async close() {
+      await handle.close();
+      await Promise.all([...clients].map((client) => client.close()));
+    },
+  };
+}
 
 export function main(args: string[]): void {
   let values: {
@@ -47,6 +67,8 @@ export function main(args: string[]): void {
       (values.server !== undefined || values.credentials !== undefined)
     )
       throw new Error();
+    if (Object.values(values).some((value) => typeof value === "string" && !value.trim()))
+      throw new Error();
   } catch {
     process.stderr.write("Invalid arguments. Use t3code-mcp --help.\n");
     process.exitCode = 2;
@@ -70,16 +92,12 @@ export function main(args: string[]): void {
     ...(values.credentials === undefined ? {} : { credentialsFile: values.credentials }),
   };
   try {
-    const clients = new SharedClient(options);
-    const handle = serveStdio(() => createServer(clients));
+    const handle = startStdio(options);
     const stop = () => {
-      void handle
-        .close()
-        .then(() => clients.close())
-        .catch(() => {
-          process.stderr.write("Could not close the MCP server.\n");
-          process.exitCode = 1;
-        });
+      void handle.close().catch(() => {
+        process.stderr.write("Could not close the MCP server.\n");
+        process.exitCode = 1;
+      });
     };
     process.once("SIGINT", stop);
     process.once("SIGTERM", stop);

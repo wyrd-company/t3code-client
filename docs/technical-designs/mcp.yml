@@ -25,7 +25,9 @@ proposed-design:
     credential administration use t3c. The factory accepts an injected client
     provider so unit and protocol tests exercise the public tool boundary.
 
-    Connections are lazy, concurrent first use shares initialization and failed
+    Each SDK factory instance owns its client, so disposing a discovery probe
+    cannot close a replacement session's client. Connections are lazy,
+    concurrent first use shares initialization within that instance and failed
     initialization permits a later retry. Shutdown closes initialized clients
     and handles clients whose initialization is still pending. Cancellation is
     forwarded to library operations. Existing library connection behavior supplies
