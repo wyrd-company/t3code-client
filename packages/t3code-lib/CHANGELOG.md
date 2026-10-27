@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.3.0
+
+### Features
+
+- Inspect a thread's runs, queue, pending requests, background work and provider usage, read checkpoint diffs, and search across or within threads.
+- Resolve a provider instance and native session ID to its T3 Code thread, including archived threads and earlier provider sessions.
+- Add native thread Stop, queue Resume and selected queued-message Start methods with cancellation and dispatch error propagation; preserve legacy stop behavior.
+- Validate bound scheduled-task threads against their effective project before CLI creation or target changes. Expose explicit target validation with read scope while preserving native operate-only upserts and omitted update fields.
+- Add scheduled task management through `T3Client.scheduledTasks`: list, read, create, update while keeping omitted settings, enable, delete, run, webhook endpoint lookup, webhook token rotation and webhook delivery records. Add `server.providerStatus` for current provider records and `server.usageSummary` for historical token usage and cost.
+
 ## 0.2.0
 
 ### Features

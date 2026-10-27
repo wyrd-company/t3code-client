@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.0
+
+### Features
+
+- Add launch and continuation controls: repeatable --model-option key=value validated against the selected model's advertised options, --clear-model-options, --existing-worktree, --branch, and --start-from-origin/--no-start-from-origin for new worktrees. thread send accepts the model option controls.
+- Add thread stop, thread queue resume and thread queue start commands; expose queued run IDs in text status for selection.
+- Add thread status, requests, usage, diff and search commands with JSON envelopes and concise text.
+- Add thread find with provider and native session inputs, returning a T3 Code thread ID or null.
+- Add schedule management, webhook endpoint rotation and delivery inspection, exact provider status, and historical usage summaries with explicit date and time-zone bounds. Schedule input accepts JSON files or stdin and focused execution selection flags while preserving omitted update fields.
+
+### Fixes
+
+- Validate bound scheduled-task threads against their effective project before CLI creation or target changes. Expose explicit target validation with read scope while preserving native operate-only upserts and omitted update fields.
+
 ## 0.1.1
 
 ### Fixes
