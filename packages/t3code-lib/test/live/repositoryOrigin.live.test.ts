@@ -42,13 +42,16 @@ describe.skipIf(!baseUrl || !token)("live repository origin remote URL", () => {
           title: `Sample ${name}`,
         });
         ids.push(created.id);
-        // Project enrichment is asynchronous; read the public snapshot until resolved.
+        // Background enrichment can outlast expect.poll's one-second default on CI.
         await expect
-          .poll(async () => {
-            const snapshot = await client.projects.snapshot();
-            return snapshot.projects.find((candidate) => candidate.id === created.id)
-              ?.repositoryIdentity?.locator.remoteUrl;
-          })
+          .poll(
+            async () => {
+              const snapshot = await client.projects.snapshot();
+              return snapshot.projects.find((candidate) => candidate.id === created.id)
+                ?.repositoryIdentity?.locator.remoteUrl;
+            },
+            { timeout: 10_000 },
+          )
           .toBe(canonicalUrl);
         const project = (await client.projects.snapshot()).projects.find(
           (candidate) => candidate.id === created.id,

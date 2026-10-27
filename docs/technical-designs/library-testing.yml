@@ -27,6 +27,9 @@ proposed-design:
     committing it. The schema tests decode them, so a fixture
     captured from a newer server shows where the schemas have to change.
   live-tests: |
+    The repository-origin live test waits up to ten seconds for asynchronous
+    project enrichment before asserting the canonical and checkout remote URLs.
+    Its no-origin assertion for a canonical checkout remains explicit.
     `pnpm run test:live` runs `test/live/**` against a real server.
     `test/live/globalSetup.ts` starts the `t3` devDependency on a free loopback
     port with its own data directory, issues a bearer token, and stops the server
