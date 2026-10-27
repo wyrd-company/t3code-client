@@ -29,6 +29,10 @@ stderr. `--json` provides structured results; `--stream` emits incremental outpu
 `thread find` prints a T3 Code thread id or literal `null`, with exit `0` for
 either result. It includes archived threads. `--json` puts the id or null in
 `data`. Provider means the exact instance id used by `run --provider`.
+`thread status`, `requests`, `usage` and `diff` inspect one thread;
+`diff --from-turn N --to-turn M` selects an exact checkpoint range.
+`thread search <query>` returns at most `--limit` threads (default 50);
+`--thread <id>` searches within one thread. A missing thread exits `10`.
 
 Read [getting started](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/getting-started.md), [auth/profiles](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/auth.md),
 [commands](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/commands.md), [output and exit codes](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/policy.md),
