@@ -73,13 +73,13 @@ it("splits only between intact sections at the line boundary, retaining examples
     "library-reference.md",
     "library-client.md",
     "library-client-2.md",
-    "library-auth.md",
+    "library-authentication.md",
   ]);
   const continuation = pages.find((page) => page.filename === "library-client-2.md")!.content;
   expect(continuation).toContain('<a name="T3Client+connect"></a>\n\n### client.connect()');
   expect(continuation).toContain("const example = '[link](#not-an-api-anchor)';");
-  expect(continuation).toContain("[auth](library-auth.md#AuthClient)");
-  expect(continuation).toContain('href="library-auth.md#AuthClient"');
+  expect(continuation).toContain("[auth](library-authentication.md#AuthClient)");
+  expect(continuation).toContain('href="library-authentication.md#AuthClient"');
   expect(pages[0]!.content).toContain('href="library-client-2.md#T3Client+connect"');
   expect(
     projectReference(fixture, 28).some((page) => page.filename === "library-client-2.md"),
@@ -158,7 +158,7 @@ it("detects missing, changed and extra owned outputs without writing in check mo
   await NodeFS.unlink(NodePath.join(directory, pages[2]!.filename));
   const before = await NodeFS.readFile(stale, "utf8");
   await expect(syncReference(directory, pages, true)).rejects.toThrow(
-    "library-client.md, library-auth.md",
+    "library-client.md, library-authentication.md",
   );
   expect(await NodeFS.readFile(stale, "utf8")).toBe(before);
   await syncReference(directory, pages);
@@ -193,11 +193,25 @@ it("wires the command entry point to generate and check the complete output set"
   const published = NodePath.join(root, "docs/user/t3c");
   await NodeFS.mkdir(scripts, { recursive: true });
   await NodeFS.mkdir(published, { recursive: true });
-  for (const filename of ["docs.mjs", "docsProjection.mjs", "docsOutputs.mjs"])
+  for (const filename of [
+    "docs.mjs",
+    "docsProjection.mjs",
+    "docsOutputs.mjs",
+    "docsNavigation.mjs",
+  ])
     await NodeFS.copyFile(
       new URL(`../../packages/t3code-cli/scripts/${filename}`, import.meta.url),
       NodePath.join(scripts, filename),
     );
+  await NodeFS.symlink(
+    NodePath.resolve(import.meta.dirname, "../../node_modules"),
+    NodePath.join(root, "node_modules"),
+    "dir",
+  );
+  await NodeFS.writeFile(
+    NodePath.join(root, "docs/user/docs.yml"),
+    "schemaVersion: 1\nproducts:\n  t3c:\n    nav: [{section: Reference, groups: [{group: Commands, pages: [commands]}]}]\n",
+  );
   await NodeFS.writeFile(NodePath.join(root, "docs/api.md"), fixture);
   const run = (args: string[]) =>
     NodeCP.spawnSync(process.execPath, [NodePath.join(scripts, "docs.mjs"), ...args], {
@@ -206,10 +220,10 @@ it("wires the command entry point to generate and check the complete output set"
   expect(run(["--check"]).status).toBe(1);
   expect(run([]).status).toBe(0);
   expect(run(["--check"]).status).toBe(0);
-  await NodeFS.unlink(NodePath.join(published, "library-auth.md"));
+  await NodeFS.unlink(NodePath.join(published, "library-authentication.md"));
   const missing = run(["--check"]);
   expect(missing.status).toBe(1);
-  expect(missing.stderr).toContain("library-auth.md");
+  expect(missing.stderr).toContain("library-authentication.md");
   expect(run([]).status).toBe(0);
   await NodeFS.writeFile(
     NodePath.join(published, "library-old.md"),

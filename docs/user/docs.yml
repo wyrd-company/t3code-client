@@ -48,18 +48,41 @@ products:
               - automation
       - section: Developers
         groups:
-          - group: Library API
+          - group: Library
             pages:
               - library-reference
+              - library-client
+              - library-authentication
+              - library-profiles
+              - library-errors
+              - library-types
+          - group: Workspace facades
+            pages:
+              - library-projects
+              - library-vcs
+              - library-terminal
+          - group: Threads
+            pages:
+              - library-threads
+              - library-thread-lifecycle
+              - library-thread-runs
+              - library-thread-state
+              - library-shell
+          - group: Server and automation
+            pages:
+              - library-server-summary
+              - library-server
+              - library-server-methods
+              - library-schedules
     kinds:
       - kind: cli
         install:
           - method: npm
-            os: [macos, linux, windows]
+            os: [ macos, linux, windows ]
             default: true
             command: npm install -g @wyrd-company/t3code-cli
           - method: homebrew
-            os: [macos, linux]
+            os: [ macos, linux ]
             command: brew install wyrd-company/tools/t3c
     logo: assets/logo.svg
     favicon: assets/logo.svg

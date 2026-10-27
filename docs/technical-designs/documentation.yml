@@ -5,8 +5,10 @@ relationships:
   references: [command-line, cli-surface, library, api, library-reference, releasing]
 proposed-design:
   high-level-overview: >-
-    `docs/user/t3c` contains authored guides, generated developer reference pages and the registered demo
-    GIF, and `docs/user/docs.yml` describes the t3c product.
+    `docs/user/t3c` contains authored guides, generated developer reference pages
+    and the registered demo GIF. `docs/user/t3mcp` contains MCP setup and tool
+    guides. `docs/user/docs.yml` describes both products, their own navigation and
+    registered SVG marks. The t3c Developers section holds the generated API.
     Authored guides explain the CLI specification and library behavior. Structured
     technical designs describe implementation ownership and operating mechanisms.
     Only the library API reference pages are generated; JSDoc template data stays in memory.
@@ -31,21 +33,25 @@ proposed-design:
     preserved. Markdown and HTML links resolve to each API anchor's owner page;
     links to other repository documentation use canonical repository URLs.
     Publishing metadata keeps every page in product `t3c`, ordered from 6.
+    The same page inventory generates the Developers navigation groups in
+    docs/user/docs.yml. Other sections and product/version metadata remain
+    authored. A missing or changed generated navigation section fails check mode.
     `cli:docs:check` compares every expected output and rejects missing, changed
     and extra generated pages. Regeneration removes stale `library-*.md` pages
     only when their generated marker establishes ownership. Authored files are
     preserved, and an authored file or symbolic link at an expected output path
     fails before any output changes.
-    `complementary-tools.md` is the authored complementary MCP guide at order 7.
+    `complementary-tools.md` links to the separate t3mcp product at order 7.
     `automation.md` explains schedule configuration, webhook diagnostics, provider
     status and usage queries at order 8.
-    `task check` runs both freshness checks. `docs/user/docs.yml` registers the existing GIF.
-    Publish consumes `docs/user` on CLI and docs release records and on manual runs;
-    the docs release changelog at `docs/user/t3c/CHANGELOG.md` is ingested as a
-    changelog, not as a page. Published pages and registered assets remain separate
+    `task check` runs both freshness checks. `docs/user/docs.yml` registers the GIF
+    and product logos. Publish consumes `docs/user` on CLI/MCP code and product
+    docs release records and on manual runs; each product docs unit changelog is
+    ingested as release data, not as a page. Published pages and registered assets remain separate
     inputs. The `assets` list is relative to
     `docs/user`; the product fields (`media`, `logo`, `favicon`, `social-image`)
-    are relative to the product folder `docs/user/t3c`. Internal structured
+    are relative to each product folder, `docs/user/t3c` or `docs/user/t3mcp`.
+    Internal structured
     artifacts stay outside `docs/user`.
   canonical-inputs: >-
     The CLI specification and native cli-surface.json asset are colocated in

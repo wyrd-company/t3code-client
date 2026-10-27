@@ -17,7 +17,7 @@ TypeScript declarations ship with the package.
 ## Classes
 
 - [Client and transport](library-client.md)
-- [Authentication API](library-auth.md)
+- [Authentication API](library-authentication.md)
 - [Profiles and credentials](library-profiles.md)
 - [Errors](library-errors.md)
 - [Projects API](library-projects.md)
@@ -34,7 +34,7 @@ TypeScript declarations ship with the package.
 
 ## Constants
 
-- [Authentication API](library-auth.md)
+- [Authentication API](library-authentication.md)
 - [Errors](library-errors.md)
 - [Shared types and constants](library-types.md)
 - [Thread state and helpers](library-thread-state.md)
@@ -43,7 +43,7 @@ TypeScript declarations ship with the package.
 ## Functions
 
 - [Client and transport](library-client.md)
-- [Authentication API](library-auth.md)
+- [Authentication API](library-authentication.md)
 - [Profiles and credentials](library-profiles.md)
 - [Errors](library-errors.md)
 - [Thread state and helpers](library-thread-state.md)
@@ -51,7 +51,7 @@ TypeScript declarations ship with the package.
 ## Reference pages
 
 - [Client and transport](library-client.md)
-- [Authentication API](library-auth.md)
+- [Authentication API](library-authentication.md)
 - [Profiles and credentials](library-profiles.md)
 - [Errors](library-errors.md)
 - [Shared types and constants](library-types.md)
