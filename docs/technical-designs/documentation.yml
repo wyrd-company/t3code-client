@@ -22,7 +22,7 @@ proposed-design:
     `cli:docs`, which runs `lib:docs` before projecting the complete `docs/api.md`
     into `docs/user/t3c/library-reference.md` at order 6. Its generator rewrites links and
     adds publishing metadata; `cli:docs:check` compares the complete result.
-    `mcp.md` is the authored complementary MCP guide at order 7.
+    `complementary-tools.md` is the authored complementary MCP guide at order 7.
     `task check` runs both freshness checks. `docs/user/docs.yml` registers the existing GIF.
     Publish consumes `docs/user` on CLI and docs release records and on manual runs;
     the docs release changelog at `docs/user/t3c/CHANGELOG.md` is ingested as a

@@ -39,7 +39,7 @@ User guide: [getting started](docs/user/t3c/getting-started.md),
 [command behavior](docs/user/t3c/commands.md),
 [output and exits](docs/user/t3c/policy.md),
 [Dagu](docs/user/t3c/dagu.md),
-[MCP tools](docs/user/t3c/mcp.md), and
+[MCP tools](docs/user/t3c/complementary-tools.md), and
 [library API](docs/user/t3c/library-reference.md).
 
 `task docs` generates the JSDoc library API and published reference.
