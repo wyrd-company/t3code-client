@@ -30,6 +30,17 @@ including earlier sessions after provider switches. Provider means an exact
 instance id; session means `nativeThreadRef.nativeId`. Multiple matching threads
 raise `T3PreconditionError`, and read failures propagate.
 
+Thread inspection reads the full HTTP detail. `threads.status(id)` returns the
+thread record, active and latest runs, queued runs with `queueHeld`, pending
+approval/question counts and the shell's background work (`null` when the shell
+does not list the thread). `threads.usage(id)` returns provider-thread context
+usage and provider-turn usage with their owning ids; absent usage stays absent.
+`threads.diff(id, range?)` diffs the whole thread through the latest completed
+checkpoint, or the exact `{ fromTurnCount, toTurnCount }` range.
+`threads.search({ query, limit? })` returns at most `limit` (default and maximum
+50) threads, one match each, and reports the limit. `threads.searchContent(input)`
+is the server's within-thread find.
+
 See [library architecture](https://github.com/wyrd-company/t3code-client/blob/main/docs/technical-designs/library.yml) for the architecture and
 [library verification](https://github.com/wyrd-company/t3code-client/blob/main/docs/technical-designs/library-testing.yml) for tests.
 

@@ -56,6 +56,23 @@ export type {
   WatchOptions,
 } from "./api/threads.ts";
 export type {
+  ThreadPendingRequestCounts,
+  ThreadProviderThreadUsage,
+  ThreadProviderTurnUsage,
+  ThreadStatus,
+  ThreadUsage,
+} from "./api/threadInspection.ts";
+export {
+  THREAD_SEARCH_MAX_LIMIT,
+  latestDiffTurnCount,
+  type ThreadContentSearchInput,
+  type ThreadContentSearchResult,
+  type ThreadDiff,
+  type ThreadDiffRange,
+  type ThreadSearchInput,
+  type ThreadSearchResult,
+} from "./api/threadDiffSearch.ts";
+export type {
   ApprovalResponseInput,
   InterruptOptions,
   UserInputDismissInput,
@@ -168,7 +185,16 @@ export type {
   OrchestrationV2ConversationMessage,
   OrchestrationV2UserInputQuestion,
 } from "./schemas/orchestration/messages.ts";
-export type { OrchestrationV2RuntimeRequest } from "./schemas/orchestration/providerState.ts";
+export type {
+  OrchestrationV2PendingBackgroundTask,
+  OrchestrationV2ProviderTurnTokenUsage,
+  OrchestrationV2RuntimeRequest,
+} from "./schemas/orchestration/providerState.ts";
+export type {
+  ThreadTokenUsageSnapshot,
+  TurnTokenUsage,
+} from "./schemas/orchestration/providerRuntime.ts";
+export type { OrchestrationThreadSearchMatch } from "./schemas/orchestration/stream.ts";
 export type {
   OrchestrationV2TurnItem,
   KnownOrchestrationV2TurnItem,

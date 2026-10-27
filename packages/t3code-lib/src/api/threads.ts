@@ -51,6 +51,25 @@ import {
   type ThreadLaunchInput,
 } from "./threadCreation.ts";
 import { activeRun } from "./threadDerived.ts";
+import {
+  latestDiffTurnCount,
+  loadFullThreadDiff,
+  loadThreadDiff,
+  searchThreadContent,
+  searchThreads,
+  type ThreadContentSearchInput,
+  type ThreadContentSearchResult,
+  type ThreadDiff,
+  type ThreadDiffRange,
+  type ThreadSearchInput,
+  type ThreadSearchResult,
+} from "./threadDiffSearch.ts";
+import {
+  threadStatus,
+  threadUsage,
+  type ThreadStatus,
+  type ThreadUsage,
+} from "./threadInspection.ts";
 import { findThreadByNativeSession } from "./threadSessionLookup.ts";
 import {
   findThread,
@@ -75,6 +94,21 @@ import type { StartTurnInput, TurnHandle } from "./turns.ts";
 export type { WatchCommandOutputOptions } from "./commandOutput.ts";
 export type { ThreadCreateInput, ThreadLaunchInput } from "./threadCreation.ts";
 export type { ThreadHistoryPageOptions, ThreadListOptions } from "./threadReads.ts";
+export type {
+  ThreadContentSearchInput,
+  ThreadContentSearchResult,
+  ThreadDiff,
+  ThreadDiffRange,
+  ThreadSearchInput,
+  ThreadSearchResult,
+} from "./threadDiffSearch.ts";
+export type {
+  ThreadPendingRequestCounts,
+  ThreadProviderThreadUsage,
+  ThreadProviderTurnUsage,
+  ThreadStatus,
+  ThreadUsage,
+} from "./threadInspection.ts";
 
 export type ThreadMetaUpdate = ThreadMetadataUpdatePayload;
 
@@ -439,6 +473,54 @@ export class ThreadsApi {
   /** Open approval and user-input requests, derived from the thread's projection. */
   async pendingRequests(threadId: ThreadId, signal?: AbortSignal): Promise<PendingRequest[]> {
     return pendingRequests(await this.projection(threadId, signal));
+  }
+
+  /**
+   * Runs, queue, pending request counts and background work from the full HTTP
+   * detail, with the shell's derived background work. Raises `T3NotFoundError`
+   * when the thread does not exist.
+   */
+  async status(threadId: ThreadId, signal?: AbortSignal): Promise<ThreadStatus> {
+    const [snapshot, shell] = await Promise.all([
+      this.detail(threadId, signal),
+      this.get(threadId, signal),
+    ]);
+    return threadStatus(snapshot, shell);
+  }
+
+  /** Provider-thread context usage and provider-turn usage with owning ids, from the full detail. */
+  async usage(threadId: ThreadId, signal?: AbortSignal): Promise<ThreadUsage> {
+    return threadUsage((await this.detail(threadId, signal)).projection);
+  }
+
+  /**
+   * The checkpoint diff for `range`; without one, the full-thread diff through the
+   * latest completed run checkpoint. Server checkpoint errors propagate.
+   */
+  async diff(
+    threadId: ThreadId,
+    range?: ThreadDiffRange,
+    signal?: AbortSignal,
+  ): Promise<ThreadDiff> {
+    if (range !== undefined) return loadThreadDiff(this.rpc, threadId, range, signal);
+    const { projection } = await this.detail(threadId, signal);
+    return loadFullThreadDiff(this.rpc, threadId, latestDiffTurnCount(projection), signal);
+  }
+
+  /**
+   * Substring search of active threads' finished user and assistant messages: one
+   * match per thread, at most `limit` (default and maximum 50).
+   */
+  search(input: ThreadSearchInput, signal?: AbortSignal): Promise<ThreadSearchResult> {
+    return searchThreads(this.rpc, input, signal);
+  }
+
+  /** The server's find-within-thread: the selected match, its ordinal and the total. */
+  searchContent(
+    input: ThreadContentSearchInput,
+    signal?: AbortSignal,
+  ): Promise<ThreadContentSearchResult> {
+    return searchThreadContent(this.rpc, input, signal);
   }
 
   /** Resumable live view; the projection is seeded from the HTTP detail when resuming. */
