@@ -88,6 +88,11 @@ proposed-design:
     finalization boundary.
   cutting-a-release: |
     On up-to-date main, inspect `intentional status` and `intentional plan`.
+    Check the public npm package history, including unpublished-version tombstones,
+    before selecting a publication version. An unpublished version remains reserved
+    by npm. If publication encounters a reserved version, retain its immutable
+    release record and author a new Intentional patch intent for the package and
+    its documentation unit. Do not move the record or reuse the reserved version.
     Run `task check`, then dispatch **Release** with the exact expected record set:
 
     ```bash
