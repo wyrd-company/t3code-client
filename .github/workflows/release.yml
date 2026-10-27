@@ -23,6 +23,7 @@ jobs:
     timeout-minutes: 20
     permissions:
       contents: read
+      actions: write
     steps:
       # Pushes made with the workflow token start no workflows, so the commit
       # and the release tag are pushed with the repository's GitHub App.
@@ -93,3 +94,10 @@ jobs:
           intentional tag --plan "$RUNNER_TEMP/release-plan.json"
           mapfile -t records < <(jq -r '.tags[].name | "refs/tags/" + .' "$RUNNER_TEMP/release-plan.json")
           git push --atomic origin HEAD:main "${records[@]}"
+
+      # GitHub omits all tag push events when an atomic push has over three tags.
+      # Dispatch with the workflow token; workflow_dispatch can start workflows.
+      - name: Dispatch packages when tag push events are suppressed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/release/dispatch-packages.sh "$RUNNER_TEMP/release-plan.json"

@@ -6,6 +6,7 @@ import * as NodeChildProcess from "node:child_process";
 import * as NodeFS from "node:fs";
 import { describe, expect, it } from "vite-plus/test";
 import { parse } from "yaml";
+import { fake, fixture, run } from "./testSupport.ts";
 
 const publish = () =>
   NodeFS.readFileSync(new URL("../../.github/workflows/publish.yml", import.meta.url), "utf8");
@@ -31,7 +32,7 @@ describe("workflow agreements", () => {
     ].map((match) => match[1]);
     expect(names).toHaveLength(3);
     expect(new Set(names).size).toBe(1);
-    expect(names[0]).toContain("github.ref_name");
+    expect(names[0]).toBe("package-${{ needs.plan.outputs.record }}");
     const paths = [...publish().matchAll(/path: (\$\{\{ runner.temp \}\}\/package)/g)];
     expect(paths).toHaveLength(3);
   });
@@ -99,10 +100,31 @@ describe("package unit inventory", () => {
   });
   it("builds every package record except its zero baseline in Publish", () => {
     const condition = publish().split("\n  build:")[1]!.split("runs-on:")[0]!;
-    const starts = [...condition.matchAll(/startsWith\(github\.ref_name, '([^@']+)@'\)/g)];
-    const baselines = [...condition.matchAll(/github\.ref_name != '([^@']+)@0\.0\.0'/g)];
-    expect(starts.map((match) => match[1]).sort()).toEqual(packageUnits);
-    expect(baselines.map((match) => match[1]).sort()).toEqual(packageUnits);
+    expect(condition).toContain("needs: plan");
+    expect(condition).toContain("if: needs.plan.outputs.build-package == 'true'");
+    const root = fixture();
+    try {
+      const env = fake(
+        root,
+        "git",
+        `
+        if [[ "$2" == -t ]]; then echo tag; else
+          record="\${3#refs/tags/}"
+          printf 'tag-id: release-unit/%s/primary\\nversion: %s\\n' "\${record%@*}" "\${record#*@}"
+        fi
+      `,
+      );
+      for (const unit of packageUnits) {
+        expect(run(root, "plan-package.sh", ["push", `${unit}@0.1.0`], env).stdout).toBe(
+          `record=${unit}@0.1.0\nbuild-package=true\n`,
+        );
+        expect(run(root, "plan-package.sh", ["push", `${unit}@0.0.0`], env).stdout).toBe(
+          "record=\nbuild-package=false\n",
+        );
+      }
+    } finally {
+      NodeFS.rmSync(root, { recursive: true, force: true });
+    }
   });
   it("verifies executable package consumers with the packed library", () => {
     const pack = publish().split("- name: Pack")[1]!.split("- name:")[0]!;
@@ -145,8 +167,11 @@ describe("distribution workflow agreements", () => {
     expect(workflow.split("\njobs:")[0]).not.toContain("branches:");
     expect(workflow).toContain("workflow_dispatch:");
     const build = workflow.split("\n  build:")[1]!.split("\n  npm:")[0]!;
-    expect(build).toContain("github.event_name == 'push'");
-    expect(build).toContain("startsWith(github.ref_name, 't3code-cli@')");
+    expect(build).toContain("needs: plan");
+    expect(build).toContain("if: needs.plan.outputs.build-package == 'true'");
+    expect(workflow).toContain(
+      'scripts/release/plan-package.sh "$EVENT_NAME" "$REF_NAME" "$PUBLISH_PACKAGE"',
+    );
   });
   it("regenerates shrinkwrap after applying release versions before the commit", () => {
     const workflow = release();
@@ -168,12 +193,10 @@ describe("package dependency build ordering", () => {
   });
   it("builds dependencies before selected Publish package checks", () => {
     const workflow = publish();
-    const build = workflow.indexOf(
-      'pnpm --filter "@wyrd-company/${GITHUB_REF_NAME%@*}..." run build',
-    );
+    const build = workflow.indexOf('pnpm --filter "@wyrd-company/${RECORD%@*}..." run build');
     expect(build).toBeGreaterThan(0);
     expect(build).toBeLessThan(
-      workflow.indexOf('pnpm --filter "@wyrd-company/${GITHUB_REF_NAME%@*}" run typecheck'),
+      workflow.indexOf('pnpm --filter "@wyrd-company/${RECORD%@*}" run typecheck'),
     );
   });
   it("builds the workspace before Release package checks", () => {
