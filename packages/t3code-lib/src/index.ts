@@ -98,6 +98,13 @@ export type {
   WatchServerLifecycleOptions,
 } from "./api/server.ts";
 export { VcsApi } from "./api/vcs.ts";
+export {
+  ScheduledTasksApi,
+  type ScheduledTaskPatch,
+  type ScheduledTasksApiOptions,
+  type ScheduledTaskWebhookEndpointInfo,
+  type WatchScheduledTasksOptions,
+} from "./api/scheduledTasks.ts";
 export { TerminalApi } from "./api/terminal.ts";
 export type { DecodedStreamItem } from "./api/streamItems.ts";
 export { CommandDispatcher } from "./api/dispatch.ts";
@@ -148,6 +155,8 @@ export type {
   EventId,
   AuthSessionId,
   ProviderInstanceId,
+  ScheduledTaskId,
+  SecretRef,
 } from "./schemas/common.ts";
 export {
   threadId,
@@ -161,6 +170,7 @@ export {
   eventId,
   authSessionId,
   providerInstanceId,
+  scheduledTaskId,
 } from "./schemas/common.ts";
 export {
   ORCHESTRATION_PROTOCOL_HEADER,
@@ -229,6 +239,37 @@ export type {
   OrchestrationV2CreationSource,
 } from "./schemas/orchestration/model.ts";
 export type { ChatAttachment } from "./schemas/orchestration/attachments.ts";
+export type {
+  ScheduledTask,
+  ScheduledTaskListResult,
+  ScheduledTaskRunStatus,
+  ScheduledTaskSchedule,
+  ScheduledTaskUpsertInput,
+  ScheduledTaskUpsertSchedule,
+  ScheduledTaskWebhookDedupe,
+  ScheduledTaskWebhookDelivery,
+  ScheduledTaskWebhookDeliveryId,
+  ScheduledTaskWebhookDeliveryOutcome,
+  ScheduledTaskWebhookDeliverySummary,
+  ScheduledTaskWebhookEndpoint,
+  ScheduledTaskWebhookFilter,
+  ScheduledTaskWebhookFilterRecord,
+  ScheduledTaskWebhookSignature,
+  ScheduledTaskWebhookSignatureInput,
+} from "./schemas/scheduledTask.ts";
+export type {
+  UsageBucket,
+  UsageCostSource,
+  UsageDay,
+  UsagePricing,
+  UsageProviderKind,
+  UsageResolution,
+  UsageSource,
+  UsageSummary,
+  UsageSummaryInput,
+  UsageTokenTotals,
+} from "./schemas/usage.ts";
+export { usageDay } from "./schemas/usage.ts";
 export type {
   RpcErrorRecord,
   KnownRpcErrorRecord,

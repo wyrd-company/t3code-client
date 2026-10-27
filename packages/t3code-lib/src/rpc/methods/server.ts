@@ -13,6 +13,7 @@ import {
   ServerProviderUpdatedPayload,
   ServerSettings,
 } from "../../schemas/server.ts";
+import { UsageSummary, UsageSummaryInput } from "../../schemas/usage.ts";
 
 export const serverMethods = {
   "server.probe": defineMethod({
@@ -50,6 +51,12 @@ export const serverMethods = {
     success: DatabaseStorageStatusUpdate,
     stream: true,
     scope: "orchestration:read",
+  }),
+  "server.getUsageSummary": defineMethod({
+    payload: UsageSummaryInput,
+    success: UsageSummary,
+    stream: false,
+    scope: "diagnostics:read",
   }),
   subscribeServerConfig: defineMethod({
     payload: z.looseObject({

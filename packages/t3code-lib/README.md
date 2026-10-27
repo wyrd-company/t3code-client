@@ -128,16 +128,17 @@ const launched = await client.threads.launch({
 
 ## What is where
 
-| Facade            | Purpose                                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------------------------------------ |
-| `client.auth`     | Session state, pairing-token exchange, tickets, pairing links, connected clients, scopes.                    |
-| `client.server`   | Environment descriptor, config and provider catalog, settings, config and lifecycle streams.                 |
-| `client.projects` | List, get, snapshot, ensure, create, update, delete projects; Scratch and named new projects; project files. |
-| `client.threads`  | List, get, detail, projection, ensure, launch, update, archive, delete; turns, interrupts, approvals; watch. |
-| `client.shell`    | Lightweight snapshot (active and archived threads) and live streams.                                         |
-| `client.vcs`      | Refs, status, worktrees, branches.                                                                           |
-| `client.terminal` | Open, attach, write, resize, close terminals.                                                                |
-| `client.rpc`      | Typed `call` and `stream` for every registered method, plus `callRaw` and `streamRaw` for the rest.          |
+| Facade                  | Purpose                                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `client.auth`           | Session state, pairing-token exchange, tickets, pairing links, connected clients, scopes.                     |
+| `client.server`         | Environment descriptor, config and provider catalog, provider status, usage summary, settings, streams.       |
+| `client.projects`       | List, get, snapshot, ensure, create, update, delete projects; Scratch and named new projects; project files.  |
+| `client.threads`        | List, get, detail, projection, ensure, launch, update, archive, delete; turns, interrupts, approvals; watch.  |
+| `client.shell`          | Lightweight snapshot (active and archived threads) and live streams.                                          |
+| `client.vcs`            | Refs, status, worktrees, branches.                                                                            |
+| `client.terminal`       | Open, attach, write, resize, close terminals.                                                                 |
+| `client.scheduledTasks` | List, get, create, update, enable, delete, run, watch scheduled tasks; webhook endpoints, tokens, deliveries. |
+| `client.rpc`            | Typed `call` and `stream` for every registered method, plus `callRaw` and `streamRaw` for the rest.           |
 
 ## Vocabulary
 

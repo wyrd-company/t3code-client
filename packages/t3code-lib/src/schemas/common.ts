@@ -67,6 +67,9 @@ export const PlanId = entityId("PlanId");
 export type PlanId = z.infer<typeof PlanId>;
 export const ScheduledTaskId = entityId("ScheduledTaskId");
 export type ScheduledTaskId = z.infer<typeof ScheduledTaskId>;
+/** A one-use handle to a secret the user entered for an agent; the agent never sees the value. */
+export const SecretRef = entityId("SecretRef");
+export type SecretRef = z.infer<typeof SecretRef>;
 export const AuthSessionId = entityId("AuthSessionId");
 export type AuthSessionId = z.infer<typeof AuthSessionId>;
 /** Open slug: letters, digits, `-`, `_`; starts with a letter; at most 64 chars. */
@@ -87,6 +90,7 @@ export const turnItemId = (value: string): TurnItemId => value as TurnItemId;
 export const runtimeRequestId = (value: string): RuntimeRequestId => value as RuntimeRequestId;
 export const eventId = (value: string): EventId => value as EventId;
 export const authSessionId = (value: string): AuthSessionId => value as AuthSessionId;
+export const scheduledTaskId = (value: string): ScheduledTaskId => value as ScheduledTaskId;
 export const providerInstanceId = (value: string): ProviderInstanceId =>
   value as ProviderInstanceId;
 

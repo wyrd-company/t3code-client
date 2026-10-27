@@ -10,6 +10,7 @@
  * `close()` stops reconnecting and ends every stream.
  */
 import { ProjectsApi } from "./api/projects.ts";
+import { ScheduledTasksApi } from "./api/scheduledTasks.ts";
 import { ServerApi } from "./api/server.ts";
 import { ShellApi } from "./api/shell.ts";
 import { TerminalApi } from "./api/terminal.ts";
@@ -65,6 +66,7 @@ export class T3Client {
   readonly shell: ShellApi;
   readonly vcs: VcsApi;
   readonly terminal: TerminalApi;
+  readonly scheduledTasks: ScheduledTasksApi;
   readonly rpc: RpcClient<RpcMethods>;
   readonly #socket: SocketTransport;
   readonly #connection: RpcConnection;
@@ -124,6 +126,10 @@ export class T3Client {
     this.shell = new ShellApi(http, this.rpc);
     this.vcs = new VcsApi(this.rpc);
     this.terminal = new TerminalApi(this.rpc);
+    this.scheduledTasks = new ScheduledTasksApi(this.rpc, {
+      baseUrl: options.baseUrl,
+      getScopes: () => this.auth.scopesSync(),
+    });
   }
 
   /** Compose a client with lazy connections and the selected credential store. */
