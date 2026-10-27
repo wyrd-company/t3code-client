@@ -12,10 +12,14 @@ import { afterAll, beforeAll, expect, it } from "vite-plus/test";
 import {
   ProfileManager,
   T3Client,
+  type ModelSelection,
   type ProjectId,
   type ScheduledTaskId,
 } from "@wyrd-company/t3code-lib";
 
+import { liveCatalogSelection } from "../support/liveCatalog.ts";
+
+let selection: ModelSelection;
 let directory: string;
 let client: T3Client;
 let env: NodeJS.ProcessEnv;
@@ -27,6 +31,7 @@ beforeAll(async () => {
   const url = process.env["T3_LIVE_URL"]!;
   const issuer = T3Client.create({ baseUrl: url, accessToken: process.env["T3_LIVE_TOKEN"]! });
   try {
+    selection = await liveCatalogSelection(issuer);
     const profiles = new ProfileManager({ configDir: NodePath.join(directory, "config") });
     const pairing = await issuer.auth.createPairingCredential({
       label: "sample-automation",
@@ -108,9 +113,9 @@ it("creates, reads, updates, enables, disables and deletes a task through the ex
     "--project",
     projectId,
     "--provider",
-    "codex",
+    selection.instanceId,
     "--model",
-    "gpt-6-luna",
+    selection.model,
     "--mode",
     "approval-required",
     "--disabled",
@@ -158,7 +163,7 @@ it("reads endpoints and deliveries, keeps omitted signing settings, and rotates 
       prompt: "Summarize {{body.action}}.",
       enabled: false,
       projectId,
-      modelSelection: { instanceId: "codex", model: "gpt-6-luna" },
+      modelSelection: selection,
       runtimeMode: "approval-required",
       schedule: {
         type: "webhook",
