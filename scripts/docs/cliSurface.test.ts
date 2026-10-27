@@ -70,6 +70,7 @@ describe("normative CLI surface content", () => {
       "thread wait": "Wait for the selected thread run.",
       "thread read": "Read the transcript with oversized-transcript detail fallback.",
       "thread list": "List server threads.",
+      "thread find": "Find a T3 Code thread by provider instance and native session id.",
       "thread interrupt": "Interrupt the thread's active run with the library.",
       "thread respond": "Answer a user-input request or decide an approval.",
       "project list": "List projects.",
