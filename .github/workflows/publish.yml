@@ -1,13 +1,14 @@
 name: Publish
 
-# Annotated `t3code-lib@X.Y.Z` and `t3code-cli@X.Y.Z` records start package
-# publication. Every job is safe to rerun: an npm version or GitHub Release
-# that already exists is verified instead of recreated.
+# Annotated `t3code-lib@X.Y.Z`, `t3code-cli@X.Y.Z` and `t3code-mcp@X.Y.Z`
+# records start package publication. Every job is safe to rerun: an npm
+# version or GitHub Release that already exists is verified instead of
+# recreated. A library record publishes no documentation.
 #
 # Documentation publishes to wyrd.foo through the reusable workflow, on a CLI
-# record (after its GitHub Release exists), on a `t3c-docs@X.Y.Z` record, or on
-# a manual run. A `t3c-docs` record pushed with a CLI record is published by the
-# CLI run. There is no publish on a plain push to main.
+# or MCP record (after its GitHub Release exists), on a product docs record,
+# or on a manual run. Docs records pushed with a CLI or MCP record are
+# published by those package runs. There is no publish on a plain push to main.
 # See docs/technical-designs/releasing.yml.
 
 on:
@@ -15,7 +16,9 @@ on:
     tags:
       - "t3code-lib@*"
       - "t3code-cli@*"
+      - "t3code-mcp@*"
       - "t3c-docs@*"
+      - "t3mcp-docs@*"
   workflow_dispatch:
     inputs:
       ref:
@@ -63,20 +66,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           REF_NAME: ${{ github.ref_name }}
         run: |
-          publish=false
-          case "$EVENT_NAME:$REF_NAME" in
-            workflow_dispatch:*) publish=true ;;
-            push:t3code-cli@0.0.0) ;; # a baseline record is not a release
-            push:t3code-cli@*) publish=true ;;
-            push:t3c-docs@*)
-              # Pushed with a CLI record, the docs record waits for that run:
-              # the product page needs the CLI's GitHub Release first.
-              if [[ -z "$(git tag --list 't3code-cli@*' --points-at "$GITHUB_SHA")" ]]; then
-                publish=true
-              fi
-              ;;
-          esac
-          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          scripts/release/plan-docs.sh "$EVENT_NAME" "$REF_NAME" "$GITHUB_SHA" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build and verify
@@ -84,8 +74,10 @@ jobs:
     # Docs records and manual runs have no package to build.
     if: >-
       github.event_name == 'push'
-      && (startsWith(github.ref_name, 't3code-lib@') || startsWith(github.ref_name, 't3code-cli@'))
+      && (startsWith(github.ref_name, 't3code-lib@') || startsWith(github.ref_name, 't3code-cli@')
+        || startsWith(github.ref_name, 't3code-mcp@'))
       && github.ref_name != 't3code-lib@0.0.0' && github.ref_name != 't3code-cli@0.0.0'
+      && github.ref_name != 't3code-mcp@0.0.0'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -125,7 +117,7 @@ jobs:
         run: |
           unit="${GITHUB_REF_NAME%@*}"
           tarball="$(scripts/release/verify-package.sh "$unit" "$RUNNER_TEMP/package")"
-          if [[ "$unit" == t3code-cli ]]; then
+          if [[ "$unit" != t3code-lib ]]; then
             library="$(scripts/release/verify-package.sh t3code-lib "$RUNNER_TEMP/library")"
             scripts/release/verify-consumer.sh "$tarball" "$unit" "$library"
           else

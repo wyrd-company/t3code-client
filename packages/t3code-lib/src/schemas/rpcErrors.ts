@@ -59,11 +59,13 @@ import {
   OrchestrationV2ThreadLaunchError,
 } from "./rpcErrors/orchestration.ts";
 import { McpAppRequestError } from "./rpcErrors/mcpApps.ts";
+import { ScheduledTaskError, UsageReadError } from "./rpcErrors/automation.ts";
 
 export * from "./rpcErrors/terminal.ts";
 export * from "./rpcErrors/vcs.ts";
 export * from "./rpcErrors/orchestration.ts";
 export * from "./rpcErrors/mcpApps.ts";
+export * from "./rpcErrors/automation.ts";
 
 // auth.ts
 
@@ -225,6 +227,8 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   OrchestrationV2CommandOutputError,
   OrchestrationV2SearchThreadError,
   McpAppRequestError,
+  ScheduledTaskError,
+  UsageReadError,
 ]);
 export type RpcErrorRecord = z.infer<typeof RpcErrorRecord>;
 export type UnknownRpcErrorRecord = UnknownVariant<"_tag">;

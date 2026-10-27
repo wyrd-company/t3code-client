@@ -4,6 +4,8 @@ relationships:
   references: command-line
 assets:
   - t3c/assets/demo.gif
+  - t3c/assets/logo.svg
+  - t3mcp/assets/logo.svg
 products:
   t3c:
     name: t3c
@@ -12,16 +14,18 @@ products:
     release-unit: t3code-cli
     tagline: Run T3 Code conversations from your terminal and automation.
     blurb: >-
-      A Node command-line client and TypeScript library for stock T3 Code.
-      Pair named servers, run or continue conversations, inspect threads, and
-      preserve clear output and exit codes in automation.
+      A Node command-line client and TypeScript library for stock T3 Code. Pair named servers, run
+      or continue conversations, inspect threads, and preserve clear output and exit codes in
+      automation.
     status: preview
     category: Agent Tooling
     highlights:
       - Run a conversation on a stock T3 Code server from a terminal or an automation harness.
-      - Pair named server profiles, and keep session tokens out of the argument list by reading them from stdin.
+      - Pair named server profiles, and keep session tokens out of the argument list by reading them
+        from stdin.
       - Continue a thread, list threads and projects, and read a thread's last message.
-      - Answers go to stdout and progress to stderr, with --json for structured results and --stream for incremental output.
+      - Answers go to stdout and progress to stderr, with --json for structured results and --stream
+        for incremental output.
       - The same client ships as the TypeScript library @wyrd-company/t3code-lib.
     media:
       - src: assets/demo.gif
@@ -30,13 +34,46 @@ products:
       - section: Get started
         groups:
           - group: Basics
-            pages: [getting-started, auth]
+            pages:
+              - getting-started
+              - auth
       - section: Reference
         groups:
           - group: Using t3c
-            pages: [commands, policy, dagu]
+            pages:
+              - commands
+              - policy
+              - dagu
+              - complementary-tools
+              - automation
+      - section: Developers
+        groups:
           - group: Library
-            pages: [library-reference]
+            pages:
+              - library-reference
+              - library-client
+              - library-authentication
+              - library-profiles
+              - library-errors
+              - library-types
+          - group: Workspace facades
+            pages:
+              - library-projects
+              - library-vcs
+              - library-terminal
+          - group: Threads
+            pages:
+              - library-threads
+              - library-thread-lifecycle
+              - library-thread-runs
+              - library-thread-state
+              - library-shell
+          - group: Server and automation
+            pages:
+              - library-server-summary
+              - library-server
+              - library-server-methods
+              - library-schedules
     kinds:
       - kind: cli
         install:
@@ -47,3 +84,105 @@ products:
           - method: homebrew
             os: [macos, linux]
             command: brew install wyrd-company/tools/t3c
+    logo: assets/logo.svg
+    favicon: assets/logo.svg
+  t3mcp:
+    name: t3mcp
+    version: 0.0.0
+    docs-version: 0.0.0
+    release-unit: t3code-mcp
+    tagline: Inspect and control T3 Code through complementary MCP tools.
+    blurb: A stdio MCP server for direct webhook addresses, delivery diagnostics, thread inspection,
+      queue recovery, provider status and historical usage. Connect through the same saved profiles
+      as t3c, beside the built-in T3 Code MCP server.
+    status: preview
+    category: Agent Tooling
+    logo: assets/logo.svg
+    favicon: assets/logo.svg
+    highlights:
+      - Read direct webhook addresses without T3 Connect and diagnose deliveries.
+      - Inspect thread state, approvals, usage, diffs and content matches.
+      - Stop thread work, resume held queues or start a selected queued message.
+      - Use saved t3c profiles and the server session’s existing permissions.
+    media:
+      - src: assets/logo.svg
+        caption: t3mcp combines T3 Code tools with the Model Context Protocol.
+        alt: t3mcp lettering above the MCP mark.
+    nav:
+      - section: Get started
+        groups:
+          - group: Setup
+            pages:
+              - getting-started
+      - section: Reference
+        groups:
+          - group: Tools
+            pages:
+              - tools
+    kinds:
+      - kind: mcp-server
+        install:
+          - method: json
+            default: true
+            command: |-
+              {
+                "mcpServers": {
+                  "t3mcp": {
+                    "command": "node",
+                    "args": [
+                      "/absolute/path/to/packages/t3code-mcp/dist/cli.js",
+                      "--profile",
+                      "sample"
+                    ]
+                  }
+                }
+              }
+        tools:
+          - name: scheduled_task_endpoint
+            description: Read the direct webhook endpoint and optional Connect URL.
+            effect: Read-only
+          - name: scheduled_task_deliveries
+            description: List webhook delivery outcomes and diagnostics.
+            effect: Read-only
+          - name: scheduled_task_delivery
+            description: Read one webhook delivery and request details.
+            effect: Read-only
+          - name: rotate_scheduled_task_webhook
+            description: Replace the webhook URL token.
+            effect: Writes
+          - name: scheduled_task_configuration
+            description: Read full task configuration and run diagnostics.
+            effect: Read-only
+          - name: configure_scheduled_task
+            description: Update execution selections for an existing task.
+            effect: Writes
+          - name: thread_status
+            description: Read run, queue, request and background-work state.
+            effect: Read-only
+          - name: thread_approvals
+            description: Read pending approvals for human review.
+            effect: Read-only
+          - name: thread_usage
+            description: Read provider context, token and cost records.
+            effect: Read-only
+          - name: thread_diff
+            description: Read a full-thread or checkpoint-range diff.
+            effect: Read-only
+          - name: thread_search_content
+            description: Search within one thread.
+            effect: Read-only
+          - name: thread_stop
+            description: Stop thread work and hold queued messages.
+            effect: Writes
+          - name: thread_queue_resume
+            description: Release held queued messages.
+            effect: Writes
+          - name: thread_queue_start
+            description: Start a selected queued message and release the queue hold.
+            effect: Writes
+          - name: provider_status
+            description: Read provider availability, authentication and limits.
+            effect: Read-only
+          - name: usage_summary
+            description: Read historical usage buckets and source diagnostics.
+            effect: Read-only

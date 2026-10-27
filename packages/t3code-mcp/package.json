@@ -1,0 +1,60 @@
+{
+  "name": "@wyrd-company/t3code-mcp",
+  "version": "0.0.0",
+  "description": "Complementary MCP tools for T3 Code scheduling, inspection and provider usage.",
+  "keywords": [
+    "mcp",
+    "stdio",
+    "t3code"
+  ],
+  "homepage": "https://github.com/wyrd-company/t3code-client#readme",
+  "bugs": {
+    "url": "https://github.com/wyrd-company/t3code-client/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wyrd-company/t3code-client.git",
+    "directory": "packages/t3code-mcp"
+  },
+  "bin": {
+    "t3code-mcp": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "check": "vp check",
+    "lint": "vp lint",
+    "fmt": "vp fmt",
+    "test": "vp test run",
+    "test:live": "vp test run --config vitest.live.config.ts",
+    "prepack": "pnpm build",
+    "package": "node scripts/package.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.4.0",
+    "@wyrd-company/t3code-lib": "workspace:*",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "2.4.0"
+  },
+  "engines": {
+    "node": ">=22.16"
+  }
+}

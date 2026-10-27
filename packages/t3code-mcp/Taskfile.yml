@@ -1,0 +1,40 @@
+# ---
+# relationships:
+#   implements: mcp
+# ---
+version: "3"
+tasks:
+  install:
+    desc: Install workspace dependencies
+    cmds: [pnpm install]
+  build:
+    desc: Build the MCP server and its library
+    cmds: [pnpm --filter @wyrd-company/t3code-lib build, pnpm run build]
+  fmt:
+    desc: Format MCP sources
+    cmds: [pnpm run fmt]
+  lint:
+    desc: Check MCP formatting and lint
+    cmds: [pnpm run check]
+  typecheck:
+    desc: Type-check MCP sources and tests
+    cmds: [pnpm run typecheck]
+  test:
+    desc: Test MCP tools and SDK client protocol
+    cmds: [pnpm run test]
+  test:live:
+    desc: Test MCP tools against the pinned or explicit caller server
+    deps: [build]
+    cmds: [pnpm run test:live]
+  package:
+    desc: Pack MCP/library and verify the installed executable and API
+    cmds: [pnpm run package]
+  check:
+    desc: All MCP gates
+    cmds:
+      - task: build
+      - task: lint
+      - task: typecheck
+      - task: test
+      - task: test:live
+      - task: package

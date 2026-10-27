@@ -239,10 +239,11 @@ proposed-design:
     export type StreamItem<T> = { kind: "item"; value: T } | { kind: "decode-error"; error: T3DecodeError }
     ```
 
-    Registry coverage for this version, all typed: the sixteen orchestration
+    Registry coverage for this version, all typed: the orchestration
     methods, including the `orchestration.subscribeCommandOutput` stream; `projects.mutate`; `mcpApps.callTool`, `mcpApps.toolInfo`,
     `mcpApps.readResource`, `mcpApps.updateModelContext`; `server.probe`, `server.getConfig`,
     `server.getSettings`, `server.refreshProviders`, `server.getDatabaseStorage`,
+    `server.getUsageSummary`,
     `subscribeServerConfig`, `subscribeServerLifecycle`, `subscribeAuthAccess`; `vcs.listRefs`,
     `vcs.refreshStatus`, `vcs.createWorktree`, `vcs.removeWorktree`,
     `vcs.createRef`, `vcs.switchRef`, `subscribeVcsStatus`,
@@ -250,6 +251,10 @@ proposed-design:
     `projects.listIgnoredFiles`, `projects.readFile`, `projects.writeFile`,
     `projects.searchEntries`, `projects.searchContents`, `projects.ensureScratch`,
     `projects.createNew`;
+    `scheduledTasks.list`, `scheduledTasks.subscribe`, `scheduledTasks.upsert`,
+    `scheduledTasks.setEnabled`, `scheduledTasks.delete`, `scheduledTasks.runNow`,
+    `scheduledTasks.rotateWebhookToken`, `scheduledTasks.listWebhookDeliveries`,
+    `scheduledTasks.getWebhookDelivery`;
     `terminal.open`, `terminal.attach`, `terminal.write`, `terminal.resize`,
     `terminal.close`, `subscribeTerminalEvents`. Everything else goes through
     `callRaw` and `streamRaw` until it is added; adding a method is one entry in

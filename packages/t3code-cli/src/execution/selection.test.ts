@@ -99,8 +99,29 @@ it.each([
   { projectPath: " " },
   { title: " " },
   { mode: "" },
+  { branch: "sample-branch" },
+  { startFromOrigin: true },
+  { startFromOrigin: false },
+  { worktree: true, existingWorktree: "/sample-worktree" },
+  { existingWorktree: "/sample-worktree", baseRef: "main" },
+  { existingWorktree: "/sample-worktree", branch: "sample-branch" },
+  { existingWorktree: "/sample-worktree", startFromOrigin: false },
+  { thread: "t", existingWorktree: "/sample-worktree" },
+  { thread: "t", worktree: true, branch: "sample-branch" },
+  { thread: "t", worktree: true, startFromOrigin: false },
+  { existingWorktree: " " },
+  { worktree: true, branch: " " },
+  { modelOption: ["missing-separator"] },
+  { modelOption: ["key=value", "key=other"] },
 ])("rejects invalid flags before resource calls: %j", (options) => {
   expect(() => validateDispatchOptions(options)).toThrow(T3PreconditionError);
+});
+it.each([
+  { worktree: true, branch: "sample-branch", startFromOrigin: false },
+  { existingWorktree: "/sample-worktree" },
+  { thread: "t", modelOption: ["key=value"], clearModelOptions: true },
+])("accepts workspace and model option selections: %j", (options) => {
+  expect(() => validateDispatchOptions(options)).not.toThrow();
 });
 it("selects project id, project path and Scratch through library facades", async () => {
   const client = T3Client.create({ baseUrl: "http://127.0.0.1:1" });

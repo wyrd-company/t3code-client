@@ -8,6 +8,14 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 import { fake, fixture, manifest, run, tarball, write } from "./testSupport.ts";
 
 const roots: string[] = [];
+const mcpFiles = {
+  "package.json": JSON.stringify({
+    name: "@wyrd-company/t3code-mcp",
+    version: "0.1.0",
+    bin: { "t3code-mcp": "dist/cli.js" },
+  }),
+  "dist/cli.js": "#!/usr/bin/env node\nexport {};",
+};
 afterEach(() => {
   for (const root of roots.splice(0)) NodeFS.rmSync(root, { recursive: true, force: true });
 });
@@ -137,6 +145,73 @@ describe("package boundary", () => {
     const result = run(root, "verify-package.sh", ["t3code-cli", root], env);
     expect(result.status).not.toBe(0);
     expect(result.stderr).toContain("Package is missing package/commandSurface.json.");
+  });
+  it("accepts the MCP executable, API and declarations without CLI command assets", () => {
+    const { root, env } = setup("t3code-mcp", mcpFiles);
+    const result = run(root, "verify-package.sh", ["t3code-mcp", root], env);
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout.trim()).toBe(`${root}/wyrd-company-t3code-mcp-0.1.0.tgz`);
+  });
+  it("requires each MCP executable and API member", () => {
+    for (const member of ["dist/cli.js", "dist/index.js", "dist/index.d.ts"]) {
+      const { root, env } = setup("t3code-mcp", mcpFiles);
+      NodeFS.unlinkSync(`${root}/archive/package/${member}`);
+      // Repack the remaining members without restoring defaults.
+      NodeChildProcess.execFileSync("tar", [
+        "-czf",
+        `${root}/wyrd-company-t3code-mcp-0.1.0.tgz`,
+        "-C",
+        `${root}/archive`,
+        "package",
+      ]);
+      const result = run(root, "verify-package.sh", ["t3code-mcp", root], env);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain(`Package is missing package/${member}.`);
+    }
+  });
+  it("rejects CLI command assets in the MCP package", () => {
+    for (const asset of ["commandSurface.json", "npm-shrinkwrap.json"]) {
+      const { root, env } = setup("t3code-mcp", { ...mcpFiles, [asset]: "{}" });
+      const result = run(root, "verify-package.sh", ["t3code-mcp", root], env);
+      expect(result.status).not.toBe(0);
+      expect(result.stderr).toContain("MCP package ships CLI command assets.");
+    }
+  });
+  it("rejects an MCP executable without its bin entry or node shebang", () => {
+    const unbound = setup("t3code-mcp", {
+      ...mcpFiles,
+      "package.json": JSON.stringify({ name: "@wyrd-company/t3code-mcp", version: "0.1.0" }),
+    });
+    const missingBin = run(
+      unbound.root,
+      "verify-package.sh",
+      ["t3code-mcp", unbound.root],
+      unbound.env,
+    );
+    expect(missingBin.status).not.toBe(0);
+    expect(missingBin.stderr).toContain("MCP executable must be dist/cli.js.");
+    const plain = setup("t3code-mcp", { ...mcpFiles, "dist/cli.js": "export {};" });
+    const missingShebang = run(
+      plain.root,
+      "verify-package.sh",
+      ["t3code-mcp", plain.root],
+      plain.env,
+    );
+    expect(missingShebang.status).not.toBe(0);
+    expect(missingShebang.stderr).toContain("MCP executable has no node shebang.");
+  });
+  it("requires the library tarball before installing an MCP consumer", () => {
+    const { root } = setup("t3code-mcp", mcpFiles);
+    const env = fake(root, "npm", 'touch "$PWD/npm-invoked"; exit 0');
+    const result = run(
+      root,
+      "verify-consumer.sh",
+      [`${root}/wyrd-company-t3code-mcp-0.1.0.tgz`, "t3code-mcp"],
+      env,
+    );
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain("t3code-mcp verification requires the library tarball");
+    expect(NodeFS.existsSync(`${root}/npm-invoked`)).toBe(false);
   });
   it("refuses a publication tarball with a different version or private flag", () => {
     for (const override of [{ version: "0.2.0" }, { private: true }]) {

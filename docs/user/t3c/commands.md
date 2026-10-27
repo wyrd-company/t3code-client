@@ -125,6 +125,23 @@ A user-input response is explicit; approval policy never supplies question answe
 workspace project through `projects.ensure`. Paths refer to the server workspace.
 `server info` prints the environment descriptor and the live providers/models.
 
+## Stop and queue recovery
+
+`thread stop <threadId> [--reason <text>]` sends the native Stop command. It
+stops active and background work and holds queued messages, including when no
+agent run is active. `thread interrupt <threadId>` targets the active run and
+can let the next queued message start.
+
+`thread queue resume <threadId>` releases the queue hold. `thread queue start
+<threadId> <runId>` selects a queued message to start first and also releases the
+queue hold; other queued messages can follow it. Find run ids with `thread
+status <threadId>` or the stock queue tools. Starting requires a queued plain
+user message and no blocking run; the server rejects invalid selections.
+
+These commands report dispatch acknowledgement. Use `thread status` to inspect
+subsequent state. JSON output uses the usual `{data, exitCode, error?}` envelope.
+All three controls require `orchestration:operate`.
+
 ## Auth commands
 
 `auth pair [link]` exchanges a single-use pairing token or validates an issued
@@ -163,3 +180,52 @@ When a server is reachable it also prints server version, protocol and a
 `match`, `newer` or `older` version verdict. The verdict is informational and
 does not gate execution. `--version` prints only `t3c <cli-version>`; a 0.1.0
 release prints `t3c 0.1.0`. Library and CLI version independently.
+
+## Structured thread inspection
+
+`thread status <id>` reports active/latest runs, queue position and held state,
+request counts and server-derived background work. `thread requests <id>` reads
+pending approvals and questions with their prompt details. It does not answer
+requests. `thread usage <id>` reads context and provider-turn token/cost records
+with their owning ids. Missing usage remains absent or null; it is not zero.
+
+`thread diff <id>` reads through the highest ready checkpoint from a completed
+run. Use `--from-turn N --to-turn N` together for an explicit checkpoint range;
+zero is the thread start. Unavailable checkpoints retain the server error.
+`thread search <query> --limit N` searches across threads (default and maximum
+50). A result at its limit can omit matches. `--thread <id>` instead searches
+inside one thread and returns the native count and first match. It conflicts
+with `--limit`.
+
+## Model options and workspaces
+
+`run`, `thread start` and `thread send` accept repeatable
+`--model-option key=value`. Keys and values must match the selected model's live
+option descriptors. Boolean values must be `true` or `false`; select values use
+advertised choice ids. Duplicate keys fail. Inherited options apply only to the
+same provider instance and model. Explicit values replace matching inherited
+keys. `--clear-model-options` clears inheritance and can be combined with explicit
+entries. Continuation sends no model selection unless a selection flag is given.
+
+New worktrees accept `--branch <name>` and `--start-from-origin` or
+`--no-start-from-origin`; these require `--worktree`. When neither origin flag is
+given, the server applies its default. `--existing-worktree <dir>` selects a
+worktree reported by the server, including its checked-out branch. It conflicts
+with new-worktree flags. `--thread` retains its workspace and rejects relocation
+flags. Paths identify server workspaces; existing-worktree matching resolves a
+relative path against the CLI's current directory.
+
+## Schedules, providers and usage
+
+`schedule list|show|create|update|enable|disable|delete|run` manages scheduled
+tasks. Create and update accept `--input <file>` or `--input -` for structured
+JSON and focused flags for model/options, workspace, thread target and modes.
+`schedule endpoint`, `schedule delivery list|show` and `schedule rotate-token`
+expose webhook addresses and delivery diagnostics. Endpoint and delivery access
+require `orchestration:operate`. Omitted update values stay unchanged.
+
+`provider status [instanceId]` reads provider availability, authentication and
+limits. `usage summary --since-day YYYY-MM-DD --until-day YYYY-MM-DD --time-zone
+Etc/UTC` reads historical buckets and source diagnostics with `diagnostics:read`.
+See [schedules, providers and usage](automation.md) for trigger forms, execution
+selections, JSON fields, hourly windows and clearing semantics.

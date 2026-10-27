@@ -5,11 +5,13 @@ relationships:
   references: [command-line, cli-surface, library, api, library-reference, releasing]
 proposed-design:
   high-level-overview: >-
-    `docs/user/t3c` contains six ordered published pages and the registered demo
-    GIF, and `docs/user/docs.yml` describes the t3c product.
+    `docs/user/t3c` contains authored guides, generated developer reference pages
+    and the registered demo GIF. `docs/user/t3mcp` contains MCP setup and tool
+    guides. `docs/user/docs.yml` describes both products, their own navigation and
+    registered SVG marks. The t3c Developers section holds the generated API.
     Authored guides explain the CLI specification and library behavior. Structured
     technical designs describe implementation ownership and operating mechanisms.
-    Only the library API page is generated; JSDoc template data stays in memory.
+    Only the library API reference pages are generated; JSDoc template data stays in memory.
   library-reference: |
     Generate [the public API reference](../api.md) with `task lib:docs` and verify
     it with `task lib:docs:check`. The generator uses `jsdoc-to-markdown` on
@@ -20,15 +22,38 @@ proposed-design:
     `docs/user/t3c/getting-started.md`, `auth.md`, `commands.md`, `policy.md` and `dagu.md`
     are authored usage guides, in navigation orders 1 through 5. `task docs` invokes
     `cli:docs`, which runs `lib:docs` before projecting the complete `docs/api.md`
-    into `docs/user/t3c/library-reference.md` at order 6. Its generator rewrites links and
-    adds publishing metadata; `cli:docs:check` compares the complete result.
-    `task check` runs both freshness checks. `docs/user/docs.yml` registers the existing GIF.
-    Publish consumes `docs/user` on CLI and docs release records and on manual runs;
-    the docs release changelog at `docs/user/t3c/CHANGELOG.md` is ingested as a
-    changelog, not as a page. Published pages and registered assets remain separate
+    into `docs/user/t3c/library-reference.md` and `library-*.md` developer pages.
+    The landing retains the library reference URL and links to the complete page
+    inventory. Child pages group public classes, facades and support areas, with
+    separate thread lifecycle, run, server summary and server method sections.
+    Each page body holds at most 480 lines of source sections; a section is an
+    intact summary entry, class introduction, method or support declaration.
+    Oversized indivisible sections fail generation for an explicit structural
+    split. Summary descriptions, signatures, examples and explicit anchors are
+    preserved. Markdown and HTML links resolve to each API anchor's rendered
+    wyrd.foo page URL; same-page links retain their local fragment. Raw Markdown
+    routes are not used for API navigation;
+    links to other repository documentation use canonical repository URLs.
+    Publishing metadata keeps every page in product `t3c`, ordered from 6.
+    The same page inventory generates the Developers navigation groups in
+    docs/user/docs.yml. Other sections and product/version metadata remain
+    authored. A missing or changed generated navigation section fails check mode.
+    `cli:docs:check` compares every expected output and rejects missing, changed
+    and extra generated pages. Regeneration removes stale `library-*.md` pages
+    only when their generated marker establishes ownership. Authored files are
+    preserved, and an authored file or symbolic link at an expected output path
+    fails before any output changes.
+    `complementary-tools.md` links to the separate t3mcp product at order 7.
+    `automation.md` explains schedule configuration, webhook diagnostics, provider
+    status and usage queries at order 8.
+    `task check` runs both freshness checks. `docs/user/docs.yml` registers the GIF
+    and product logos. Publish consumes `docs/user` on CLI/MCP code and product
+    docs release records and on manual runs; each product docs unit changelog is
+    ingested as release data, not as a page. Published pages and registered assets remain separate
     inputs. The `assets` list is relative to
     `docs/user`; the product fields (`media`, `logo`, `favicon`, `social-image`)
-    are relative to the product folder `docs/user/t3c`. Internal structured
+    are relative to each product folder, `docs/user/t3c` or `docs/user/t3mcp`.
+    Internal structured
     artifacts stay outside `docs/user`.
   canonical-inputs: >-
     The CLI specification and native cli-surface.json asset are colocated in

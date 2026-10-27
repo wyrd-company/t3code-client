@@ -30,6 +30,16 @@ including earlier sessions after provider switches. Provider means an exact
 instance id; session means `nativeThreadRef.nativeId`. Multiple matching threads
 raise `T3PreconditionError`, and read failures propagate.
 
+Thread inspection reads the full HTTP detail. `threads.status(id)` returns the
+thread record, active and latest runs, queued runs with `queueHeld`, pending
+approval/question counts and the shell's background work (`null` when the shell
+does not list the thread). `threads.usage(id)` returns provider-thread context
+usage and provider-turn usage with their owning ids; absent usage stays absent.
+`threads.diff(id, range?)` diffs the whole thread through the latest completed
+checkpoint, or the exact `{ fromTurnCount, toTurnCount }` range.
+`threads.search({ query, limit? })` returns at most `limit` (default and maximum 50) threads, one match each, and reports the limit. `threads.searchContent(input)`
+is the server's within-thread find.
+
 See [library architecture](https://github.com/wyrd-company/t3code-client/blob/main/docs/technical-designs/library.yml) for the architecture and
 [library verification](https://github.com/wyrd-company/t3code-client/blob/main/docs/technical-designs/library-testing.yml) for tests.
 
@@ -117,16 +127,17 @@ const launched = await client.threads.launch({
 
 ## What is where
 
-| Facade            | Purpose                                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------------------------------------ |
-| `client.auth`     | Session state, pairing-token exchange, tickets, pairing links, connected clients, scopes.                    |
-| `client.server`   | Environment descriptor, config and provider catalog, settings, config and lifecycle streams.                 |
-| `client.projects` | List, get, snapshot, ensure, create, update, delete projects; Scratch and named new projects; project files. |
-| `client.threads`  | List, get, detail, projection, ensure, launch, update, archive, delete; turns, interrupts, approvals; watch. |
-| `client.shell`    | Lightweight snapshot (active and archived threads) and live streams.                                         |
-| `client.vcs`      | Refs, status, worktrees, branches.                                                                           |
-| `client.terminal` | Open, attach, write, resize, close terminals.                                                                |
-| `client.rpc`      | Typed `call` and `stream` for every registered method, plus `callRaw` and `streamRaw` for the rest.          |
+| Facade                  | Purpose                                                                                                       |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `client.auth`           | Session state, pairing-token exchange, tickets, pairing links, connected clients, scopes.                     |
+| `client.server`         | Environment descriptor, config and provider catalog, provider status, usage summary, settings, streams.       |
+| `client.projects`       | List, get, snapshot, ensure, create, update, delete projects; Scratch and named new projects; project files.  |
+| `client.threads`        | List, get, detail, projection, ensure, launch, update, archive, delete; turns, interrupts, approvals; watch.  |
+| `client.shell`          | Lightweight snapshot (active and archived threads) and live streams.                                          |
+| `client.vcs`            | Refs, status, worktrees, branches.                                                                            |
+| `client.terminal`       | Open, attach, write, resize, close terminals.                                                                 |
+| `client.scheduledTasks` | List, get, create, update, enable, delete, run, watch scheduled tasks; webhook endpoints, tokens, deliveries. |
+| `client.rpc`            | Typed `call` and `stream` for every registered method, plus `callRaw` and `streamRaw` for the rest.           |
 
 ## Vocabulary
 
@@ -224,6 +235,25 @@ to resume from a sequence you stored.
 `startTurn` takes `delivery`: `auto` (default) lets the server steer or queue
 the message when a run is active, `steer` and `restart` target the active
 run, `queue` waits behind it, and `start` insists on a new run.
+
+## Stop and queue controls
+
+Native thread controls are available through `client.threads`:
+
+- `stopThread(threadId, options?: {reason?: string}, signal?)` sends native Stop
+  without an active-run lookup. It works for idle, queued and background work.
+  Any reason string, including empty or padded text, passes unchanged.
+- `resumeQueue(threadId, signal?)` resumes held queued messages.
+- `startQueuedRun(threadId, runId, signal?)` selects a queued plain user message
+  on a stopped thread. Select `runId` from `status(threadId).queuedRuns` or
+  stock MCP's `queuedRunId`.
+
+Resume and selected Start clear the hold on **all** queued runs. Selected Start
+chooses that message first; other queued messages may follow. Each method
+resolves on command acknowledgement, forwards cancellation and propagates
+server dispatch errors. No capability or version gate or fallback is applied.
+The legacy `stop(threadId, signal?)` keeps its active-run interruption with
+`holdQueue`, including a no-op when idle.
 
 ## Development
 

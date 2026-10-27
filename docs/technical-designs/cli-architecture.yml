@@ -35,10 +35,18 @@ proposed-design:
     in the library so all consumers share precedence and persistence. The CLI
     uses library facades instead of owning HTTP routes, RPC envelopes or stores.
   dispatch-and-watch: >-
-    New worktree launches use threads.launch. Existing-thread continuation uses
+    New and existing worktree launches use threads.launch; an existing worktree
+    binds the path and branch the server reports through vcs.listRefs. Model
+    options are validated against the live model's advertised descriptors before
+    dispatch. Existing-thread continuation uses
     threads.startTurn and follows the server-linked message/run identity. Library
     watches provide snapshots, deltas, pending requests and terminal outcomes.
-    The CLI emits output for the followed run. Interrupt uses holdQueue. Request
+    The CLI emits output for the followed run. Signal and timeout interruption
+    use holdQueue; the explicit thread interrupt command retains plain interruption.
+    Native thread stop dispatches without an active-run lookup. Queue resume
+    releases the hold; selected queued-run start chooses that run first and
+    releases the queue so successors may follow. These controls report command
+    acknowledgement through the inspection output boundary. Request
     policy and timeouts are shared across run, waiting start, send and wait as
     specified. Ambiguous launch failures preserve known ids for recovery.
   reads-and-version: >-

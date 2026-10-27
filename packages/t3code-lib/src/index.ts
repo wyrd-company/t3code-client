@@ -56,8 +56,26 @@ export type {
   WatchOptions,
 } from "./api/threads.ts";
 export type {
+  ThreadPendingRequestCounts,
+  ThreadProviderThreadUsage,
+  ThreadProviderTurnUsage,
+  ThreadStatus,
+  ThreadUsage,
+} from "./api/threadInspection.ts";
+export {
+  THREAD_SEARCH_MAX_LIMIT,
+  latestDiffTurnCount,
+  type ThreadContentSearchInput,
+  type ThreadContentSearchResult,
+  type ThreadDiff,
+  type ThreadDiffRange,
+  type ThreadSearchInput,
+  type ThreadSearchResult,
+} from "./api/threadDiffSearch.ts";
+export type {
   ApprovalResponseInput,
   InterruptOptions,
+  StopThreadOptions,
   UserInputDismissInput,
   UserInputResponseInput,
 } from "./api/threadCommands.ts";
@@ -81,6 +99,14 @@ export type {
   WatchServerLifecycleOptions,
 } from "./api/server.ts";
 export { VcsApi } from "./api/vcs.ts";
+export {
+  ScheduledTasksApi,
+  type ScheduledTaskPatch,
+  type ScheduledTaskTarget,
+  type ScheduledTasksApiOptions,
+  type ScheduledTaskWebhookEndpointInfo,
+  type WatchScheduledTasksOptions,
+} from "./api/scheduledTasks.ts";
 export { TerminalApi } from "./api/terminal.ts";
 export type { DecodedStreamItem } from "./api/streamItems.ts";
 export { CommandDispatcher } from "./api/dispatch.ts";
@@ -131,6 +157,8 @@ export type {
   EventId,
   AuthSessionId,
   ProviderInstanceId,
+  ScheduledTaskId,
+  SecretRef,
 } from "./schemas/common.ts";
 export {
   threadId,
@@ -144,6 +172,7 @@ export {
   eventId,
   authSessionId,
   providerInstanceId,
+  scheduledTaskId,
 } from "./schemas/common.ts";
 export {
   ORCHESTRATION_PROTOCOL_HEADER,
@@ -168,7 +197,16 @@ export type {
   OrchestrationV2ConversationMessage,
   OrchestrationV2UserInputQuestion,
 } from "./schemas/orchestration/messages.ts";
-export type { OrchestrationV2RuntimeRequest } from "./schemas/orchestration/providerState.ts";
+export type {
+  OrchestrationV2PendingBackgroundTask,
+  OrchestrationV2ProviderTurnTokenUsage,
+  OrchestrationV2RuntimeRequest,
+} from "./schemas/orchestration/providerState.ts";
+export type {
+  ThreadTokenUsageSnapshot,
+  TurnTokenUsage,
+} from "./schemas/orchestration/providerRuntime.ts";
+export type { OrchestrationThreadSearchMatch } from "./schemas/orchestration/stream.ts";
 export type {
   OrchestrationV2TurnItem,
   KnownOrchestrationV2TurnItem,
@@ -203,6 +241,37 @@ export type {
   OrchestrationV2CreationSource,
 } from "./schemas/orchestration/model.ts";
 export type { ChatAttachment } from "./schemas/orchestration/attachments.ts";
+export type {
+  ScheduledTask,
+  ScheduledTaskListResult,
+  ScheduledTaskRunStatus,
+  ScheduledTaskSchedule,
+  ScheduledTaskUpsertInput,
+  ScheduledTaskUpsertSchedule,
+  ScheduledTaskWebhookDedupe,
+  ScheduledTaskWebhookDelivery,
+  ScheduledTaskWebhookDeliveryId,
+  ScheduledTaskWebhookDeliveryOutcome,
+  ScheduledTaskWebhookDeliverySummary,
+  ScheduledTaskWebhookEndpoint,
+  ScheduledTaskWebhookFilter,
+  ScheduledTaskWebhookFilterRecord,
+  ScheduledTaskWebhookSignature,
+  ScheduledTaskWebhookSignatureInput,
+} from "./schemas/scheduledTask.ts";
+export type {
+  UsageBucket,
+  UsageCostSource,
+  UsageDay,
+  UsagePricing,
+  UsageProviderKind,
+  UsageResolution,
+  UsageSource,
+  UsageSummary,
+  UsageSummaryInput,
+  UsageTokenTotals,
+} from "./schemas/usage.ts";
+export { usageDay } from "./schemas/usage.ts";
 export type {
   RpcErrorRecord,
   KnownRpcErrorRecord,

@@ -10,6 +10,7 @@ if (major < 22 || (major === 22 && minor < 16)) {
   process.exitCode = 2;
 } else {
   const NodeFS = await import("node:fs");
+  const { automationHandlers } = await import("./automation/index.ts");
   const { authHandlers } = await import("./auth.ts");
   const { executionHandlers } = await import("./execution/index.ts");
   const { main } = await import("./main.ts");
@@ -27,6 +28,6 @@ if (major < 22 || (major === 22 && minor < 16)) {
         process.stderr.write(text);
       },
     },
-    { ...authHandlers, ...executionHandlers },
+    { ...authHandlers, ...executionHandlers, ...automationHandlers },
   );
 }

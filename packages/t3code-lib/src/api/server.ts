@@ -10,6 +10,7 @@ import {
   type ExecutionEnvironmentDescriptor as ExecutionEnvironmentDescriptorType,
 } from "../schemas/environment.ts";
 import type { ServerProvider, ServerProviderModel } from "../schemas/provider.ts";
+import type { UsageSummary, UsageSummaryInput } from "../schemas/usage.ts";
 import type { HttpTransport } from "../transport/http.ts";
 import { unwrapStreamItems, type DecodedStreamItem } from "./streamItems.ts";
 
@@ -469,6 +470,29 @@ export class ServerApi {
   /** List configured provider instances. */
   async providers(signal?: AbortSignal): Promise<ServerProvider[]> {
     return (await this.getConfig(signal)).providers;
+  }
+
+  /**
+   * Current provider records with auth, installation, availability and usage
+   * limits, from the live configuration. `instanceId` selects one instance
+   * exactly; an unknown id yields an empty list. Reading does not log in,
+   * install, refresh or consume reset credits.
+   */
+  async providerStatus(instanceId?: string, signal?: AbortSignal): Promise<ServerProvider[]> {
+    const providers = await this.providers(signal);
+    return instanceId === undefined
+      ? providers
+      : providers.filter((provider) => provider.instanceId === instanceId);
+  }
+
+  /**
+   * Historical token usage and cost from provider transcripts (diagnostics:read).
+   * Buckets keep provider, model and cost source; sources report scan status.
+   * The result has no grand total: costs from different sources, and tokens
+   * of different kinds, are not added together.
+   */
+  usageSummary(input: UsageSummaryInput, signal?: AbortSignal): Promise<UsageSummary> {
+    return this.rpc.call("server.getUsageSummary", input, signal);
   }
 
   /** Find a provider model by slug or alias; return undefined when absent. */

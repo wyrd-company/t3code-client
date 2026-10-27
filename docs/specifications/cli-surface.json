@@ -118,6 +118,22 @@
           }
         },
         {
+          "name": "model-option",
+          "flags": ["--model-option"],
+          "kind": "option",
+          "repeatable": true,
+          "value": {
+            "type": "string"
+          },
+          "description": "Model option as key=value, validated against the selected model's advertised options. Repeatable."
+        },
+        {
+          "name": "clear-model-options",
+          "flags": ["--clear-model-options"],
+          "kind": "flag",
+          "description": "Start from an empty model option set instead of inherited options."
+        },
+        {
           "name": "mode",
           "flags": ["--mode"],
           "kind": "option",
@@ -150,6 +166,40 @@
           "requires": ["worktree"]
         },
         {
+          "name": "branch",
+          "flags": ["--branch"],
+          "kind": "option",
+          "value": {
+            "type": "string"
+          },
+          "description": "Branch for the new worktree.",
+          "requires": ["worktree"]
+        },
+        {
+          "name": "start-from-origin",
+          "flags": ["--start-from-origin"],
+          "kind": "flag",
+          "description": "Fetch the base ref from its remote before creating the new worktree.",
+          "requires": ["worktree"]
+        },
+        {
+          "name": "no-start-from-origin",
+          "flags": ["--no-start-from-origin"],
+          "kind": "flag",
+          "description": "Create the new worktree from the local base ref.",
+          "requires": ["worktree"]
+        },
+        {
+          "name": "existing-worktree",
+          "flags": ["--existing-worktree"],
+          "kind": "option",
+          "value": {
+            "type": "directory"
+          },
+          "description": "Bind an existing worktree the server reports for the project.",
+          "conflicts-with": ["worktree", "base-ref", "branch", "start-from-origin"]
+        },
+        {
           "name": "thread",
           "flags": ["--thread"],
           "kind": "option",
@@ -157,7 +207,15 @@
             "type": "string"
           },
           "description": "Continue an existing thread.",
-          "conflicts-with": ["project", "project-path", "worktree", "base-ref"]
+          "conflicts-with": [
+            "project",
+            "project-path",
+            "worktree",
+            "existing-worktree",
+            "base-ref",
+            "branch",
+            "start-from-origin"
+          ]
         },
         {
           "name": "timeout",
@@ -281,6 +339,8 @@
         "run and thread start read exactly one prompt source: a positional prompt, --prompt-file <file>, --prompt-file -, or stdin when neither is supplied. A positional prompt conflicts with --prompt-file even when a supplied value is blank. The file form reads the file as text; - selects stdin. Interactive prompts require a TTY. Non-TTY execution consumes the explicit input and reports missing required inputs as usage errors.",
         "--project <id> selects an existing project. --project-path <dir> resolves or ensures that workspace's project through the library. They are mutually exclusive. With neither supplied, the CLI uses the server Scratch project through projects.ensureScratch. --provider identifies a provider instance and --model selects its model from the live server catalog, including custom models. An omitted provider or model uses the selected project default, then the server-advertised default. An ambiguous selection exits 2; an unavailable model exits 10. --title supplies the thread title. --mode passes through the requested runtime mode; new threads use explicit --mode, then the server-advertised settings.defaultRuntimeMode, then the library default when the server advertises no mode. Continuation sends a mode only when --mode is supplied.",
         "--worktree launches through threads.launch with the new-worktree workspace strategy. --base-ref supplies its base ref and requires --worktree. The server prepares the workspace. Without --base-ref, the base is the project's current checkout (HEAD). Root launches use the selected project's root. --thread <id> continues an existing conversation and dispatches a new prompt through threads.startTurn, retaining the existing thread identity. The library resolves delivery against active server state and links the message to its run. The CLI follows that linked run, rather than guessing the next run id. Continuation retains the thread's workspace and project, applies supplied provider/model/mode/title, and rejects project/worktree relocation flags with exit 2.",
+        "--branch names the new worktree's branch and requires --worktree. --start-from-origin and --no-start-from-origin pass an explicit true or false to the server, require --worktree, and are omitted when neither is supplied, so the server applies its own default; the last one supplied wins. --existing-worktree <dir> launches through threads.launch with the existing-worktree strategy. It accepts only a worktree the server reports through vcs.listRefs for the selected project's repository, binds that reported path and its checked-out branch, resolves a relative path against the current directory, and exits 10 when no reported worktree matches. It conflicts with --worktree, --base-ref, --branch and the start-from-origin flags. Continuation rejects every workspace flag with exit 2.",
+        "--model-option key=value is repeatable. Keys and values are validated against the selected model's live capabilities.optionDescriptors before dispatch: an unadvertised key, a repeated key, an unsupported descriptor type, a select value that is not an advertised choice, or a boolean value other than true or false exits 2. Boolean descriptors send a boolean; select descriptors send the choice id as a string, and a select descriptor without choices accepts any nonblank string. Options inherit from the project default, server default or continued thread only when the selected provider instance and model match it. Explicit entries override inherited entries with the same key. --clear-model-options starts from an empty option set and combines with explicit entries. Continuation, including thread send, sends a model selection when --provider, --model, --model-option or --clear-model-options is supplied.",
         "run creates or continues the thread, sends the prompt, waits and prints the final assistant message. thread start accepts the same inputs and exits once the thread and run exist, printing the thread id. thread start --wait uses run behavior, including its timeout and output policies. thread send <threadId> <prompt> dispatches to the existing thread; --timeout bounds its wait. thread wait <threadId> waits for that thread's run and accepts --timeout and --on-timeout. It captures the active run at invocation, or the latest run when none is active. An idle thread that has never run reports idle, a null run id and exit 0.",
         "run has no default run timeout. --timeout bounds waiting on run, thread wait and thread send. --on-timeout detach|interrupt defaults to interrupt for run and thread send, and detach for thread wait.",
         "Detach leaves the run active, reports the thread id and exits 5. Interrupt calls the library interrupt with holdQueue, waits up to five seconds after the interrupt request for terminal state and exits 6 whether or not terminal confirmation arrives. The JSON result reports the last observed state. Connection/auth failures while requesting interruption retain their mapped error and known thread/run identity.",
@@ -356,6 +416,22 @@
               }
             },
             {
+              "name": "model-option",
+              "flags": ["--model-option"],
+              "kind": "option",
+              "repeatable": true,
+              "value": {
+                "type": "string"
+              },
+              "description": "Model option as key=value, validated against the selected model's advertised options. Repeatable."
+            },
+            {
+              "name": "clear-model-options",
+              "flags": ["--clear-model-options"],
+              "kind": "flag",
+              "description": "Start from an empty model option set instead of inherited options."
+            },
+            {
               "name": "mode",
               "flags": ["--mode"],
               "kind": "option",
@@ -388,6 +464,40 @@
               "requires": ["worktree"]
             },
             {
+              "name": "branch",
+              "flags": ["--branch"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "description": "Branch for the new worktree.",
+              "requires": ["worktree"]
+            },
+            {
+              "name": "start-from-origin",
+              "flags": ["--start-from-origin"],
+              "kind": "flag",
+              "description": "Fetch the base ref from its remote before creating the new worktree.",
+              "requires": ["worktree"]
+            },
+            {
+              "name": "no-start-from-origin",
+              "flags": ["--no-start-from-origin"],
+              "kind": "flag",
+              "description": "Create the new worktree from the local base ref.",
+              "requires": ["worktree"]
+            },
+            {
+              "name": "existing-worktree",
+              "flags": ["--existing-worktree"],
+              "kind": "option",
+              "value": {
+                "type": "directory"
+              },
+              "description": "Bind an existing worktree the server reports for the project.",
+              "conflicts-with": ["worktree", "base-ref", "branch", "start-from-origin"]
+            },
+            {
               "name": "thread",
               "flags": ["--thread"],
               "kind": "option",
@@ -395,7 +505,15 @@
                 "type": "string"
               },
               "description": "Continue an existing thread.",
-              "conflicts-with": ["project", "project-path", "worktree", "base-ref"]
+              "conflicts-with": [
+                "project",
+                "project-path",
+                "worktree",
+                "existing-worktree",
+                "base-ref",
+                "branch",
+                "start-from-origin"
+              ]
             },
             {
               "name": "timeout",
@@ -543,6 +661,22 @@
             }
           ],
           "options": [
+            {
+              "name": "model-option",
+              "flags": ["--model-option"],
+              "kind": "option",
+              "repeatable": true,
+              "value": {
+                "type": "string"
+              },
+              "description": "Model option as key=value, validated against the selected model's advertised options. Repeatable."
+            },
+            {
+              "name": "clear-model-options",
+              "flags": ["--clear-model-options"],
+              "kind": "flag",
+              "description": "Start from an empty model option set instead of inherited options."
+            },
             {
               "name": "timeout",
               "flags": ["--timeout"],
@@ -765,7 +899,9 @@
               "kind": "option",
               "required": true,
               "description": "Provider instance id, as used by run --provider.",
-              "value": { "type": "string" }
+              "value": {
+                "type": "string"
+              }
             },
             {
               "name": "session",
@@ -773,12 +909,145 @@
               "kind": "option",
               "required": true,
               "description": "Provider-native session id, not the T3 runtime session id.",
-              "value": { "type": "string" }
+              "value": {
+                "type": "string"
+              }
             }
           ],
           "notes": [
             "Search active and archived threads, including earlier sessions after a provider switch. Match providerThreads.providerInstanceId and nativeThreadRef.nativeId, not T3 providerSessions ids. Provider means an exact provider instance id; no live provider registration is required.",
             "Text output is the matching T3 Code thread id or literal null. JSON output is {data: threadIdOrNull, exitCode: 0}. No match is a successful lookup. Multiple matching threads are a precondition error (exit 2); read, auth and transport failures retain their normal errors. The lookup reads each full HTTP thread detail and does not import, resume or launch a session."
+          ]
+        },
+        {
+          "name": "status",
+          "summary": "Show a thread's runs, queue, pending requests and background work.",
+          "positional-arguments": [
+            {
+              "name": "threadId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "notes": [
+            "Read the full HTTP thread detail and the thread shell. JSON data is the library ThreadStatus: thread, snapshotSequence, activeRun, latestRun, queuedRuns, queueHeld, pendingRequests {approvals, questions} and backgroundWork. backgroundWork is null when the shell does not list the thread. A missing thread is not found (exit 10), not an empty status.",
+            "Text output includes a queuedRun row with each queued run id, status and ordinal for selection with thread queue start."
+          ]
+        },
+        {
+          "name": "requests",
+          "summary": "List a thread's pending approvals and questions.",
+          "positional-arguments": [
+            {
+              "name": "threadId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "notes": [
+            "List pending runtime requests oldest first with their timeline prompts and questions. When the bounded projection lacks a request's timeline row, read the full HTTP detail. JSON data is the library PendingRequest array. An empty list means no pending requests. Answer requests with thread respond."
+          ]
+        },
+        {
+          "name": "usage",
+          "summary": "Show provider context and turn usage for a thread.",
+          "positional-arguments": [
+            {
+              "name": "threadId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "notes": [
+            "Read the full HTTP thread detail, including earlier provider threads. JSON data is the library ThreadUsage: providerThreads with contextUsage (null when unreported) and providerTurns with owning provider thread, attempt and run ids. Absent turn usage stays absent; the CLI adds no totals or currency conversion."
+          ]
+        },
+        {
+          "name": "diff",
+          "summary": "Print a thread's checkpoint diff.",
+          "positional-arguments": [
+            {
+              "name": "threadId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "options": [
+            {
+              "name": "from-turn",
+              "flags": ["--from-turn"],
+              "kind": "option",
+              "description": "Checkpoint turn count to diff from (0 is the thread start).",
+              "value": {
+                "type": "string"
+              },
+              "requires": ["to-turn"]
+            },
+            {
+              "name": "to-turn",
+              "flags": ["--to-turn"],
+              "kind": "option",
+              "description": "Checkpoint turn count to diff to.",
+              "value": {
+                "type": "string"
+              },
+              "requires": ["from-turn"]
+            }
+          ],
+          "notes": [
+            "Without a range, diff the whole thread from its start through the latest ready checkpoint of a completed run. --from-turn and --to-turn are supplied together as nonnegative integers with from less than or equal to to, and select the server's exact turn-count diff. Text output is the unified diff; JSON data is {threadId, fromTurnCount, toTurnCount, diff}. The server truncates oversized patches with its marker. Unavailable checkpoints are server errors, not empty diffs."
+          ]
+        },
+        {
+          "name": "search",
+          "summary": "Search thread messages across threads or within one thread.",
+          "positional-arguments": [
+            {
+              "name": "query",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "options": [
+            {
+              "name": "limit",
+              "flags": ["--limit"],
+              "kind": "option",
+              "description": "Maximum threads to return, 1-50 (default 50).",
+              "value": {
+                "type": "string"
+              },
+              "conflicts-with": ["thread"]
+            },
+            {
+              "name": "thread",
+              "flags": ["--thread"],
+              "kind": "option",
+              "description": "Search within this thread instead of across threads.",
+              "value": {
+                "type": "string"
+              },
+              "conflicts-with": ["limit"]
+            }
+          ],
+          "notes": [
+            "Across threads, the query is a 2-200 character case-insensitive substring of finished user and assistant messages in active, unarchived threads. The server returns at most one match per thread, user matches first, then most recently updated threads. JSON data is {matches, limit}; a result with limit matches can omit further threads, and text mode then reports this on stderr. Text lines are threadId, projectId, source and snippet.",
+            "With --thread, the server's within-thread find runs with a 1-200 character query and returns totalMatches, the first match (activeIndex 0) and navigation counts. JSON data is the server's result. No query language is added."
           ]
         },
         {
@@ -844,6 +1113,82 @@
               "name": "response",
               "members": ["answer", "accept", "reject"],
               "rule": "exactly-one"
+            }
+          ]
+        },
+        {
+          "name": "stop",
+          "summary": "Request native Stop for the thread.",
+          "positional-arguments": [
+            {
+              "name": "threadId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "options": [
+            {
+              "name": "reason",
+              "flags": ["--reason"],
+              "kind": "option",
+              "description": "Optional reason, preserved exactly including empty or padded text.",
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "notes": [
+            "Send thread.stop directly without an active-run lookup, capability gate or fallback. Works for idle, queued and background work. Success acknowledges the request; it does not assert terminal state. JSON data is {threadId}. Existing interrupt, signal and timeout behavior is unchanged."
+          ]
+        },
+        {
+          "name": "queue",
+          "summary": "Control queued messages.",
+          "subcommands": [
+            {
+              "name": "resume",
+              "summary": "Request Resume for all held queued messages.",
+              "positional-arguments": [
+                {
+                  "name": "threadId",
+                  "position": 0,
+                  "required": true,
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "notes": [
+                "Send queue.resume. The stock server clears queueHeld on all queued runs, allowing queued messages to run. JSON data is {threadId}; success acknowledges the request, not completion."
+              ]
+            },
+            {
+              "name": "start",
+              "summary": "Request Start for a selected queued message.",
+              "positional-arguments": [
+                {
+                  "name": "threadId",
+                  "position": 0,
+                  "required": true,
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "name": "runId",
+                  "position": 1,
+                  "required": true,
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "notes": [
+                "Send queued-run.start for a queued plain user message on a stopped thread. Select runId from thread status queuedRuns (text queuedRun rows) or stock MCP queuedRunId. The stock server selects this message first and clears queueHeld on ALL queued runs, so other messages may follow. It does not cancel other messages or keep them held. JSON data is {threadId, runId}; success acknowledges the request, not completion. Invalid selections retain the server dispatch error."
+              ]
             }
           ]
         }
@@ -987,6 +1332,767 @@
       "summary": "Show CLI, library and target versions with an informational reachable-server verdict.",
       "notes": [
         "version prints CLI version, library version and TARGET_T3_CODE_VERSION. When a server is reachable it also prints server version, protocol and a match, newer or older version verdict. The verdict is informational and does not gate execution. --version prints only t3c <cli-version>; a 0.1.0 release prints t3c 0.1.0. Library and CLI version independently."
+      ]
+    },
+    {
+      "name": "schedule",
+      "subcommands": [
+        {
+          "name": "list",
+          "summary": "List scheduled tasks."
+        },
+        {
+          "name": "show",
+          "summary": "Show one scheduled task.",
+          "positional-arguments": [
+            {
+              "name": "taskId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "create",
+          "summary": "Create a scheduled task.",
+          "options": [
+            {
+              "name": "input",
+              "flags": ["--input"],
+              "kind": "option",
+              "description": "JSON payload file, or - for stdin. Flags override its fields.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "title",
+              "flags": ["--title"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "prompt",
+              "flags": ["--prompt"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "conflicts-with": ["prompt-file"]
+            },
+            {
+              "name": "prompt-file",
+              "flags": ["--prompt-file"],
+              "kind": "option",
+              "description": "Read the prompt from a file, or - for stdin.",
+              "value": {
+                "type": "string"
+              },
+              "conflicts-with": ["prompt"]
+            },
+            {
+              "name": "every",
+              "flags": ["--every"],
+              "kind": "option",
+              "description": "Interval trigger; at least 1m.",
+              "value": {
+                "type": "duration"
+              },
+              "conflicts-with": ["at", "webhook"]
+            },
+            {
+              "name": "at",
+              "flags": ["--at"],
+              "kind": "option",
+              "description": "Fixed-time trigger as 24-hour HH:MM.",
+              "value": {
+                "type": "string"
+              },
+              "conflicts-with": ["every", "webhook"]
+            },
+            {
+              "name": "weekdays",
+              "flags": ["--weekdays"],
+              "kind": "option",
+              "description": "Comma-separated weekdays for --at, 0 (Sunday) to 6.",
+              "value": {
+                "type": "string"
+              },
+              "requires": ["at"]
+            },
+            {
+              "name": "webhook",
+              "flags": ["--webhook"],
+              "kind": "flag",
+              "description": "Webhook trigger.",
+              "conflicts-with": ["every", "at"]
+            },
+            {
+              "name": "project",
+              "flags": ["--project"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "conflicts-with": ["project-path"]
+            },
+            {
+              "name": "project-path",
+              "flags": ["--project-path"],
+              "kind": "option",
+              "value": {
+                "type": "directory"
+              },
+              "conflicts-with": ["project"]
+            },
+            {
+              "name": "thread",
+              "flags": ["--thread"],
+              "kind": "option",
+              "description": "Run every trigger in this existing thread.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "provider",
+              "flags": ["--provider"],
+              "kind": "option",
+              "description": "Provider instance from the server catalog.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "model",
+              "flags": ["--model"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "model-option",
+              "flags": ["--model-option"],
+              "kind": "option",
+              "description": "Model option as key=value, validated against the model's descriptors.",
+              "value": {
+                "type": "string"
+              },
+              "repeatable": true
+            },
+            {
+              "name": "clear-model-options",
+              "flags": ["--clear-model-options"],
+              "kind": "flag",
+              "description": "Start from an empty model option set."
+            },
+            {
+              "name": "mode",
+              "flags": ["--mode"],
+              "kind": "option",
+              "description": "Runtime mode for scheduled runs.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "interaction-mode",
+              "flags": ["--interaction-mode"],
+              "kind": "option",
+              "description": "Interaction mode for scheduled runs, such as default or plan.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "worktree",
+              "flags": ["--worktree"],
+              "kind": "flag",
+              "description": "Run in a new worktree.",
+              "conflicts-with": ["existing-worktree", "root"]
+            },
+            {
+              "name": "existing-worktree",
+              "flags": ["--existing-worktree"],
+              "kind": "option",
+              "description": "Run in this existing worktree.",
+              "value": {
+                "type": "directory"
+              },
+              "conflicts-with": ["worktree", "root"]
+            },
+            {
+              "name": "root",
+              "flags": ["--root"],
+              "kind": "flag",
+              "description": "Run in the project root.",
+              "conflicts-with": ["worktree", "existing-worktree"]
+            },
+            {
+              "name": "base-ref",
+              "flags": ["--base-ref"],
+              "kind": "option",
+              "description": "Base ref for the new worktree (default HEAD).",
+              "value": {
+                "type": "string"
+              },
+              "requires": ["worktree"]
+            },
+            {
+              "name": "branch",
+              "flags": ["--branch"],
+              "kind": "option",
+              "description": "Branch for the new worktree.",
+              "value": {
+                "type": "string"
+              },
+              "requires": ["worktree"]
+            },
+            {
+              "name": "start-from-origin",
+              "flags": ["--start-from-origin"],
+              "kind": "flag",
+              "description": "Start the new worktree from the base ref's remote.",
+              "requires": ["worktree"]
+            },
+            {
+              "name": "no-start-from-origin",
+              "flags": ["--no-start-from-origin"],
+              "kind": "flag",
+              "description": "Start the new worktree from the local base ref.",
+              "requires": ["worktree"]
+            },
+            {
+              "name": "disabled",
+              "flags": ["--disabled"],
+              "kind": "flag",
+              "description": "Create the task disabled."
+            }
+          ],
+          "groups": [
+            {
+              "name": "prompt-source",
+              "members": ["prompt", "prompt-file"],
+              "rule": "mutually-exclusive"
+            },
+            {
+              "name": "trigger",
+              "members": ["every", "at", "webhook"],
+              "rule": "mutually-exclusive"
+            },
+            {
+              "name": "project-source",
+              "members": ["project", "project-path"],
+              "rule": "mutually-exclusive"
+            },
+            {
+              "name": "workspace",
+              "members": ["worktree", "existing-worktree", "root"],
+              "rule": "mutually-exclusive"
+            }
+          ]
+        },
+        {
+          "name": "update",
+          "summary": "Change a scheduled task and keep omitted settings.",
+          "positional-arguments": [
+            {
+              "name": "taskId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "options": [
+            {
+              "name": "input",
+              "flags": ["--input"],
+              "kind": "option",
+              "description": "JSON payload file, or - for stdin. Flags override its fields.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "title",
+              "flags": ["--title"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "prompt",
+              "flags": ["--prompt"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "conflicts-with": ["prompt-file"]
+            },
+            {
+              "name": "prompt-file",
+              "flags": ["--prompt-file"],
+              "kind": "option",
+              "description": "Read the prompt from a file, or - for stdin.",
+              "value": {
+                "type": "string"
+              },
+              "conflicts-with": ["prompt"]
+            },
+            {
+              "name": "every",
+              "flags": ["--every"],
+              "kind": "option",
+              "description": "Interval trigger; at least 1m.",
+              "value": {
+                "type": "duration"
+              },
+              "conflicts-with": ["at", "webhook"]
+            },
+            {
+              "name": "at",
+              "flags": ["--at"],
+              "kind": "option",
+              "description": "Fixed-time trigger as 24-hour HH:MM.",
+              "value": {
+                "type": "string"
+              },
+              "conflicts-with": ["every", "webhook"]
+            },
+            {
+              "name": "weekdays",
+              "flags": ["--weekdays"],
+              "kind": "option",
+              "description": "Comma-separated weekdays for --at, 0 (Sunday) to 6.",
+              "value": {
+                "type": "string"
+              },
+              "requires": ["at"]
+            },
+            {
+              "name": "webhook",
+              "flags": ["--webhook"],
+              "kind": "flag",
+              "description": "Webhook trigger.",
+              "conflicts-with": ["every", "at"]
+            },
+            {
+              "name": "project",
+              "flags": ["--project"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "conflicts-with": ["project-path"]
+            },
+            {
+              "name": "project-path",
+              "flags": ["--project-path"],
+              "kind": "option",
+              "value": {
+                "type": "directory"
+              },
+              "conflicts-with": ["project"]
+            },
+            {
+              "name": "thread",
+              "flags": ["--thread"],
+              "kind": "option",
+              "description": "Run every trigger in this existing thread.",
+              "value": {
+                "type": "string"
+              },
+              "conflicts-with": ["new-thread"]
+            },
+            {
+              "name": "new-thread",
+              "flags": ["--new-thread"],
+              "kind": "flag",
+              "description": "Start a new thread for every run.",
+              "conflicts-with": ["thread"]
+            },
+            {
+              "name": "provider",
+              "flags": ["--provider"],
+              "kind": "option",
+              "description": "Provider instance from the server catalog.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "model",
+              "flags": ["--model"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "model-option",
+              "flags": ["--model-option"],
+              "kind": "option",
+              "description": "Model option as key=value, validated against the model's descriptors.",
+              "value": {
+                "type": "string"
+              },
+              "repeatable": true
+            },
+            {
+              "name": "clear-model-options",
+              "flags": ["--clear-model-options"],
+              "kind": "flag",
+              "description": "Start from an empty model option set."
+            },
+            {
+              "name": "mode",
+              "flags": ["--mode"],
+              "kind": "option",
+              "description": "Runtime mode for scheduled runs.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "interaction-mode",
+              "flags": ["--interaction-mode"],
+              "kind": "option",
+              "description": "Interaction mode for scheduled runs, such as default or plan.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "worktree",
+              "flags": ["--worktree"],
+              "kind": "flag",
+              "description": "Run in a new worktree.",
+              "conflicts-with": ["existing-worktree", "root"]
+            },
+            {
+              "name": "existing-worktree",
+              "flags": ["--existing-worktree"],
+              "kind": "option",
+              "description": "Run in this existing worktree.",
+              "value": {
+                "type": "directory"
+              },
+              "conflicts-with": ["worktree", "root"]
+            },
+            {
+              "name": "root",
+              "flags": ["--root"],
+              "kind": "flag",
+              "description": "Run in the project root.",
+              "conflicts-with": ["worktree", "existing-worktree"]
+            },
+            {
+              "name": "base-ref",
+              "flags": ["--base-ref"],
+              "kind": "option",
+              "description": "Base ref for the new worktree (default HEAD).",
+              "value": {
+                "type": "string"
+              },
+              "requires": ["worktree"]
+            },
+            {
+              "name": "branch",
+              "flags": ["--branch"],
+              "kind": "option",
+              "description": "Branch for the new worktree.",
+              "value": {
+                "type": "string"
+              },
+              "requires": ["worktree"]
+            },
+            {
+              "name": "start-from-origin",
+              "flags": ["--start-from-origin"],
+              "kind": "flag",
+              "description": "Start the new worktree from the base ref's remote.",
+              "requires": ["worktree"]
+            },
+            {
+              "name": "no-start-from-origin",
+              "flags": ["--no-start-from-origin"],
+              "kind": "flag",
+              "description": "Start the new worktree from the local base ref.",
+              "requires": ["worktree"]
+            }
+          ],
+          "groups": [
+            {
+              "name": "prompt-source",
+              "members": ["prompt", "prompt-file"],
+              "rule": "mutually-exclusive"
+            },
+            {
+              "name": "trigger",
+              "members": ["every", "at", "webhook"],
+              "rule": "mutually-exclusive"
+            },
+            {
+              "name": "project-source",
+              "members": ["project", "project-path"],
+              "rule": "mutually-exclusive"
+            },
+            {
+              "name": "workspace",
+              "members": ["worktree", "existing-worktree", "root"],
+              "rule": "mutually-exclusive"
+            },
+            {
+              "name": "thread-target",
+              "members": ["thread", "new-thread"],
+              "rule": "mutually-exclusive"
+            }
+          ]
+        },
+        {
+          "name": "enable",
+          "summary": "Enable a scheduled task.",
+          "positional-arguments": [
+            {
+              "name": "taskId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "disable",
+          "summary": "Disable a scheduled task.",
+          "positional-arguments": [
+            {
+              "name": "taskId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "delete",
+          "summary": "Delete a scheduled task.",
+          "positional-arguments": [
+            {
+              "name": "taskId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "run",
+          "summary": "Start a scheduled task's run now.",
+          "positional-arguments": [
+            {
+              "name": "taskId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "endpoint",
+          "summary": "Show a webhook task's endpoint.",
+          "positional-arguments": [
+            {
+              "name": "taskId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "rotate-token",
+          "summary": "Replace a webhook task's URL token.",
+          "positional-arguments": [
+            {
+              "name": "taskId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        {
+          "name": "delivery",
+          "subcommands": [
+            {
+              "name": "list",
+              "summary": "List a webhook task's recorded deliveries.",
+              "positional-arguments": [
+                {
+                  "name": "taskId",
+                  "position": 0,
+                  "required": true,
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "name": "show",
+              "summary": "Show one recorded webhook delivery.",
+              "positional-arguments": [
+                {
+                  "name": "taskId",
+                  "position": 0,
+                  "required": true,
+                  "value": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "name": "deliveryId",
+                  "position": 1,
+                  "required": true,
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "notes": [
+        "Schedule commands compose the library's T3Client.scheduledTasks facade. Reads need orchestration:read; mutations, endpoints and delivery records need orchestration:operate. The server removes webhook endpoints from a reader's results. JSON output uses the {data, exitCode, error?} envelope; data is the library result. Text output is concise tab-separated lines. Reading or updating a missing task is not found (exit 10).",
+        "schedule list prints id, enabled or disabled, trigger type, next run time and title per task. A task with a trigger this client does not know lists its type as reported. schedule show prints one task's fields. schedule enable, disable and run print the updated task; rotate-token prints the replacement endpoint and its data is {task, endpoint} because the previous URL stops working. schedule delete data is {taskId}. schedule run starts a run now; the server refuses webhook tasks and a task that is already running.",
+        "schedule endpoint data is the library endpoint: taskId, path, url, connectUrl and hasSecret. path carries the URL token. url resolves path against the selected server URL and does not assert public reachability. connectUrl is null without T3 Connect. A non-webhook task is a precondition error (exit 2). A caller without orchestration:operate receives an authorization error (exit 9); the endpoint is never reconstructed.",
+        "schedule delivery list prints id, received time, outcome, signature verification, method and body size. Outcomes this client does not know remain strings. schedule delivery show data is the recorded delivery with its query, headers, possibly truncated body and rendered prompt; text output prints the summary, query, body and rendered prompt and leaves headers to JSON.",
+        "schedule create and update read an optional JSON object from --input <file> or --input - for stdin. Create accepts the library ScheduledTaskUpsertInput fields except id, requireExisting, commandId, createdBy and creationSource. Update accepts title, prompt, enabled, schedule, projectId, threadId, workspaceStrategy, modelSelection, runtimeMode and interactionMode; other keys are input errors. Focused flags override the matching input fields. Only one input may read stdin. Webhook signatures, signing secrets, dedupe, filters and delivery-age bounds use JSON input; secrets are write-only and never printed.",
+        "--every <duration>, --at HH:MM with optional --weekdays, and --webhook select one trigger. Create needs a title, a prompt and a trigger. Without a project, create uses the --thread project, else the scratch project. Without a model it uses the thread, project or server default; without --mode it uses the server default runtime mode; without --interaction-mode it sends default. Without a workspace flag create runs in the project root. A task is created enabled unless --disabled is given.",
+        "Update sends only the fields the caller supplies; the library keeps omitted settings and sends requireExisting: true. It reads and then saves the task, so a concurrent edit is overwritten. A webhook trigger without a signature keeps the stored signature and delivery-age bound; JSON null clears them. Omitted dedupe and filters keep the stored values and an empty filters array clears them. --new-thread or JSON threadId null starts a new thread per run.",
+        "Model and workspace selection: --provider and --model resolve live catalog entries. Repeatable --model-option key=value accepts boolean (true/false) and select values from the selected model's descriptors; explicit entries override inherited entries and --clear-model-options starts from an empty set. On update, model options apply to the stored model unless --provider or --model selects another. --worktree with optional --base-ref, --branch and --start-from-origin or --no-start-from-origin selects a new worktree; omitted start-from-origin stays omitted, and the last of the two flags wins. --existing-worktree <path> and --root select other workspaces. Existing worktrees use the server-advertised path and branch through the shared launch workspace resolver.",
+        "Input relationships, trigger values, weekdays, durations, JSON syntax and payload shape are checked before connecting. Project, thread, provider, model and model options are resolved before any scheduler mutation."
+      ]
+    },
+    {
+      "name": "provider",
+      "subcommands": [
+        {
+          "name": "status",
+          "summary": "Show provider authentication, installation, availability and usage limits.",
+          "positional-arguments": [
+            {
+              "name": "instanceId",
+              "position": 0,
+              "required": false,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "notes": [
+            "Read the live server configuration through server.providerStatus. instanceId selects one provider instance exactly; an unknown instance is not found (exit 10). JSON data is the library provider list. Text lines are instance id, driver, enabled or disabled, installed or missing, status, availability, auth status and version, then one usage line per usage-limit window with its used percent and reset time. Reading does not log in, install providers, consume reset credits or alter limits."
+          ]
+        }
+      ]
+    },
+    {
+      "name": "usage",
+      "subcommands": [
+        {
+          "name": "summary",
+          "summary": "Show historical token usage and cost.",
+          "options": [
+            {
+              "name": "since-day",
+              "flags": ["--since-day"],
+              "kind": "option",
+              "description": "First calendar day, YYYY-MM-DD.",
+              "value": {
+                "type": "string"
+              },
+              "required": true
+            },
+            {
+              "name": "until-day",
+              "flags": ["--until-day"],
+              "kind": "option",
+              "description": "Last calendar day, YYYY-MM-DD.",
+              "value": {
+                "type": "string"
+              },
+              "required": true
+            },
+            {
+              "name": "time-zone",
+              "flags": ["--time-zone"],
+              "kind": "option",
+              "description": "IANA time zone the days are bucketed in, such as Etc/UTC.",
+              "value": {
+                "type": "string"
+              },
+              "required": true
+            },
+            {
+              "name": "resolution",
+              "flags": ["--resolution"],
+              "kind": "option",
+              "value": {
+                "type": "enum",
+                "values": ["day", "hour"]
+              }
+            },
+            {
+              "name": "since-time",
+              "flags": ["--since-time"],
+              "kind": "option",
+              "description": "Start instant for hourly usage, such as 2026-01-01T08:00:00Z.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "until-time",
+              "flags": ["--until-time"],
+              "kind": "option",
+              "description": "End instant for hourly usage; the window is greater than zero and at most 24 hours.",
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "await-refresh",
+              "flags": ["--await-refresh"],
+              "kind": "flag",
+              "description": "Wait for slow source refreshes instead of cached answers."
+            }
+          ],
+          "notes": [
+            "Read server.getUsageSummary through server.usageSummary with diagnostics:read. Days are real calendar dates with since-day not after until-day, and the time zone is a valid IANA zone; these are checked before connecting. JSON data is the library UsageSummary with buckets, cost-source provenance, source diagnostics, pricing and scan metadata. Text lines are one line per bucket with day or hour, provider, model, token counts, cost in USD and cost source, then one line per source with its status and pricing status. No grand total is printed: costs from different sources and tokens of different kinds are not added. Current provider limits are a separate command. Hourly resolution requires valid since-time and until-time instants spanning more than zero and at most 24 hours, checked before connecting."
+          ]
+        }
       ]
     }
   ],

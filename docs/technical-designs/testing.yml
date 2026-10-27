@@ -10,6 +10,8 @@ relationships:
     - composition
     - releasing
     - library-testing
+    - mcp
+    - automation-capabilities
 proposed-design:
   high-level-overview:
     Workspace gates combine intent validation, static checks, unit tests, pinned-server
@@ -19,6 +21,7 @@ proposed-design:
     `task check` runs release-intent validation, workspace formatting/linting,
     typechecks, unit tests, pinned-server live tests and local pack/consumer checks.
     `task lib:check` runs library gates; `task cli:check` runs the CLI build, lint, typecheck, unit, live and package gates.
+    `task mcp:check` runs MCP build, static, protocol, live and package gates.
     Registered placeholder commands do not count as implementation evidence.
 
     Library source, colocated tests, fixture data, fake server and live harness
@@ -131,6 +134,18 @@ proposed-design:
     commit must preserve those inputs. Frame and log inspection verifies content
     and privacy. `task docs` generates the library API source and published
     reference; navigation tests verify metadata, local links and the GIF asset.
+  stop-and-queue-recovery: |
+    Focused library tests verify exact native thread.stop, queue.resume and
+    queued-run.start commands, fresh command ids, unchanged reason strings,
+    cancellation and dispatch failures. Native Stop needs no active-run read;
+    legacy stop/interrupt behavior remains covered separately. CLI and MCP tests
+    exercise their public boundaries, invalid arguments and acknowledgement output.
+    Isolated stock-server checks cover idle Stop, empty resume and invalid selected
+    starts without an agent turn. A deferred preparing run with two queued
+    messages proves native Stop holds successors without starting a provider.
+    Opt-in Luna checks resume and selected start against populated queues, retain
+    run ids and verify start/completion ordering; selected start releases the hold
+    for all queued messages.
   consolidated-command-proof: |
     Agent acceptance spends provider credit and is explicit; ordinary `task check`
     keeps agent cases skipped. To retain evidence outside the checkout:
@@ -227,3 +242,41 @@ proposed-design:
     server and removes owned server/profile/project/Dagu roots. The readiness
     roster has the lifecycle-evidence-scope limit above. Shared Dagu workflows,
     services and operational server state are outside the verification boundary.
+
+  complementary-automation: |
+    Scheduler library tests cover native RPC payloads, read/operate permissions,
+    omission and clearing semantics, endpoint resolution, future delivery outcomes
+    and failed reads. Live tests keep tasks disabled or reject signatures so they
+    do not start agents. Usage tests assert shapes without logging host transcript
+    paths or usage rows. Thread inspection reads complete HTTP detail and retains
+    ownership, absent metadata and checkpoint bounds. CLI launch tests validate
+    model option descriptors, inheritance and explicit clearing, advertised existing
+    worktrees and omitted/true/false start-from-origin settings.
+
+    No-agent CLI schedule and launch-validation tests select an advertised model.
+    When the host has no provider catalog, the owned loopback test server receives
+    a separate custom-model instance through the supported settings operation.
+    Its missing binary cannot start an agent. External-server overrides are never
+    seeded; they must provide an advertised model. Agent-turn acceptance selects
+    Luna explicitly. Fixture tests prove existing-catalog selection, the ownership
+    guard, settings creation and actual advertisement.
+
+    MCP tests use official SDK clients over in-memory and stdio transports. They
+    verify initialize, tool inventory, annotations, structured/text agreement,
+    schema rejection before connection, safe failures, per-request cancellation
+    and shutdown. A pinned stock-tool fixture plus an explicit complementary
+    inventory prevents name collisions and accidental tool additions. A fresh
+    stock-server test exercises disabled webhook deliveries, execution changes,
+    endpoint rotation, empty-thread inspection, provider status and usage through
+    the built stdio executable. Local MCP and library tarballs install together
+    for consumer verification.
+
+  product-documentation: |
+    Published-doc tests check each product's navigation, metadata, local links,
+    registered assets, code/docs projections and MCP tool inventory. Both products
+    use the wyrd.foo v2 contract with schemaVersion 1. The publisher's validate
+    command checks the actual content tree without publication. An unreleased
+    product can report missing release-tag/changelog prerequisites as local-mode
+    warnings; schema, navigation, asset and cross-file errors remain failures.
+    Release fixtures verify independent MCP docs projection, tag-only readiness
+    and documentation publication/coalescing on the exact tagged commit.

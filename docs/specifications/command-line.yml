@@ -6,7 +6,8 @@ description: >-
   output modes and exit codes. Command and global notes define dispatch,
   connection, profile, request, signal, deadline and failure behavior. The public
   usage guides explain this contract. The CLI composes @wyrd-company/t3code-lib
-  for profiles, auth, projects, dispatch, watches and interruption.
+  for profiles, auth, projects, dispatch, watches, scheduling, inspection,
+  provider status, usage, interruption and native Stop/queue recovery.
 format: cli
 validation-criteria: >-
   Validate cli-surface.json against the CLI Command Specification schema and

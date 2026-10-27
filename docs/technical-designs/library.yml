@@ -10,6 +10,7 @@ relationships:
     - library-auth
     - library-facades
   references:
+    - automation-capabilities
     - profiles
     - api
     - testing
@@ -199,7 +200,7 @@ proposed-design:
        run and attempt model to wait for an answer.
   out-of-scope-for-this-version: |
     Pull requests, previews, devices, cloud relay, DPoP, desktop bootstrap,
-    attachment upload signing, source-control clone flows, scheduled tasks, MCP
+    attachment upload signing, source-control clone flows, MCP
     OAuth, forks and merge-backs, delegated tasks, and settings mutation. They
     stay reachable through `rpc.callRaw`, `rpc.streamRaw`, and
     `threads.dispatch` with the full `OrchestrationV2Command` union.

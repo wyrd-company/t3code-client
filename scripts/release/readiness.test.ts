@@ -18,7 +18,7 @@ function ready(unit: string, extra: Record<string, unknown> = {}) {
   return run(root, "verify-readiness.sh", ["plan.json"]);
 }
 describe("pre-apply package readiness", () => {
-  for (const unit of ["t3code-lib", "t3code-cli"]) {
+  for (const unit of ["t3code-lib", "t3code-cli", "t3code-mcp"]) {
     it(`accepts public ${unit} before apply`, () => {
       expect(ready(unit).status).toBe(0);
     });
@@ -33,10 +33,10 @@ describe("pre-apply package readiness", () => {
       expect(result.status).not.toBe(0);
     });
   }
-  it("accepts the tag-only docs unit, which has no package", () => {
+  it.each(["t3c-docs", "t3mcp-docs"])("accepts tag-only %s, which has no package", (unit) => {
     const root = fixture();
     roots.push(root);
-    write(root, "plan.json", JSON.stringify({ tags: [{ release_unit: "t3c-docs" }] }));
+    write(root, "plan.json", JSON.stringify({ tags: [{ release_unit: unit }] }));
     expect(run(root, "verify-readiness.sh", ["plan.json"]).status).toBe(0);
   });
   it("rejects unsupported units before apply", () => {

@@ -22,13 +22,12 @@ import {
   validateDispatchOptions,
   type DispatchOptions,
 } from "./selection.ts";
+import { changesModelOptions } from "./modelOptions.ts";
+import { selectWorkspace } from "./workspace.ts";
 
 export interface DispatchTarget extends FollowTarget {
   readonly runtimeMode: string | null;
 }
-
-/** The project's current checkout when no explicit base ref is supplied. */
-export const defaultWorktreeBaseRef = "HEAD";
 
 /** Resolve all selections and permissions before the first thread mutation. */
 export async function dispatchPrompt(
@@ -72,6 +71,10 @@ export async function dispatchPrompt(
     existing?.modelSelection ?? project.defaultModelSelection,
     settings["defaultModelSelection"],
   );
+  const workspace =
+    existing === undefined
+      ? await preflight(selectWorkspace(client, project, options, signals?.signal))
+      : undefined;
   const advertisedMode =
     options.mode === undefined && existing === undefined
       ? settings["defaultRuntimeMode"]
@@ -99,7 +102,11 @@ export async function dispatchPrompt(
       threadId: existing.id,
       text,
       ...mode,
-      ...(options.provider === undefined && options.model === undefined ? {} : { modelSelection }),
+      ...(options.provider === undefined &&
+      options.model === undefined &&
+      !changesModelOptions(options)
+        ? {}
+        : { modelSelection }),
     });
     const followed = { ...target, turn };
     remember(followed);
@@ -114,10 +121,10 @@ export async function dispatchPrompt(
     modelSelection,
     ...mode,
   };
-  if (options.worktree) {
+  if (workspace !== undefined) {
     const launched = await client.threads.launch({
       ...creation,
-      workspace: { type: "worktree", baseRef: options.baseRef ?? defaultWorktreeBaseRef },
+      workspace,
       initialMessage: { text },
     });
     remember({ threadId: launched.threadId, runtimeMode });

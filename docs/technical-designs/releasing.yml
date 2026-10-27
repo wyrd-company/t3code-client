@@ -1,13 +1,14 @@
 $schema: https://refinery.systems/ontology/technical-design
 title: Independent package release and publication pipeline
 objective:
-  Build, verify and publish independent library and CLI release units with saved-plan agreement
+  Build, verify and publish independent library, CLI and MCP release units with saved-plan agreement
   and reproducible package artifacts.
 relationships:
   references:
     - testing
     - library
     - command-line
+    - mcp
 proposed-design:
   high-level-overview: Intentional owns independent package versions and release records. Release
     validates and applies one saved plan; Publish verifies the selected record and distributes the
@@ -21,14 +22,19 @@ proposed-design:
     | ------------ | ---------------------------------- | -------------------------- | ------------------ |
     | `t3code-lib` | `packages/t3code-lib/package.json` | `@wyrd-company/t3code-lib` | `t3code-lib@X.Y.Z` |
     | `t3code-cli` | `packages/t3code-cli/package.json` | `@wyrd-company/t3code-cli` | `t3code-cli@X.Y.Z` |
+    | `t3code-mcp` | `packages/t3code-mcp/package.json` | `@wyrd-company/t3code-mcp` | `t3code-mcp@X.Y.Z` |
     | `t3c-docs`   | `docs/user/docs.yml`               | none (tag-only)            | `t3c-docs@X.Y.Z`   |
+    | `t3mcp-docs` | `docs/user/docs.yml`               | none (tag-only)            | `t3mcp-docs@X.Y.Z` |
 
     `t3c-docs` is the docs unit of the `t3c` product. Its path is `docs/user/t3c`
     and it depends on `t3code-cli`. It is tag-only: it has no package and no
     GitHub Release. Intentional projects the `t3code-cli` version into
     `/products/t3c/version` and the `t3c-docs` version into
     `/products/t3c/docs-version` of `docs/user/docs.yml`, so `intentional apply`
-    writes both.
+    writes both. `t3mcp-docs` similarly owns `docs/user/t3mcp` and depends on
+    `t3code-mcp`. The MCP code and docs units project `/products/t3mcp/version`
+    and `/products/t3mcp/docs-version`. Each product has its own catalog entry,
+    navigation and assets. A new docs unit has one initial minor intent.
 
     The root CHANGELOG.md and `t3code-client@*` tags are historical records for the
     retired package. Keep them intact. Bob owns deprecation of the old npm name.
@@ -94,14 +100,16 @@ proposed-design:
     fails on any difference. To release only one unit, only that unit may be pending;
     name only its record. `depends-on` does not bump `t3c-docs`: a CLI intent
     names `t3c-docs` too, so a CLI release plans a `t3c-docs` record with it;
-    a docs-only change plans only `t3c-docs`. No unrelated unit is bumped
+    a docs-only change plans only `t3c-docs`. MCP docs use `t3mcp-docs` in the
+    same way; an MCP consumer change names that docs unit when its guides change.
+    No unrelated unit is bumped
     implicitly. Versions are independent even when a single dispatch releases
     several units.
 
     Release checks main, validates intents, runs the checks, saves the canonical
     plan and verifies the exact record set and public package identities. It
     recomputes and compares the plan immediately before apply. After apply it updates
-    the pnpm lockfile, builds both units and regenerates the CLI shrinkwrap with
+    the pnpm lockfile, builds the selected units and regenerates the CLI shrinkwrap with
     the applied package versions. It checks formatting, commits the projections and consumed
     intents, and creates records from the saved plan. The commit and selected records
     are pushed atomically. App credentials start the downstream Publish workflows.
@@ -133,10 +141,12 @@ proposed-design:
     `wyrd-company/wyrd.foo/.github/workflows/publish-docs.yml@v2`, called by the
     `docs` job of **Publish**. A plan job decides whether a run publishes:
 
-    - a `t3code-cli@X.Y.Z` record publishes after its GitHub Release exists, because
-      the product page reads that Release;
-    - a `t3c-docs@X.Y.Z` record publishes alone for a docs-only release; pushed with
-      a CLI record, it waits for the CLI run;
+    - a CLI or MCP code record publishes after its GitHub Release exists;
+      each product page reads its own code Release;
+    - a `t3c-docs@X.Y.Z` or `t3mcp-docs@X.Y.Z` record publishes alone for a
+      docs-only release; pushed with either product code record, it waits for
+      those package runs. `plan-docs.sh` checks records on the exact commit;
+      zero-version baselines never publish;
     - a `t3code-lib` record and the zero baseline records publish nothing;
     - a manual run publishes the `ref` it is given, and may feature the product.
 
@@ -174,16 +184,16 @@ proposed-design:
     | ------------------------- | ------- | -------------------------------------- |
     | `WYRD_CI_APP_ID`          | Release | GitHub App pushing commits and records |
     | `WYRD_CI_APP_PRIVATE_KEY` | Release | App key                                |
-    | `NPM_TOKEN`               | Publish | npm automation token for both packages |
+    | `NPM_TOKEN`               | Publish | npm automation token for package units |
     | `WYRD_TOOLS_DOCS_PUBLISHER_APP_ID` | Publish | Organization secret; mints the wyrd.foo publisher token |
     | `WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY` | Publish | Organization secret; the publisher App key |
 
     The App needs Contents write. Publish requires an Intentional release record
     whose commit is on main. A tag ruleset allowing only the App to create
-    `t3code-lib@*`, `t3code-cli@*` and `t3c-docs@*` records enforces that release
+    `t3code-lib@*`, `t3code-cli@*`, `t3code-mcp@*`, `t3c-docs@*` and `t3mcp-docs@*` records enforces that release
     authority.
   documentation-and-homebrew-finalization: |
-    The CLI record, the docs record and a manual run publish `docs/user` to wyrd.foo
+    The CLI/MCP code records, product docs records and manual runs publish `docs/user` to wyrd.foo
     (see publication). Everything under `docs/user` is published, and assets are listed in
     `docs/user/docs.yml`; other `docs` folders stay private.
     `task docs` generates the library API source and published reference through
@@ -223,3 +233,15 @@ proposed-design:
     upgrade or remove existing dependency kegs to validate a local formula.
   library-release-identity: |
     The library release unit is `t3code-lib`, its manifest is `packages/t3code-lib/package.json`, and its changelog is `packages/t3code-lib/CHANGELOG.md`. The root historical changelog belongs to the retired package.
+
+  complementary-mcp-package: |
+    The MCP package starts at 0.0.0 with one initial minor intent. Its npm tarball
+    contains the built stdio executable and public factory declarations. Consumer
+    checks install locally packed MCP and library archives together and exercise
+    version, tool listing and runtime imports without starting agent work.
+    CI includes the MCP package in static, protocol, isolated live and package
+    checks. The `t3code-mcp@0.0.0` baseline publishes nothing. MCP code and docs
+    records publish the separate t3mcp product after its code release is available.
+    Release and Publish select it through the same unit-aware saved-plan
+    and record checks as the other npm packages. Public first publication requires
+    explicit user approval; adding the package and workflow wiring grants none.

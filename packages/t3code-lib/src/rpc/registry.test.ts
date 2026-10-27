@@ -30,6 +30,7 @@ const expected = {
   "server.getSettings": [false, "orchestration:read"],
   "server.refreshProviders": [false, "orchestration:read"],
   "server.getDatabaseStorage": [true, "orchestration:read"],
+  "server.getUsageSummary": [false, "diagnostics:read"],
   subscribeServerConfig: [true, "orchestration:read"],
   subscribeServerLifecycle: [true, "orchestration:read"],
   subscribeAuthAccess: [true, "access:read"],
@@ -61,6 +62,15 @@ const expected = {
   "mcpApps.toolInfo": [false, "orchestration:read"],
   "mcpApps.readResource": [false, "orchestration:read"],
   "mcpApps.updateModelContext": [false, "orchestration:operate"],
+  "scheduledTasks.list": [false, "orchestration:read"],
+  "scheduledTasks.subscribe": [true, "orchestration:read"],
+  "scheduledTasks.upsert": [false, "orchestration:operate"],
+  "scheduledTasks.setEnabled": [false, "orchestration:operate"],
+  "scheduledTasks.delete": [false, "orchestration:operate"],
+  "scheduledTasks.runNow": [false, "orchestration:operate"],
+  "scheduledTasks.rotateWebhookToken": [false, "orchestration:operate"],
+  "scheduledTasks.listWebhookDeliveries": [false, "orchestration:operate"],
+  "scheduledTasks.getWebhookDelivery": [false, "orchestration:operate"],
 } as const;
 
 describe("RPC contract registry", () => {

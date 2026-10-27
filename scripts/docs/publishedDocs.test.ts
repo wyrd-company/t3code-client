@@ -1,94 +1,180 @@
 // ---
 // relationships:
-//   verifies: command-line, releasing
+//   verifies: documentation, releasing, tool-branding
 // ---
 import * as NodeFS from "node:fs";
 import * as NodePath from "node:path";
 import { parse } from "yaml";
 import { expect, it } from "vite-plus/test";
-const user = NodePath.resolve(import.meta.dirname, "../../docs/user");
-const root = NodePath.join(user, "t3c");
+
 const repository = NodePath.resolve(import.meta.dirname, "../..");
+const user = NodePath.join(repository, "docs/user");
+// The foundation job runs before package builds. Read literal tool declarations
+// without loading handlers or workspace package exports.
+const toolDirectory = NodePath.join(repository, "packages/t3code-mcp/src/tools");
+const toolNames = NodeFS.readdirSync(toolDirectory)
+  .filter((name) => name.endsWith(".ts"))
+  .flatMap((name) =>
+    [
+      ...NodeFS.readFileSync(NodePath.join(toolDirectory, name), "utf8").matchAll(
+        /\bdefineTool\(\s*["']([^"']+)["']/gu,
+      ),
+    ].map(([, name]) => name!),
+  );
+
+const read = (path: string) => NodeFS.readFileSync(NodePath.join(user, path), "utf8");
 const config = parse(
   NodeFS.readFileSync(NodePath.join(repository, ".intentional/config.yml"), "utf8"),
-) as { "release-units": Record<string, { path: string }> };
-const docsChangelog = NodePath.relative(
-  user,
-  NodePath.resolve(repository, config["release-units"]["t3c-docs"]!.path, "CHANGELOG.md"),
-);
+) as {
+  "release-units": Record<
+    string,
+    { path: string; projections: { adapter: string; file: string; pointer?: string }[] }
+  >;
+};
+const changelogs = Object.entries(config["release-units"])
+  .filter(([unit]) => unit.endsWith("-docs"))
+  .map(([, unit]) =>
+    NodePath.relative(user, NodePath.resolve(repository, unit.path, "CHANGELOG.md")),
+  );
 const markdownPages = (files: string[]) =>
-  files.filter((name) => name.endsWith(".md") && name !== docsChangelog);
+  files.filter((name) => name.endsWith(".md") && !changelogs.includes(name));
 const published = markdownPages(NodeFS.readdirSync(user, { recursive: true }).map(String));
-const read = (path: string) => NodeFS.readFileSync(NodePath.join(user, path), "utf8");
+type Product = {
+  version: string;
+  "docs-version": string;
+  "release-unit": string;
+  logo: string;
+  favicon: string;
+  media: { src: string }[];
+  nav: { section: string; groups: { group: string; pages: string[] }[] }[];
+  kinds: { kind: string; tools?: { name: string; description: string; effect: string }[] }[];
+};
+const manifest = parse(read("docs.yml")) as { assets: string[]; products: Record<string, Product> };
+const front = (name: string) =>
+  parse(read(name).match(/^---\n([\s\S]*?)\n---/u)![1]!) as {
+    title: string;
+    product: string;
+    order: number;
+  };
 
-it("does not treat the configured docs changelog as a published page", () => {
-  const inventory = [docsChangelog, "t3c/getting-started.md", "t3c/policy.md"];
-  expect(markdownPages(inventory)).toEqual(["t3c/getting-started.md", "t3c/policy.md"]);
+it("treats both configured docs changelogs as release data, not pages", () => {
+  expect(
+    markdownPages([...changelogs, "t3c/getting-started.md", "t3mcp/getting-started.md"]),
+  ).toEqual(["t3c/getting-started.md", "t3mcp/getting-started.md"]);
 });
-
-it("publishes the complete CLI navigation and generated library page with unique ordering", () => {
-  expect(published.sort()).toEqual([
-    "t3c/auth.md",
-    "t3c/commands.md",
-    "t3c/dagu.md",
-    "t3c/getting-started.md",
-    "t3c/library-reference.md",
-    "t3c/policy.md",
-  ]);
-  const orders = published.map((name) => {
-    const page = read(name);
-    expect(page, name).toMatch(/^title: .+$/mu);
-    expect(page, name).toMatch(/^product: t3c$/mu);
-    expect(page, name).not.toMatch(/^docs: true$/mu);
-    return page.match(/^order: (\d+)$/mu)?.[1];
-  });
-  expect(orders).not.toContain(undefined);
-  expect(new Set(orders).size).toBe(published.length);
-  expect(Object.fromEntries(published.map((name, index) => [name, orders[index]]))).toEqual({
-    "t3c/auth.md": "2",
-    "t3c/commands.md": "3",
-    "t3c/dagu.md": "5",
-    "t3c/getting-started.md": "1",
-    "t3c/library-reference.md": "6",
-    "t3c/policy.md": "4",
-  });
-  expect(read("t3c/library-reference.md")).toContain("T3StorageError");
+it("publishes t3c and t3mcp as distinct products with matching code/docs projections", () => {
+  expect(Object.keys(manifest.products).sort()).toEqual(["t3c", "t3mcp"]);
+  for (const [key, product] of Object.entries(manifest.products)) {
+    const unit = config["release-units"][product["release-unit"]]!;
+    const pkg = JSON.parse(
+      NodeFS.readFileSync(NodePath.join(repository, unit.path, "package.json"), "utf8"),
+    );
+    expect(product.version).toBe(pkg.version);
+    expect(unit.projections).toContainEqual({
+      adapter: "yaml",
+      file: "/docs/user/docs.yml",
+      pointer: `/products/${key}/version`,
+      mode: "committed",
+    });
+    expect(config["release-units"][`${key}-docs`]!.projections).toContainEqual({
+      adapter: "yaml",
+      file: "/docs/user/docs.yml",
+      pointer: `/products/${key}/docs-version`,
+      mode: "committed",
+    });
+  }
+  expect(manifest.products["t3mcp"]!.kinds.map((kind) => kind.kind)).toEqual(["mcp-server"]);
 });
-it("resolves every local published-page link and demo asset", () => {
+it("lists every published page exactly once within its product navigation", () => {
+  for (const [key, product] of Object.entries(manifest.products)) {
+    const pages = published.filter((name) => front(name).product === key);
+    for (const name of pages) {
+      expect(front(name).title, name).toBeTruthy();
+      expect(Number.isInteger(front(name).order), name).toBe(true);
+      expect(name.startsWith(`${key}/`), name).toBe(true);
+    }
+    const slugs = product.nav.flatMap((section) => section.groups.flatMap((group) => group.pages));
+    expect(slugs.sort()).toEqual(pages.map((name) => NodePath.basename(name, ".md")).sort());
+    expect(new Set(slugs).size).toBe(slugs.length);
+  }
+  for (const name of published) expect(manifest.products).toHaveProperty(front(name).product);
+});
+it("places the generated library reference in its own Developers section", () => {
+  const nav = manifest.products["t3c"]!.nav;
+  const developers = nav.find((section) => section.section === "Developers")!;
+  const pages = developers.groups.flatMap((group) => group.pages);
+  expect(pages).toContain("library-reference");
+  expect(pages.length).toBeGreaterThan(1);
+  expect(pages.every((slug) => slug.startsWith("library-"))).toBe(true);
+  expect(
+    nav
+      .filter((section) => section.section !== "Developers")
+      .flatMap((section) => section.groups.flatMap((group) => group.pages))
+      .some((slug) => slug.startsWith("library-")),
+  ).toBe(false);
+  for (const slug of pages) expect(read(`t3c/${slug}.md`)).toContain("Generated by task cli:docs");
+});
+it("resolves local page links without leaving each product's published folder", () => {
   for (const name of published) {
-    const page = read(name);
-    for (const [, href] of page.matchAll(/\]\(([^)]+)\)/gu)) {
+    const base = NodePath.join(user, front(name).product);
+    for (const [, href] of read(name).matchAll(/\]\(([^)]+)\)/gu)) {
       if (!href || /^(?:[a-z]+:|#)/u.test(href)) continue;
-      const path = NodePath.resolve(
+      const target = NodePath.resolve(
         NodePath.dirname(NodePath.join(user, name)),
         href.split("#")[0]!,
       );
-      expect(NodeFS.existsSync(path), `${name}: ${href}`).toBe(true);
+      expect(NodePath.relative(base, target).startsWith(".."), `${name}: ${href}`).toBe(false);
+      expect(NodeFS.existsSync(target), `${name}: ${href}`).toBe(true);
     }
   }
-  const manifest = parse(read("docs.yml")) as {
-    assets: string[];
-    products: Record<
-      string,
-      { media: { src: string }[]; nav: { groups: { pages: string[] }[] }[] }
-    >;
-  };
-  // The assets list is relative to docs/user/; product fields are relative to the product folder.
-  expect(manifest.assets).toEqual(["t3c/assets/demo.gif"]);
-  expect(Object.keys(manifest.products)).toEqual(["t3c"]);
-  const media = manifest.products["t3c"]!.media.map((item) => item.src);
-  expect(media).toEqual(["assets/demo.gif"]);
-  const listed = manifest.assets.map((path) => NodePath.join(user, path));
-  expect(media.map((path) => NodePath.join(root, path))).toEqual(listed);
-  for (const path of listed)
-    expect(NodeFS.readFileSync(path).subarray(0, 3).toString(), path).toBe("GIF");
 });
-it("lists every published page once in the navigation", () => {
-  const manifest = parse(read("docs.yml")) as {
-    products: Record<string, { nav: { groups: { pages: string[] }[] }[] }>;
-  };
-  const slugs = manifest.products["t3c"]!.nav.flatMap((section) =>
-    section.groups.flatMap((group) => group.pages),
+it("registers real SVG marks and media for both products", () => {
+  expect(new Set(manifest.assets).size).toBe(manifest.assets.length);
+  for (const path of manifest.assets)
+    expect(NodeFS.existsSync(NodePath.join(user, path)), path).toBe(true);
+  for (const [key, product] of Object.entries(manifest.products)) {
+    for (const asset of [product.logo, product.favicon, ...product.media.map((item) => item.src)])
+      expect(manifest.assets).toContain(`${key}/${asset}`);
+    const icon = read(`${key}/${product.logo}`);
+    expect(icon).toContain('viewBox="0 0 512 512"');
+    expect(icon).toContain(`<title id="title">${key}</title>`);
+    expect(icon).not.toMatch(/<(?:script|image|foreignObject|text)\b/iu);
+    expect(icon).not.toMatch(/(?:href|src)=/iu);
+  }
+  expect(read("t3mcp/assets/logo.svg")).toContain("MIT License");
+  expect(
+    NodeFS.readFileSync(NodePath.join(user, "t3c/assets/demo.gif")).subarray(0, 3).toString(),
+  ).toBe("GIF");
+});
+it("documents every declared MCP tool without loading built packages", () => {
+  const tools = manifest.products["t3mcp"]!.kinds[0]!.tools!;
+  expect(tools.map((tool) => tool.name).sort()).toEqual([...toolNames].sort());
+  for (const tool of tools) {
+    expect(tool.description).toBeTruthy();
+    expect(read("t3mcp/tools.md")).toContain(`\`${tool.name}\``);
+  }
+  expect(
+    tools
+      .filter((tool) => tool.effect === "Writes")
+      .map((tool) => tool.name)
+      .sort(),
+  ).toEqual([
+    "configure_scheduled_task",
+    "rotate_scheduled_task_webhook",
+    "thread_queue_resume",
+    "thread_queue_start",
+    "thread_stop",
+  ]);
+});
+it("retains one initial minor intent for each new MCP unit", () => {
+  const intents = NodeFS.readdirSync(NodePath.join(repository, ".intentional/intents")).map(
+    (name) => NodeFS.readFileSync(NodePath.join(repository, ".intentional/intents", name), "utf8"),
   );
-  expect(slugs.sort()).toEqual(published.map((name) => NodePath.basename(name, ".md")).sort());
+  for (const unit of ["t3code-mcp", "t3mcp-docs"]) {
+    const product = manifest.products["t3mcp"]!;
+    const version = unit === "t3code-mcp" ? product.version : product["docs-version"];
+    if (version !== "0.0.0") continue;
+    const matches = intents.filter((intent) => new RegExp(`^${unit}: minor$`, "mu").test(intent));
+    expect(matches, unit).toHaveLength(1);
+  }
 });
