@@ -29,6 +29,7 @@ it("does not treat the configured docs changelog as a published page", () => {
 it("publishes the complete CLI navigation and generated library page with unique ordering", () => {
   expect(published.sort()).toEqual([
     "t3c/auth.md",
+    "t3c/automation.md",
     "t3c/commands.md",
     "t3c/complementary-tools.md",
     "t3c/dagu.md",
@@ -47,6 +48,7 @@ it("publishes the complete CLI navigation and generated library page with unique
   expect(new Set(orders).size).toBe(published.length);
   expect(Object.fromEntries(published.map((name, index) => [name, orders[index]]))).toEqual({
     "t3c/auth.md": "2",
+    "t3c/automation.md": "8",
     "t3c/commands.md": "3",
     "t3c/dagu.md": "5",
     "t3c/getting-started.md": "1",

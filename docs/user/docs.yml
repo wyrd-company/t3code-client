@@ -34,7 +34,7 @@ products:
       - section: Reference
         groups:
           - group: Using t3c
-            pages: [commands, policy, dagu, complementary-tools]
+            pages: [commands, policy, dagu, complementary-tools, automation]
           - group: Library
             pages: [library-reference]
     kinds:

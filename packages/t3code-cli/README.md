@@ -34,6 +34,13 @@ either result. It includes archived threads. `--json` puts the id or null in
 `thread search <query>` returns at most `--limit` threads (default 50);
 `--thread <id>` searches within one thread. A missing thread exits `10`.
 
+`schedule` manages tasks, webhook endpoints and delivery records. Create and
+update accept `--input <file>` or `--input -` for structured JSON; omitted update
+fields keep their stored values. `provider status [instance-id]` reports current
+provider diagnostics. `usage summary --since-day YYYY-MM-DD --until-day YYYY-MM-DD
+--time-zone Etc/UTC` reads historical usage. See [schedules, providers and usage](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/automation.md)
+for execution selections, webhook input and hourly usage options.
+
 Read [getting started](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/getting-started.md), [auth/profiles](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/auth.md),
 [commands](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/commands.md), [output and exit codes](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/policy.md),
 [the Dagu harness](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/dagu.md), and [the library API](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/library-reference.md).

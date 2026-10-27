@@ -85,6 +85,21 @@ describe("normative CLI surface content", () => {
       "auth switch": "Select the current profile.",
       "auth logout": "Remove credentials for the named or current profile.",
       "server info": "Show environment descriptor, providers and models.",
+      "schedule list": "List scheduled tasks.",
+      "schedule show": "Show one scheduled task.",
+      "schedule create": "Create a scheduled task.",
+      "schedule update": "Change a scheduled task and keep omitted settings.",
+      "schedule enable": "Enable a scheduled task.",
+      "schedule disable": "Disable a scheduled task.",
+      "schedule delete": "Delete a scheduled task.",
+      "schedule run": "Start a scheduled task's run now.",
+      "schedule endpoint": "Show a webhook task's endpoint.",
+      "schedule rotate-token": "Replace a webhook task's URL token.",
+      "schedule delivery list": "List a webhook task's recorded deliveries.",
+      "schedule delivery show": "Show one recorded webhook delivery.",
+      "provider status":
+        "Show provider authentication, installation, availability and usage limits.",
+      "usage summary": "Show historical token usage and cost.",
       version:
         "Show CLI, library and target versions with an informational reachable-server verdict.",
     });
