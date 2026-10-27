@@ -4,6 +4,19 @@
 // ---
 import * as NodeFSP from "node:fs/promises";
 
+// A short-lived descendant can be a zombie until its parent reaps it. Keep
+// requiring signal-zero absence while allowing that observed exit to settle.
+const ABSENCE_RECHECKS = 10;
+const ABSENCE_RECHECK_MS = 10;
+
+async function confirmProcessAbsent(pid: number): Promise<boolean> {
+  for (let attempt = 0; ; attempt++) {
+    if (processAbsent(pid)) return true;
+    if (attempt === ABSENCE_RECHECKS) return false;
+    await new Promise((resolve) => setTimeout(resolve, ABSENCE_RECHECK_MS));
+  }
+}
+
 type ProcessIdentity = {
   pid: number;
   stat: string | null;
@@ -23,7 +36,7 @@ export async function processIdentities(pid: number): Promise<ProcessIdentity[]>
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code;
     // A vanished proc entry alone is not proof that the process has exited.
-    if ((code === "ENOENT" || code === "ESRCH") && processAbsent(pid)) {
+    if ((code === "ENOENT" || code === "ESRCH") && (await confirmProcessAbsent(pid))) {
       return [{ ...identity, absentDuringCapture: true }];
     }
     throw error;

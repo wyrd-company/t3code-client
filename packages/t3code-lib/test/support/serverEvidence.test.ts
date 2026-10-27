@@ -28,6 +28,7 @@ describe.runIf(process.platform === "linux")("owned process evidence capture", (
     vi.spyOn(process, "kill").mockReturnValue(true);
   });
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
     vi.clearAllMocks();
   });
@@ -85,10 +86,41 @@ describe.runIf(process.platform === "linux")("owned process evidence capture", (
   });
 
   it("rejects missing proc data while the process still exists", async () => {
+    vi.useFakeTimers();
     const error = failure("ENOENT");
     vi.mocked(NodeFSP.readFile).mockRejectedValue(error);
-    await expect(processIdentities(root)).rejects.toBe(error);
+    const rejected = expect(processIdentities(root)).rejects.toBe(error);
+    await vi.runAllTimersAsync();
+    await rejected;
+    expect(process.kill).toHaveBeenCalledTimes(11);
   });
+
+  it.each(["ENOENT", "ESRCH"])(
+    "waits for independent absence after a short-lived child produces %s",
+    async (code) => {
+      vi.useFakeTimers();
+      vi.mocked(NodeFSP.readlink).mockImplementation(async (path) => {
+        if (String(path) === `/proc/${child}/exe`) throw failure(code);
+        return executable(Number(String(path).split("/")[2]));
+      });
+      vi.mocked(process.kill)
+        .mockReturnValueOnce(true)
+        .mockImplementation(() => {
+          throw failure("ESRCH");
+        });
+      const capture = processIdentities(root);
+      await vi.advanceTimersByTimeAsync(0);
+      expect(process.kill).toHaveBeenCalledExactlyOnceWith(child, 0);
+      await vi.runAllTimersAsync();
+      expect(await capture).toEqual([
+        { pid: root, stat: stat(root), executable: executable(root) },
+        { pid: child, stat: stat(child), executable: null, absentDuringCapture: true },
+        { pid: sibling, stat: stat(sibling), executable: executable(sibling) },
+      ]);
+      expect(process.kill).toHaveBeenCalledTimes(2);
+      expect(process.kill).toHaveBeenLastCalledWith(child, 0);
+    },
+  );
 
   it("propagates permission errors without declaring absence", async () => {
     const error = failure("EACCES");
@@ -104,5 +136,20 @@ describe.runIf(process.platform === "linux")("owned process evidence capture", (
       throw error;
     });
     await expect(processIdentities(root)).rejects.toBe(error);
+  });
+
+  it("propagates permission errors from a later absence check", async () => {
+    vi.useFakeTimers();
+    vi.mocked(NodeFSP.readFile).mockRejectedValue(failure("ENOENT"));
+    const error = failure("EPERM");
+    vi.mocked(process.kill)
+      .mockReturnValueOnce(true)
+      .mockImplementation(() => {
+        throw error;
+      });
+    const rejected = expect(processIdentities(root)).rejects.toBe(error);
+    await vi.runAllTimersAsync();
+    await rejected;
+    expect(process.kill).toHaveBeenCalledTimes(2);
   });
 });

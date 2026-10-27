@@ -41,6 +41,10 @@ proposed-design:
     If a proc entry disappears and a signal-zero check confirms that PID is
     absent, the roster retains its PID, available identity fields and
     `absentDuringCapture: true`. Surviving siblings retain complete identities.
+    After ENOENT or ESRCH, signal-zero checks repeat at ten-millisecond intervals
+    for up to 100 milliseconds so a short-lived zombie descendant can be reaped.
+    Every absent row requires a signal-zero ESRCH result; zombie state alone does
+    not establish absence. Permission errors are propagated immediately.
     Missing proc data for an existing PID and other capture errors fail setup.
     Teardown checks every recorded PID for absence, including partial rows.
     Startup failures report the failed setup stage, process exit/signal and an
