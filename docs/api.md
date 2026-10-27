@@ -172,7 +172,8 @@ check that flag. <code>stop</code> still sends <code>run.interrupt</code> with <
 queued-run commands, unknown command metadata survives, and malformed or
 missing ids fail before sending. The server starts only a queued plain user
 message on a stopped thread; otherwise it fails with
-<code>OrchestrationV2DispatchCommandError</code>. No facade method sends it.</p>
+<code>OrchestrationV2DispatchCommandError</code>. <code>startQueuedRun</code> sends it. Both it and
+<code>resumeQueue</code> clear the hold on all queued runs; other queued messages may follow.</p>
 <p><code>watchCommandOutput</code> follows <code>orchestration.subscribeCommandOutput</code> for one
 <code>command_execution</code> row (<code>{ threadId, itemId }</code>, trimmed nonempty ids). Each
 frame has <code>kind</code> (<code>replace</code> carries the bounded tail, <code>append</code> extends it;
@@ -1585,7 +1586,8 @@ check that flag. `stop` still sends `run.interrupt` with `holdQueue`.
 queued-run commands, unknown command metadata survives, and malformed or
 missing ids fail before sending. The server starts only a queued plain user
 message on a stopped thread; otherwise it fails with
-`OrchestrationV2DispatchCommandError`. No facade method sends it.
+`OrchestrationV2DispatchCommandError`. `startQueuedRun` sends it. Both it and
+`resumeQueue` clear the hold on all queued runs; other queued messages may follow.
 
 `watchCommandOutput` follows `orchestration.subscribeCommandOutput` for one
 `command_execution` row (`{ threadId, itemId }`, trimmed nonempty ids). Each
@@ -1627,6 +1629,9 @@ older server. The library does not render terminal output.
   - [.startTurn()](#ThreadsApi+startTurn)
   - [.interrupt()](#ThreadsApi+interrupt)
   - [.stop()](#ThreadsApi+stop)
+  - [.stopThread()](#ThreadsApi+stopThread)
+  - [.resumeQueue()](#ThreadsApi+resumeQueue)
+  - [.startQueuedRun()](#ThreadsApi+startQueuedRun)
   - [.respondToApproval()](#ThreadsApi+respondToApproval)
   - [.respondToUserInput()](#ThreadsApi+respondToUserInput)
   - [.dismissUserInput()](#ThreadsApi+dismissUserInput)
@@ -1923,10 +1928,52 @@ async interrupt(
 
 ### threadsApi.stop()
 
-The Stop button: interrupts the active run and holds the queue. Nothing active is a no-op.
+Legacy stop: interrupts the active run and holds the queue. Nothing active is a no-op.
 
 ```ts
 stop(threadId: ThreadId, signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+stopThread"></a>
+
+### threadsApi.stopThread()
+
+Request native Stop, including idle, queued and background work, without an
+active-run lookup. Resolves on command acknowledgement, not terminal state.
+Any reason string is preserved. No capability gate or fallback is applied.
+
+```ts
+async stopThread(
+    threadId: ThreadId,
+    options: StopThreadOptions = {},
+    signal?: AbortSignal,
+  ): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+resumeQueue"></a>
+
+### threadsApi.resumeQueue()
+
+Resume the queue, clearing the hold on all queued runs. Acknowledgement only.
+
+```ts
+async resumeQueue(threadId: ThreadId, signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+startQueuedRun"></a>
+
+### threadsApi.startQueuedRun()
+
+Start a selected queued plain user message on a stopped thread. The server
+clears the hold on all queued runs, so other messages may follow. Resolves
+on acknowledgement; invalid selections propagate the server's dispatch error.
+Select runId from status().queuedRuns or stock MCP queuedRunId.
+
+```ts
+async startQueuedRun(threadId: ThreadId, runId: RunId, signal?: AbortSignal): Promise<void>;
 ```
 
 **Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  

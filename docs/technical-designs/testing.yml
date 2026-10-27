@@ -141,8 +141,11 @@ proposed-design:
     legacy stop/interrupt behavior remains covered separately. CLI and MCP tests
     exercise their public boundaries, invalid arguments and acknowledgement output.
     Isolated stock-server checks cover idle Stop, empty resume and invalid selected
-    starts without an agent turn. Active queue checks inspect retained run ids and
-    queue-held state; selected start releases the hold for all queued messages.
+    starts without an agent turn. A deferred preparing run with two queued
+    messages proves native Stop holds successors without starting a provider.
+    Opt-in Luna checks resume and selected start against populated queues, retain
+    run ids and verify start/completion ordering; selected start releases the hold
+    for all queued messages.
   consolidated-command-proof: |
     Agent acceptance spends provider credit and is explicit; ordinary `task check`
     keeps agent cases skipped. To retain evidence outside the checkout:
