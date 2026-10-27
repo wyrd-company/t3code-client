@@ -30,7 +30,9 @@ proposed-design:
     intact summary entry, class introduction, method or support declaration.
     Oversized indivisible sections fail generation for an explicit structural
     split. Summary descriptions, signatures, examples and explicit anchors are
-    preserved. Markdown and HTML links resolve to each API anchor's owner page;
+    preserved. Markdown and HTML links resolve to each API anchor's rendered
+    wyrd.foo page URL; same-page links retain their local fragment. Raw Markdown
+    routes are not used for API navigation;
     links to other repository documentation use canonical repository URLs.
     Publishing metadata keeps every page in product `t3c`, ordered from 6.
     The same page inventory generates the Developers navigation groups in

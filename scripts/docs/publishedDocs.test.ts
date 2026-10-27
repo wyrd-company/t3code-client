@@ -6,10 +6,22 @@ import * as NodeFS from "node:fs";
 import * as NodePath from "node:path";
 import { parse } from "yaml";
 import { expect, it } from "vite-plus/test";
-import { toolNames } from "../../packages/t3code-mcp/src/tools/index.ts";
 
 const repository = NodePath.resolve(import.meta.dirname, "../..");
 const user = NodePath.join(repository, "docs/user");
+// The foundation job runs before package builds. Read literal tool declarations
+// without loading handlers or workspace package exports.
+const toolDirectory = NodePath.join(repository, "packages/t3code-mcp/src/tools");
+const toolNames = NodeFS.readdirSync(toolDirectory)
+  .filter((name) => name.endsWith(".ts"))
+  .flatMap((name) =>
+    [
+      ...NodeFS.readFileSync(NodePath.join(toolDirectory, name), "utf8").matchAll(
+        /\bdefineTool\(\s*["']([^"']+)["']/gu,
+      ),
+    ].map(([, name]) => name!),
+  );
+
 const read = (path: string) => NodeFS.readFileSync(NodePath.join(user, path), "utf8");
 const config = parse(
   NodeFS.readFileSync(NodePath.join(repository, ".intentional/config.yml"), "utf8"),
@@ -134,7 +146,7 @@ it("registers real SVG marks and media for both products", () => {
     NodeFS.readFileSync(NodePath.join(user, "t3c/assets/demo.gif")).subarray(0, 3).toString(),
   ).toBe("GIF");
 });
-it("documents exactly the executable MCP tool inventory", () => {
+it("documents every declared MCP tool without loading built packages", () => {
   const tools = manifest.products["t3mcp"]!.kinds[0]!.tools!;
   expect(tools.map((tool) => tool.name).sort()).toEqual([...toolNames].sort());
   for (const tool of tools) {

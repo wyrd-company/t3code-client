@@ -31,14 +31,19 @@ it("resolves guide, context and canonical structured documentation links and anc
     for (const [, href] of content.matchAll(/\]\(([^)]+)\)/gu)) {
       if (!href) continue;
       const repositoryPrefix = repositoryPrefixes.find((prefix) => href.startsWith(prefix));
+      const rendered = href.match(
+        /^https:\/\/wyrd\.foo\/docs\/([a-z0-9-]+)\/([a-z0-9-]+)(#[^?]*)?$/u,
+      );
       const local =
-        repositoryPrefix !== undefined
-          ? NodePath.join(root, href.slice(repositoryPrefix.length))
-          : /^[a-z]+:/u.test(href)
-            ? undefined
-            : href.startsWith("#")
-              ? `${path}${href}`
-              : NodePath.resolve(NodePath.dirname(path), href);
+        rendered !== null
+          ? `${NodePath.join(root, "docs/user", rendered[1]!, `${rendered[2]}.md`)}${rendered[3] ?? ""}`
+          : repositoryPrefix !== undefined
+            ? NodePath.join(root, href.slice(repositoryPrefix.length))
+            : /^[a-z]+:/u.test(href)
+              ? undefined
+              : href.startsWith("#")
+                ? `${path}${href}`
+                : NodePath.resolve(NodePath.dirname(path), href);
       if (local === undefined) continue;
       const [target, anchor] = local.split("#");
       expect(NodeFS.existsSync(target!), `${name}: ${href}`).toBe(true);

@@ -20,7 +20,7 @@ Dispatches `message.dispatch` and returns a handle that follows the run it start
 startTurn(input: StartTurnInput): Promise<TurnHandle>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+interrupt"></a>
 
 ### threadsApi.interrupt()
@@ -36,7 +36,7 @@ async interrupt(
   ): Promise<void>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+stop"></a>
 
 ### threadsApi.stop()
@@ -47,7 +47,7 @@ Legacy stop: interrupts the active run and holds the queue. Nothing active is a 
 stop(threadId: ThreadId, signal?: AbortSignal): Promise<void>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+stopThread"></a>
 
 ### threadsApi.stopThread()
@@ -64,7 +64,7 @@ async stopThread(
   ): Promise<void>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+resumeQueue"></a>
 
 ### threadsApi.resumeQueue()
@@ -75,7 +75,7 @@ Resume the queue, clearing the hold on all queued runs. Acknowledgement only.
 async resumeQueue(threadId: ThreadId, signal?: AbortSignal): Promise<void>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+startQueuedRun"></a>
 
 ### threadsApi.startQueuedRun()
@@ -89,7 +89,7 @@ Select runId from status().queuedRuns or stock MCP queuedRunId.
 async startQueuedRun(threadId: ThreadId, runId: RunId, signal?: AbortSignal): Promise<void>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+respondToApproval"></a>
 
 ### threadsApi.respondToApproval()
@@ -100,7 +100,7 @@ Answer a pending approval request.
 async respondToApproval(input: ApprovalResponseInput, signal?: AbortSignal): Promise<void>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+respondToUserInput"></a>
 
 ### threadsApi.respondToUserInput()
@@ -111,7 +111,7 @@ Answer a pending user-input request.
 async respondToUserInput(input: UserInputResponseInput, signal?: AbortSignal): Promise<void>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+dismissUserInput"></a>
 
 ### threadsApi.dismissUserInput()
@@ -122,7 +122,7 @@ Dismiss a pending user-input request.
 async dismissUserInput(input: UserInputDismissInput, signal?: AbortSignal): Promise<void>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+pendingRequests"></a>
 
 ### threadsApi.pendingRequests()
@@ -133,7 +133,7 @@ Open approval and user-input requests, derived from the thread's projection.
 async pendingRequests(threadId: ThreadId, signal?: AbortSignal): Promise<PendingRequest[]>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+status"></a>
 
 ### threadsApi.status()
@@ -146,7 +146,7 @@ when the thread does not exist.
 async status(threadId: ThreadId, signal?: AbortSignal): Promise<ThreadStatus>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+usage"></a>
 
 ### threadsApi.usage()
@@ -157,7 +157,7 @@ Provider-thread context usage and provider-turn usage with owning ids, from the 
 async usage(threadId: ThreadId, signal?: AbortSignal): Promise<ThreadUsage>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+diff"></a>
 
 ### threadsApi.diff()
@@ -173,7 +173,7 @@ async diff(
   ): Promise<ThreadDiff>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+search"></a>
 
 ### threadsApi.search()
@@ -185,7 +185,7 @@ match per thread, at most `limit` (default and maximum 50).
 search(input: ThreadSearchInput, signal?: AbortSignal): Promise<ThreadSearchResult>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+searchContent"></a>
 
 ### threadsApi.searchContent()
@@ -199,7 +199,7 @@ searchContent(
   ): Promise<ThreadContentSearchResult>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+watch"></a>
 
 ### threadsApi.watch()
@@ -210,7 +210,7 @@ Resumable live view; the projection is seeded from the HTTP detail when resuming
 watch(threadId: ThreadId, options: WatchOptions = {}): AsyncIterable<ThreadWatchItem>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+watchCommandOutput"></a>
 
 ### threadsApi.watchCommandOutput()
@@ -224,7 +224,7 @@ watchCommandOutput(
   ): AsyncIterable<DecodedStreamItem<OrchestrationV2CommandOutputFrame>>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+phase"></a>
 
 ### threadsApi.phase()
@@ -235,7 +235,7 @@ Derive the visible phase from a thread summary.
 phase(thread: OrchestrationV2ThreadShell): ThreadPhase;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+dispatch"></a>
 
 ### threadsApi.dispatch()
@@ -246,4 +246,4 @@ Any orchestration command, validated locally and sent over the socket.
 dispatch(command: OrchestrationV2Command, signal?: AbortSignal): Promise<DispatchResult>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)

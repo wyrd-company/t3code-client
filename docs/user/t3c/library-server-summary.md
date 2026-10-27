@@ -13,7 +13,7 @@ relationships:
 ## Classes
 
 <dl>
-<dt><a href="library-server.md#ServerApi">ServerApi</a></dt>
+<dt><a href="https://wyrd.foo/docs/t3c/library-server#ServerApi">ServerApi</a></dt>
 <dd><p>Server environment, configuration and providers.
 Configuration reads, snapshots and <code>keybindingsUpdated</code> payloads type
 <code>keybindings</code> as resolved rules with <code>command</code>, <code>shortcut</code> and optional

@@ -78,9 +78,15 @@ it("splits only between intact sections at the line boundary, retaining examples
   const continuation = pages.find((page) => page.filename === "library-client-2.md")!.content;
   expect(continuation).toContain('<a name="T3Client+connect"></a>\n\n### client.connect()');
   expect(continuation).toContain("const example = '[link](#not-an-api-anchor)';");
-  expect(continuation).toContain("[auth](library-authentication.md#AuthClient)");
-  expect(continuation).toContain('href="library-authentication.md#AuthClient"');
-  expect(pages[0]!.content).toContain('href="library-client-2.md#T3Client+connect"');
+  expect(continuation).toContain(
+    "[auth](https://wyrd.foo/docs/t3c/library-authentication#AuthClient)",
+  );
+  expect(continuation).toContain(
+    'href="https://wyrd.foo/docs/t3c/library-authentication#AuthClient"',
+  );
+  expect(pages[0]!.content).toContain(
+    'href="https://wyrd.foo/docs/t3c/library-client-2#T3Client+connect"',
+  );
   expect(
     projectReference(fixture, 28).some((page) => page.filename === "library-client-2.md"),
   ).toBe(false);
@@ -99,10 +105,10 @@ it("rewrites encoded API fragments and both HTML quote styles while preserving r
 [design](technical-designs/library.yml#contract) [home](./api.md)
 [page](library-threads.md#ThreadsApi+get)`;
   expect(rewriteLinks(body, "library-client.md", owners))
-    .toBe(`[local](library-threads.md#ThreadsApi%2Bget) <a href='library-threads.md#ThreadsApi+get'>get</a>
+    .toBe(`[local](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi%2Bget) <a href='https://wyrd.foo/docs/t3c/library-threads#ThreadsApi+get'>get</a>
 [external](https://example.test/path#part) <a href="//example.test/path">remote</a>
-[design](https://github.com/wyrd-company/t3code-client/blob/main/docs/technical-designs/library.yml#contract) [home](library-reference.md)
-[page](library-threads.md#ThreadsApi+get)`);
+[design](https://github.com/wyrd-company/t3code-client/blob/main/docs/technical-designs/library.yml#contract) [home](https://wyrd.foo/docs/t3c/library-reference)
+[page](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi+get)`);
   expect(rewriteLinks("[get](#ThreadsApi+get)", "library-threads.md", owners)).toBe(
     "[get](#ThreadsApi+get)",
   );

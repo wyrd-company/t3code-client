@@ -70,8 +70,12 @@ it("resolves every markdown and HTML API link to its actual page and anchor", ()
     for (const [, markdown, html] of body.matchAll(/\]\(([^)]+)\)|href=["']([^"']+)["']/gu)) {
       const href = (markdown ?? html)!;
       if (html) htmlLinks++;
-      if (/^[a-z]+:/iu.test(href)) continue;
-      const [file, fragment] = href.split("#");
+      const sitePrefix = "https://wyrd.foo/docs/t3c/";
+      const isRendered = href.startsWith(sitePrefix);
+      if (!isRendered && /^[a-z]+:/iu.test(href)) continue;
+      const [route, fragment] = (isRendered ? href.slice(sitePrefix.length) : href).split("#");
+      if (isRendered) expect(route).not.toMatch(/\.md$/u);
+      const file = isRendered ? `${route}.md` : route;
       const target = contents.get(file || filename);
       expect(target, `${filename}: ${href}`).toBeDefined();
       if (fragment) {

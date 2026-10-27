@@ -155,17 +155,20 @@ function anchors(body) {
   });
 }
 
+const renderedPage = (filename) => `https://wyrd.foo/docs/t3c/${filename.replace(/\.md$/u, "")}`;
+
 export function rewriteLinks(body, filename, owners) {
   const filenames = new Set(owners.values());
   function rewrite(href) {
     if (/^(?:[a-z][a-z\d+.-]*:|\/\/)/iu.test(href)) return href;
     const [path, anchor] = href.split("#");
-    if (filenames.has(path)) return href;
+    if (filenames.has(path))
+      return `${renderedPage(path)}${anchor === undefined ? "" : `#${anchor}`}`;
     if (!path || NodePath.posix.normalize(path) === "api.md") {
-      if (!anchor) return "library-reference.md";
+      if (!anchor) return renderedPage("library-reference.md");
       const owner = owners.get(decodeURIComponent(anchor));
       if (!owner) throw new Error(`Unresolved API anchor: ${href}`);
-      return `${owner === filename ? "" : owner}#${anchor}`;
+      return `${owner === filename ? "" : renderedPage(owner)}#${anchor}`;
     }
     return `https://github.com/wyrd-company/t3code-client/blob/main/${NodePath.posix.normalize(`docs/${path}`)}${anchor === undefined ? "" : `#${anchor}`}`;
   }

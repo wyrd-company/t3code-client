@@ -23,7 +23,7 @@ async create(
   ): Promise<OrchestrationV2ThreadShell>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+ensure"></a>
 
 ### threadsApi.ensure()
@@ -37,7 +37,7 @@ async ensure(
   ): Promise<OrchestrationV2ThreadShell>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+launch"></a>
 
 ### threadsApi.launch()
@@ -51,7 +51,7 @@ launch(
   ): Promise<OrchestrationV2ThreadLaunchResult>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+update"></a>
 
 ### threadsApi.update()
@@ -62,7 +62,7 @@ Update thread metadata.
 async update(threadId: ThreadId, patch: ThreadMetaUpdate, signal?: AbortSignal): Promise<void>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+archive"></a>
 
 ### threadsApi.archive()
@@ -73,7 +73,7 @@ Resolves when the thread is archived, including when it is missing or already ar
 async archive(threadId: ThreadId, signal?: AbortSignal): Promise<void>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+unarchive"></a>
 
 ### threadsApi.unarchive()
@@ -84,7 +84,7 @@ Restore an archived thread.
 async unarchive(threadId: ThreadId, signal?: AbortSignal): Promise<void>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+settle"></a>
 
 ### threadsApi.settle()
@@ -95,7 +95,7 @@ Mark a thread settled.
 async settle(threadId: ThreadId, signal?: AbortSignal): Promise<void>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+unsettle"></a>
 
 ### threadsApi.unsettle()
@@ -106,7 +106,7 @@ Mark a thread unsettled.
 async unsettle(threadId: ThreadId, signal?: AbortSignal): Promise<void>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+delete"></a>
 
 ### threadsApi.delete()
@@ -117,7 +117,7 @@ Resolves when the thread is gone, including when it never existed.
 async delete(threadId: ThreadId, signal?: AbortSignal): Promise<void>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+setRuntimeMode"></a>
 
 ### threadsApi.setRuntimeMode()
@@ -132,7 +132,7 @@ async setRuntimeMode(
   ): Promise<void>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+setInteractionMode"></a>
 
 ### threadsApi.setInteractionMode()
@@ -147,7 +147,7 @@ async setInteractionMode(
   ): Promise<void>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)  
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+setModelSelection"></a>
 
 ### threadsApi.setModelSelection()
@@ -162,4 +162,4 @@ async setModelSelection(
   ): Promise<void>;
 ```
 
-**Kind**: instance method of [<code>ThreadsApi</code>](library-threads.md#ThreadsApi)
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)

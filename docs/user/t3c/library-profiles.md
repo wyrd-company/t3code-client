@@ -90,7 +90,7 @@ async resolveProfile(name: string): Promise<ResolvedProfile>;
 **Kind**: instance method of [<code>ProfileManager</code>](#ProfileManager)  
 **Throws**:
 
-- [<code>T3NotFoundError</code>](library-errors.md#T3NotFoundError) The named profile does not exist.
+- [<code>T3NotFoundError</code>](https://wyrd.foo/docs/t3c/library-errors#T3NotFoundError) The named profile does not exist.
 
 <a name="ProfileManager+resolve"></a>
 

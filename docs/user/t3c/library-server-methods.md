@@ -20,7 +20,7 @@ Probe server health through RPC.
 async probe(signal?: AbortSignal): Promise<void>;
 ```
 
-**Kind**: instance method of [<code>ServerApi</code>](library-server.md#ServerApi)  
+**Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)  
 <a name="ServerApi+getConfig"></a>
 
 ### serverApi.getConfig()
@@ -31,7 +31,7 @@ Read server configuration, including provider instances and models.
 getConfig(signal?: AbortSignal): Promise<RpcSuccess<RpcMethods, "server.getConfig">>;
 ```
 
-**Kind**: instance method of [<code>ServerApi</code>](library-server.md#ServerApi)  
+**Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)  
 <a name="ServerApi+getSettings"></a>
 
 ### serverApi.getSettings()
@@ -42,7 +42,7 @@ Read server settings.
 getSettings(signal?: AbortSignal): Promise<RpcSuccess<RpcMethods, "server.getSettings">>;
 ```
 
-**Kind**: instance method of [<code>ServerApi</code>](library-server.md#ServerApi)  
+**Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)  
 <a name="ServerApi+refreshProviders"></a>
 
 ### serverApi.refreshProviders()
@@ -56,7 +56,7 @@ refreshProviders(
   ): Promise<RpcSuccess<RpcMethods, "server.refreshProviders">>;
 ```
 
-**Kind**: instance method of [<code>ServerApi</code>](library-server.md#ServerApi)  
+**Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)  
 <a name="ServerApi+watchConfig"></a>
 
 ### serverApi.watchConfig()
@@ -69,7 +69,7 @@ watchConfig(
   ): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "subscribeServerConfig">>>;
 ```
 
-**Kind**: instance method of [<code>ServerApi</code>](library-server.md#ServerApi)  
+**Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)  
 <a name="ServerApi+watchLifecycle"></a>
 
 ### serverApi.watchLifecycle()
@@ -82,7 +82,7 @@ watchLifecycle(
   ): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "subscribeServerLifecycle">>>;
 ```
 
-**Kind**: instance method of [<code>ServerApi</code>](library-server.md#ServerApi)  
+**Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)  
 <a name="ServerApi+watchDatabaseStorage"></a>
 
 ### serverApi.watchDatabaseStorage()
@@ -95,7 +95,7 @@ watchDatabaseStorage(
   ): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "server.getDatabaseStorage">>>;
 ```
 
-**Kind**: instance method of [<code>ServerApi</code>](library-server.md#ServerApi)  
+**Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)  
 <a name="ServerApi+environment"></a>
 
 ### serverApi.environment()
@@ -106,7 +106,7 @@ Read the public environment descriptor over HTTP.
 environment(signal?: AbortSignal): Promise<ExecutionEnvironmentDescriptorType>;
 ```
 
-**Kind**: instance method of [<code>ServerApi</code>](library-server.md#ServerApi)  
+**Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)  
 <a name="ServerApi+providers"></a>
 
 ### serverApi.providers()
@@ -117,7 +117,7 @@ List configured provider instances.
 async providers(signal?: AbortSignal): Promise<ServerProvider[]>;
 ```
 
-**Kind**: instance method of [<code>ServerApi</code>](library-server.md#ServerApi)  
+**Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)  
 <a name="ServerApi+providerStatus"></a>
 
 ### serverApi.providerStatus()
@@ -131,7 +131,7 @@ install, refresh or consume reset credits.
 async providerStatus(instanceId?: string, signal?: AbortSignal): Promise<ServerProvider[]>;
 ```
 
-**Kind**: instance method of [<code>ServerApi</code>](library-server.md#ServerApi)  
+**Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)  
 <a name="ServerApi+usageSummary"></a>
 
 ### serverApi.usageSummary()
@@ -145,7 +145,7 @@ of different kinds, are not added together.
 usageSummary(input: UsageSummaryInput, signal?: AbortSignal): Promise<UsageSummary>;
 ```
 
-**Kind**: instance method of [<code>ServerApi</code>](library-server.md#ServerApi)  
+**Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)  
 <a name="ServerApi+findModel"></a>
 
 ### serverApi.findModel()
@@ -161,4 +161,4 @@ async findModel(
   >;
 ```
 
-**Kind**: instance method of [<code>ServerApi</code>](library-server.md#ServerApi)
+**Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)
