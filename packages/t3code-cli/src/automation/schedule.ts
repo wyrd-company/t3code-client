@@ -59,6 +59,7 @@ export function scheduleCreate(read?: ReadSource): InvocationHandler {
     checkCreateDraft(draft);
     const client = await invocation.client();
     const input = await resolveCreate(client, draft);
+    await client.scheduledTasks.validateTarget(input);
     invocation.errorContext = "dispatch";
     const data = await client.scheduledTasks.upsert(input);
     invocation.output.finish({ data, exitCode: 0 }, taskText(data));

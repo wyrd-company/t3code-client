@@ -19,6 +19,9 @@ import { unwrapStreamItems, type DecodedStreamItem } from "./streamItems.ts";
 
 export type { ScheduledTaskPatch } from "./scheduledTaskUpdate.ts";
 
+/** The project and optional existing thread a scheduled task will use. */
+export type ScheduledTaskTarget = Pick<ScheduledTaskUpsertInput, "projectId" | "threadId">;
+
 export interface WatchScheduledTasksOptions {
   readonly signal?: AbortSignal;
 }
@@ -89,7 +92,27 @@ export class ScheduledTasksApi {
   ): Promise<ScheduledTask> {
     this.#requireOperate("scheduledTasks.update");
     const stored = await this.#require(id, "update", signal);
-    return this.upsert(scheduledTaskUpdateInput(stored, patch), signal);
+    const input = scheduledTaskUpdateInput(stored, patch);
+    if (input.projectId !== stored.projectId || input.threadId !== stored.threadId)
+      await this.validateTarget(input, signal);
+    return this.upsert(input, signal);
+  }
+
+  /**
+   * Check that an existing target thread belongs to the selected project.
+   * A null or omitted thread starts a new thread per run and needs no read.
+   * Bound threads use orchestration:read; missing threads, permission errors
+   * and cancellation propagate. Native upsert remains a thin operate-only call.
+   */
+  async validateTarget(input: ScheduledTaskTarget, signal?: AbortSignal): Promise<void> {
+    if (input.threadId == null) return;
+    const projection = await this.rpc.call(
+      "orchestration.getThreadProjection",
+      { threadId: input.threadId },
+      signal,
+    );
+    if (projection.thread.projectId !== input.projectId)
+      throw new T3PreconditionError("The scheduled task's thread must belong to its project.");
   }
 
   /** Enable or disable a task without changing its execution settings. */

@@ -29,6 +29,7 @@ beforeEach(() => {
   upserts = [];
   vi.spyOn(client.projects, "get").mockResolvedValue(project as never);
   vi.spyOn(client.projects, "ensureScratch").mockResolvedValue({ projectId: project.id } as never);
+  vi.spyOn(client.scheduledTasks, "validateTarget").mockResolvedValue();
   vi.spyOn(client.server, "getConfig").mockResolvedValue({ providers: [sampleProvider] } as never);
   vi.spyOn(client.server, "getSettings").mockResolvedValue({
     defaultRuntimeMode: "approval-required",

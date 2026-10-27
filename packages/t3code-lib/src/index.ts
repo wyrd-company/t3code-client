@@ -101,6 +101,7 @@ export { VcsApi } from "./api/vcs.ts";
 export {
   ScheduledTasksApi,
   type ScheduledTaskPatch,
+  type ScheduledTaskTarget,
   type ScheduledTasksApiOptions,
   type ScheduledTaskWebhookEndpointInfo,
   type WatchScheduledTasksOptions,

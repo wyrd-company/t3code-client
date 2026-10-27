@@ -22,7 +22,15 @@ proposed-design:
     `T3Client.scheduledTasks` is a `ScheduledTasksApi` facade. It exposes `list`,
     `get`, `upsert`, `update`, `setEnabled`, `delete`, `runNow`,
     `rotateWebhookToken`, `listWebhookDeliveries`, `getWebhookDelivery` and
-    `watch`. `get(id)` returns undefined for an absent task. Mutation results
+    `watch`. `validateTarget({ projectId, threadId })` checks through the typed
+    thread projection read that a bound thread belongs to its project. Null or
+    omitted thread ids need no read. CLI create calls it before upsert; library
+    update calls it on the merged target when the project or thread changes,
+    including project-only updates retaining a thread. A mismatch is a
+    precondition error before saving; read-scope failures, missing threads and
+    cancellation propagate. Native upsert remains the server's thin
+    orchestration:operate operation without an added read requirement.
+    `get(id)` returns undefined for an absent task. Mutation results
     unwrap the RPC's task field. Updates load the existing task, preserve omitted
     values and send `requireExisting: true`. An omitted webhook signing secret
     and omitted filters keep their stored values; null signature and an empty
