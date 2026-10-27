@@ -34,8 +34,9 @@ proposed-design:
     `transcript.ts` reads the visible conversation through the transcript route,
     with the detail route only for `thread_transcript_too_large`. Run, `thread
     start` and `thread send` read one prompt source (`prompt.ts`), resolve project,
-    provider, model and mode before any thread exists (`selection.ts`), then
-    dispatch (`dispatch.ts`) and produce a `FollowTarget`. `followRun(invocation,
+    provider, model and mode (`selection.ts`), model options against advertised
+    descriptors (`modelOptions.ts`) and the launch workspace (`workspace.ts`)
+    before any thread exists, then dispatch (`dispatch.ts`) and produce a `FollowTarget`. `followRun(invocation,
     target, policy, scope?)` follows that run, or the run `thread wait` captures, and
     returns the `ExecutionResult`; `followPolicy(options, defaultOnTimeout)` reads
     the timeout, request and approval flags. The follower owns the run deadline,

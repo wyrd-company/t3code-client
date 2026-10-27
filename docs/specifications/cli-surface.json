@@ -118,6 +118,22 @@
           }
         },
         {
+          "name": "model-option",
+          "flags": ["--model-option"],
+          "kind": "option",
+          "repeatable": true,
+          "value": {
+            "type": "string"
+          },
+          "description": "Model option as key=value, validated against the selected model's advertised options. Repeatable."
+        },
+        {
+          "name": "clear-model-options",
+          "flags": ["--clear-model-options"],
+          "kind": "flag",
+          "description": "Start from an empty model option set instead of inherited options."
+        },
+        {
           "name": "mode",
           "flags": ["--mode"],
           "kind": "option",
@@ -150,6 +166,40 @@
           "requires": ["worktree"]
         },
         {
+          "name": "branch",
+          "flags": ["--branch"],
+          "kind": "option",
+          "value": {
+            "type": "string"
+          },
+          "description": "Branch for the new worktree.",
+          "requires": ["worktree"]
+        },
+        {
+          "name": "start-from-origin",
+          "flags": ["--start-from-origin"],
+          "kind": "flag",
+          "description": "Fetch the base ref from its remote before creating the new worktree.",
+          "requires": ["worktree"]
+        },
+        {
+          "name": "no-start-from-origin",
+          "flags": ["--no-start-from-origin"],
+          "kind": "flag",
+          "description": "Create the new worktree from the local base ref.",
+          "requires": ["worktree"]
+        },
+        {
+          "name": "existing-worktree",
+          "flags": ["--existing-worktree"],
+          "kind": "option",
+          "value": {
+            "type": "directory"
+          },
+          "description": "Bind an existing worktree the server reports for the project.",
+          "conflicts-with": ["worktree", "base-ref", "branch", "start-from-origin"]
+        },
+        {
           "name": "thread",
           "flags": ["--thread"],
           "kind": "option",
@@ -157,7 +207,15 @@
             "type": "string"
           },
           "description": "Continue an existing thread.",
-          "conflicts-with": ["project", "project-path", "worktree", "base-ref"]
+          "conflicts-with": [
+            "project",
+            "project-path",
+            "worktree",
+            "existing-worktree",
+            "base-ref",
+            "branch",
+            "start-from-origin"
+          ]
         },
         {
           "name": "timeout",
@@ -281,6 +339,8 @@
         "run and thread start read exactly one prompt source: a positional prompt, --prompt-file <file>, --prompt-file -, or stdin when neither is supplied. A positional prompt conflicts with --prompt-file even when a supplied value is blank. The file form reads the file as text; - selects stdin. Interactive prompts require a TTY. Non-TTY execution consumes the explicit input and reports missing required inputs as usage errors.",
         "--project <id> selects an existing project. --project-path <dir> resolves or ensures that workspace's project through the library. They are mutually exclusive. With neither supplied, the CLI uses the server Scratch project through projects.ensureScratch. --provider identifies a provider instance and --model selects its model from the live server catalog, including custom models. An omitted provider or model uses the selected project default, then the server-advertised default. An ambiguous selection exits 2; an unavailable model exits 10. --title supplies the thread title. --mode passes through the requested runtime mode; new threads use explicit --mode, then the server-advertised settings.defaultRuntimeMode, then the library default when the server advertises no mode. Continuation sends a mode only when --mode is supplied.",
         "--worktree launches through threads.launch with the new-worktree workspace strategy. --base-ref supplies its base ref and requires --worktree. The server prepares the workspace. Without --base-ref, the base is the project's current checkout (HEAD). Root launches use the selected project's root. --thread <id> continues an existing conversation and dispatches a new prompt through threads.startTurn, retaining the existing thread identity. The library resolves delivery against active server state and links the message to its run. The CLI follows that linked run, rather than guessing the next run id. Continuation retains the thread's workspace and project, applies supplied provider/model/mode/title, and rejects project/worktree relocation flags with exit 2.",
+        "--branch names the new worktree's branch and requires --worktree. --start-from-origin and --no-start-from-origin pass an explicit true or false to the server, require --worktree, and are omitted when neither is supplied, so the server applies its own default; the last one supplied wins. --existing-worktree <dir> launches through threads.launch with the existing-worktree strategy. It accepts only a worktree the server reports through vcs.listRefs for the selected project's repository, binds that reported path and its checked-out branch, resolves a relative path against the current directory, and exits 10 when no reported worktree matches. It conflicts with --worktree, --base-ref, --branch and the start-from-origin flags. Continuation rejects every workspace flag with exit 2.",
+        "--model-option key=value is repeatable. Keys and values are validated against the selected model's live capabilities.optionDescriptors before dispatch: an unadvertised key, a repeated key, an unsupported descriptor type, a select value that is not an advertised choice, or a boolean value other than true or false exits 2. Boolean descriptors send a boolean; select descriptors send the choice id as a string, and a select descriptor without choices accepts any nonblank string. Options inherit from the project default, server default or continued thread only when the selected provider instance and model match it. Explicit entries override inherited entries with the same key. --clear-model-options starts from an empty option set and combines with explicit entries. Continuation, including thread send, sends a model selection when --provider, --model, --model-option or --clear-model-options is supplied.",
         "run creates or continues the thread, sends the prompt, waits and prints the final assistant message. thread start accepts the same inputs and exits once the thread and run exist, printing the thread id. thread start --wait uses run behavior, including its timeout and output policies. thread send <threadId> <prompt> dispatches to the existing thread; --timeout bounds its wait. thread wait <threadId> waits for that thread's run and accepts --timeout and --on-timeout. It captures the active run at invocation, or the latest run when none is active. An idle thread that has never run reports idle, a null run id and exit 0.",
         "run has no default run timeout. --timeout bounds waiting on run, thread wait and thread send. --on-timeout detach|interrupt defaults to interrupt for run and thread send, and detach for thread wait.",
         "Detach leaves the run active, reports the thread id and exits 5. Interrupt calls the library interrupt with holdQueue, waits up to five seconds after the interrupt request for terminal state and exits 6 whether or not terminal confirmation arrives. The JSON result reports the last observed state. Connection/auth failures while requesting interruption retain their mapped error and known thread/run identity.",
@@ -356,6 +416,22 @@
               }
             },
             {
+              "name": "model-option",
+              "flags": ["--model-option"],
+              "kind": "option",
+              "repeatable": true,
+              "value": {
+                "type": "string"
+              },
+              "description": "Model option as key=value, validated against the selected model's advertised options. Repeatable."
+            },
+            {
+              "name": "clear-model-options",
+              "flags": ["--clear-model-options"],
+              "kind": "flag",
+              "description": "Start from an empty model option set instead of inherited options."
+            },
+            {
               "name": "mode",
               "flags": ["--mode"],
               "kind": "option",
@@ -388,6 +464,40 @@
               "requires": ["worktree"]
             },
             {
+              "name": "branch",
+              "flags": ["--branch"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "description": "Branch for the new worktree.",
+              "requires": ["worktree"]
+            },
+            {
+              "name": "start-from-origin",
+              "flags": ["--start-from-origin"],
+              "kind": "flag",
+              "description": "Fetch the base ref from its remote before creating the new worktree.",
+              "requires": ["worktree"]
+            },
+            {
+              "name": "no-start-from-origin",
+              "flags": ["--no-start-from-origin"],
+              "kind": "flag",
+              "description": "Create the new worktree from the local base ref.",
+              "requires": ["worktree"]
+            },
+            {
+              "name": "existing-worktree",
+              "flags": ["--existing-worktree"],
+              "kind": "option",
+              "value": {
+                "type": "directory"
+              },
+              "description": "Bind an existing worktree the server reports for the project.",
+              "conflicts-with": ["worktree", "base-ref", "branch", "start-from-origin"]
+            },
+            {
               "name": "thread",
               "flags": ["--thread"],
               "kind": "option",
@@ -395,7 +505,15 @@
                 "type": "string"
               },
               "description": "Continue an existing thread.",
-              "conflicts-with": ["project", "project-path", "worktree", "base-ref"]
+              "conflicts-with": [
+                "project",
+                "project-path",
+                "worktree",
+                "existing-worktree",
+                "base-ref",
+                "branch",
+                "start-from-origin"
+              ]
             },
             {
               "name": "timeout",
@@ -543,6 +661,22 @@
             }
           ],
           "options": [
+            {
+              "name": "model-option",
+              "flags": ["--model-option"],
+              "kind": "option",
+              "repeatable": true,
+              "value": {
+                "type": "string"
+              },
+              "description": "Model option as key=value, validated against the selected model's advertised options. Repeatable."
+            },
+            {
+              "name": "clear-model-options",
+              "flags": ["--clear-model-options"],
+              "kind": "flag",
+              "description": "Start from an empty model option set instead of inherited options."
+            },
             {
               "name": "timeout",
               "flags": ["--timeout"],

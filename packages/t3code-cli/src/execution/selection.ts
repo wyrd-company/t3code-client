@@ -12,10 +12,11 @@ import {
   type OrchestrationProjectShell,
   type T3Client,
 } from "@wyrd-company/t3code-lib";
+import { parseModelOptions, resolveModelOptions, type ModelOptionInput } from "./modelOptions.ts";
 
 type ServerProvider = Awaited<ReturnType<T3Client["server"]["providers"]>>[number];
 
-export interface DispatchOptions {
+export interface DispatchOptions extends ModelOptionInput {
   project?: string;
   projectPath?: string;
   provider?: string;
@@ -23,7 +24,11 @@ export interface DispatchOptions {
   mode?: string;
   title?: string;
   worktree?: boolean;
+  existingWorktree?: string;
   baseRef?: string;
+  branch?: string;
+  /** Undefined when neither --start-from-origin nor --no-start-from-origin is given. */
+  startFromOrigin?: boolean;
   thread?: string;
   promptFile?: string;
   wait?: boolean;
@@ -41,13 +46,20 @@ export function missingResource(kind: string): T3NotFoundError {
 export function validateDispatchOptions(options: DispatchOptions): void {
   if (options.project !== undefined && options.projectPath !== undefined)
     throw new T3PreconditionError("Choose one project source.");
+  if (options.worktree && options.existingWorktree !== undefined)
+    throw new T3PreconditionError("Choose one workspace strategy.");
   if (options.baseRef !== undefined && !options.worktree)
     throw new T3PreconditionError("Base ref requires worktree.");
+  if (options.branch !== undefined && !options.worktree)
+    throw new T3PreconditionError("Branch requires worktree.");
+  if (options.startFromOrigin !== undefined && !options.worktree)
+    throw new T3PreconditionError("Start from origin requires worktree.");
   if (
     options.thread !== undefined &&
     (options.project !== undefined ||
       options.projectPath !== undefined ||
       options.worktree ||
+      options.existingWorktree !== undefined ||
       options.baseRef !== undefined)
   )
     throw new T3PreconditionError("Continuation retains the existing workspace.");
@@ -58,11 +70,14 @@ export function validateDispatchOptions(options: DispatchOptions): void {
     options.model,
     options.mode,
     options.title,
+    options.existingWorktree,
     options.baseRef,
+    options.branch,
     options.thread,
   ])
     if (value !== undefined && !value.trim())
       throw new T3PreconditionError("Selection cannot be blank.");
+  parseModelOptions(options.modelOption);
 }
 
 export async function selectProject(
@@ -85,7 +100,11 @@ export async function selectProject(
   return project;
 }
 
-/** Resolve only live catalog entries, including custom models and aliases. */
+/**
+ * Resolve only live catalog entries, including custom models and aliases.
+ * Inherited options apply only to the same instance and model; explicit model
+ * options are validated against that model's advertised descriptors.
+ */
 export function selectModel(
   providers: readonly ServerProvider[],
   options: DispatchOptions,
@@ -118,13 +137,15 @@ export function selectModel(
   // Installation and probe status are diagnostics, not selection restrictions.
   if (!provider.enabled || provider.availability === "unavailable")
     throw missingResource("provider");
+  const inherited =
+    fallback?.instanceId === provider.instanceId &&
+    (fallback.model === candidate.slug || candidate.aliases?.includes(fallback.model))
+      ? fallback.options
+      : undefined;
+  const selected = resolveModelOptions(candidate, options, inherited) ?? inherited;
   return {
     instanceId: provider.instanceId,
     model: candidate.slug,
-    ...(fallback?.instanceId === provider.instanceId &&
-    (fallback.model === candidate.slug || candidate.aliases?.includes(fallback.model)) &&
-    fallback.options !== undefined
-      ? { options: fallback.options }
-      : {}),
+    ...(selected === undefined ? {} : { options: selected }),
   };
 }
