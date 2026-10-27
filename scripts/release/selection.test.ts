@@ -38,6 +38,12 @@ describe("release selection", () => {
       run(root, "verify-plan.sh", ["t3code-cli@0.1.1 t3c-docs@0.1.1", "plan.json"]).status,
     ).toBe(0);
   });
+  it("accepts independent MCP docs records alone or with the MCP package", () => {
+    for (const records of [["t3mcp-docs@0.1.0"], ["t3code-mcp@0.1.0", "t3mcp-docs@0.1.0"]]) {
+      const root = plan(records);
+      expect(run(root, "verify-plan.sh", [records.join(" "), "plan.json"]).status).toBe(0);
+    }
+  });
   it("accepts the complete expected set regardless of order", () => {
     const root = plan(["t3code-cli@0.1.0", "t3code-lib@0.1.0"]);
     expect(

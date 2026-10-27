@@ -72,3 +72,7 @@ cancel/reorder/promote ownership.
 
 Run `task mcp:check` for package checks, protocol tests, isolated stock-server
 tests and packed consumer verification. No agent runs are required.
+
+The [t3mcp setup guide](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3mcp/getting-started.md) and
+[tool reference](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3mcp/tools.md)
+form the server’s separate wyrd.foo documentation product.

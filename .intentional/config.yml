@@ -46,6 +46,10 @@ release-units:
       - adapter: npm
         file: package.json
         mode: committed
+      - adapter: yaml
+        file: /docs/user/docs.yml
+        pointer: /products/t3mcp/version
+        mode: committed
     tags:
       primary:
         role: primary
@@ -65,3 +69,16 @@ release-units:
       primary:
         role: primary
         template: '{id}@{version}'
+  t3mcp-docs:
+    path: docs/user/t3mcp
+    depends-on:
+      - t3code-mcp
+    projections:
+      - adapter: yaml
+        file: /docs/user/docs.yml
+        pointer: /products/t3mcp/docs-version
+        mode: committed
+    tags:
+      primary:
+        role: primary
+        template: "{id}@{version}"

@@ -85,3 +85,9 @@ proposed-design:
     prove facade inputs and safe failures. Isolated stock-server tests exercise
     schedule endpoints/configuration/deliveries and usage. A consumer installs
     the local MCP and library tarballs together and runs the executable.
+  documentation: |
+    The wyrd.foo product is t3mcp, with code release unit t3code-mcp and tag-only
+    docs unit t3mcp-docs. Setup and tool reference pages live in docs/user/t3mcp;
+    the t3c guide links to them. The catalog names the MCP-server kind and its
+    exact tool inventory. The product logo and favicon are its square SVG mark.
+    Source-build setup applies before the first npm publication.

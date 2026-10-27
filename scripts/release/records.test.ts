@@ -37,7 +37,7 @@ function setup() {
   write(
     root,
     "docs/user/docs.yml",
-    "schemaVersion: 1\nproducts:\n  t3c:\n    version: 0.0.0\n    docs-version: 0.1.0\n",
+    "schemaVersion: 1\nproducts:\n  t3c:\n    version: 0.0.0\n    docs-version: 0.1.0\n  t3mcp:\n    version: 0.0.0\n    docs-version: 0.0.0\n",
   );
   command(root, "git", ["init", "--quiet", "--initial-branch=main"]);
   command(root, "git", ["config", "user.name", "Agent"]);
@@ -111,6 +111,22 @@ describe("Intentional record agreement", () => {
     expect(manifest).toContain("    version: 0.1.0\n");
     expect(manifest).toContain("    docs-version: 0.1.1\n");
   });
+  it("projects independent MCP code and docs versions without changing t3c", () => {
+    const root = setup();
+    command(root, "intentional", [
+      "add",
+      "--release-unit",
+      "t3code-mcp:minor",
+      "--release-unit",
+      "t3mcp-docs:minor",
+      "--message",
+      "Provide MCP docs.",
+    ]);
+    command(root, "intentional", ["apply"]);
+    const manifest = NodeFS.readFileSync(`${root}/docs/user/docs.yml`, "utf8");
+    expect(manifest).toContain("  t3mcp:\n    version: 0.1.0\n    docs-version: 0.1.0\n");
+    expect(manifest).toContain("  t3c:\n    version: 0.0.0\n    docs-version: 0.1.0\n");
+  });
   it("refuses apply after pending inputs drift from the saved plan", () => {
     const root = setup();
     command(root, "intentional", [
@@ -147,7 +163,7 @@ describe("Intentional record agreement", () => {
     command(root, "git", ["tag", "-d", "t3code-lib@0.0.0", "t3code-cli@0.0.0", "t3code-mcp@0.0.0"]);
     const result = run(root, "check-intents.sh");
     expect(result.status, result.stderr).toBe(0);
-    expect(command(root, "git", ["tag", "--list"]).trim()).toBe("t3c-docs@0.1.0");
+    expect(command(root, "git", ["tag", "--list"]).trim()).toBe("t3c-docs@0.1.0\nt3mcp-docs@0.0.0");
   });
   it("baselines a missing docs unit at its docs-version without tagging the source repository", () => {
     const root = setup();

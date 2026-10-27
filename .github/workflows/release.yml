@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       expected-records:
-        description: "Exact space-separated records, e.g. t3code-lib@0.1.0 t3code-cli@0.1.0 t3code-mcp@0.1.0 t3c-docs@0.1.1"
+        description: "Exact space-separated records, e.g. t3code-lib@0.1.0 t3code-cli@0.1.0 t3code-mcp@0.1.0 t3c-docs@0.1.1 t3mcp-docs@0.1.0"
         required: true
         type: string
 

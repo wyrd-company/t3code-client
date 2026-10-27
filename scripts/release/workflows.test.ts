@@ -39,7 +39,13 @@ describe("workflow agreements", () => {
     const patterns = [...publish().matchAll(/^      - "([^"]+@\*)"$/gm)]
       .map((match) => match[1])
       .sort();
-    expect(patterns).toEqual(["t3c-docs@*", "t3code-cli@*", "t3code-lib@*", "t3code-mcp@*"]);
+    expect(patterns).toEqual([
+      "t3c-docs@*",
+      "t3code-cli@*",
+      "t3code-lib@*",
+      "t3code-mcp@*",
+      "t3mcp-docs@*",
+    ]);
   });
   it("uses one saved plan for validation, apply and record creation", () => {
     const workflow = release();
@@ -103,10 +109,9 @@ describe("package unit inventory", () => {
     expect(pack).toContain('if [[ "$unit" != t3code-lib ]]; then');
     expect(pack).toContain('scripts/release/verify-consumer.sh "$tarball" "$unit" "$library"');
   });
-  it("publishes no documentation for library or MCP records", () => {
+  it("uses the tested documentation publish decision script", () => {
     const plan = publish().split("\n  plan:")[1]!.split("\n  build:")[0]!;
-    expect(plan).not.toContain("t3code-lib@");
-    expect(plan).not.toContain("t3code-mcp@");
+    expect(plan).toContain('scripts/release/plan-docs.sh "$EVENT_NAME" "$REF_NAME" "$GITHUB_SHA"');
   });
   it("accepts exactly the package units as release identities", () => {
     const script = new URL("./unit.sh", import.meta.url).pathname;
@@ -119,7 +124,8 @@ describe("package unit inventory", () => {
         unit,
       ]).status === 0;
     for (const unit of packageUnits) expect(accepted(unit)).toBe(true);
-    for (const unit of ["t3c-docs", "t3code-client", "t3code"]) expect(accepted(unit)).toBe(false);
+    for (const unit of ["t3c-docs", "t3mcp-docs", "t3code-client", "t3code"])
+      expect(accepted(unit)).toBe(false);
   });
 });
 

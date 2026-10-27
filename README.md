@@ -5,6 +5,8 @@ relationships:
 
 # t3code-client
 
+<img src="docs/user/t3c/assets/logo.svg" width="72" alt="t3c command prompt icon"> <img src="docs/user/t3mcp/assets/logo.svg" width="72" alt="t3mcp icon">
+
 ![t3c pairs a profile, starts and waits for a thread, and lists projects](docs/user/t3c/assets/demo.gif)
 
 A pnpm workspace for stock T3 Code 0.1.2, orchestration protocol 2.
@@ -47,11 +49,13 @@ User guide: [getting started](docs/user/t3c/getting-started.md),
 [schedules, providers and usage](docs/user/t3c/automation.md),
 [output and exits](docs/user/t3c/policy.md),
 [Dagu](docs/user/t3c/dagu.md),
-[MCP tools](docs/user/t3c/complementary-tools.md), and
+[MCP setup](docs/user/t3mcp/getting-started.md),
+[MCP tools](docs/user/t3mcp/tools.md), and
 [library API](docs/user/t3c/library-reference.md).
 
 `task docs` generates the JSDoc library API and published reference.
-The public usage guides are authored in `docs/user/t3c/`.
+The public guides belong to `t3c` and `t3mcp` in their own `docs/user/` folders.
+The generated library pages are grouped in the t3c **Developers** section.
 `task demo` records real commands with a fresh pinned server home and
 `gpt-6-luna`, writing `docs/user/t3c/assets/demo.gif`.
 

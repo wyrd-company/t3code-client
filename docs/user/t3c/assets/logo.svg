@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <!--
+  relationships:
+    implements: tool-branding
+  -->
+  <title id="title">t3c</title>
+  <desc id="desc">The letters t3c above a command prompt on a dark square.</desc>
+  <rect width="512" height="512" rx="108" fill="#102a35"/>
+  <g fill="none" stroke="#f3faf8" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M92 153h77m-43-40v100q0 23 23 23h20"/>
+    <path d="M207 119h36q31 0 31 29t-31 29h-20m20 0q35 0 35 30t-35 30h-36"/>
+    <path d="M391 160q-15-12-33-12q-36 0-36 44t36 44q18 0 33-12"/>
+  </g>
+  <path d="m146 305 54 47-54 47m111 0h107" fill="none" stroke="#77e7c0" stroke-width="25" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

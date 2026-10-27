@@ -270,3 +270,13 @@ proposed-design:
     endpoint rotation, empty-thread inspection, provider status and usage through
     the built stdio executable. Local MCP and library tarballs install together
     for consumer verification.
+
+  product-documentation: |
+    Published-doc tests check each product's navigation, metadata, local links,
+    registered assets, code/docs projections and MCP tool inventory. Both products
+    use the wyrd.foo v2 contract with schemaVersion 1. The publisher's validate
+    command checks the actual content tree without publication. An unreleased
+    product can report missing release-tag/changelog prerequisites as local-mode
+    warnings; schema, navigation, asset and cross-file errors remain failures.
+    Release fixtures verify independent MCP docs projection, tag-only readiness
+    and documentation publication/coalescing on the exact tagged commit.
