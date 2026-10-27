@@ -41,7 +41,12 @@ proposed-design:
     dispatch. Existing-thread continuation uses
     threads.startTurn and follows the server-linked message/run identity. Library
     watches provide snapshots, deltas, pending requests and terminal outcomes.
-    The CLI emits output for the followed run. Interrupt uses holdQueue. Request
+    The CLI emits output for the followed run. Signal and timeout interruption
+    use holdQueue; the explicit thread interrupt command retains plain interruption.
+    Native thread stop dispatches without an active-run lookup. Queue resume
+    releases the hold; selected queued-run start chooses that run first and
+    releases the queue so successors may follow. These controls report command
+    acknowledgement through the inspection output boundary. Request
     policy and timeouts are shared across run, waiting start, send and wait as
     specified. Ambiguous launch failures preserve known ids for recovery.
   reads-and-version: >-

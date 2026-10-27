@@ -78,7 +78,10 @@ proposed-design:
       setRuntimeMode(threadId, mode) / setInteractionMode(threadId, mode) / setModelSelection(threadId, selection)
       startTurn(input: StartTurnInput): Promise<TurnHandle>
       interrupt(threadId, runId?, options?: { reason?; holdQueue? }): Promise<void>  // active run when runId omitted; no-op when idle
-      stop(threadId): Promise<void>                                                // interrupt + holdQueue
+      stop(threadId): Promise<void>                                                // legacy active-run interrupt + holdQueue; idle no-op
+      stopThread(threadId, options?: { reason?: string }, signal?): Promise<void>   // native thread.stop, including idle/background work
+      resumeQueue(threadId, signal?): Promise<void>                               // release queue hold
+      startQueuedRun(threadId, runId, signal?): Promise<void>                      // select queued run first and release queue hold
       respondToApproval(input: { threadId; requestId; decision: ProviderApprovalDecision }): Promise<void>
       respondToUserInput(input: { threadId; requestId; answers: Record<string, unknown>; attachmentsByQuestionId? }): Promise<void>
       dismissUserInput(input: { threadId; requestId }): Promise<void>
@@ -595,7 +598,11 @@ proposed-design:
     False and omission are preserved; omission does not advertise support.
     Supplied non-boolean values fail decoding. Unknown fields remain intact.
     This metadata flag does not dispatch a command or change `threads.stop`.
-    Callers send the `thread.stop` command itself through `threads.dispatch`.
+    `threads.stopThread` sends the native command without a capability gate; callers
+    may also use `threads.dispatch`. The receipt acknowledges dispatch, not terminal
+    shutdown. `resumeQueue` releases the queue hold. `startQueuedRun` selects the
+    requested queued run first and releases the hold for all queued runs, so other
+    messages can follow it. Server state and authorization errors propagate.
 
   optional-server-self-update-capability: |
     `ExecutionEnvironmentCapabilities.serverSelfUpdate` is an optional growing

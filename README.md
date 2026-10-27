@@ -24,7 +24,9 @@ provider's native session to a T3 Code thread id or `null`, including archived
 threads.
 
 Schedule commands expose execution configuration, webhook endpoint URLs and
-delivery diagnostics. `thread status|requests|usage|diff|search` provides
+delivery diagnostics. Native Stop, queue resume and selected-message start are
+available in the CLI and complementary MCP server.
+`thread status|requests|usage|diff|search` provides
 structured inspection. `provider status` reports availability and limits;
 `usage summary` reads historical usage with explicit dates and time zone.
 

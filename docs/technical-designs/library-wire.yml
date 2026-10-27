@@ -280,30 +280,38 @@ proposed-design:
     run: the run's `userMessageId`, and the message record's `runId`. Run
     statuses are `preparing`, `queued`, `starting`, `running`, `waiting`, and
     the terminal `completed`, `interrupted`, `failed`, `cancelled`,
-    `rolled_back`. `run.interrupt` needs a `runId`; with `holdQueue` it is the
-    Stop button. The active run an interrupt targets is the highest-ordinal run
+    `rolled_back`. `run.interrupt` needs a `runId`; `holdQueue` holds successors
+    when interrupting that run. The active run an interrupt targets is the highest-ordinal run
     that is `preparing`, `starting`, `running`, or `waiting`; a queued run has
     not started and is not interruptible. Commands carry `createdBy` and `creationSource` where they
     create something; the server stamps `createdBy: "user"` on everything a
     client dispatches.
 
     `thread.stop` carries `commandId`, `threadId` and an optional `reason`
-    string. `threads.dispatch` and typed `rpc.call` validate and send it: any
+    string. `threads.stopThread`, `threads.dispatch` and typed `rpc.call` validate
+    and send it: any
     string reason passes unchanged, omission stays absent, unknown metadata
     survives, and malformed fields fail before sending. A server that accepts
     it advertises `threadStop`; the library does not check that flag. A missing
     thread fails with `OrchestrationV2DispatchCommandError`. `threads.stop`
-    still sends `run.interrupt` with `holdQueue`.
+    still sends `run.interrupt` with `holdQueue` and remains an idle no-op.
+    `stopThread` dispatches directly, including when no active run exists; the
+    server stops background work and holds queued successors.
 
     `queued-run.start` carries `commandId`, `threadId` and `runId`, all
-    required. `threads.dispatch` and typed `rpc.call` validate and send it:
+    required. `threads.startQueuedRun`, `threads.dispatch` and typed `rpc.call`
+    validate and send it:
     ids use the same trimmed normalization as the other queued-run commands,
     unknown metadata survives, and malformed or missing ids fail before
     sending. The server starts the selected run only while the thread is
     stopped, the run is a queued plain user message and no other run blocks
     it. A missing thread or an unknown run fails with
     `OrchestrationV2DispatchCommandError`. No capability flag advertises it,
-    and no facade method sends it. `queue.resume` is unchanged.
+    and no capability gate blocks dispatch. `threads.resumeQueue` sends
+    `queue.resume`. Both commands release the hold for all queued runs; selected
+    start chooses the requested run first, so other queued messages can follow.
+    Facade methods generate fresh command ids and preserve cancellation and
+    dispatch failures. Successful calls acknowledge dispatch, not terminal state.
 
     The thread shell carries `status` (`idle` or the latest run's status),
     `activeRunId`, `pendingRuntimeRequest`, and `latestVisibleMessage`, so a

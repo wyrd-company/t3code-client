@@ -134,6 +134,15 @@ proposed-design:
     commit must preserve those inputs. Frame and log inspection verifies content
     and privacy. `task docs` generates the library API source and published
     reference; navigation tests verify metadata, local links and the GIF asset.
+  stop-and-queue-recovery: |
+    Focused library tests verify exact native thread.stop, queue.resume and
+    queued-run.start commands, fresh command ids, unchanged reason strings,
+    cancellation and dispatch failures. Native Stop needs no active-run read;
+    legacy stop/interrupt behavior remains covered separately. CLI and MCP tests
+    exercise their public boundaries, invalid arguments and acknowledgement output.
+    Isolated stock-server checks cover idle Stop, empty resume and invalid selected
+    starts without an agent turn. Active queue checks inspect retained run ids and
+    queue-held state; selected start releases the hold for all queued messages.
   consolidated-command-proof: |
     Agent acceptance spends provider credit and is explicit; ordinary `task check`
     keeps agent cases skipped. To retain evidence outside the checkout:

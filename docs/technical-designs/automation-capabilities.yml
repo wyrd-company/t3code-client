@@ -75,6 +75,31 @@ proposed-design:
     exposes bounded cross-thread search, and `threads.searchContent` exposes
     the server's within-thread search. Search results retain the server's bounds,
     result positions and incompleteness semantics.
+  stop-and-queue-recovery: |
+    `threads.stopThread(threadId, options?, signal?)` sends the native
+    `thread.stop` command, with an optional unmodified reason. It stops thread
+    work and holds queued runs even when no active run exists, ends pull request
+    watches and stops delegated work through the server's Stop behavior.
+    `threads.resumeQueue(threadId, signal?)` sends `queue.resume`.
+    `threads.startQueuedRun(threadId, runId, signal?)` sends `queued-run.start`
+    for a selected queued plain user message. The server validates thread/run
+    state and rejects missing runs, blocked starts and incompatible selections.
+    Selected start releases the queue hold and chooses that run first; other
+    queued messages may follow it. These methods acknowledge the command, not
+    the completion of provider work. They preserve server errors and cancellation.
+
+    The native thread command avoids an active-run lookup. Capability metadata
+    is informational; no pinned-version gate or fallback changes the requested
+    operation. The existing `threads.stop` remains the run-scoped interrupt with
+    holdQueue for consumer compatibility. CLI interrupt, signal and timeout
+    behavior retain their existing contracts.
+
+    `thread stop <threadId> [--reason text]`, `thread queue resume <threadId>`
+    and `thread queue start <threadId> <runId>` expose the controls. Queued run
+    identities come from thread status. MCP exposes `thread_stop`,
+    `thread_queue_resume` and `thread_queue_start`; stock tools retain queued
+    message listing, reading, editing, cancellation, reordering and promotion.
+    All three commands require orchestration:operate and add no user deadline.
   cli: |
     Schedule commands provide list/show/create/update/enable/disable/delete/run,
     endpoint lookup, webhook token rotation and delivery list/read. JSON file or

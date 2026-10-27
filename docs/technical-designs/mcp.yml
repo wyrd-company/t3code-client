@@ -46,15 +46,24 @@ proposed-design:
     - thread_usage: context, token and cost records with ownership and provenance.
     - thread_diff: full-thread or turn-range diff.
     - thread_search_content: search within one thread with server result bounds.
+    - thread_stop: native Stop with queue hold and background/delegated work cleanup.
+    - thread_queue_resume: release the queue hold so normal delivery continues.
+    - thread_queue_start: start a selected queued plain user message and release the hold.
     - provider_status: provider authentication, installation, availability and limits.
     - usage_summary: historical usage buckets, pricing and source diagnostics.
 
     Stock MCP owns basic schedule CRUD, run-now, cross-thread search, question
-    responses, ordinary launches and provider/model catalog discovery. The tool
+    responses, ordinary launches, queued message CRUD/reordering/promotion and
+    provider/model catalog discovery. The tool
     inventory is tested against the pinned stock tool set and the explicit
     complementary contract. Tools compose library facades. Read-only/destructive
     annotations reflect the actual operation. Structured results and text JSON
     describe the same value; failures use isError with stable codes.
+    Stop and queue recovery use the server's native commands with operate scope.
+    Their results acknowledge the request; they do not invent a terminal run
+    state. Selected start releases the queue hold, so other queued messages may
+    follow the selected run. Queued run ids are available from thread_status or
+    the stock queue tools.
   credentials-and-errors: |
     The selected T3 credential and its granted scopes remain the authority for
     every operation. Scheduler endpoint and delivery access preserve upstream

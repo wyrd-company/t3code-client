@@ -125,6 +125,23 @@ A user-input response is explicit; approval policy never supplies question answe
 workspace project through `projects.ensure`. Paths refer to the server workspace.
 `server info` prints the environment descriptor and the live providers/models.
 
+## Stop and queue recovery
+
+`thread stop <threadId> [--reason <text>]` sends the native Stop command. It
+stops active and background work and holds queued messages, including when no
+agent run is active. `thread interrupt <threadId>` targets the active run and
+can let the next queued message start.
+
+`thread queue resume <threadId>` releases the queue hold. `thread queue start
+<threadId> <runId>` selects a queued message to start first and also releases the
+queue hold; other queued messages can follow it. Find run ids with `thread
+status <threadId>` or the stock queue tools. Starting requires a queued plain
+user message and no blocking run; the server rejects invalid selections.
+
+These commands report dispatch acknowledgement. Use `thread status` to inspect
+subsequent state. JSON output uses the usual `{data, exitCode, error?}` envelope.
+All three controls require `orchestration:operate`.
+
 ## Auth commands
 
 `auth pair [link]` exchanges a single-use pairing token or validates an issued
