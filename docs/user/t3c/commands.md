@@ -197,3 +197,18 @@ worktree reported by the server, including its checked-out branch. It conflicts
 with new-worktree flags. `--thread` retains its workspace and rejects relocation
 flags. Paths identify server workspaces; existing-worktree matching resolves a
 relative path against the CLI's current directory.
+
+## Schedules, providers and usage
+
+`schedule list|show|create|update|enable|disable|delete|run` manages scheduled
+tasks. Create and update accept `--input <file>` or `--input -` for structured
+JSON and focused flags for model/options, workspace, thread target and modes.
+`schedule endpoint`, `schedule delivery list|show` and `schedule rotate-token`
+expose webhook addresses and delivery diagnostics. Endpoint and delivery access
+require `orchestration:operate`. Omitted update values stay unchanged.
+
+`provider status [instanceId]` reads provider availability, authentication and
+limits. `usage summary --since-day YYYY-MM-DD --until-day YYYY-MM-DD --time-zone
+Etc/UTC` reads historical buckets and source diagnostics with `diagnostics:read`.
+See [schedules, providers and usage](automation.md) for trigger forms, execution
+selections, JSON fields, hourly windows and clearing semantics.

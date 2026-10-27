@@ -23,6 +23,11 @@ Node >=22.16 and pnpm 11 are required. The root package is private.
 provider's native session to a T3 Code thread id or `null`, including archived
 threads.
 
+Schedule commands expose execution configuration, webhook endpoint URLs and
+delivery diagnostics. `thread status|requests|usage|diff|search` provides
+structured inspection. `provider status` reports availability and limits;
+`usage summary` reads historical usage with explicit dates and time zone.
+
 ```bash
 task install
 task build
@@ -37,6 +42,7 @@ task mcp:check
 User guide: [getting started](docs/user/t3c/getting-started.md),
 [profiles](docs/user/t3c/auth.md),
 [command behavior](docs/user/t3c/commands.md),
+[schedules, providers and usage](docs/user/t3c/automation.md),
 [output and exits](docs/user/t3c/policy.md),
 [Dagu](docs/user/t3c/dagu.md),
 [MCP tools](docs/user/t3c/complementary-tools.md), and
