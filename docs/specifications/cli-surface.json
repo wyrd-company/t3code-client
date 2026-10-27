@@ -782,6 +782,136 @@
           ]
         },
         {
+          "name": "status",
+          "summary": "Show a thread's runs, queue, pending requests and background work.",
+          "positional-arguments": [
+            {
+              "name": "threadId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "notes": [
+            "Read the full HTTP thread detail and the thread shell. JSON data is the library ThreadStatus: thread, snapshotSequence, activeRun, latestRun, queuedRuns, queueHeld, pendingRequests {approvals, questions} and backgroundWork. backgroundWork is null when the shell does not list the thread. A missing thread is not found (exit 10), not an empty status."
+          ]
+        },
+        {
+          "name": "requests",
+          "summary": "List a thread's pending approvals and questions.",
+          "positional-arguments": [
+            {
+              "name": "threadId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "notes": [
+            "List pending runtime requests oldest first with their timeline prompts and questions. When the bounded projection lacks a request's timeline row, read the full HTTP detail. JSON data is the library PendingRequest array. An empty list means no pending requests. Answer requests with thread respond."
+          ]
+        },
+        {
+          "name": "usage",
+          "summary": "Show provider context and turn usage for a thread.",
+          "positional-arguments": [
+            {
+              "name": "threadId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "notes": [
+            "Read the full HTTP thread detail, including earlier provider threads. JSON data is the library ThreadUsage: providerThreads with contextUsage (null when unreported) and providerTurns with owning provider thread, attempt and run ids. Absent turn usage stays absent; the CLI adds no totals or currency conversion."
+          ]
+        },
+        {
+          "name": "diff",
+          "summary": "Print a thread's checkpoint diff.",
+          "positional-arguments": [
+            {
+              "name": "threadId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "options": [
+            {
+              "name": "from-turn",
+              "flags": ["--from-turn"],
+              "kind": "option",
+              "description": "Checkpoint turn count to diff from (0 is the thread start).",
+              "value": {
+                "type": "string"
+              },
+              "requires": ["to-turn"]
+            },
+            {
+              "name": "to-turn",
+              "flags": ["--to-turn"],
+              "kind": "option",
+              "description": "Checkpoint turn count to diff to.",
+              "value": {
+                "type": "string"
+              },
+              "requires": ["from-turn"]
+            }
+          ],
+          "notes": [
+            "Without a range, diff the whole thread from its start through the latest ready checkpoint of a completed run. --from-turn and --to-turn are supplied together as nonnegative integers with from less than or equal to to, and select the server's exact turn-count diff. Text output is the unified diff; JSON data is {threadId, fromTurnCount, toTurnCount, diff}. The server truncates oversized patches with its marker. Unavailable checkpoints are server errors, not empty diffs."
+          ]
+        },
+        {
+          "name": "search",
+          "summary": "Search thread messages across threads or within one thread.",
+          "positional-arguments": [
+            {
+              "name": "query",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "options": [
+            {
+              "name": "limit",
+              "flags": ["--limit"],
+              "kind": "option",
+              "description": "Maximum threads to return, 1-50 (default 50).",
+              "value": {
+                "type": "string"
+              },
+              "conflicts-with": ["thread"]
+            },
+            {
+              "name": "thread",
+              "flags": ["--thread"],
+              "kind": "option",
+              "description": "Search within this thread instead of across threads.",
+              "value": {
+                "type": "string"
+              },
+              "conflicts-with": ["limit"]
+            }
+          ],
+          "notes": [
+            "Across threads, the query is a 2-200 character case-insensitive substring of finished user and assistant messages in active, unarchived threads. The server returns at most one match per thread, user matches first, then most recently updated threads. JSON data is {matches, limit}; a result with limit matches can omit further threads, and text mode then reports this on stderr. Text lines are threadId, projectId, source and snippet.",
+            "With --thread, the server's within-thread find runs with a 1-200 character query and returns totalMatches, the first match (activeIndex 0) and navigation counts. JSON data is the server's result. No query language is added."
+          ]
+        },
+        {
           "name": "interrupt",
           "summary": "Interrupt the thread's active run with the library.",
           "positional-arguments": [

@@ -8,6 +8,7 @@ import type { InvocationHandler } from "../../main.ts";
 import { lastAssistantMessage, readConversation } from "../transcript.ts";
 import { respond } from "./respond.ts";
 import { threadFind } from "./threadFind.ts";
+import { threadInspectionHandlers } from "./threadInspection.ts";
 
 const projectList: InvocationHandler = async (_, _command, invocation) => {
   const data = await (await invocation.client()).projects.list();
@@ -80,4 +81,5 @@ export const inspectionHandlers: Record<string, InvocationHandler> = {
   "thread read": threadRead,
   "thread interrupt": threadInterrupt,
   "thread respond": respond,
+  ...threadInspectionHandlers,
 };
