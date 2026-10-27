@@ -1,8 +1,9 @@
 name: Publish
 
-# Annotated `t3code-lib@X.Y.Z` and `t3code-cli@X.Y.Z` records start package
-# publication. Every job is safe to rerun: an npm version or GitHub Release
-# that already exists is verified instead of recreated.
+# Annotated `t3code-lib@X.Y.Z`, `t3code-cli@X.Y.Z` and `t3code-mcp@X.Y.Z`
+# records start package publication. Every job is safe to rerun: an npm
+# version or GitHub Release that already exists is verified instead of
+# recreated. A library or MCP record publishes no documentation.
 #
 # Documentation publishes to wyrd.foo through the reusable workflow, on a CLI
 # record (after its GitHub Release exists), on a `t3c-docs@X.Y.Z` record, or on
@@ -15,6 +16,7 @@ on:
     tags:
       - "t3code-lib@*"
       - "t3code-cli@*"
+      - "t3code-mcp@*"
       - "t3c-docs@*"
   workflow_dispatch:
     inputs:
@@ -84,8 +86,10 @@ jobs:
     # Docs records and manual runs have no package to build.
     if: >-
       github.event_name == 'push'
-      && (startsWith(github.ref_name, 't3code-lib@') || startsWith(github.ref_name, 't3code-cli@'))
+      && (startsWith(github.ref_name, 't3code-lib@') || startsWith(github.ref_name, 't3code-cli@')
+        || startsWith(github.ref_name, 't3code-mcp@'))
       && github.ref_name != 't3code-lib@0.0.0' && github.ref_name != 't3code-cli@0.0.0'
+      && github.ref_name != 't3code-mcp@0.0.0'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
@@ -125,7 +129,7 @@ jobs:
         run: |
           unit="${GITHUB_REF_NAME%@*}"
           tarball="$(scripts/release/verify-package.sh "$unit" "$RUNNER_TEMP/package")"
-          if [[ "$unit" == t3code-cli ]]; then
+          if [[ "$unit" != t3code-lib ]]; then
             library="$(scripts/release/verify-package.sh t3code-lib "$RUNNER_TEMP/library")"
             scripts/release/verify-consumer.sh "$tarball" "$unit" "$library"
           else

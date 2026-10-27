@@ -6,7 +6,7 @@ set -euo pipefail
 
 tag="${1:?tag is required}"
 
-if [[ ! "$tag" =~ ^(t3code-lib|t3code-cli)@([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+if [[ ! "$tag" =~ ^(t3code-lib|t3code-cli|t3code-mcp)@([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
   echo "Tag $tag is not a supported unit@X.Y.Z." >&2
   exit 1
 fi

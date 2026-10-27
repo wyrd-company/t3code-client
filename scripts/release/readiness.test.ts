@@ -18,7 +18,7 @@ function ready(unit: string, extra: Record<string, unknown> = {}) {
   return run(root, "verify-readiness.sh", ["plan.json"]);
 }
 describe("pre-apply package readiness", () => {
-  for (const unit of ["t3code-lib", "t3code-cli"]) {
+  for (const unit of ["t3code-lib", "t3code-cli", "t3code-mcp"]) {
     it(`accepts public ${unit} before apply`, () => {
       expect(ready(unit).status).toBe(0);
     });

@@ -2,13 +2,25 @@
 // relationships:
 //   verifies: releasing
 // ---
+import * as NodeChildProcess from "node:child_process";
 import * as NodeFS from "node:fs";
 import { describe, expect, it } from "vite-plus/test";
+import { parse } from "yaml";
 
 const publish = () =>
   NodeFS.readFileSync(new URL("../../.github/workflows/publish.yml", import.meta.url), "utf8");
 const release = () =>
   NodeFS.readFileSync(new URL("../../.github/workflows/release.yml", import.meta.url), "utf8");
+const ci = () =>
+  NodeFS.readFileSync(new URL("../../.github/workflows/ci.yml", import.meta.url), "utf8");
+// Package units are the Intentional release units with an npm projection.
+const config = parse(
+  NodeFS.readFileSync(new URL("../../.intentional/config.yml", import.meta.url), "utf8"),
+) as { "release-units": Record<string, { projections?: { adapter: string }[] }> };
+const packageUnits = Object.entries(config["release-units"])
+  .filter(([, unit]) => unit.projections?.some((projection) => projection.adapter === "npm"))
+  .map(([name]) => name)
+  .sort();
 
 describe("workflow agreements", () => {
   it("uses the same artifact identity and path across the upload and both downloads", () => {
@@ -23,11 +35,11 @@ describe("workflow agreements", () => {
     const paths = [...publish().matchAll(/path: (\$\{\{ runner.temp \}\}\/package)/g)];
     expect(paths).toHaveLength(3);
   });
-  it("publishes only the three unit tag families", () => {
+  it("publishes only the package and docs unit tag families", () => {
     const patterns = [...publish().matchAll(/^      - "([^"]+@\*)"$/gm)]
       .map((match) => match[1])
       .sort();
-    expect(patterns).toEqual(["t3c-docs@*", "t3code-cli@*", "t3code-lib@*"]);
+    expect(patterns).toEqual(["t3c-docs@*", "t3code-cli@*", "t3code-lib@*", "t3code-mcp@*"]);
   });
   it("uses one saved plan for validation, apply and record creation", () => {
     const workflow = release();
@@ -44,11 +56,8 @@ describe("workflow agreements", () => {
 
 describe("release foundation wiring", () => {
   it("runs shared checks once before the package matrix", () => {
-    const ci = NodeFS.readFileSync(
-      new URL("../../.github/workflows/ci.yml", import.meta.url),
-      "utf8",
-    );
-    const [foundation, matrix] = ci.split("  check:");
+    const workflow = ci();
+    const [foundation, matrix] = workflow.split("  check:");
     expect(foundation).toContain("  release-foundation:");
     expect(foundation).not.toContain("matrix:");
     for (const command of [
@@ -57,12 +66,12 @@ describe("release foundation wiring", () => {
       "pnpm exec tsc --noEmit",
       "pnpm exec vp test run",
     ]) {
-      expect(ci.split(command)).toHaveLength(2);
+      expect(workflow.split(command)).toHaveLength(2);
       expect(foundation).toContain(command);
     }
     expect(foundation).toContain("name: Show Intentional status");
     expect(matrix).toContain("needs: release-foundation");
-    expect(matrix).toContain("unit: [t3code-lib, t3code-cli]");
+    expect(matrix).toContain("unit: [t3code-lib, t3code-cli, t3code-mcp]");
   });
   it("checks package readiness before applying the saved release plan", () => {
     const workflow = release();
@@ -71,6 +80,46 @@ describe("release foundation wiring", () => {
     );
     expect(readiness).toBeGreaterThan(0);
     expect(readiness).toBeLessThan(workflow.indexOf("scripts/release/apply-plan.sh"));
+  });
+});
+
+describe("package unit inventory", () => {
+  it("names exactly the library, CLI and MCP package units", () => {
+    expect(packageUnits).toEqual(["t3code-cli", "t3code-lib", "t3code-mcp"]);
+  });
+  it("checks every package unit in the CI matrix", () => {
+    const matrix = /unit: \[([^\]]+)\]/.exec(ci())![1]!.split(/,\s*/).sort();
+    expect(matrix).toEqual(packageUnits);
+  });
+  it("builds every package record except its zero baseline in Publish", () => {
+    const condition = publish().split("\n  build:")[1]!.split("runs-on:")[0]!;
+    const starts = [...condition.matchAll(/startsWith\(github\.ref_name, '([^@']+)@'\)/g)];
+    const baselines = [...condition.matchAll(/github\.ref_name != '([^@']+)@0\.0\.0'/g)];
+    expect(starts.map((match) => match[1]).sort()).toEqual(packageUnits);
+    expect(baselines.map((match) => match[1]).sort()).toEqual(packageUnits);
+  });
+  it("verifies executable package consumers with the packed library", () => {
+    const pack = publish().split("- name: Pack")[1]!.split("- name:")[0]!;
+    expect(pack).toContain('if [[ "$unit" != t3code-lib ]]; then');
+    expect(pack).toContain('scripts/release/verify-consumer.sh "$tarball" "$unit" "$library"');
+  });
+  it("publishes no documentation for library or MCP records", () => {
+    const plan = publish().split("\n  plan:")[1]!.split("\n  build:")[0]!;
+    expect(plan).not.toContain("t3code-lib@");
+    expect(plan).not.toContain("t3code-mcp@");
+  });
+  it("accepts exactly the package units as release identities", () => {
+    const script = new URL("./unit.sh", import.meta.url).pathname;
+    const accepted = (unit: string) =>
+      NodeChildProcess.spawnSync("bash", [
+        "-c",
+        'source "$1"; release_unit "$2"',
+        "bash",
+        script,
+        unit,
+      ]).status === 0;
+    for (const unit of packageUnits) expect(accepted(unit)).toBe(true);
+    for (const unit of ["t3c-docs", "t3code-client", "t3code"]) expect(accepted(unit)).toBe(false);
   });
 });
 
@@ -105,11 +154,7 @@ describe("distribution workflow agreements", () => {
 
 describe("package dependency build ordering", () => {
   it("builds the selected package and library dependency before CI package typecheck or test", () => {
-    const ci = NodeFS.readFileSync(
-      new URL("../../.github/workflows/ci.yml", import.meta.url),
-      "utf8",
-    );
-    const matrix = ci.split("  check:")[1]!;
+    const matrix = ci().split("  check:")[1]!;
     const build = matrix.indexOf('pnpm --filter "@wyrd-company/$UNIT..." run build');
     expect(build).toBeGreaterThan(0);
     for (const verb of ["typecheck", "test", "test:live", "package"])

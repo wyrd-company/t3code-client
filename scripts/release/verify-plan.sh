@@ -10,7 +10,7 @@ const expected = input.trim().split(/\s+/).sort();
 const plan = JSON.parse(fs.readFileSync(file, 'utf8'));
 const tags = plan.tags ?? [];
 const actual = tags.map(tag => tag.name).sort();
-if (new Set(expected).size !== expected.length || expected.some(tag => !/^(t3code-(lib|cli)|t3c-docs)@\d+\.\d+\.\d+$/.test(tag))) {
+if (new Set(expected).size !== expected.length || expected.some(tag => !/^(t3code-(lib|cli|mcp)|t3c-docs)@\d+\.\d+\.\d+$/.test(tag))) {
   throw new Error('Expected records must be unique supported unit@X.Y.Z names.');
 }
 if (JSON.stringify(actual) !== JSON.stringify(expected)) {

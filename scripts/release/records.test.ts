@@ -27,7 +27,7 @@ function setup() {
     ".intentional/config.yml",
     NodeFS.readFileSync(new URL("../../.intentional/config.yml", import.meta.url), "utf8"),
   );
-  for (const unit of ["t3code-lib", "t3code-cli"])
+  for (const unit of ["t3code-lib", "t3code-cli", "t3code-mcp"])
     write(
       root,
       `packages/${unit}/package.json`,
@@ -48,16 +48,16 @@ function setup() {
   command(root, "intentional", ["tag", "--baseline", "--version", "t3c-docs=0.1.0"]);
   return root;
 }
-function release(root: string) {
+function release(root: string, unit = "t3code-lib") {
   command(root, "intentional", [
     "add",
     "--release-unit",
-    "t3code-lib:minor",
+    `${unit}:minor`,
     "--message",
-    "Provide library.",
+    "Provide package.",
   ]);
   command(root, "git", ["add", ".intentional/intents"]);
-  command(root, "git", ["commit", "--quiet", "-m", "feat: record library intent"]);
+  command(root, "git", ["commit", "--quiet", "-m", "feat: record package intent"]);
   write(root, "release-plan.json", command(root, "intentional", ["plan"]));
   command(root, "intentional", ["apply"]);
   command(root, "git", ["add", "."]);
@@ -78,6 +78,21 @@ describe("Intentional record agreement", () => {
       JSON.parse(NodeFS.readFileSync(`${root}/packages/t3code-cli/package.json`, "utf8")).version,
     ).toBe("0.0.0");
     const checked = run(root, "verify-release-tag.sh", ["t3code-lib@0.1.0"]);
+    expect(checked.status, checked.stderr).toBe(0);
+  });
+  it("releases the MCP unit alone with its own record", () => {
+    const root = setup();
+    release(root, "t3code-mcp");
+    const result = run(root, "verify-plan.sh", ["t3code-mcp@0.1.0", "release-plan.json"]);
+    expect(result.status, result.stderr).toBe(0);
+    for (const unit of ["t3code-lib", "t3code-cli"])
+      expect(
+        JSON.parse(NodeFS.readFileSync(`${root}/packages/${unit}/package.json`, "utf8")).version,
+      ).toBe("0.0.0");
+    expect(NodeFS.readFileSync(`${root}/docs/user/docs.yml`, "utf8")).toContain(
+      "    version: 0.0.0\n",
+    );
+    const checked = run(root, "verify-release-tag.sh", ["t3code-mcp@0.1.0"]);
     expect(checked.status, checked.stderr).toBe(0);
   });
   it("projects the command and docs versions into docs.yml", () => {
@@ -129,7 +144,7 @@ describe("Intentional record agreement", () => {
   });
   it("creates ephemeral zero baselines without tagging the source repository", () => {
     const root = setup();
-    command(root, "git", ["tag", "-d", "t3code-lib@0.0.0", "t3code-cli@0.0.0"]);
+    command(root, "git", ["tag", "-d", "t3code-lib@0.0.0", "t3code-cli@0.0.0", "t3code-mcp@0.0.0"]);
     const result = run(root, "check-intents.sh");
     expect(result.status, result.stderr).toBe(0);
     expect(command(root, "git", ["tag", "--list"]).trim()).toBe("t3c-docs@0.1.0");
