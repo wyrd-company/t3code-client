@@ -167,13 +167,16 @@ it("documents every declared MCP tool without loading built packages", () => {
   ]);
 });
 it("retains one initial minor intent for each new MCP unit", () => {
+  const product = manifest.products["t3mcp"]!;
+  const initialUnits = ["t3code-mcp", "t3mcp-docs"].filter(
+    (unit) => (unit === "t3code-mcp" ? product.version : product["docs-version"]) === "0.0.0",
+  );
+  // A clean checkout has no intents directory once all pending intents are consumed.
+  if (initialUnits.length === 0) return;
   const intents = NodeFS.readdirSync(NodePath.join(repository, ".intentional/intents")).map(
     (name) => NodeFS.readFileSync(NodePath.join(repository, ".intentional/intents", name), "utf8"),
   );
-  for (const unit of ["t3code-mcp", "t3mcp-docs"]) {
-    const product = manifest.products["t3mcp"]!;
-    const version = unit === "t3code-mcp" ? product.version : product["docs-version"];
-    if (version !== "0.0.0") continue;
+  for (const unit of initialUnits) {
     const matches = intents.filter((intent) => new RegExp(`^${unit}: minor$`, "mu").test(intent));
     expect(matches, unit).toHaveLength(1);
   }

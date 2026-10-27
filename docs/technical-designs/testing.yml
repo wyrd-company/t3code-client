@@ -280,3 +280,14 @@ proposed-design:
     warnings; schema, navigation, asset and cross-file errors remain failures.
     Release fixtures verify independent MCP docs projection, tag-only readiness
     and documentation publication/coalescing on the exact tagged commit.
+
+  release-transition: |
+    Released-unit checks run from a fresh source checkout after Intentional has
+    consumed every intent. Empty directories are not Git artifacts, so an absent
+    intents directory is normal once all units have a nonzero version. Initial
+    zero-version units still require their single minor intent.
+
+    Publication tests validate default manual docs behavior, explicit package
+    recovery, immutable record checkout and common artifact identities. A fake
+    GitHub CLI verifies that more than three atomic records dispatch only their
+    package publications and that a dispatch failure remains observable.

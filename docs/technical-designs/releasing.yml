@@ -112,7 +112,14 @@ proposed-design:
     the pnpm lockfile, builds the selected units and regenerates the CLI shrinkwrap with
     the applied package versions. It checks formatting, commits the projections and consumed
     intents, and creates records from the saved plan. The commit and selected records
-    are pushed atomically. App credentials start the downstream Publish workflows.
+    are pushed atomically. App credentials start downstream Publish workflows
+    through tag events for up to three records. GitHub suppresses tag push events
+    when one push creates more than three tags. For a larger record set, Release
+    explicitly dispatches Publish once per package record after the atomic push,
+    using a job-scoped actions:write workflow token. The package tag selects the
+    workflow and immutable source commit. Docs records coalesce with those package
+    runs. This preserves one atomic release authority without depending on events
+    the platform does not emit.
     A concurrent main update makes the push fail; nothing is force-pushed.
   publication: |
     **Publish** responds to either unit's annotated record. It verifies the record
@@ -172,7 +179,13 @@ proposed-design:
     - Release failed before its atomic push: fix main and dispatch again with the
       reviewed expected record set. No request tag needs deletion.
     - Publish failed: rerun Publish for the same record. Existing artifacts must
-      match; different bytes fail.
+      match; different bytes fail. If no run was created, dispatch package recovery
+      explicitly without deleting or replacing the release record:
+
+      ```bash
+      gh workflow run publish.yml --ref main \
+        -f ref=t3code-lib@0.3.0 -f publish-package=true
+      ```
     - Missing baseline at a nonzero version: stop and recover authoritative history.
       The ephemeral baseline check accepts only missing zero-version units.
 
