@@ -24,7 +24,7 @@ async function fixture() {
   const path = NodePath.join(root, "docs.yml");
   await NodeFSP.writeFile(
     path,
-    "# Keep this comment.\nschemaVersion: 1\nproducts:\n  t3c:\n    version: 0.1.0\n    nav:\n      - section: Reference\n        groups: [{group: Commands, pages: [commands]}]\n  t3mcp:\n    version: 0.0.0\n",
+    "# Keep this comment.\nschemaVersion: 1\nproducts:\n  t3c:\n    version: 0.1.0\n    platforms: [macos, linux]\n    nav:\n      - section: Reference\n        groups: [{group: Commands, pages: [commands]}]\n  t3mcp:\n    version: 0.0.0\n",
   );
   return path;
 }
@@ -33,6 +33,7 @@ it("generates the Developers groups and preserves authored navigation and versio
   await syncNavigation(path, pages);
   const source = await NodeFSP.readFile(path, "utf8");
   expect(source).toContain("# Keep this comment.");
+  expect(source).toContain("platforms: [macos, linux]");
   const manifest = parse(source);
   expect(manifest.products.t3c.version).toBe("0.1.0");
   expect(manifest.products.t3mcp).toEqual({ version: "0.0.0" });

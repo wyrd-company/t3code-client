@@ -78,11 +78,11 @@ products:
       - kind: cli
         install:
           - method: npm
-            os: [ macos, linux, windows ]
+            os: [macos, linux, windows]
             default: true
             command: npm install -g @wyrd-company/t3code-cli
           - method: homebrew
-            os: [ macos, linux ]
+            os: [macos, linux]
             command: brew install wyrd-company/tools/t3c
     logo: assets/logo.svg
     favicon: assets/logo.svg

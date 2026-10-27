@@ -28,5 +28,8 @@ export async function syncNavigation(path, pages, check = false) {
   if (check) throw new Error("Regenerate Developers navigation with task cli:docs.");
   if (index === undefined) document.addIn(["products", "t3c", "nav"], section);
   else document.setIn(["products", "t3c", "nav", index], section);
-  await NodeFSP.writeFile(path, document.toString({ lineWidth: 100 }));
+  await NodeFSP.writeFile(
+    path,
+    document.toString({ lineWidth: 100, flowCollectionPadding: false }),
+  );
 }
