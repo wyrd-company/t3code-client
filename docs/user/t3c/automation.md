@@ -75,6 +75,11 @@ secret keeps the stored secret. Signature input uses `header`, `encoding`
 signing values through JSON input; saved tasks return no signing secret. See the
 [library API](library-reference.md) for webhook filters and dedupe fields.
 
+Create and target-changing updates check that a bound thread belongs to the
+effective project before saving. This includes a project-only update that keeps
+the existing thread. A mismatch exits `2`; failed target reads retain their
+normal errors.
+
 Execution selections apply to create and update:
 
 | Selection         | Options                                                                                                         |

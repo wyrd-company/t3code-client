@@ -2826,6 +2826,7 @@ need orchestration:operate. Signing secrets are write-only.
   - [.get()](#ScheduledTasksApi+get)
   - [.upsert()](#ScheduledTasksApi+upsert)
   - [.update()](#ScheduledTasksApi+update)
+  - [.validateTarget()](#ScheduledTasksApi+validateTarget)
   - [.setEnabled()](#ScheduledTasksApi+setEnabled)
   - [.delete()](#ScheduledTasksApi+delete)
   - [.runNow()](#ScheduledTasksApi+runNow)
@@ -2882,6 +2883,20 @@ async update(
     patch: ScheduledTaskPatch,
     signal?: AbortSignal,
   ): Promise<ScheduledTask>;
+```
+
+**Kind**: instance method of [<code>ScheduledTasksApi</code>](#ScheduledTasksApi)  
+<a name="ScheduledTasksApi+validateTarget"></a>
+
+### scheduledTasksApi.validateTarget()
+
+Check that an existing target thread belongs to the selected project.
+A null or omitted thread starts a new thread per run and needs no read.
+Bound threads use orchestration:read; missing threads, permission errors
+and cancellation propagate. Native upsert remains a thin operate-only call.
+
+```ts
+async validateTarget(input: ScheduledTaskTarget, signal?: AbortSignal): Promise<void>;
 ```
 
 **Kind**: instance method of [<code>ScheduledTasksApi</code>](#ScheduledTasksApi)  

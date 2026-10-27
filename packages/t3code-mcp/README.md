@@ -49,6 +49,7 @@ projectId, nullable threadId, workspaceStrategy, modelSelection, runtimeMode and
 interactionMode. Omitted fields stay unchanged. A null threadId selects a new
 thread per run. Updates read then write; concurrent edits can be overwritten.
 Use stock tools to change titles, prompts, triggers or enablement.
+Target changes validate that a bound thread belongs to the effective project.
 
 `thread_diff` accepts an optional `{fromTurnCount, toTurnCount}` range, where zero
 is the thread start. `thread_search_content` returns a count and one match with

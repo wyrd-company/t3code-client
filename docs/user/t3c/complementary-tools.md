@@ -57,6 +57,8 @@ contains projectId, nullable threadId, workspaceStrategy, modelSelection,
 runtimeMode and interactionMode. Omitted settings stay unchanged; null threadId
 starts a fresh thread per run. The update reads then writes and can overwrite a
 concurrent edit. Use stock tools for trigger, prompt, title and enablement changes.
+Changing the project or thread validates that the resulting bound thread belongs
+to the resulting project before saving.
 
 `thread_diff` accepts an optional range with fromTurnCount and toTurnCount; zero
 means the thread start. Within-thread search returns a count and a selected match
