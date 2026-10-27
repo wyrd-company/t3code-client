@@ -1,6 +1,6 @@
 {
   "name": "@wyrd-company/t3code-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Complementary MCP tools for T3 Code scheduling, inspection and provider usage.",
   "keywords": [
     "mcp",
