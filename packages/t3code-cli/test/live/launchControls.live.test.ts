@@ -7,11 +7,13 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodePath from "node:path";
 import { beforeAll, expect, it } from "vite-plus/test";
 import { threadId } from "@wyrd-company/t3code-lib";
+import { liveCatalogSelection } from "../support/liveCatalog.ts";
 import {
   agent,
   cli,
   client,
   directory,
+  issuer,
   ownedProjects,
   ownedThreads,
   record,
@@ -24,6 +26,7 @@ useDispatchHarness("launch-controls");
 
 let repository: string;
 let boundWorktree: string;
+let validationCommand: string[];
 /** One advertised option of the live subject model, chosen from its descriptors. */
 let advertised: { id: string; raw: string; value: string | boolean; invalid: string } | undefined;
 
@@ -56,10 +59,14 @@ beforeAll(async () => {
   git(repository, "worktree", "add", "-q", "-b", "sample-bound", boundWorktree);
   repository = await NodeFSP.realpath(repository);
   boundWorktree = await NodeFSP.realpath(boundWorktree);
+  const selection = agent
+    ? { instanceId: "codex", model: "gpt-6-luna" }
+    : await liveCatalogSelection(issuer);
+  validationCommand = ["run", "--provider", selection.instanceId, "--model", selection.model];
   const config = await client.server.getConfig();
   const model = config.providers
-    .find((provider) => provider.instanceId === "codex")
-    ?.models.find((candidate) => candidate.slug === "gpt-6-luna");
+    .find((provider) => provider.instanceId === selection.instanceId)
+    ?.models.find((candidate) => candidate.slug === selection.model);
   for (const entry of model?.capabilities?.optionDescriptors ?? []) {
     if ((entry as { unknown?: unknown }).unknown === true) continue;
     const descriptor = entry as Exclude<typeof entry, { unknown: true }>;
@@ -102,7 +109,7 @@ it("rejects invalid launch controls before any thread exists", async () => {
   ];
   if (advertised) cases.push([["--model-option", `${advertised.id}=${advertised.invalid}`], 2]);
   for (const [args, exit] of cases) {
-    const result = await cli([...runCommand, "sample prompt", ...args, "--json"]);
+    const result = await cli([...validationCommand, "sample prompt", ...args, "--json"]);
     record({ case: "rejected launch control", args, exit: result.exit });
     expect(result.exit, args.join(" ")).toBe(exit);
     expect(JSON.parse(result.stdout).threadId).toBeNull();

@@ -241,6 +241,14 @@ proposed-design:
     model option descriptors, inheritance and explicit clearing, advertised existing
     worktrees and omitted/true/false start-from-origin settings.
 
+    No-agent CLI schedule and launch-validation tests select an advertised model.
+    When the host has no provider catalog, the owned loopback test server receives
+    a separate custom-model instance through the supported settings operation.
+    Its missing binary cannot start an agent. External-server overrides are never
+    seeded; they must provide an advertised model. Agent-turn acceptance selects
+    Luna explicitly. Fixture tests prove existing-catalog selection, the ownership
+    guard, settings creation and actual advertisement.
+
     MCP tests use official SDK clients over in-memory and stdio transports. They
     verify initialize, tool inventory, annotations, structured/text agreement,
     schema rejection before connection, safe failures, per-request cancellation
