@@ -18,6 +18,7 @@ t3c auth status
 t3c run 'Reply with one short greeting.' --model gpt-6-luna
 t3c thread list
 t3c thread read <thread-id> --last
+t3c thread find --provider <instance-id> --session <native-session-id>
 ```
 
 Execution prints the assistant answer to stdout and progress/thread identity to
@@ -25,6 +26,9 @@ stderr. `--json` provides structured results; `--stream` emits incremental outpu
 `run` has no default run deadline; `--timeout 5m` bounds waiting.
 `t3c version` reports client, library, target and reachable server versions.
 `t3c --version` prints the package version.
+`thread find` prints a T3 Code thread id or literal `null`, with exit `0` for
+either result. It includes archived threads. `--json` puts the id or null in
+`data`. Provider means the exact instance id used by `run --provider`.
 
 Read [getting started](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/getting-started.md), [auth/profiles](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/auth.md),
 [commands](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/commands.md), [output and exit codes](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/policy.md),

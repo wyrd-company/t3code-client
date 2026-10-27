@@ -10,6 +10,22 @@ relationships:
     - testing
     - releasing
 proposed-design:
+  native-session-lookup: |
+    `threads.findByNativeSession(providerInstanceId, nativeSessionId, signal?)`
+    returns a `ThreadId` or null. Provider selection uses an exact instance id;
+    session selection uses `providerThreads[].nativeThreadRef.nativeId`, not a
+    T3 provider session id or native conversation head. The provider thread must
+    belong to the app thread. The lookup reads active and archived shells and
+    every non-deleted thread's projection, including historical provider threads
+    after provider switches or session detachment. It does not depend on current
+    provider registration or the thread's selected provider. Multiple matching
+    app threads raise `T3PreconditionError`; repeated matching provider records
+    in one app thread identify the same result. Invalid provider ids and blank
+    session ids fail before connecting. Read, decoding, auth and transport
+    failures propagate, including failures after a match; null means the search
+    completed without a match. The signal reaches each read. This is a live
+    multi-read lookup, not an atomic snapshot. It does not import, resume or
+    launch provider sessions. No upstream reverse-lookup route is used.
   high-level-overview: >-
     The library implements stock T3 Code 0.1.2 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade

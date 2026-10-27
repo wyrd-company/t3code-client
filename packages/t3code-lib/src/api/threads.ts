@@ -11,7 +11,7 @@
 import { T3PreconditionError, T3RpcError } from "../errors.ts";
 import type { RpcClient } from "../rpc/client.ts";
 import type { RpcMethods } from "../rpc/registry.ts";
-import type { RunId, ThreadId } from "../schemas/common.ts";
+import type { ProviderInstanceId, RunId, ThreadId } from "../schemas/common.ts";
 import type { OrchestrationV2Command } from "../schemas/orchestration/commands.ts";
 import type { ThreadMetadataUpdatePayload } from "../schemas/orchestration/commands/thread.ts";
 import type {
@@ -51,6 +51,7 @@ import {
   type ThreadLaunchInput,
 } from "./threadCreation.ts";
 import { activeRun } from "./threadDerived.ts";
+import { findThreadByNativeSession } from "./threadSessionLookup.ts";
 import {
   findThread,
   listThreads,
@@ -230,6 +231,27 @@ export class ThreadsApi {
   /** Active threads first; archived threads are consulted only when the id is not active. */
   get(threadId: ThreadId, signal?: AbortSignal): Promise<OrchestrationV2ThreadShell | undefined> {
     return findThread(this.http, this.rpc, threadId, signal);
+  }
+
+  /**
+   * Resolve a provider instance and its native session id to a T3 Code thread id.
+   * Searches active and archived threads, including earlier provider sessions.
+   * Returns null only when no match exists; multiple matching threads raise
+   * T3PreconditionError. Read and transport failures propagate. This reads the
+   * shell and each thread projection; it does not resume or import a session.
+   */
+  findByNativeSession(
+    providerInstanceId: ProviderInstanceId,
+    nativeSessionId: string,
+    signal?: AbortSignal,
+  ): Promise<ThreadId | null> {
+    return findThreadByNativeSession(
+      this.http,
+      this.rpc,
+      providerInstanceId,
+      nativeSessionId,
+      signal,
+    );
   }
 
   /** The full thread over HTTP. Raises `T3NotFoundError` when the thread does not exist. */

@@ -7,6 +7,7 @@ import { T3PreconditionError, threadId } from "@wyrd-company/t3code-lib";
 import type { InvocationHandler } from "../../main.ts";
 import { lastAssistantMessage, readConversation } from "../transcript.ts";
 import { respond } from "./respond.ts";
+import { threadFind } from "./threadFind.ts";
 
 const projectList: InvocationHandler = async (_, _command, invocation) => {
   const data = await (await invocation.client()).projects.list();
@@ -75,6 +76,7 @@ export const inspectionHandlers: Record<string, InvocationHandler> = {
   "project ensure": projectEnsure,
   "server info": serverInfo,
   "thread list": threadList,
+  "thread find": threadFind,
   "thread read": threadRead,
   "thread interrupt": threadInterrupt,
   "thread respond": respond,

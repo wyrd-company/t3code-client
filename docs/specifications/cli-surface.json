@@ -756,6 +756,32 @@
           "summary": "List server threads."
         },
         {
+          "name": "find",
+          "summary": "Find a T3 Code thread by provider instance and native session id.",
+          "options": [
+            {
+              "name": "provider",
+              "flags": ["--provider"],
+              "kind": "option",
+              "required": true,
+              "description": "Provider instance id, as used by run --provider.",
+              "value": { "type": "string" }
+            },
+            {
+              "name": "session",
+              "flags": ["--session"],
+              "kind": "option",
+              "required": true,
+              "description": "Provider-native session id, not the T3 runtime session id.",
+              "value": { "type": "string" }
+            }
+          ],
+          "notes": [
+            "Search active and archived threads, including earlier sessions after a provider switch. Match providerThreads.providerInstanceId and nativeThreadRef.nativeId, not T3 providerSessions ids. Provider means an exact provider instance id; no live provider registration is required.",
+            "Text output is the matching T3 Code thread id or literal null. JSON output is {data: threadIdOrNull, exitCode: 0}. No match is a successful lookup. Multiple matching threads are a precondition error (exit 2); read, auth and transport failures retain their normal errors. The lookup reads each thread projection and does not import, resume or launch a session."
+          ]
+        },
+        {
           "name": "interrupt",
           "summary": "Interrupt the thread's active run with the library.",
           "positional-arguments": [

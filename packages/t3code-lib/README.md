@@ -24,6 +24,12 @@ This is an independent project, not part of T3 Code. Each release targets the
 latest T3 Code release; the version it is tested against is the `t3` entry in
 `devDependencies`.
 
+`client.threads.findByNativeSession(providerInstanceId, nativeSessionId)` returns
+the matching T3 Code thread id or `null`. It searches active and archived threads,
+including earlier sessions after provider switches. Provider means an exact
+instance id; session means `nativeThreadRef.nativeId`. Multiple matching threads
+raise `T3PreconditionError`, and read failures propagate.
+
 See [library architecture](https://github.com/wyrd-company/t3code-client/blob/main/docs/technical-designs/library.yml) for the architecture and
 [library verification](https://github.com/wyrd-company/t3code-client/blob/main/docs/technical-designs/library-testing.yml) for tests.
 

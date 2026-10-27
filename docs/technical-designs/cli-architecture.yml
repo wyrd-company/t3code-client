@@ -42,6 +42,9 @@ proposed-design:
     policy and timeouts are shared across run, waiting start, send and wait as
     specified. Ambiguous launch failures preserve known ids for recovery.
   reads-and-version: >-
+    Native session lookup uses threads.findByNativeSession with an exact provider
+    instance id and native session id, and prints the matching thread id or null.
+    JSON uses the inspection envelope; no match exits 0 and ambiguity exits 2.
     Transcript reads use threads.transcript with threads.detail fallback only
     for thread_transcript_too_large. Final output uses the turn outcome assistant
     message with last assistant transcript item as fallback. Version output uses

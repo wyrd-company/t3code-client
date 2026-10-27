@@ -100,6 +100,20 @@ with `thread_transcript_too_large`, the CLI reads the library's detail route
 and derives the equivalent visible conversation. Other read failures retain
 their mapped errors. `thread list` lists server thread summaries.
 
+`thread find --provider <instanceId> --session <nativeSessionId>` prints the
+matching T3 Code thread id, or literal `null` if none exists. Both outcomes exit
+`0`; `--json` returns `{ "data": "thread-id", "exitCode": 0 }` or
+`{ "data": null, "exitCode": 0 }`. Provider means the exact provider instance id,
+as used by `run --provider`, not a driver kind. The session id is the provider's
+native session id (`nativeThreadRef.nativeId`), not a T3 runtime session id.
+
+The lookup searches active and archived threads and earlier provider sessions
+after a provider switch. It does not require the provider to remain registered.
+Multiple matching T3 threads fail with exit `2`. Read, auth and connection
+failures keep their normal errors; they do not mean no match. The library reads
+the shell and each thread projection, so lookup cost grows with the number of
+threads. The lookup does not import, resume or launch a session.
+
 `thread interrupt <threadId>` requests interruption through the library.
 `thread respond <threadId> --request <id>` supplies exactly one response kind:
 repeatable `--answer k=v` for user-input question answers, `--accept` or

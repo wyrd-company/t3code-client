@@ -81,6 +81,15 @@ proposed-design:
 
     See [CLI composition](composition.yml) for handler,
     output, error context, shrinkwrap and Taskfile ownership interfaces.
+  native-session-lookup: |
+    `threadSessionLookup.test.ts` exercises native session lookup through the
+    fake HTTP shell and typed WebSocket projection boundaries. It covers exact
+    provider instances, absent sessions, archived threads, detached historical
+    sessions, duplicate matches, deleted threads and failed reads. CLI unit tests
+    verify argument validation, text and JSON null results, and error mapping.
+    `threadFind.live.test.ts` checks no-match output against stock T3 Code; its
+    `T3_LIVE_AGENT=1` case resolves a real Luna session before and after archiving
+    the owning T3 thread, and checks provider separation.
   recorded-cli-demonstration: |
     `task demo` starts a fresh pinned server home outside Git and renders the
     committed `packages/t3code-cli/demo/demo.tape` to `docs/user/t3c/assets/demo.gif`.
