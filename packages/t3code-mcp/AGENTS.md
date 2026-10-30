@@ -19,4 +19,4 @@ repository root. This package composes the library and official MCP SDK.
 - Use ESM/NodeNext, `.ts` relative imports, no `any`, colocated unit tests and
   SDK-client protocol tests. Only test and build tools spawn processes.
 - Run the workspace `task check` before handoff. Add the package's single initial
-  minor intent through Intentional. Publication requires explicit user approval.
+  major intent through Intentional. Publication requires explicit user approval.
