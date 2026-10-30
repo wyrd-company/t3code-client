@@ -52,7 +52,7 @@ function release(root: string, unit = "t3code-lib") {
   command(root, "intentional", [
     "add",
     "--release-unit",
-    `${unit}:minor`,
+    `${unit}:major`,
     "--message",
     "Provide package.",
   ]);
@@ -100,7 +100,7 @@ describe("Intentional record agreement", () => {
     command(root, "intentional", [
       "add",
       "--release-unit",
-      "t3code-cli:minor",
+      "t3code-cli:major",
       "--release-unit",
       "t3c-docs:patch",
       "--message",
@@ -116,9 +116,9 @@ describe("Intentional record agreement", () => {
     command(root, "intentional", [
       "add",
       "--release-unit",
-      "t3code-mcp:minor",
+      "t3code-mcp:major",
       "--release-unit",
-      "t3mcp-docs:minor",
+      "t3mcp-docs:major",
       "--message",
       "Provide MCP docs.",
     ]);

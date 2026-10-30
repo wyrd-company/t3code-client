@@ -34,23 +34,25 @@ proposed-design:
     writes both. `t3mcp-docs` similarly owns `docs/user/t3mcp` and depends on
     `t3code-mcp`. The MCP code and docs units project `/products/t3mcp/version`
     and `/products/t3mcp/docs-version`. Each product has its own catalog entry,
-    navigation and assets. A new docs unit has one initial minor intent.
+    navigation and assets. A new docs unit has one initial major intent.
 
     The root CHANGELOG.md and `t3code-client@*` tags are historical records for the
     retired package. Keep them intact. Bob owns deprecation of the old npm name.
   intents: |
-    Each package has exactly one minor intent before its initial 0.1.0 release.
+    Each package has exactly one major intent before its initial 0.1.0 release.
     Update that intent's message with the package's complete outcome rather than
     adding an intent for each implementation task. Author it through Intentional:
 
     ```bash
-    intentional add --release-unit t3code-lib:minor --message "Describe the library outcome."
-    intentional add --release-unit t3code-cli:minor --message "Describe the CLI outcome."
+    intentional add --release-unit t3code-lib:major --message "Describe the library outcome."
+    intentional add --release-unit t3code-cli:major --message "Describe the CLI outcome."
     ```
 
     For later releases, an intent accompanies each consumer-visible change.
-    Before 1.0.0, bump names map directly onto version components: `minor` for a
-    new capability or breaking change and `patch` for a fix.
+    Bump names state change significance: `major` for a breaking change, `minor`
+    for a new capability and `patch` for a fix. Before 1.0.0, `major` increments
+    the minor version; `minor` and `patch` increment the patch version.
+    Graduation to 1.0.0 requires an explicit `graduate` intent.
   baseline-and-first-release: |
     Manifests start at 0.0.0. No authoritative tags are made on an epic branch.
     `task intents` and CI use a disposable clone, overlay the current configuration
@@ -72,7 +74,7 @@ proposed-design:
     intentional plan > release-plan.json
     ```
 
-    Each minor intent computes 0.1.0. Baseline records do not start publication.
+    Each initial major intent computes 0.1.0. Baseline records do not start publication.
     The tag-only docs unit starts at the `docs-version` in `docs/user/docs.yml`:
 
     ```bash
@@ -253,7 +255,7 @@ proposed-design:
     The library release unit is `t3code-lib`, its manifest is `packages/t3code-lib/package.json`, and its changelog is `packages/t3code-lib/CHANGELOG.md`. The root historical changelog belongs to the retired package.
 
   complementary-mcp-package: |
-    The MCP package starts at 0.0.0 with one initial minor intent. Its npm tarball
+    The MCP package starts at 0.0.0 with one initial major intent. Its npm tarball
     contains the built stdio executable and public factory declarations. Consumer
     checks install locally packed MCP and library archives together and exercise
     version, tool listing and runtime imports without starting agent work.
