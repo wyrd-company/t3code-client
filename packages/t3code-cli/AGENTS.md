@@ -43,7 +43,7 @@ Read [the specification](../../docs/specifications/command-line.yml) and
 - Real command checks use the pinned server with a fresh task-specific home outside
   Git and `gpt-6-luna` subjects. Clear inherited operational live overrides before
   isolated acceptance; clean only owned processes and homes.
-- Use Conventional Commits and `intentional add`. Maintain one consolidated minor
+- Use Conventional Commits and `intentional add`. Maintain one consolidated major
   intent per new unit; manifests stay `0.0.0` until epic finalization. Intentional
   owns versions and changelogs. Each unit releases independently with provenance.
 - The CLI package contains `dist/cli.js` and a registry-resolved `npm-shrinkwrap.json`.

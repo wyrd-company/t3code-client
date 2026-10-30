@@ -50,10 +50,10 @@ jobs:
           run-install: true
 
       - name: Check release intents
-        uses: wyrd-company/intentional@0763785af2ebe865cd6131f73981d66f183dcfe5 # 0.2.1
+        uses: wyrd-company/intentional@0f5ba4ec04c1505831a40f558eb64ab1761d63ef # 0.4.1
         with:
           command: check
-          intentional-version: "0.2.1"
+          intentional-version: "0.4.1"
 
       - name: Check
         run: |
