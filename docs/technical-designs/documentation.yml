@@ -55,6 +55,18 @@ proposed-design:
     are relative to each product folder, `docs/user/t3c` or `docs/user/t3mcp`.
     Internal structured
     artifacts stay outside `docs/user`.
+  mcp-install-configurations: |
+    `docs/user/docs.yml` owns the t3mcp install entries for Claude Code,
+    Claude Desktop, Codex, Cursor, OpenCode, Pi and Antigravity, plus generic
+    JSON. Claude Code is the default. Every entry launches the same npm stdio
+    server with the same saved-profile arguments. Codex uses a TOML
+    `mcp_servers` table; OpenCode uses an `mcp` local command array; the other
+    entries use `mcpServers` JSON. The getting-started page sets `install: true`
+    so the publisher renders the selector there as well as on the product page.
+    Publisher ingestion derives catalog metadata from this manifest; catalog
+    output is not an independent source of install configurations.
+    `scripts/docs/mcpInstall.test.ts` checks the host inventory, single default,
+    configuration shapes and shared launch arguments without starting hosts.
   canonical-inputs: >-
     The CLI specification and native cli-surface.json asset are colocated in
     docs/specifications. Build copies that native input to the packaged command

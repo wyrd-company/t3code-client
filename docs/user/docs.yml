@@ -122,8 +122,105 @@ products:
     kinds:
       - kind: mcp-server
         install:
-          - method: json
+          - method: claude-code
             default: true
+            command: |-
+              {
+                "mcpServers": {
+                  "t3mcp": {
+                    "command": "npx",
+                    "args": [
+                      "-y",
+                      "@wyrd-company/t3code-mcp",
+                      "--profile",
+                      "sample"
+                    ]
+                  }
+                }
+              }
+          - method: claude-desktop
+            command: |-
+              {
+                "mcpServers": {
+                  "t3mcp": {
+                    "command": "npx",
+                    "args": [
+                      "-y",
+                      "@wyrd-company/t3code-mcp",
+                      "--profile",
+                      "sample"
+                    ]
+                  }
+                }
+              }
+          - method: codex
+            command: |-
+              [mcp_servers.t3mcp]
+              command = "npx"
+              args = ["-y", "@wyrd-company/t3code-mcp", "--profile", "sample"]
+          - method: cursor
+            command: |-
+              {
+                "mcpServers": {
+                  "t3mcp": {
+                    "command": "npx",
+                    "args": [
+                      "-y",
+                      "@wyrd-company/t3code-mcp",
+                      "--profile",
+                      "sample"
+                    ]
+                  }
+                }
+              }
+          - method: opencode
+            command: |-
+              {
+                "mcp": {
+                  "t3mcp": {
+                    "type": "local",
+                    "command": [
+                      "npx",
+                      "-y",
+                      "@wyrd-company/t3code-mcp",
+                      "--profile",
+                      "sample"
+                    ],
+                    "enabled": true
+                  }
+                }
+              }
+          - method: pi
+            command: |-
+              {
+                "mcpServers": {
+                  "t3mcp": {
+                    "command": "npx",
+                    "args": [
+                      "-y",
+                      "@wyrd-company/t3code-mcp",
+                      "--profile",
+                      "sample"
+                    ]
+                  }
+                }
+              }
+          - method: antigravity
+            command: |-
+              {
+                "mcpServers": {
+                  "t3mcp": {
+                    "command": "npx",
+                    "args": [
+                      "-y",
+                      "@wyrd-company/t3code-mcp",
+                      "--profile",
+                      "sample"
+                    ]
+                  }
+                }
+              }
+          - method: json
             command: |-
               {
                 "mcpServers": {
