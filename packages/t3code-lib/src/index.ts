@@ -86,12 +86,7 @@ export type {
   TurnHandle,
   TurnOutcome,
 } from "./api/turns.ts";
-export {
-  ShellApi,
-  type ArchivedShellWatchItem,
-  type ShellWatchItem,
-  type ShellWatchOptions,
-} from "./api/shell.ts";
+export { ShellApi, type ShellWatchItem, type ShellWatchOptions } from "./api/shell.ts";
 export { ServerApi } from "./api/server.ts";
 export type {
   WatchDatabaseStorageOptions,

@@ -7,6 +7,7 @@ import { T3Client } from "../../src/client.ts";
 import { WebSocket } from "ws";
 import type { WebSocketConstructor } from "../../src/internal/websocket.ts";
 import { threadId } from "../../src/schemas/common.ts";
+import type { OrchestrationV2PendingRuntimeRequestSummary } from "../../src/schemas/orchestration/shell.ts";
 import * as NodeCrypto from "node:crypto";
 import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
@@ -41,7 +42,7 @@ it.skipIf(
       text: "Use request_user_input now to ask me to choose between blue and green for a sample banner. Do not inspect files or use other tools. Wait for my answer.",
       interactionMode: "plan",
     });
-    let summary: unknown;
+    let summary: OrchestrationV2PendingRuntimeRequestSummary | undefined;
     for await (const item of client.shell.watch({ signal: AbortSignal.timeout(180_000) })) {
       const shell =
         item.kind === "snapshot"
@@ -54,8 +55,16 @@ it.skipIf(
         break;
       }
     }
-    expect(summary).toBeDefined();
-    expect(summary).toMatchObject({ blocking: true });
+    if (summary === undefined) throw new Error("The shell stream ended without a pending request.");
+    // The provider chooses a live or an async question, so compare with the request it raised.
+    const { id: requestId } = summary;
+    const projection = await client.threads.projection(id);
+    const request = projection.runtimeRequests.find((entry) => entry.id === requestId);
+    const capability = request?.responseCapability;
+    expect(capability).toBeDefined();
+    expect(summary.blocking).toBe(
+      !(capability && "type" in capability && capability.type === "message"),
+    );
   } finally {
     try {
       await client.threads.stop(id);

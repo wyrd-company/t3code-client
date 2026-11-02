@@ -1088,9 +1088,7 @@ Auth control plane and the sole owner of credential-store access.
   - [.clearCredentials()](#AuthClient+clearCredentials)
   - [.websocketTicket()](#AuthClient+websocketTicket)
   - [.createPairingCredential()](#AuthClient+createPairingCredential)
-  - [.listPairingLinks()](#AuthClient+listPairingLinks)
   - [.revokePairingLink()](#AuthClient+revokePairingLink)
-  - [.listClients()](#AuthClient+listClients)
   - [.revokeClient()](#AuthClient+revokeClient)
   - [.revokeOtherClients()](#AuthClient+revokeOtherClients)
   - [.currentAccessToken()](#AuthClient+currentAccessToken)
@@ -1213,17 +1211,6 @@ createPairingCredential(
 ```
 
 **Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
-<a name="AuthClient+listPairingLinks"></a>
-
-### authClient.listPairingLinks()
-
-List pairing links visible to this session.
-
-```ts
-listPairingLinks(): Promise<AuthPairingLinkType[]>;
-```
-
-**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
 <a name="AuthClient+revokePairingLink"></a>
 
 ### authClient.revokePairingLink()
@@ -1232,17 +1219,6 @@ Revoke a pairing link; return whether it was revoked.
 
 ```ts
 async revokePairingLink(id: string): Promise<boolean>;
-```
-
-**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
-<a name="AuthClient+listClients"></a>
-
-### authClient.listClients()
-
-List authenticated client sessions.
-
-```ts
-listClients(): Promise<AuthClientSessionType[]>;
 ```
 
 **Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
@@ -2157,7 +2133,6 @@ survive; malformed values fail decoding. This metadata does not grant permission
   - [.snapshot()](#ShellApi+snapshot)
   - [.archivedSnapshot()](#ShellApi+archivedSnapshot)
   - [.watch()](#ShellApi+watch)
-  - [.watchArchived()](#ShellApi+watchArchived)
 
 <a name="ShellApi+snapshot"></a>
 
@@ -2174,7 +2149,7 @@ snapshot(signal?: AbortSignal): Promise<OrchestrationV2ShellSnapshot>;
 
 ### shellApi.archivedSnapshot()
 
-Archived thread shells and projects, over RPC.
+Archived thread shells and projects, over RPC. The server has no live archived stream.
 
 ```ts
 archivedSnapshot(signal?: AbortSignal): Promise<OrchestrationV2ArchivedShellSnapshot>;
@@ -2189,19 +2164,6 @@ Subscribes with `orchestration.subscribeShell`; resubscribes after a dropped soc
 
 ```ts
 watch(options: ShellWatchOptions = {}): AsyncIterable<ShellWatchItem>;
-```
-
-**Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
-<a name="ShellApi+watchArchived"></a>
-
-### shellApi.watchArchived()
-
-Archived threads as they change; a snapshot first, then updates. Not resumable: a drop restarts it.
-
-```ts
-watchArchived(
-    options: { readonly signal?: AbortSignal } = {},
-  ): AsyncIterable<ArchivedShellWatchItem>;
 ```
 
 **Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
@@ -2603,10 +2565,10 @@ getConfig(signal?: AbortSignal): Promise<RpcSuccess<RpcMethods, "server.getConfi
 
 ### serverApi.getSettings()
 
-Read server settings.
+Read server settings, which the server serves as part of its configuration.
 
 ```ts
-getSettings(signal?: AbortSignal): Promise<RpcSuccess<RpcMethods, "server.getSettings">>;
+async getSettings(signal?: AbortSignal): Promise<ServerSettings>;
 ```
 
 **Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
@@ -3072,7 +3034,6 @@ retain ordinary attach behavior; unknown IDs without `cwd` fail lookup.
   - [.write()](#TerminalApi+write)
   - [.resize()](#TerminalApi+resize)
   - [.close()](#TerminalApi+close)
-  - [.watchEvents()](#TerminalApi+watchEvents)
 
 <a name="TerminalApi+open"></a>
 
@@ -3141,19 +3102,6 @@ close(
     input: RpcPayload<RpcMethods, "terminal.close">,
     signal?: AbortSignal,
   ): Promise<RpcSuccess<RpcMethods, "terminal.close">>;
-```
-
-**Kind**: instance method of [<code>TerminalApi</code>](#TerminalApi)  
-<a name="TerminalApi+watchEvents"></a>
-
-### terminalApi.watchEvents()
-
-Subscribe to terminal lifecycle events.
-
-```ts
-watchEvents(options?: {
-    readonly signal?: AbortSignal;
-  }): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "subscribeTerminalEvents">>>;
 ```
 
 **Kind**: instance method of [<code>TerminalApi</code>](#TerminalApi)  

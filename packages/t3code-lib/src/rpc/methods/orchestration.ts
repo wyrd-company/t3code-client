@@ -12,7 +12,6 @@ import { OrchestrationV2Command } from "../../schemas/orchestration/commands.ts"
 import { OrchestrationV2ThreadProjection } from "../../schemas/orchestration/projection.ts";
 import {
   OrchestrationV2ArchivedShellSnapshot,
-  OrchestrationV2ArchivedShellStreamItem,
   OrchestrationV2ShellStreamItem,
   OrchestrationV2SubscribeShellInput,
 } from "../../schemas/orchestration/shell.ts";
@@ -119,12 +118,6 @@ export const orchestrationMethods = {
     payload: z.looseObject({}),
     success: OrchestrationV2ArchivedShellSnapshot,
     stream: false,
-    scope: read,
-  }),
-  "orchestration.subscribeArchivedShell": defineMethod({
-    payload: z.looseObject({}),
-    success: OrchestrationV2ArchivedShellStreamItem,
-    stream: true,
     scope: read,
   }),
   "orchestration.subscribeShell": defineMethod({

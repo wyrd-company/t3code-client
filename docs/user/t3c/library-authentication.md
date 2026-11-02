@@ -90,9 +90,7 @@ Auth control plane and the sole owner of credential-store access.
   - [.clearCredentials()](#AuthClient+clearCredentials)
   - [.websocketTicket()](#AuthClient+websocketTicket)
   - [.createPairingCredential()](#AuthClient+createPairingCredential)
-  - [.listPairingLinks()](#AuthClient+listPairingLinks)
   - [.revokePairingLink()](#AuthClient+revokePairingLink)
-  - [.listClients()](#AuthClient+listClients)
   - [.revokeClient()](#AuthClient+revokeClient)
   - [.revokeOtherClients()](#AuthClient+revokeOtherClients)
   - [.currentAccessToken()](#AuthClient+currentAccessToken)
@@ -215,17 +213,6 @@ createPairingCredential(
 ```
 
 **Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
-<a name="AuthClient+listPairingLinks"></a>
-
-### authClient.listPairingLinks()
-
-List pairing links visible to this session.
-
-```ts
-listPairingLinks(): Promise<AuthPairingLinkType[]>;
-```
-
-**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
 <a name="AuthClient+revokePairingLink"></a>
 
 ### authClient.revokePairingLink()
@@ -234,17 +221,6 @@ Revoke a pairing link; return whether it was revoked.
 
 ```ts
 async revokePairingLink(id: string): Promise<boolean>;
-```
-
-**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
-<a name="AuthClient+listClients"></a>
-
-### authClient.listClients()
-
-List authenticated client sessions.
-
-```ts
-listClients(): Promise<AuthClientSessionType[]>;
 ```
 
 **Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  

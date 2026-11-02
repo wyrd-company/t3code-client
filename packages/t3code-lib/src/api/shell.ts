@@ -17,7 +17,6 @@ import {
 import {
   OrchestrationV2ShellSnapshot,
   type OrchestrationV2ArchivedShellSnapshot,
-  type OrchestrationV2ArchivedShellStreamItem,
   type OrchestrationV2ShellStreamItem,
 } from "../schemas/orchestration/shell.ts";
 import type { HttpTransport } from "../transport/http.ts";
@@ -28,10 +27,6 @@ export type ShellWatchItem =
   | Exclude<OrchestrationV2ShellStreamItem, { unknown: true }>
   | { readonly kind: "decode-error"; readonly error: T3DecodeError }
   | { readonly kind: "reconnected"; readonly afterSequence: number };
-
-export type ArchivedShellWatchItem =
-  | Exclude<OrchestrationV2ArchivedShellStreamItem, { unknown: true }>
-  | { readonly kind: "decode-error"; readonly error: T3DecodeError };
 
 export interface ShellWatchOptions {
   readonly afterSequence?: number;
@@ -85,7 +80,7 @@ export class ShellApi {
     return loadShellSnapshot(this.http, signal);
   }
 
-  /** Archived thread shells and projects, over RPC. */
+  /** Archived thread shells and projects, over RPC. The server has no live archived stream. */
   archivedSnapshot(signal?: AbortSignal): Promise<OrchestrationV2ArchivedShellSnapshot> {
     return this.rpc.call("orchestration.getArchivedShellSnapshot", {}, signal);
   }
@@ -137,42 +132,6 @@ export class ShellApi {
               resumed = true;
               continue;
             }
-            throw error;
-          }
-        }
-      },
-    };
-  }
-
-  /** Archived threads as they change; a snapshot first, then updates. Not resumable: a drop restarts it. */
-  watchArchived(
-    options: { readonly signal?: AbortSignal } = {},
-  ): AsyncIterable<ArchivedShellWatchItem> {
-    const rpc = this.rpc;
-    return {
-      async *[Symbol.asyncIterator]() {
-        const { signal } = options;
-        for (;;) {
-          if (signal?.aborted) return;
-          let received = false;
-          try {
-            const stream = rpc.stream(
-              "orchestration.subscribeArchivedShell",
-              {},
-              signal === undefined ? {} : { signal },
-            );
-            for await (const item of stream) {
-              received = true;
-              if (item.kind === "decode-error") {
-                yield item;
-                continue;
-              }
-              if (isKnownVariant(item.value)) yield item.value;
-            }
-            return;
-          } catch (error) {
-            if (signal?.aborted || error instanceof T3InterruptedError) return;
-            if (shouldResubscribe(error, rpc.connection.state, received)) continue;
             throw error;
           }
         }

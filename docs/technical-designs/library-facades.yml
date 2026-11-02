@@ -30,7 +30,7 @@ proposed-design:
     establish absence. The lookup does not import, resume or
     launch provider sessions. No upstream reverse-lookup route is used.
   high-level-overview: >-
-    The library implements stock T3 Code 0.1.2 and orchestration protocol 2.
+    The library implements stock T3 Code 0.1.6 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade
     contracts. The library architecture links the canonical design family.
   api-facades: |
@@ -170,12 +170,11 @@ proposed-design:
       snapshot(): Promise<OrchestrationV2ShellSnapshot>; // HTTP: projects, threads, archivedThreads
       archivedSnapshot(): Promise<OrchestrationV2ArchivedShellSnapshot>; // RPC
       watch(options?): AsyncIterable<ShellWatchItem>; // resumable like threads
-      watchArchived(options?): AsyncIterable<ArchivedShellWatchItem>;
     }
     export class ServerApi {
       probe();
       getConfig();
-      getSettings();
+      getSettings(); // the settings field of getConfig
       refreshProviders(input?);
       watchConfig();
       watchLifecycle();

@@ -8,7 +8,6 @@ import {
   TerminalAttachInput,
   TerminalAttachStreamEvent,
   TerminalCloseInput,
-  TerminalEvent,
   TerminalOpenInput,
   TerminalResizeInput,
   TerminalSessionSnapshot,
@@ -57,11 +56,5 @@ export const terminalMethods = {
       .transform((): void => undefined),
     stream: false,
     scope: "terminal:operate",
-  }),
-  subscribeTerminalEvents: defineMethod({
-    payload: z.looseObject({}),
-    success: TerminalEvent,
-    stream: true,
-    scope: "terminal:read",
   }),
 } as const;

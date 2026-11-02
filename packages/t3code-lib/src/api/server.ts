@@ -10,6 +10,7 @@ import {
   type ExecutionEnvironmentDescriptor as ExecutionEnvironmentDescriptorType,
 } from "../schemas/environment.ts";
 import type { ServerProvider, ServerProviderModel } from "../schemas/provider.ts";
+import type { ServerSettings } from "../schemas/server.ts";
 import type { UsageSummary, UsageSummaryInput } from "../schemas/usage.ts";
 import type { HttpTransport } from "../transport/http.ts";
 import { unwrapStreamItems, type DecodedStreamItem } from "./streamItems.ts";
@@ -400,9 +401,9 @@ export class ServerApi {
     return this.rpc.call("server.getConfig", {}, signal);
   }
 
-  /** Read server settings. */
-  getSettings(signal?: AbortSignal): Promise<RpcSuccess<RpcMethods, "server.getSettings">> {
-    return this.rpc.call("server.getSettings", {}, signal);
+  /** Read server settings, which the server serves as part of its configuration. */
+  async getSettings(signal?: AbortSignal): Promise<ServerSettings> {
+    return (await this.getConfig(signal)).settings;
   }
 
   /** Refresh the selected provider instances. */

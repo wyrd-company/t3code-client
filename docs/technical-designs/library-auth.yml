@@ -11,7 +11,7 @@ relationships:
     - releasing
 proposed-design:
   high-level-overview: >-
-    The library implements stock T3 Code 0.1.2 and orchestration protocol 2.
+    The library implements stock T3 Code 0.1.6 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade
     contracts. The library architecture links the canonical design family.
   auth: |
@@ -48,12 +48,10 @@ proposed-design:
       createPairingCredential(
         input: AuthCreatePairingCredentialInput,
       ): Promise<AuthPairingCredentialResult>;
-      listPairingLinks(): Promise<AuthPairingLink[]>;
       revokePairingLink(id: string): Promise<boolean>;
-      listClients(): Promise<AuthClientSession[]>;
       revokeClient(sessionId: AuthSessionId): Promise<boolean>;
       revokeOtherClients(): Promise<number>;
-      watchAccess(options?): AsyncIterable<AuthAccessStreamEvent>; // subscribeAuthAccess over RPC
+      watchAccess(options?): AsyncIterable<AuthAccessStreamEvent>; // subscribeAuthAccess over RPC; its snapshot lists pairing links and clients
       hasScope(scope: AuthEnvironmentScope): Promise<boolean>;
       ensureScopes(required: AuthEnvironmentScope[]): Promise<void>; // throws T3AuthError with the missing scope
       scopesSync(): AuthGrantedScope[] | undefined; // from the last credential loaded or saved; no store round trip
@@ -74,7 +72,7 @@ proposed-design:
     socket authenticates as the new session.
 
   scope-groups: >-
-    AuthStandardClientScopes mirrors the stock 0.1.2 standard client grant,
+    AuthStandardClientScopes mirrors the stock 0.1.6 standard client grant,
     including access:read, access:write and relay:write. There is no separate
     administrative scope set. Callers choose explicit scopes for narrower grants.
     AuthLegacyScopes retains the wire vocabulary for decoding older credentials.

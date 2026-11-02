@@ -10,7 +10,7 @@ import { rpcMethods } from "../rpc/registry.ts";
 import { HttpTransport } from "../transport/http.ts";
 import { RpcConnection } from "../transport/rpcConnection.ts";
 import { SocketTransport } from "../transport/socket.ts";
-import { ShellApi, type ArchivedShellWatchItem, type ShellWatchItem } from "./shell.ts";
+import { ShellApi, type ShellWatchItem } from "./shell.ts";
 
 const threadUpdated = (sequence: number, location = "active") => ({
   kind: "thread.updated",
@@ -147,30 +147,6 @@ describe("ShellApi", () => {
     }
     expect(payload).toMatchObject({ afterSequence: 12 });
     expect(sequences).toEqual([13]);
-  });
-
-  it("watchArchived passes known items through and ends with the stream", async () => {
-    server.handle("orchestration.subscribeArchivedShell", () => ({
-      kind: "stream",
-      chunks: [
-        [{ kind: "snapshot", snapshot: archivedSnapshot() }],
-        [
-          {
-            kind: "thread.updated",
-            sequence: 4,
-            thread: makeShellThread({ id: "thread-archived" }),
-          },
-        ],
-        [{ kind: "something-new", sequence: 5 }],
-        [{ kind: "thread.removed", sequence: 6, threadId: "thread-archived" }],
-      ],
-    }));
-    const items: ArchivedShellWatchItem[] = [];
-    for await (const item of shell.watchArchived()) items.push(item);
-    expect(items.map((i) => i.kind)).toEqual(["snapshot", "thread.updated", "thread.removed"]);
-    expect(items[0]?.kind === "snapshot" && items[0].snapshot.threads[0]?.id).toBe(
-      "thread-archived",
-    );
   });
 
   it("returns silently on abort", async () => {

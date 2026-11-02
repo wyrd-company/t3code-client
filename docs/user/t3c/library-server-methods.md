@@ -36,10 +36,10 @@ getConfig(signal?: AbortSignal): Promise<RpcSuccess<RpcMethods, "server.getConfi
 
 ### serverApi.getSettings()
 
-Read server settings.
+Read server settings, which the server serves as part of its configuration.
 
 ```ts
-getSettings(signal?: AbortSignal): Promise<RpcSuccess<RpcMethods, "server.getSettings">>;
+async getSettings(signal?: AbortSignal): Promise<ServerSettings>;
 ```
 
 **Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)  

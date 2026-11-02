@@ -79,27 +79,24 @@ it("rejects malformed blocking through the public HTTP snapshot", async () => {
   }));
   await expect(shell.snapshot()).rejects.toBeInstanceOf(T3DecodeError);
 });
-it("reads blocking through live and archived public shell streams", async () => {
-  for (const method of ["orchestration.subscribeShell", "orchestration.subscribeArchivedShell"]) {
-    server.handle(method, () => ({
-      kind: "stream",
-      chunks: [
-        [true, false].map((blocking, index) => ({
-          kind: "thread.updated",
-          sequence: index + 1,
-          location: "active",
-          thread: thread({ blocking }),
-        })),
-      ],
-    }));
-    const values: (boolean | undefined)[] = [];
-    const watch = method === "orchestration.subscribeShell" ? shell.watch() : shell.watchArchived();
-    for await (const item of watch) {
-      if (item.kind === "thread.updated") {
-        values.push(item.thread.pendingRuntimeRequest?.blocking);
-        if (values.length === 2) break;
-      }
+it("reads blocking through the public shell stream", async () => {
+  server.handle("orchestration.subscribeShell", () => ({
+    kind: "stream",
+    chunks: [
+      [true, false].map((blocking, index) => ({
+        kind: "thread.updated",
+        sequence: index + 1,
+        location: "active",
+        thread: thread({ blocking }),
+      })),
+    ],
+  }));
+  const values: (boolean | undefined)[] = [];
+  for await (const item of shell.watch()) {
+    if (item.kind === "thread.updated") {
+      values.push(item.thread.pendingRuntimeRequest?.blocking);
+      if (values.length === 2) break;
     }
-    expect(values).toEqual([true, false]);
   }
+  expect(values).toEqual([true, false]);
 });

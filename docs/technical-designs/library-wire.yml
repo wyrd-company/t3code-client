@@ -1,7 +1,7 @@
 $schema: https://refinery.systems/ontology/technical-design
 title: T3 Code HTTP and WebSocket protocol
 objective: >-
-  Implement library authentication, requests, responses and event handling against the verified protocol 2 interfaces of stock T3 Code 0.1.2.
+  Implement library authentication, requests, responses and event handling against the verified protocol 2 interfaces of stock T3 Code 0.1.6.
 relationships:
   related-to:
     - library
@@ -11,7 +11,7 @@ relationships:
     - releasing
 proposed-design:
   high-level-overview: >-
-    The library implements stock T3 Code 0.1.2 and orchestration protocol 2.
+    The library implements stock T3 Code 0.1.6 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade
     contracts. The library architecture links the canonical design family.
   wire-facts-verified-against-t-code: |
@@ -51,9 +51,7 @@ proposed-design:
     | `POST /oauth/token`                                   | none                 | form-encoded token exchange; pairing token is single use                                   |
     | `POST /api/auth/websocket-ticket`                     | bearer               | `{ticket, expiresAt}`; ticket lives about five minutes                                     |
     | `POST /api/auth/pairing-token`                        | bearer, access:write | body `{label?, scopes?}`; the credential is returned once                                  |
-    | `GET /api/auth/pairing-links`                         | bearer, access:read  |                                                                                            |
     | `POST /api/auth/pairing-links/revoke`                 | bearer, access:write | `{id}` → `{revoked}`                                                                       |
-    | `GET /api/auth/clients`                               | bearer, access:read  | `AuthClientSession[]`                                                                      |
     | `POST /api/auth/clients/revoke`                       | bearer, access:write | `{sessionId}` → `{revoked}`                                                                |
     | `POST /api/auth/clients/revoke-others`                | bearer, access:write | `{revokedCount}`                                                                           |
     | `GET /api/projects`                                   | bearer, orch:read    | `ProjectSnapshot`: every project record                                                    |
@@ -130,7 +128,6 @@ proposed-design:
     | `orchestration.searchThread`             | orch:read    | `OrchestrationV2SearchThreadInput` → `OrchestrationV2SearchThreadResult`: one match and the navigation around it                                      |
     | `orchestration.searchThreadStream`       | orch:read    | the same input → stream of results that converge; the last has `complete: true`                                                                       |
     | `orchestration.getArchivedShellSnapshot` | orch:read    | `{}` → `OrchestrationV2ArchivedShellSnapshot`                                                                                                         |
-    | `orchestration.subscribeArchivedShell`   | orch:read    | stream of `OrchestrationV2ArchivedShellStreamItem`                                                                                                    |
     | `orchestration.subscribeShell`           | orch:read    | `{afterSequence?, requestCompletionMarker?}` → stream of `OrchestrationV2ShellStreamItem`                                                             |
     | `orchestration.subscribeThread`          | orch:read    | `{threadId, afterSequence?, requestCompletionMarker?, acceptBoundedSnapshot?, acceptCompactTurnItems?}` → stream of `OrchestrationV2ThreadStreamItem` |
     | `orchestration.subscribeCommandOutput`   | orch:read    | `{threadId, itemId}` → stream of `{kind, text, truncated, running}` frames, ending after `running: false`; fails `OrchestrationV2CommandOutputError`    |
@@ -329,8 +326,8 @@ proposed-design:
     The shell snapshot has `threads` and
     `archivedThreads`, but the server fills `archivedThreads` only on the socket
     snapshot; archived threads are read with
-    `orchestration.getArchivedShellSnapshot`, and `thread.updated` items for
-    them arrive on `orchestration.subscribeArchivedShell`.
+    `orchestration.getArchivedShellSnapshot`. The server has no live archived
+    stream.
 
     `ServerConfig.lastEventLoopStall` is optional recent server event-loop stall
     metadata in configuration reads and configuration stream snapshots. Its

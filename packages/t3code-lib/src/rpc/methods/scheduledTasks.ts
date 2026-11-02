@@ -20,12 +20,6 @@ import {
 // Readers see tasks without webhook endpoints; endpoints, mutations and
 // delivery records need orchestration:operate.
 export const scheduledTasksMethods = {
-  "scheduledTasks.list": defineMethod({
-    payload: z.looseObject({}),
-    success: ScheduledTaskListResult,
-    stream: false,
-    scope: "orchestration:read",
-  }),
   "scheduledTasks.subscribe": defineMethod({
     payload: z.looseObject({}),
     success: ScheduledTaskListResult,

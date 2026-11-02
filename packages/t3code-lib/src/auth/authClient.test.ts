@@ -117,9 +117,7 @@ describe("AuthClient", () => {
     await expect(
       client.createPairingCredential({ label: "Sample client", scopes: ["orchestration:read"] }),
     ).resolves.toMatchObject({ id: "pairing-1" });
-    await expect(client.listPairingLinks()).resolves.toHaveLength(1);
     await expect(client.revokePairingLink("pairing-1")).resolves.toBe(true);
-    await expect(client.listClients()).resolves.toHaveLength(1);
     await expect(client.revokeClient(authSessionId("session-1"))).resolves.toBe(true);
     await expect(client.revokeOtherClients()).resolves.toBe(2);
     await expect(client.hasScope("access:write")).resolves.toBe(true);
@@ -132,9 +130,7 @@ describe("AuthClient", () => {
       "/api/auth/session",
       "/api/auth/websocket-ticket",
       "/api/auth/pairing-token",
-      "/api/auth/pairing-links",
       "/api/auth/pairing-links/revoke",
-      "/api/auth/clients",
       "/api/auth/clients/revoke",
       "/api/auth/clients/revoke-others",
     ]);

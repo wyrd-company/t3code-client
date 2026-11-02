@@ -52,7 +52,6 @@ survive; malformed values fail decoding. This metadata does not grant permission
   - [.snapshot()](#ShellApi+snapshot)
   - [.archivedSnapshot()](#ShellApi+archivedSnapshot)
   - [.watch()](#ShellApi+watch)
-  - [.watchArchived()](#ShellApi+watchArchived)
 
 <a name="ShellApi+snapshot"></a>
 
@@ -69,7 +68,7 @@ snapshot(signal?: AbortSignal): Promise<OrchestrationV2ShellSnapshot>;
 
 ### shellApi.archivedSnapshot()
 
-Archived thread shells and projects, over RPC.
+Archived thread shells and projects, over RPC. The server has no live archived stream.
 
 ```ts
 archivedSnapshot(signal?: AbortSignal): Promise<OrchestrationV2ArchivedShellSnapshot>;
@@ -84,19 +83,6 @@ Subscribes with `orchestration.subscribeShell`; resubscribes after a dropped soc
 
 ```ts
 watch(options: ShellWatchOptions = {}): AsyncIterable<ShellWatchItem>;
-```
-
-**Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
-<a name="ShellApi+watchArchived"></a>
-
-### shellApi.watchArchived()
-
-Archived threads as they change; a snapshot first, then updates. Not resumable: a drop restarts it.
-
-```ts
-watchArchived(
-    options: { readonly signal?: AbortSignal } = {},
-  ): AsyncIterable<ArchivedShellWatchItem>;
 ```
 
 **Kind**: instance method of [<code>ShellApi</code>](#ShellApi)

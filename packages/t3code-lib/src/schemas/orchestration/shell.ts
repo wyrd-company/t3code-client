@@ -223,22 +223,5 @@ export const OrchestrationV2ArchivedShellSnapshot = z.looseObject({
 export type OrchestrationV2ArchivedShellSnapshot = z.infer<
   typeof OrchestrationV2ArchivedShellSnapshot
 >;
-export const OrchestrationV2ArchivedShellStreamItem = taggedUnionWithUnknown("kind", [
-  z.looseObject({ kind: z.literal("snapshot"), snapshot: OrchestrationV2ArchivedShellSnapshot }),
-  z.looseObject({
-    kind: z.literal("thread.updated"),
-    sequence: NonNegativeInt,
-    thread: OrchestrationV2ThreadShell,
-  }),
-  z.looseObject({
-    kind: z.literal("thread.removed"),
-    sequence: NonNegativeInt,
-    threadId: ThreadId,
-  }),
-]);
-export type OrchestrationV2ArchivedShellStreamItem = z.infer<
-  typeof OrchestrationV2ArchivedShellStreamItem
->;
-
 /** The `commandId` stamp on a `thread.visit` and the like; re-exported for facades. */
 export type { CommandId };

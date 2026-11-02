@@ -40,7 +40,10 @@ beforeEach(async () => {
     baseUrl: server.httpUrl,
     getScopes: () => scopes,
   });
-  server.handle("scheduledTasks.list", () => ({ kind: "value", value: { tasks: [stored] } }));
+  server.handle("scheduledTasks.subscribe", () => ({
+    kind: "stream",
+    chunks: [[{ tasks: [stored] }]],
+  }));
   server.handle("scheduledTasks.upsert", (payload) => {
     writes.push(payload);
     return { kind: "value", value: { task: { ...stored, ...(payload as object) } } };

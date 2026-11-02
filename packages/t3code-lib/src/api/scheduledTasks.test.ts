@@ -13,6 +13,7 @@ import {
 } from "../../test/support/scheduledTaskFixtures.ts";
 import {
   T3AuthError,
+  T3DecodeError,
   T3InterruptedError,
   T3NotFoundError,
   T3PreconditionError,
@@ -51,6 +52,11 @@ describe("ScheduledTasksApi", () => {
       received.push({ method, payload });
       return { kind: "value", value };
     });
+  const recordList = (tasks: unknown[]) =>
+    server.handle("scheduledTasks.subscribe", (payload) => {
+      received.push({ method: "scheduledTasks.subscribe", payload });
+      return { kind: "stream", chunks: [[{ tasks }]] };
+    });
   const sent = (method: string) =>
     received.filter((entry) => entry.method === method).map((entry) => entry.payload);
 
@@ -63,7 +69,7 @@ describe("ScheduledTasksApi", () => {
       new RpcClient(connection, rpcMethods, { getScopes: () => scopes }),
       { baseUrl: "http://127.0.0.1:4000/", getScopes: () => scopes },
     );
-    record("scheduledTasks.list", { tasks: [intervalTask, webhookTask] });
+    recordList([intervalTask, webhookTask]);
     server.handle("scheduledTasks.upsert", (payload) => {
       received.push({ method: "scheduledTasks.upsert", payload });
       return { kind: "value", value: { task: { ...webhookTask, ...(payload as object) } } };
@@ -79,7 +85,25 @@ describe("ScheduledTasksApi", () => {
     await expect(api.list()).resolves.toHaveLength(2);
     await expect(api.get(INTERVAL_ID)).resolves.toMatchObject({ id: intervalTask.id });
     await expect(api.get(scheduledTaskId("scheduled-task:absent"))).resolves.toBeUndefined();
-    expect(sent("scheduledTasks.list")).toEqual([{}, {}, {}]);
+    expect(sent("scheduledTasks.subscribe")).toEqual([{}, {}, {}]);
+  });
+
+  it("reads the list from the first subscription item and stops following it", async () => {
+    server.handle("scheduledTasks.subscribe", () => ({
+      kind: "stream",
+      chunks: [[{ tasks: [intervalTask] }], [{ tasks: [intervalTask, webhookTask] }]],
+    }));
+    await expect(api.list()).resolves.toHaveLength(1);
+  });
+
+  it("fails a list when the subscription ends first or its item cannot be decoded", async () => {
+    server.handle("scheduledTasks.subscribe", () => ({ kind: "stream", chunks: [] }));
+    await expect(api.list()).rejects.toMatchObject({ code: "connection", reason: "protocol" });
+    server.handle("scheduledTasks.subscribe", () => ({
+      kind: "stream",
+      chunks: [[{ tasks: "not-a-list" }]],
+    }));
+    await expect(api.list()).rejects.toBeInstanceOf(T3DecodeError);
   });
 
   it("unwraps mutation results and sends the exact payloads", async () => {
@@ -94,7 +118,7 @@ describe("ScheduledTasksApi", () => {
       webhook: webhookEndpoint,
     });
     await expect(api.delete(INTERVAL_ID)).resolves.toBeUndefined();
-    expect(received.filter((entry) => entry.method !== "scheduledTasks.list")).toEqual([
+    expect(received.filter((entry) => entry.method !== "scheduledTasks.subscribe")).toEqual([
       { method: "scheduledTasks.setEnabled", payload: { id: intervalTask.id, enabled: false } },
       { method: "scheduledTasks.runNow", payload: { id: intervalTask.id } },
       { method: "scheduledTasks.rotateWebhookToken", payload: { id: webhookTask.id } },
@@ -203,7 +227,7 @@ describe("ScheduledTasksApi", () => {
 
   it("clears the thread only for an explicit null", async () => {
     const stored = { ...intervalTask, threadId: "thread-sample" };
-    record("scheduledTasks.list", { tasks: [stored] });
+    recordList([stored]);
     await api.update(INTERVAL_ID, {});
     await api.update(INTERVAL_ID, { threadId: null });
     expect(sent("scheduledTasks.upsert").map((p) => (p as { threadId: unknown }).threadId)).toEqual(
@@ -213,7 +237,7 @@ describe("ScheduledTasksApi", () => {
 
   it("refuses to resend an unknown trigger type unless the update supplies a schedule", async () => {
     const future = { ...intervalTask, schedule: { type: "calendar_event", calendar: "sample" } };
-    record("scheduledTasks.list", { tasks: [future] });
+    recordList([future]);
     await expect(api.get(INTERVAL_ID)).resolves.toMatchObject({
       schedule: { unknown: true, raw: { type: "calendar_event" } },
     });
@@ -240,7 +264,7 @@ describe("ScheduledTasksApi", () => {
     await expect(api.update(INTERVAL_ID, {})).rejects.toBeInstanceOf(T3AuthError);
     await expect(api.listWebhookDeliveries(WEBHOOK_ID)).rejects.toBeInstanceOf(T3AuthError);
     await expect(api.list()).resolves.toHaveLength(2);
-    expect(received.map((entry) => entry.method)).toEqual(["scheduledTasks.list"]);
+    expect(received.map((entry) => entry.method)).toEqual(["scheduledTasks.subscribe"]);
   });
 
   it("surfaces a ScheduledTaskError as a typed RPC failure", async () => {
@@ -296,9 +320,9 @@ describe("ScheduledTasksApi webhook deliveries and endpoints", () => {
     scopes = undefined;
     tasks = [intervalTask, webhookTask];
     listCalls = 0;
-    server.handle("scheduledTasks.list", () => {
+    server.handle("scheduledTasks.subscribe", () => {
       listCalls += 1;
-      return { kind: "value", value: { tasks } };
+      return { kind: "stream", chunks: [[{ tasks }]] };
     });
     api = new ScheduledTasksApi(
       new RpcClient(connection, rpcMethods, { getScopes: () => scopes }),

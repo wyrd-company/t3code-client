@@ -61,11 +61,4 @@ export class TerminalApi {
   ): Promise<RpcSuccess<RpcMethods, "terminal.close">> {
     return this.rpc.call("terminal.close", input, signal);
   }
-
-  /** Subscribe to terminal lifecycle events. */
-  watchEvents(options?: {
-    readonly signal?: AbortSignal;
-  }): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "subscribeTerminalEvents">>> {
-    return unwrapStreamItems(this.rpc.stream("subscribeTerminalEvents", {}, options));
-  }
 }

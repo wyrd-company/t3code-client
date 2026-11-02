@@ -21,13 +21,11 @@ const expected = {
   "orchestration.searchThread": [false, "orchestration:read"],
   "orchestration.searchThreadStream": [true, "orchestration:read"],
   "orchestration.getArchivedShellSnapshot": [false, "orchestration:read"],
-  "orchestration.subscribeArchivedShell": [true, "orchestration:read"],
   "orchestration.subscribeShell": [true, "orchestration:read"],
   "orchestration.subscribeThread": [true, "orchestration:read"],
   "orchestration.subscribeCommandOutput": [true, "orchestration:read"],
   "server.probe": [false, "orchestration:read"],
   "server.getConfig": [false, "orchestration:read"],
-  "server.getSettings": [false, "orchestration:read"],
   "server.refreshProviders": [false, "orchestration:read"],
   "server.getDatabaseStorage": [true, "orchestration:read"],
   "server.getUsageSummary": [false, "diagnostics:read"],
@@ -57,12 +55,10 @@ const expected = {
   "terminal.write": [false, "terminal:operate"],
   "terminal.resize": [false, "terminal:operate"],
   "terminal.close": [false, "terminal:operate"],
-  subscribeTerminalEvents: [true, "terminal:read"],
   "mcpApps.callTool": [false, "orchestration:operate"],
   "mcpApps.toolInfo": [false, "orchestration:read"],
   "mcpApps.readResource": [false, "orchestration:read"],
   "mcpApps.updateModelContext": [false, "orchestration:operate"],
-  "scheduledTasks.list": [false, "orchestration:read"],
   "scheduledTasks.subscribe": [true, "orchestration:read"],
   "scheduledTasks.upsert": [false, "orchestration:operate"],
   "scheduledTasks.setEnabled": [false, "orchestration:operate"],
@@ -100,7 +96,7 @@ describe("RPC contract registry", () => {
     expectTypeOf<
       RpcSuccess<RpcMethods, "orchestration.launchThread">["resumed"]
     >().toEqualTypeOf<boolean>();
-    expectTypeOf<"orchestration.subscribeArchivedShell">().toExtend<StreamMethodName<RpcMethods>>();
+    expectTypeOf<"orchestration.subscribeShell">().toExtend<StreamMethodName<RpcMethods>>();
   });
   it("validates orchestration read inputs before sending", () => {
     expect(

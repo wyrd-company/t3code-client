@@ -11,7 +11,6 @@ import {
   ServerConfigStreamEvent,
   ServerLifecycleStreamEvent,
   ServerProviderUpdatedPayload,
-  ServerSettings,
 } from "../../schemas/server.ts";
 import { UsageSummary, UsageSummaryInput } from "../../schemas/usage.ts";
 
@@ -25,12 +24,6 @@ export const serverMethods = {
   "server.getConfig": defineMethod({
     payload: z.looseObject({}),
     success: ServerConfig,
-    stream: false,
-    scope: "orchestration:read",
-  }),
-  "server.getSettings": defineMethod({
-    payload: z.looseObject({}),
-    success: ServerSettings,
     stream: false,
     scope: "orchestration:read",
   }),
