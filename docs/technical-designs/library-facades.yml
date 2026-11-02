@@ -389,9 +389,10 @@ proposed-design:
     rejects with `pairing_rejected`. The library sends the code
     to the server and keeps it out of its errors. A refusal is a `PeerLinkError` record.
     An `answerRequest` that the peer refuses still resolves, and the `link_request`
-    turn item records `failed` with its `failure` text. `PeerLinkRequestError` means
-    that nothing was linked: an unknown thread is `load_failed`, an unknown item
-    `not_found` and a closed request `already_answered`.
+    turn item records `failed` with its `failure` text. A `PeerLinkRequestError` with `load_failed` (unknown thread),
+    `not_found` (unknown item) or `already_answered` (closed request) means that
+    nothing was linked. `record_failed` can come after the link was made, so that a
+    caller checks `peerLinks.list`.
 
     Thread rows have `linkOrigin` when a linked environment's agent started the work,
     and `delegatedFrom` when the thread is that environment's delegated task. The

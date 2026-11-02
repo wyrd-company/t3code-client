@@ -88,7 +88,8 @@ async unlink(environmentId: EnvironmentId, signal?: AbortSignal): Promise<boolea
 Answer an agent's `link_request` turn item: `link`, `use-existing` or
 `decline`. A link that the peer refuses resolves, and the turn item records
 it as `failed`. A request that is gone or already answered rejects with a
-`PeerLinkRequestError` record. Needs `access:write`.
+`PeerLinkRequestError` record. Its reason `record_failed` can come after the
+link was made, so check `list` after it. Needs `access:write`.
 
 ```ts
 answerRequest(
