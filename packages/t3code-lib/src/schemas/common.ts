@@ -97,6 +97,9 @@ export const providerInstanceId = (value: string): ProviderInstanceId =>
 export const ClientSurface = z.enum(["web", "desktop", "mobile", "cli"]);
 export type ClientSurface = z.infer<typeof ClientSurface>;
 
+export const ClientWebDeployment = z.enum(["hosted", "server"]);
+export type ClientWebDeployment = z.infer<typeof ClientWebDeployment>;
+
 /**
  * A literal set the server may extend. Known members keep their literal type;
  * anything else decodes as a plain string so a newer server never breaks the

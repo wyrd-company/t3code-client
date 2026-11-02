@@ -7,6 +7,7 @@ import { z } from "zod";
 import {
   AuthSessionId,
   ClientSurface,
+  ClientWebDeployment,
   IsoDateTime,
   TrimmedNonEmptyString,
   forwardCompatibleLiteral,
@@ -190,6 +191,20 @@ export const AuthClientMetadata = z.looseObject({
   browser: TrimmedNonEmptyString.optional(),
 });
 export type AuthClientMetadata = z.infer<typeof AuthClientMetadata>;
+
+/** What a client says about itself, for example to name it in a triage session. */
+export const AuthClientPresentationMetadata = z.looseObject({
+  label: TrimmedNonEmptyString.optional(),
+  deviceType: AuthClientMetadataDeviceType.optional(),
+  os: TrimmedNonEmptyString.optional(),
+  osMajorVersion: z.number().int().optional(),
+  deviceModel: TrimmedNonEmptyString.optional(),
+  surface: ClientSurface.optional(),
+  webDeployment: ClientWebDeployment.optional(),
+  browser: TrimmedNonEmptyString.optional(),
+  appVersion: TrimmedNonEmptyString.optional(),
+});
+export type AuthClientPresentationMetadata = z.infer<typeof AuthClientPresentationMetadata>;
 
 export const AuthClientSession = z.looseObject({
   sessionId: AuthSessionId,

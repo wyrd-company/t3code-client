@@ -18,6 +18,14 @@ import { unwrapStreamItems, type DecodedStreamItem } from "./streamItems.ts";
 export interface WatchServerConfigOptions {
   readonly environmentThemes?: boolean;
   readonly usageLimitSources?: boolean;
+  /** Advertise that this client handles /usage-limits, so that the server offers it. */
+  readonly usageLimitsCommand?: boolean;
+  /**
+   * Omit per-cwd provider snapshots from the stream. `refreshProviders` with
+   * `workspaceSnapshotsOnDemand` then supplies them. Servers that advertise the
+   * `providerWorkspaceSnapshotsOnDemand` capability honor it.
+   */
+  readonly workspaceSnapshotsOnDemand?: boolean;
   readonly signal?: AbortSignal;
 }
 
@@ -406,7 +414,13 @@ export class ServerApi {
     return (await this.getConfig(signal)).settings;
   }
 
-  /** Refresh the selected provider instances. */
+  /**
+   * Refresh the selected provider instances. `reloadSecrets` reads secret
+   * references again and can prompt on the host. `workspaceSnapshotsOnDemand`
+   * replies without snapshots or, with `instanceId` and `cwd`, with only that
+   * instance's snapshot of that folder and empty `models`, `slashCommands` and
+   * `skills`. `usageLimitsCommand` adds /usage-limits to that reply.
+   */
   refreshProviders(
     input: RpcPayload<RpcMethods, "server.refreshProviders"> = {},
     signal?: AbortSignal,
@@ -414,17 +428,51 @@ export class ServerApi {
     return this.rpc.call("server.refreshProviders", input, signal);
   }
 
+  /**
+   * Find a `t3` release in the npm registry that the server is configured to use.
+   * `spec` is `latest`, `nightly` or an exact version. Resolves to `null` when
+   * there is no such release, and fails with `ServerNpmReleaseError` when the
+   * lookup cannot complete. Servers that advertise `npmReleaseLookup` answer it.
+   */
+  getNpmRelease(
+    input: RpcPayload<RpcMethods, "server.getNpmRelease">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "server.getNpmRelease">> {
+    return this.rpc.call("server.getNpmRelease", input, signal);
+  }
+
+  /**
+   * Write triage session files on the server and get composer text that links
+   * them, for a new thread. The server also starts to clone the T3 Code source in
+   * its own folder when it can. `client` names this client in the session.
+   * Servers that advertise `triage` answer it.
+   */
+  prepareTriage(
+    input: RpcPayload<RpcMethods, "server.prepareTriage">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "server.prepareTriage">> {
+    return this.rpc.call("server.prepareTriage", input, signal);
+  }
+
   /** Subscribe to configuration changes; decode failures remain stream items. */
   watchConfig(
     options: WatchServerConfigOptions = {},
   ): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "subscribeServerConfig">>> {
-    const { signal, environmentThemes, usageLimitSources } = options;
+    const {
+      signal,
+      environmentThemes,
+      usageLimitSources,
+      usageLimitsCommand,
+      workspaceSnapshotsOnDemand,
+    } = options;
     return unwrapStreamItems(
       this.rpc.stream(
         "subscribeServerConfig",
         {
           ...(environmentThemes === undefined ? {} : { environmentThemes }),
           ...(usageLimitSources === undefined ? {} : { usageLimitSources }),
+          ...(usageLimitsCommand === undefined ? {} : { usageLimitsCommand }),
+          ...(workspaceSnapshotsOnDemand === undefined ? {} : { workspaceSnapshotsOnDemand }),
         },
         signal === undefined ? undefined : { signal },
       ),

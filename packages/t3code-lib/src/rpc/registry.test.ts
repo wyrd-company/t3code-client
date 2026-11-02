@@ -31,6 +31,8 @@ const expected = {
   "server.probe": [false, "orchestration:read"],
   "server.getConfig": [false, "orchestration:read"],
   "server.refreshProviders": [false, "orchestration:read"],
+  "server.getNpmRelease": [false, "orchestration:read"],
+  "server.prepareTriage": [false, "orchestration:operate"],
   "server.getDatabaseStorage": [true, "orchestration:read"],
   "server.getUsageSummary": [false, "diagnostics:read"],
   subscribeServerConfig: [true, "orchestration:read"],
@@ -131,17 +133,36 @@ describe("RPC contract registry", () => {
     const schema = rpcMethods.subscribeServerConfig.payload;
     expect(schema.parse({})).toEqual({});
     expect(
-      schema.parse({ environmentThemes: true, usageLimitSources: true, usageLimitsCommand: false }),
-    ).toEqual({ environmentThemes: true, usageLimitSources: true, usageLimitsCommand: false });
+      schema.parse({
+        environmentThemes: true,
+        usageLimitSources: true,
+        usageLimitsCommand: false,
+        workspaceSnapshotsOnDemand: true,
+      }),
+    ).toEqual({
+      environmentThemes: true,
+      usageLimitSources: true,
+      usageLimitsCommand: false,
+      workspaceSnapshotsOnDemand: true,
+    });
     expect(schema.safeParse({ usageLimitsCommand: "yes" }).success).toBe(false);
+    expect(schema.safeParse({ workspaceSnapshotsOnDemand: "yes" }).success).toBe(false);
     expect(
       rpcMethods["server.refreshProviders"].payload.safeParse({
         instanceId: "example",
         cwd: "/tmp/example",
         fresh: true,
         refreshModels: true,
+        reloadSecrets: true,
+        workspaceSnapshotsOnDemand: true,
+        usageLimitsCommand: true,
       }).success,
     ).toBe(true);
+    for (const flag of ["reloadSecrets", "workspaceSnapshotsOnDemand", "usageLimitsCommand"]) {
+      expect(rpcMethods["server.refreshProviders"].payload.safeParse({ [flag]: 1 }).success).toBe(
+        false,
+      );
+    }
     expect(rpcMethods["server.refreshProviders"].payload.safeParse({ fresh: "yes" }).success).toBe(
       false,
     );

@@ -13,6 +13,7 @@ export * as rpcErrors from "./rpcErrors.ts";
 export * as scheduledTask from "./scheduledTask.ts";
 export * as provider from "./provider.ts";
 export * as server from "./server.ts";
+export * as serverRelease from "./serverRelease.ts";
 export * as terminal from "./terminal.ts";
 export * as usage from "./usage.ts";
 export * as vcs from "./vcs.ts";

@@ -12,6 +12,7 @@ import {
   VcsListRefsInput,
   VcsListRefsResult,
   VcsRemoveWorktreeInput,
+  VcsRefreshStatusInput,
   VcsStatusInput,
   VcsStatusResult,
   VcsStatusStreamEvent,
@@ -61,7 +62,7 @@ export const vcsMethods = {
     scope: "source-control:write",
   }),
   "vcs.refreshStatus": defineMethod({
-    payload: VcsStatusInput,
+    payload: VcsRefreshStatusInput,
     success: VcsStatusResult,
     stream: false,
     scope: "orchestration:read",

@@ -2644,6 +2644,8 @@ reclaim space or run the compact command.
   - [.getConfig()](#ServerApi+getConfig)
   - [.getSettings()](#ServerApi+getSettings)
   - [.refreshProviders()](#ServerApi+refreshProviders)
+  - [.getNpmRelease()](#ServerApi+getNpmRelease)
+  - [.prepareTriage()](#ServerApi+prepareTriage)
   - [.watchConfig()](#ServerApi+watchConfig)
   - [.watchLifecycle()](#ServerApi+watchLifecycle)
   - [.watchDatabaseStorage()](#ServerApi+watchDatabaseStorage)
@@ -2690,13 +2692,51 @@ async getSettings(signal?: AbortSignal): Promise<ServerSettings>;
 
 ### serverApi.refreshProviders()
 
-Refresh the selected provider instances.
+Refresh the selected provider instances. `reloadSecrets` reads secret
+references again and can prompt on the host. `workspaceSnapshotsOnDemand`
+replies without snapshots or, with `instanceId` and `cwd`, with only that
+instance's snapshot of that folder and empty `models`, `slashCommands` and
+`skills`. `usageLimitsCommand` adds /usage-limits to that reply.
 
 ```ts
 refreshProviders(
     input: RpcPayload<RpcMethods, "server.refreshProviders"> = {},
     signal?: AbortSignal,
   ): Promise<RpcSuccess<RpcMethods, "server.refreshProviders">>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
+<a name="ServerApi+getNpmRelease"></a>
+
+### serverApi.getNpmRelease()
+
+Find a `t3` release in the npm registry that the server is configured to use.
+`spec` is `latest`, `nightly` or an exact version. Resolves to `null` when
+there is no such release, and fails with `ServerNpmReleaseError` when the
+lookup cannot complete. Servers that advertise `npmReleaseLookup` answer it.
+
+```ts
+getNpmRelease(
+    input: RpcPayload<RpcMethods, "server.getNpmRelease">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "server.getNpmRelease">>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
+<a name="ServerApi+prepareTriage"></a>
+
+### serverApi.prepareTriage()
+
+Write triage session files on the server and get composer text that links
+them, for a new thread. The server also starts to clone the T3 Code source in
+its own folder when it can. `client` names this client in the session.
+Servers that advertise `triage` answer it.
+
+```ts
+prepareTriage(
+    input: RpcPayload<RpcMethods, "server.prepareTriage">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "server.prepareTriage">>;
 ```
 
 **Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
@@ -2852,6 +2892,7 @@ Refresh repository status. `workingTree.rootPath` is an optional nonempty
 string containing the absolute worktree root on the server environment.
 Each `workingTree.files[].path` is relative to that root. Paths preserve
 whitespace; the root is omitted when the server cannot resolve it.
+`localOnly` refreshes only the local state and does not contact the remote.
 
 ```ts
 status(

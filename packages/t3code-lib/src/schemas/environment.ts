@@ -102,6 +102,12 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   /** Server can exclude pull-request-linked threads from inactivity settlement. */
   threadAutoSettlementScope: z.boolean().optional(),
   serverInstallation: ServerInstallation.optional().catch(undefined),
+  /** Server answers `server.getNpmRelease` from its configured npm registry. */
+  npmReleaseLookup: z.boolean().optional(),
+  /** Server answers `server.prepareTriage`. */
+  triage: z.boolean().optional(),
+  /** Server honors `workspaceSnapshotsOnDemand`. Older servers still send every snapshot. */
+  providerWorkspaceSnapshotsOnDemand: z.boolean().optional(),
 });
 export type ExecutionEnvironmentCapabilities = z.infer<typeof ExecutionEnvironmentCapabilities>;
 

@@ -111,6 +111,12 @@ export const ProviderSetupError = taggedError("ProviderSetupError", {
   detail: z.string(),
   cause: Defect.optional(),
 });
+export const ServerNpmReleaseError = taggedError("ServerNpmReleaseError", {
+  reason: z.string(),
+});
+export const ServerPrepareTriageError = taggedError("ServerPrepareTriageError", {
+  cause: Defect.optional(),
+});
 
 // project.ts
 
@@ -209,6 +215,8 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   KeybindingsConfigError,
   ServerSettingsError,
   ProviderSetupError,
+  ServerNpmReleaseError,
+  ServerPrepareTriageError,
   ProjectListEntriesError,
   ProjectSearchEntriesError,
   ProjectSearchContentsError,

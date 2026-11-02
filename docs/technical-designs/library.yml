@@ -111,6 +111,7 @@ proposed-design:
         server.ts               ServerConfig (providers, keybindings, issues and idleCompaction typed; other settings loose), config stream events
         serverLifecycle.ts      lifecycle stream events, self-update outcome (re-exported by server.ts)
         databaseStorage.ts      database storage status stream items (re-exported by server.ts)
+        serverRelease.ts        npm release lookup and triage session start
         provider.ts             provider snapshot, models, auth status
         vcs.ts                  refs, status, worktree inputs/results
         terminal.ts             open/attach/write/events
@@ -132,7 +133,7 @@ proposed-design:
         authClient.ts           AuthClient: exchange, ticket, session state, pairing links, clients, scopes
         scopes.ts               scope constants, hasScope, grantedScopes
       api/                      facades composed by T3Client
-        server.ts               getConfig, probe, watchConfig, watchLifecycle, watchDatabaseStorage
+        server.ts               getConfig, probe, getNpmRelease, prepareTriage, watchConfig, watchLifecycle, watchDatabaseStorage
         projects.ts             list, get, snapshot, create, update, delete, ensure, ensureScratch, createNew, createFromThread, files
         threads.ts              list, get, detail, projection, historyPage, transcript, create, ensure, launch, update, archive, delete, startTurn, interrupt, stop, respond*, watch, watchCommandOutput
         commandOutput.ts        watchCommandOutput: one command row's output stream

@@ -97,6 +97,9 @@ proposed-design:
     `projectFromThread.live.test.ts` promotes a No project thread twice, checks the
     refusals, pins and archives a project, and checks that stock T3 Code refuses the
     internal adopt-folder command from a client.
+    `serverRelease.live.test.ts` reads a stock T3 Code npm release, starts a triage
+    session, compares on-demand provider snapshots with the full stream, and reads a
+    local-only VCS status.
     `threadFind.live.test.ts` checks no-match output against stock T3 Code; its
     `T3_LIVE_AGENT=1` case resolves a real Luna session before and after archiving
     the owning T3 thread, and checks provider separation.

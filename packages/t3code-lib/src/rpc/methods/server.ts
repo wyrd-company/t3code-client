@@ -12,6 +12,12 @@ import {
   ServerLifecycleStreamEvent,
   ServerProviderUpdatedPayload,
 } from "../../schemas/server.ts";
+import {
+  ServerNpmRelease,
+  ServerNpmReleaseInput,
+  ServerPrepareTriageInput,
+  ServerPrepareTriageResult,
+} from "../../schemas/serverRelease.ts";
 import { UsageSummary, UsageSummaryInput } from "../../schemas/usage.ts";
 
 export const serverMethods = {
@@ -34,10 +40,28 @@ export const serverMethods = {
       /** With `instanceId` and `cwd`: rescan the workspace's skills and slash commands. */
       fresh: z.boolean().optional(),
       refreshModels: z.boolean().optional(),
+      /** Read secret references again. Unlocking a vault can prompt on the host. */
+      reloadSecrets: z.boolean().optional(),
+      /** Reply without snapshots, or with only the snapshot of `instanceId` and `cwd`. */
+      workspaceSnapshotsOnDemand: z.boolean().optional(),
+      /** With `workspaceSnapshotsOnDemand`: add /usage-limits to the replied providers. */
+      usageLimitsCommand: z.boolean().optional(),
     }),
     success: ServerProviderUpdatedPayload,
     stream: false,
     scope: "orchestration:read",
+  }),
+  "server.getNpmRelease": defineMethod({
+    payload: ServerNpmReleaseInput,
+    success: ServerNpmRelease.nullable(),
+    stream: false,
+    scope: "orchestration:read",
+  }),
+  "server.prepareTriage": defineMethod({
+    payload: ServerPrepareTriageInput,
+    success: ServerPrepareTriageResult,
+    stream: false,
+    scope: "orchestration:operate",
   }),
   "server.getDatabaseStorage": defineMethod({
     payload: z.looseObject({}),
@@ -56,6 +80,8 @@ export const serverMethods = {
       environmentThemes: z.boolean().optional(),
       usageLimitSources: z.boolean().optional(),
       usageLimitsCommand: z.boolean().optional(),
+      /** Omit per-cwd provider snapshots. `server.refreshProviders` then supplies them. */
+      workspaceSnapshotsOnDemand: z.boolean().optional(),
     }),
     success: ServerConfigStreamEvent,
     stream: true,

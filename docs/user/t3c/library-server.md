@@ -373,6 +373,8 @@ reclaim space or run the compact command.
   - [.getConfig()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+getConfig)
   - [.getSettings()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+getSettings)
   - [.refreshProviders()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+refreshProviders)
+  - [.getNpmRelease()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+getNpmRelease)
+  - [.prepareTriage()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+prepareTriage)
   - [.watchConfig()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+watchConfig)
   - [.watchLifecycle()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+watchLifecycle)
   - [.watchDatabaseStorage()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+watchDatabaseStorage)

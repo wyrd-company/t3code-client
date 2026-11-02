@@ -242,7 +242,8 @@ proposed-design:
     Registry coverage for this version, all typed: the orchestration
     methods, including the `orchestration.subscribeCommandOutput` stream; `projects.mutate`; `mcpApps.callTool`, `mcpApps.toolInfo`,
     `mcpApps.readResource`, `mcpApps.updateModelContext`; `server.probe`, `server.getConfig`,
-    `server.refreshProviders`, `server.getDatabaseStorage`,
+    `server.refreshProviders`, `server.getNpmRelease`, `server.prepareTriage`,
+    `server.getDatabaseStorage`,
     `server.getUsageSummary`,
     `subscribeServerConfig`, `subscribeServerLifecycle`, `subscribeAuthAccess`; `vcs.listRefs`,
     `vcs.refreshStatus`, `vcs.createWorktree`, `vcs.removeWorktree`,

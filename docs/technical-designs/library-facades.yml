@@ -180,8 +180,10 @@ proposed-design:
       probe();
       getConfig();
       getSettings(); // the settings field of getConfig
-      refreshProviders(input?);
-      watchConfig();
+      refreshProviders(input?); // reloadSecrets, workspaceSnapshotsOnDemand, usageLimitsCommand
+      getNpmRelease(input: { spec }): Promise<ServerNpmRelease | null>;
+      prepareTriage(input: { client }): Promise<ServerPrepareTriageResult>; // writes session files on the server
+      watchConfig(options?); // usageLimitsCommand, workspaceSnapshotsOnDemand and more
       watchLifecycle();
       watchDatabaseStorage(options?); // server.getDatabaseStorage stream
       environment();
@@ -351,6 +353,17 @@ proposed-design:
     `project.update`. False and omission are preserved; omission does not advertise
     support. Supplied non-boolean values fail decoding. The library does not check them
     before a call.
+
+  optional-server-release-and-triage-capabilities: |
+    `ExecutionEnvironmentCapabilities.npmReleaseLookup`, `triage` and
+    `providerWorkspaceSnapshotsOnDemand` are optional booleans available through
+    `server.environment`, `server.getConfig` and configuration stream snapshots. True
+    advertises `server.getNpmRelease`, `server.prepareTriage` and the
+    `workspaceSnapshotsOnDemand` input of `server.refreshProviders` and
+    `server.watchConfig`. False and omission are preserved; omission does not
+    advertise support. Supplied non-boolean values fail decoding. The library does
+    not check them before a call. `server.prepareTriage` needs `orchestration:operate`.
+    `vcs.status` takes `localOnly`, which refreshes only the local state.
 
   optional-project-clone-tracking-capability: |
     `ExecutionEnvironmentCapabilities.projectCloneTracking` is an optional boolean
