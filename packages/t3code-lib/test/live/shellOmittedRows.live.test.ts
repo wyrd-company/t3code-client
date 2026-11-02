@@ -16,9 +16,7 @@ import {
   type ProjectId,
   type RunId,
 } from "../../src/schemas/common.ts";
-import { connect, hasLiveServer, modelSelection } from "./liveClient.ts";
-
-const agent = process.env["T3_LIVE_AGENT"] === "1";
+import { connect, hasAgent, hasLiveServer, modelSelection, waitFor } from "./liveClient.ts";
 
 interface SampleThread {
   readonly name: string;
@@ -119,7 +117,7 @@ describe.skipIf(!hasLiveServer)("live shell omitted rows", () => {
     });
   });
 
-  it.skipIf(!agent)(
+  it.skipIf(!hasAgent)(
     "force stops a real agent turn",
     async () => {
       const sample = { name: "Sample force", runtimeMode: "full-access" } as const;
@@ -137,25 +135,24 @@ describe.skipIf(!hasLiveServer)("live shell omitted rows", () => {
           );
           return command ? (projection.runs.at(-1)?.id ?? undefined) : undefined;
         };
-        const started = Date.now() + 180_000;
-        let run = await running();
-        while (run === undefined && Date.now() < started) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
-          run = await running();
-        }
-        if (run === undefined) throw new Error("The agent did not start the sample command.");
+        const run = await waitFor(running, "the agent to start the sample command", {
+          timeoutMs: 180_000,
+          intervalMs: 500,
+        });
         observation["commandRunningBeforeForceStop"] = true;
         const result = await client.threads.forceStop(thread.id, { runId: run });
         observation["outcome"] = result.outcome;
         observation["sharedWithThreads"] = result.sharedWithThreadIds.length;
         expect(["killed", "released", "releasing"]).toContain(result.outcome);
         const terminal = ["completed", "interrupted", "failed", "cancelled", "rolled_back"];
-        const deadline = Date.now() + 60_000;
-        let ended = await client.threads.get(thread.id);
-        while (!terminal.includes(ended?.status ?? "") && Date.now() < deadline) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
-          ended = await client.threads.get(thread.id);
-        }
+        const ended = await waitFor(
+          async () => {
+            const read = await client.threads.get(thread.id);
+            return terminal.includes(read?.status ?? "") ? read : undefined;
+          },
+          "a terminal thread status",
+          { timeoutMs: 60_000, intervalMs: 500 },
+        );
         observation["activeRunAfter"] = ended?.activeRunId ?? null;
         observation["statusAfter"] = ended?.status;
         expect(terminal).toContain(ended?.status);

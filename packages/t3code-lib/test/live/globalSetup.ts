@@ -69,6 +69,34 @@ export async function waitForReady(baseUrl: string, server: NodeChildProcess.Chi
   throw new Error(`t3 was not ready within ${READY_TIMEOUT_MS} ms.`);
 }
 
+/** Start the server on loopback, with its output in a log file and its own data directory. */
+export function spawnServer(options: {
+  readonly bin: string;
+  readonly port: number;
+  readonly baseDir: string;
+  readonly workspace: string;
+  readonly logFd: number;
+}): NodeChildProcess.ChildProcess {
+  return NodeChildProcess.spawn(
+    process.execPath,
+    [
+      options.bin,
+      "serve",
+      "--port",
+      String(options.port),
+      "--host",
+      "127.0.0.1",
+      "--base-dir",
+      options.baseDir,
+      "--no-browser",
+      "--log-level",
+      "warn",
+      options.workspace,
+    ],
+    { stdio: ["ignore", options.logFd, options.logFd], env: serverEnvironment() },
+  );
+}
+
 export function issueToken(bin: string, baseDir: string): string {
   const output = NodeChildProcess.execFileSync(
     process.execPath,
@@ -100,24 +128,7 @@ export default async function setup(): Promise<(() => Promise<void>) | undefined
   const baseUrl = `http://127.0.0.1:${port}`;
   const log = await NodeFSP.open(NodePath.join(root, "server.log"), "w");
 
-  const server = NodeChildProcess.spawn(
-    process.execPath,
-    [
-      bin,
-      "serve",
-      "--port",
-      String(port),
-      "--host",
-      "127.0.0.1",
-      "--base-dir",
-      baseDir,
-      "--no-browser",
-      "--log-level",
-      "warn",
-      workspace,
-    ],
-    { stdio: ["ignore", log.fd, log.fd], env: serverEnvironment() },
-  );
+  const server = spawnServer({ bin, port, baseDir, workspace, logFd: log.fd });
 
   let ownedProcesses: Awaited<ReturnType<typeof processIdentities>> = [];
   const evidenceDir = process.env["T3_LIVE_EVIDENCE_DIR"];

@@ -18,10 +18,9 @@ import { T3RpcDefectError, T3RpcError } from "../../src/index.ts";
 import { GuestMessageId, threadId as toThreadId, type ThreadId } from "../../src/schemas/common.ts";
 import { isTurnItemOfType } from "../../src/schemas/orchestration/turnItems.ts";
 import { isRpcErrorOfTag } from "../../src/schemas/rpcErrors.ts";
-import { hasLiveServer, modelSelection } from "./liveClient.ts";
+import { hasAgent, hasLiveServer, modelSelection, refusal, waitFor } from "./liveClient.ts";
 import { startPeerServer, type PeerServer } from "./peerServer.ts";
 
-const hasAgent = process.env["T3_LIVE_AGENT"] === "1";
 const dismissed = GuestMessageId.parse("guest-message-dismissed");
 const toSend = GuestMessageId.parse("guest-message-to-send");
 const guestText = "Sample guest text. Reply with one short sentence.";
@@ -34,15 +33,11 @@ const pendingMessage = (id: GuestMessageId) => ({
 });
 
 const createRefusal = async (client: T3Client, threadId: ThreadId) => {
-  const outcome = await client.guestShares.create(threadId).then(
-    () => undefined,
-    (error: unknown) => error,
-  );
-  if (!(outcome instanceof T3RpcError)) throw new Error("Expected a typed refusal.");
-  if (!isRpcErrorOfTag(outcome.record, "GuestShareCreateError")) {
+  const record = await refusal(client.guestShares.create(threadId));
+  if (!isRpcErrorOfTag(record, "GuestShareCreateError")) {
     throw new Error("Expected a GuestShareCreateError record.");
   }
-  return outcome.record.reason;
+  return record.reason;
 };
 
 async function findDatabase(home: string): Promise<string> {
@@ -166,15 +161,16 @@ describe.skipIf(!hasLiveServer)("live guest shares", () => {
 
     if (hasAgent) {
       const messageId = await server.client.guestShares.sendMessage(threadId, toSend);
-      const deadline = Date.now() + 200_000;
-      let current = await projection();
-      while (
-        Date.now() < deadline &&
-        !["completed", "failed"].includes(current.runs.at(-1)?.status ?? "")
-      ) {
-        await new Promise((resolve) => setTimeout(resolve, 1_000));
-        current = await projection();
-      }
+      const current = await waitFor(
+        async () => {
+          const read = await projection();
+          return ["completed", "failed"].includes(read.runs.at(-1)?.status ?? "")
+            ? read
+            : undefined;
+        },
+        "the run of the sent message",
+        { timeoutMs: 200_000 },
+      );
       expect(current.runs.at(-1)?.status).toBe("completed");
       const sent = current.turnItems.find(
         (item) => isTurnItemOfType(item, "user_message") && item.messageId === messageId,

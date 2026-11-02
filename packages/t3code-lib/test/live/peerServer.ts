@@ -7,15 +7,19 @@
  * has its own home and port. Its output goes to a file in that home, because
  * it can contain pairing credentials, and `stop` removes that home.
  */
-import * as NodeChildProcess from "node:child_process";
 import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
-import { WebSocket as WsWebSocket } from "ws";
-import { T3Client } from "../../src/index.ts";
-import type { WebSocketConstructor } from "../../src/internal/websocket.ts";
-import { serverEnvironment } from "../support/serverEnvironment.ts";
-import { freePort, hasExited, issueToken, serverBin, waitForReady } from "./globalSetup.ts";
+import type { T3Client } from "../../src/index.ts";
+import {
+  freePort,
+  hasExited,
+  issueToken,
+  serverBin,
+  spawnServer,
+  waitForReady,
+} from "./globalSetup.ts";
+import { connectTo } from "./liveClient.ts";
 
 export interface PeerServer {
   readonly baseUrl: string;
@@ -35,31 +39,8 @@ export async function startPeerServer(): Promise<PeerServer> {
   const port = await freePort();
   const baseUrl = `http://127.0.0.1:${port}`;
   const log = await NodeFSP.open(NodePath.join(root, "server.log"), "w");
-  const start = () =>
-    NodeChildProcess.spawn(
-      process.execPath,
-      [
-        bin,
-        "serve",
-        "--port",
-        String(port),
-        "--host",
-        "127.0.0.1",
-        "--base-dir",
-        baseDir,
-        "--no-browser",
-        "--log-level",
-        "warn",
-        workspace,
-      ],
-      { stdio: ["ignore", log.fd, log.fd], env: serverEnvironment() },
-    );
-  const connect = () =>
-    T3Client.create({
-      baseUrl,
-      accessToken: issueToken(bin, baseDir),
-      webSocket: WsWebSocket as unknown as WebSocketConstructor,
-    });
+  const start = () => spawnServer({ bin, port, baseDir, workspace, logFd: log.fd });
+  const connect = () => connectTo(baseUrl, issueToken(bin, baseDir));
   let server = start();
   const stopProcess = async () => {
     if (hasExited(server)) return;

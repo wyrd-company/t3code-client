@@ -9,15 +9,19 @@
  */
 import * as NodeCrypto from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
-import type { T3Client } from "../../src/index.ts";
-import { T3RpcError } from "../../src/index.ts";
+import type { T3Client, T3RpcError } from "../../src/index.ts";
 import { EnvironmentId, threadId, turnItemId, type ThreadId } from "../../src/schemas/common.ts";
 import { isTurnItemOfType } from "../../src/schemas/orchestration/turnItems.ts";
 import { isRpcErrorOfTag } from "../../src/schemas/rpcErrors.ts";
-import { connect, hasLiveServer, modelSelection } from "./liveClient.ts";
+import {
+  connect,
+  hasAgent,
+  hasLiveServer,
+  modelSelection,
+  refusal,
+  waitFor,
+} from "./liveClient.ts";
 import { startPeerServer, type PeerServer } from "./peerServer.ts";
-
-const hasAgent = process.env["T3_LIVE_AGENT"] === "1";
 
 const setLinksEnabled = (client: T3Client, enabled: boolean) =>
   client.rpc.callRaw("server.updateSettings", { patch: { linkedEnvironmentsEnabled: enabled } });
@@ -31,27 +35,8 @@ const pairingCode = async (peer: PeerServer) => {
   return credential;
 };
 
-const refusal = async (promise: Promise<unknown>) => {
-  const outcome = await promise.then(
-    () => undefined,
-    (error: unknown) => error,
-  );
-  if (!(outcome instanceof T3RpcError)) throw new Error("Expected a typed refusal.");
-  return outcome.record;
-};
-
 const peerLinkReason = (record: T3RpcError["record"]) =>
   isRpcErrorOfTag(record, "PeerLinkError") ? record.reason : undefined;
-
-async function waitFor<T>(read: () => Promise<T | undefined>, what: string): Promise<T> {
-  const deadline = Date.now() + 240_000;
-  while (Date.now() < deadline) {
-    const found = await read();
-    if (found !== undefined) return found;
-    await new Promise((resolve) => setTimeout(resolve, 1_000));
-  }
-  throw new Error(`Timed out waiting for ${what}.`);
-}
 
 // It changes a server setting and expects no links, so that it runs only on the server it owns.
 const ownsServer = hasLiveServer && Boolean(process.env["T3_LIVE_HOME"]);
