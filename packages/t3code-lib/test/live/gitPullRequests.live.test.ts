@@ -188,7 +188,7 @@ describe.skipIf(!hasLiveServer)("pull request methods with a local forge stub", 
     "creates a pull request with text from a real agent",
     { timeout: 240_000 },
     async () => {
-      await client.rpc.callRaw("server.updateSettings", {
+      await client.rpc.call("server.updateSettings", {
         patch: { textGenerationModelSelection: modelSelection },
       });
       git(cwd, "switch", "--create", "agent-change");

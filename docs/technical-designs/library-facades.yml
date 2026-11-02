@@ -839,7 +839,9 @@ proposed-design:
     Growing strings, omission and unknown settings metadata remain intact.
     Non-string values fail decoding; later valid chunks remain available.
     Reading this metadata does not compact threads or change defaults or timing.
-    Other settings remain loose. `server.updateSettings` is the typed mutation.
+    Other settings remain loose on a read. `server.updateSettings` is the typed
+    mutation: its patch names each key of the target build, with closed lists and
+    no defaults, so that a patch sends only what the caller set.
 
   configuration-issues: |
     Configuration reads, configuration snapshots and `keybindingsUpdated`

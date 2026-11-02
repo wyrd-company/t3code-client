@@ -1,4 +1,4 @@
-/** Tagged failures of the auth and server RPC methods, mirroring the contracts' `auth.ts`, `keybindings.ts`, `settings.ts` and `providerSetup.ts`. */
+/** Tagged failures of the auth and server RPC methods, mirroring the contracts' `auth.ts`, `keybindings.ts`, `settings.ts`, `server.ts`, `secretRequest.ts` and `providerSetup.ts`. */
 import { z } from "zod";
 import { AuthGrantedScope } from "../auth.ts";
 import { forwardCompatibleLiteral } from "../common.ts";
@@ -20,6 +20,7 @@ export const KeybindingsConfigError = taggedError("KeybindingsConfigParseError",
 export const ServerSettingsOperation = forwardCompatibleLiteral([
   "normalize",
   "check-exists",
+  "create-provider-instance",
   "read-file",
   "read-provider-history",
   "read-project-settings",
@@ -27,6 +28,7 @@ export const ServerSettingsOperation = forwardCompatibleLiteral([
   "remove-secret",
   "remove-stale-secret",
   "write-secret",
+  "write-secret-provider",
   "write-file",
   "prepare-directory",
 ]);
@@ -35,7 +37,7 @@ export const ServerSettingsError = taggedError("ServerSettingsError", {
   operation: ServerSettingsOperation,
   providerInstanceId: z.string().optional(),
   environmentVariable: z.string().optional(),
-  cause: Defect,
+  cause: Defect.optional(),
 });
 export const ProviderSetupError = taggedError("ProviderSetupError", {
   instanceId: z.string(),
@@ -47,5 +49,28 @@ export const ServerNpmReleaseError = taggedError("ServerNpmReleaseError", {
   reason: z.string(),
 });
 export const ServerPrepareTriageError = taggedError("ServerPrepareTriageError", {
+  cause: Defect.optional(),
+});
+export const ServerProviderUpdateError = taggedError("ServerProviderUpdateError", {
+  provider: z.string(),
+  reason: z.string(),
+  cause: Defect.optional(),
+});
+export const SecretRequestFailureReason = forwardCompatibleLiteral([
+  "load_failed",
+  "not_found",
+  "already_answered",
+  "agent_stopped",
+  "store_failed",
+  "record_failed",
+  "invalid_ref",
+  "read_failed",
+  "ref_unavailable",
+  "ref_expired",
+  "consume_failed",
+  "not_a_file_request",
+]);
+export const SecretRequestError = taggedError("SecretRequestError", {
+  reason: SecretRequestFailureReason,
   cause: Defect.optional(),
 });

@@ -25,7 +25,7 @@ import {
 import { startPeerServer, type PeerServer } from "./peerServer.ts";
 
 const setLinksEnabled = (client: T3Client, enabled: boolean) =>
-  client.rpc.callRaw("server.updateSettings", { patch: { linkedEnvironmentsEnabled: enabled } });
+  client.rpc.call("server.updateSettings", { patch: { linkedEnvironmentsEnabled: enabled } });
 
 /** A pairing code from the peer. Nothing logs it. */
 const pairingCode = async (peer: PeerServer) => {

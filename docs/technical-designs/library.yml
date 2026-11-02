@@ -85,6 +85,11 @@ proposed-design:
         filesystem.ts           host path browsing and metadata
         git.ts                  stacked Git actions and their progress events, pull request resolution and preparation
         review.ts               a branch's commits, diff previews and the contents of a changed file
+        settingsPatch.ts        the server settings mutation and the scopes it requires
+        providerInstance.ts     provider instances, usage limit sources and secret providers as a settings write sends them
+        deviceHosts.ts          the device hosts a settings patch can write
+        serverActions.ts        keybinding, provider update, client activity and secret request inputs and results
+        sourceControl.ts        version control systems and source control hosts the server can use
         mcpApps.ts              MCP App tool calls, tool info, resource reads, model context
         projects.ts             Project, ProjectMutation, icons and scripts, file entries, read/write/search
         projectCreation.ts      Scratch, new-project and from-thread creator inputs and results (re-exported by projects.ts)

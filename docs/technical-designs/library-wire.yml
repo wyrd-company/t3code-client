@@ -117,6 +117,12 @@ proposed-design:
     `grantedScopes()` reads whichever is present. A pairing credential may ask for
     any grantable scope.
 
+    `server.updateSettings` needs `settings:write`. A patch whose only keys are
+    `providerInstances`, `usageLimitSources` or `secretProviders`, or an empty
+    patch with a `providerInstanceMutation`, needs `providers:manage` in its place.
+    A patch with both kinds needs both. A key the target build does not know
+    counts for neither.
+
     WebSocket at `GET /ws`. Authentication on the upgrade is either
     `?wsTicket=<ticket>` (with `dpop=<proof>` for a bound ticket) or an
     `authorization` header. Optional query

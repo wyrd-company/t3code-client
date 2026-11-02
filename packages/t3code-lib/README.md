@@ -211,6 +211,31 @@ const { sources } = await client.rpc.call("review.getDiffPreview", { cwd, baseRe
 `terminal.observe` follows a terminal with only `terminal:read`, and it cannot
 start one. `subscribeTerminalMetadata` lists every terminal and then follows them.
 
+## Settings
+
+`server.updateSettings` takes a patch of only the keys to change, and answers with
+the whole settings. It needs `settings:write`, `providers:manage` for the provider
+keys and `providerInstanceMutation`, and both for a patch that has both:
+
+```ts
+await client.rpc.call("server.updateSettings", { patch: { idleCompaction: "off" } });
+
+await client.rpc.call("server.updateSettings", {
+  patch: {},
+  providerInstanceMutation: { operation: "remove", instanceId },
+});
+
+const { keybindings, issues } = await client.rpc.call("server.upsertKeybinding", {
+  key: "mod+shift+u",
+  command: "usage.open",
+});
+```
+
+A patch's lists are closed, so a mistyped value fails before the call. The answer
+keeps loose fields. `server.updateProvider` runs the provider's installer on the
+server host. `secrets.answerRequest` saves or declines an agent's secret request:
+the server keeps the value, and the thread learns only the status.
+
 ## Proof-bound sessions
 
 A session bound to a DPoP key is useless to someone who holds only its token.

@@ -27,8 +27,10 @@ import {
   EnvironmentAuthorizationError,
   KeybindingsConfigError,
   ProviderSetupError,
+  SecretRequestError,
   ServerNpmReleaseError,
   ServerPrepareTriageError,
+  ServerProviderUpdateError,
   ServerSettingsError,
 } from "./rpcErrors/server.ts";
 import {
@@ -110,6 +112,8 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   ProviderSetupError,
   ServerNpmReleaseError,
   ServerPrepareTriageError,
+  ServerProviderUpdateError,
+  SecretRequestError,
   PeerLinkError,
   PeerLinkRequestError,
   GuestShareCreateError,

@@ -15,6 +15,25 @@ describe("RpcErrorRecord", () => {
     expect(record.requiredPermission).toBe("terminal:read");
   });
 
+  it("decodes a settings failure with no cause", () => {
+    const record = decodeRpcErrorRecord({
+      _tag: "ServerSettingsError",
+      settingsPath: "/sample/settings.json",
+      operation: "create-provider-instance",
+      providerInstanceId: "sample",
+    });
+    expect(isRpcErrorOfTag(record, "ServerSettingsError")).toBe(true);
+  });
+
+  it("decodes the provider update and secret request failures", () => {
+    const update = { _tag: "ServerProviderUpdateError", provider: "sample", reason: "sample" };
+    expect(isRpcErrorOfTag(decodeRpcErrorRecord(update), "ServerProviderUpdateError")).toBe(true);
+    for (const reason of ["already_answered", "newer-reason"]) {
+      const record = decodeRpcErrorRecord({ _tag: "SecretRequestError", reason });
+      expect(isRpcErrorOfTag(record, "SecretRequestError") && record.reason).toBe(reason);
+    }
+  });
+
   it("decodes the repository process failures", () => {
     const record = decodeRpcErrorRecord({
       _tag: "VcsProcessExitError",
