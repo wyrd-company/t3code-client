@@ -3,7 +3,7 @@
 //   implements: library
 // ---
 import { z } from "zod";
-import { defineMethod } from "../spec.ts";
+import { VoidSuccess, defineMethod } from "../spec.ts";
 import {
   OrchestrationV2CommandOutputFrame,
   OrchestrationV2SubscribeCommandOutputInput,
@@ -87,11 +87,7 @@ export const orchestrationMethods = {
   }),
   "orchestration.stopWorkflow": defineMethod({
     payload: OrchestrationV2StopWorkflowInput,
-    // Effect's JSON codec encodes Schema.Void as null; callers still receive void.
-    success: z
-      .null()
-      .or(z.void())
-      .transform((): void => undefined),
+    success: VoidSuccess,
     stream: false,
     scope: operate,
   }),

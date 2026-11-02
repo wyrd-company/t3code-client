@@ -2,8 +2,7 @@
 // relationships:
 //   implements: library
 // ---
-import { z } from "zod";
-import { defineMethod } from "../spec.ts";
+import { VoidSuccess, defineMethod } from "../spec.ts";
 import {
   McpAppCallToolInput,
   McpAppCallToolResult,
@@ -36,11 +35,7 @@ export const mcpAppsMethods = {
   }),
   "mcpApps.updateModelContext": defineMethod({
     payload: McpAppUpdateModelContextInput,
-    // Effect's JSON codec encodes Schema.Void as null; callers still receive void.
-    success: z
-      .null()
-      .or(z.void())
-      .transform((): void => undefined),
+    success: VoidSuccess,
     stream: false,
     scope: "orchestration:operate",
   }),

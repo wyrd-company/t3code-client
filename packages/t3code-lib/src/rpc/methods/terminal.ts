@@ -2,8 +2,7 @@
 // relationships:
 //   implements: library
 // ---
-import { z } from "zod";
-import { defineMethod } from "../spec.ts";
+import { VoidSuccess, defineMethod } from "../spec.ts";
 import {
   TerminalAttachInput,
   TerminalAttachStreamEvent,
@@ -29,31 +28,19 @@ export const terminalMethods = {
   }),
   "terminal.write": defineMethod({
     payload: TerminalWriteInput,
-    // Effect's JSON codec encodes Schema.Void as null; callers still receive void.
-    success: z
-      .null()
-      .or(z.void())
-      .transform((): void => undefined),
+    success: VoidSuccess,
     stream: false,
     scope: "terminal:operate",
   }),
   "terminal.resize": defineMethod({
     payload: TerminalResizeInput,
-    // Effect's JSON codec encodes Schema.Void as null; callers still receive void.
-    success: z
-      .null()
-      .or(z.void())
-      .transform((): void => undefined),
+    success: VoidSuccess,
     stream: false,
     scope: "terminal:operate",
   }),
   "terminal.close": defineMethod({
     payload: TerminalCloseInput,
-    // Effect's JSON codec encodes Schema.Void as null; callers still receive void.
-    success: z
-      .null()
-      .or(z.void())
-      .transform((): void => undefined),
+    success: VoidSuccess,
     stream: false,
     scope: "terminal:operate",
   }),

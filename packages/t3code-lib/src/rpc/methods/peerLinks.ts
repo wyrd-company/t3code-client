@@ -11,7 +11,7 @@ import {
   PeerLinkRequestAnswerInput,
   PeerLinkSummary,
 } from "../../schemas/peerLink.ts";
-import { defineMethod } from "../spec.ts";
+import { VoidSuccess, defineMethod } from "../spec.ts";
 
 export const peerLinksMethods = {
   "peerLinks.list": defineMethod({
@@ -34,11 +34,7 @@ export const peerLinksMethods = {
   }),
   "peerLinks.answerRequest": defineMethod({
     payload: PeerLinkRequestAnswerInput,
-    // Effect's JSON codec encodes Schema.Void as null; callers still receive void.
-    success: z
-      .null()
-      .or(z.void())
-      .transform((): void => undefined),
+    success: VoidSuccess,
     stream: false,
     scope: "access:write",
   }),

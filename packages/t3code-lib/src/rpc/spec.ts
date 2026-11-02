@@ -4,7 +4,7 @@
  * (`client.ts`) is generic over any table of these specs, so the two can be
  * built and tested independently.
  */
-import type { z } from "zod";
+import { z } from "zod";
 
 export type { AuthEnvironmentScope } from "../schemas/auth.ts";
 import type { AuthEnvironmentScope } from "../schemas/auth.ts";
@@ -21,6 +21,12 @@ export interface RpcMethodSpec<Payload = unknown, Success = unknown> {
   /** Further scopes the server requires for this payload, checked the same way. */
   payloadScopes?(payload: Payload): readonly AuthEnvironmentScope[];
 }
+
+/** Effect's JSON codec encodes Schema.Void as null; callers still receive void. */
+export const VoidSuccess = z
+  .null()
+  .or(z.void())
+  .transform((): void => undefined);
 
 export type RpcMethodTable = Readonly<Record<string, RpcMethodSpec>>;
 
