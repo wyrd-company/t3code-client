@@ -90,6 +90,9 @@ proposed-design:
         deviceHosts.ts          the device hosts a settings patch can write
         serverActions.ts        keybinding, provider update, client activity and secret request inputs and results
         sourceControl.ts        version control systems and source control hosts the server can use
+        diagnostics.ts          trace and process diagnostics, process resource history, the process signal and the OTLP endpoint check
+        resourceTelemetry.ts    host resources and the server's process telemetry, as a client reads them
+        storageCleanup.ts       the storage cleanup report
         mcpApps.ts              MCP App tool calls, tool info, resource reads, model context
         projects.ts             Project, ProjectMutation, icons and scripts, file entries, read/write/search
         projectCreation.ts      Scratch, new-project and from-thread creator inputs and results (re-exported by projects.ts)

@@ -14,6 +14,7 @@ import { mcpAppsMethods } from "./methods/mcpApps.ts";
 import { scheduledTasksMethods } from "./methods/scheduledTasks.ts";
 import { filesMethods } from "./methods/files.ts";
 import { gitMethods } from "./methods/git.ts";
+import { diagnosticsMethods } from "./methods/diagnostics.ts";
 
 export const rpcMethods = {
   ...orchestrationMethods,
@@ -28,6 +29,7 @@ export const rpcMethods = {
   ...scheduledTasksMethods,
   ...filesMethods,
   ...gitMethods,
+  ...diagnosticsMethods,
 };
 export type RpcMethods = typeof rpcMethods;
 export type RpcMethodName = keyof RpcMethods;

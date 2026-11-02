@@ -184,6 +184,14 @@ export function isUnknownVariant<D extends string>(value: object): value is Unkn
   return (value as { unknown?: unknown }).unknown === true;
 }
 
+/** An Effect `Option` field as JSON carries it: a `None` or `Some` record. */
+export function effectOption<T extends z.ZodType>(value: T) {
+  return z.discriminatedUnion("_tag", [
+    z.looseObject({ _tag: z.literal("None") }),
+    z.looseObject({ _tag: z.literal("Some"), value }),
+  ]);
+}
+
 /**
  * Decode an array element by element, dropping elements that fail. Mirrors the
  * contracts package's `ForwardCompatibleArray`: a client must keep decoding a

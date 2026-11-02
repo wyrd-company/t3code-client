@@ -123,6 +123,14 @@ proposed-design:
     A patch with both kinds needs both. A key the target build does not know
     counts for neither.
 
+    `server.retryResourceTelemetry` restarts the server's resource monitor, so it
+    needs `diagnostics:read` and `environment:maintain`.
+
+    An Effect `Option` field arrives as a `{ _tag: "None" }` or
+    `{ _tag: "Some", value }` record, and a schema keeps that form. The
+    diagnostics results report a failed read in an `Option` field and keep what
+    they read.
+
     WebSocket at `GET /ws`. Authentication on the upgrade is either
     `?wsTicket=<ticket>` (with `dpop=<proof>` for a bound ticket) or an
     `authorization` header. Optional query

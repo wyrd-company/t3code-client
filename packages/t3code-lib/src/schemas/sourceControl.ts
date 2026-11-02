@@ -10,14 +10,12 @@
 import { z } from "zod";
 import {
   TrimmedNonEmptyString,
+  effectOption,
   forwardCompatibleArray,
   forwardCompatibleLiteral,
 } from "./common.ts";
 
-const OptionalText = z.discriminatedUnion("_tag", [
-  z.looseObject({ _tag: z.literal("None") }),
-  z.looseObject({ _tag: z.literal("Some"), value: TrimmedNonEmptyString }),
-]);
+const OptionalText = effectOption(TrimmedNonEmptyString);
 
 export const SourceControlDiscoveryStatus = forwardCompatibleLiteral(["available", "missing"]);
 export type SourceControlDiscoveryStatus = z.infer<typeof SourceControlDiscoveryStatus>;

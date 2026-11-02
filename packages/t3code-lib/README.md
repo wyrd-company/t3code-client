@@ -236,6 +236,35 @@ keeps loose fields. `server.updateProvider` runs the provider's installer on the
 server host. `secrets.answerRequest` saves or declines an agent's secret request:
 the server keeps the value, and the thread learns only the status.
 
+## Diagnostics
+
+The server reads its traces, its process tree and its host. Most of these reads need
+`diagnostics:read`. A failed read is part of the result: `error` is an `Option`
+record and the result keeps what the server could read.
+
+```ts
+const { processes, error } = await client.rpc.call("server.getProcessDiagnostics", {});
+if (error._tag === "Some") console.warn(error.value.message);
+
+const history = await client.rpc.call("server.getResourceTelemetryHistory", {
+  windowMs: 60_000,
+  bucketMs: 10_000,
+});
+
+for await (const item of client.rpc.stream("subscribeResourceTelemetry", {})) {
+  if (item.kind === "item") console.log(item.value.groups.allT3.currentRssBytes);
+}
+```
+
+`server.signalProcess` sends `SIGINT` or `SIGKILL` to a process of
+`server.getProcessDiagnostics`, identified by its `pid` and `startTimeMs`. It needs
+`environment:maintain`. A refusal is a result: `signaled` is false and `message`
+says why. `server.runStorageCleanup` needs `settings:write` and removes what the
+`storageCleanup` settings allow on the server host. `server.checkOtlpEndpoint` also
+needs `settings:write`: the server sends an empty export to the URL, and the answer
+is `Accepted`, `Rejected` or `Unreachable`. `server.retryResourceTelemetry` needs
+`diagnostics:read` and `environment:maintain`.
+
 ## Proof-bound sessions
 
 A session bound to a DPoP key is useless to someone who holds only its token.
