@@ -101,7 +101,9 @@ proposed-design:
           projection.ts         OrchestrationV2ThreadProjection, detail, bounded, history page
           boundedSnapshot.ts    boundedSnapshotProjection: restores a compact snapshot's turn items
           threadFind.ts         find within one thread
+          threadForceStop.ts    force stop input and result
           shell.ts              project and thread shells, shell snapshot and stream items
+          shellOmittedRows.ts   thread rows a shell can leave out
           stream.ts             thread stream items, RPC inputs and outputs, launch
           commandOutput.ts      command output subscription input and frames
           commands.ts           OrchestrationV2Command union (commands/*.ts by family)

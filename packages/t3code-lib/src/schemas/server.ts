@@ -140,6 +140,16 @@ export const ServerConfig = z.looseObject({
   observability: ServerObservability,
   settings: ServerSettings,
   shellResumeCompletionMarker: z.boolean().optional(),
+  /**
+   * The shell can leave idle subagent children out of snapshots, and
+   * `orchestration.getThreadFamily` and `orchestration.getWorktreeThreadIds` serve those rows.
+   */
+  shellThreadFamilies: z.boolean().optional(),
+  /**
+   * The shell can leave older settled threads out of snapshots, and
+   * `orchestration.getOlderSettledThreads` serves them.
+   */
+  shellOlderSettled: z.boolean().optional(),
   shellRevealInFileManager: z.boolean().optional(),
   shellRevealInFileManagerKind: FileManagerRevealKind.optional(),
   threadResumeCompletionMarker: z.boolean().optional(),

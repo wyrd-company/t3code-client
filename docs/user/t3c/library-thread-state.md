@@ -54,6 +54,21 @@ count is valid but the full total is not known.</p>
 <dt><a href="#OrchestrationV2TurnItem">OrchestrationV2TurnItem</a></dt>
 <dd><p>A turn item of any type, including a type this build does not know.</p>
 </dd>
+<dt><a href="#OrchestrationV2OlderSettledThreads">OrchestrationV2OlderSettledThreads</a></dt>
+<dd><p>Snapshots that leave out older settled threads name the cut and count them per project.
+<code>asOfSequence</code> is the snapshot&#39;s own sequence: the counts are exact until a later change.</p>
+</dd>
+<dt><a href="#OrchestrationV2ThreadFamily">OrchestrationV2ThreadFamily</a></dt>
+<dd><p>The active threads that share the requested thread&#39;s <code>lineage.rootThreadId</code>, in any run state.
+An unknown thread has an empty family; a deleted one still names its root.</p>
+</dd>
+<dt><a href="#OrchestrationV2OlderSettledCursor">OrchestrationV2OlderSettledCursor</a></dt>
+<dd><p>Where a page of older settled threads starts: below this settle time, then after this id.</p>
+</dd>
+<dt><a href="#OrchestrationV2OlderSettledThreadsPage">OrchestrationV2OlderSettledThreadsPage</a></dt>
+<dd><p>Older settled threads below the cursor, newest settle first. A <code>limit: 0</code> read fills <code>counts</code>
+instead, per project. A cursor without an id is strict.</p>
+</dd>
 <dt><a href="#ModelSelection">ModelSelection</a></dt>
 <dd><p>The historical <code>{ provider, model }</code> shape still decodes; <code>instanceId</code> is the routing key.</p>
 </dd>
@@ -227,6 +242,37 @@ count is valid but the full total is not known.
 ## OrchestrationV2TurnItem
 
 A turn item of any type, including a type this build does not know.
+
+**Kind**: global constant  
+<a name="OrchestrationV2OlderSettledThreads"></a>
+
+## OrchestrationV2OlderSettledThreads
+
+Snapshots that leave out older settled threads name the cut and count them per project.
+`asOfSequence` is the snapshot's own sequence: the counts are exact until a later change.
+
+**Kind**: global constant  
+<a name="OrchestrationV2ThreadFamily"></a>
+
+## OrchestrationV2ThreadFamily
+
+The active threads that share the requested thread's `lineage.rootThreadId`, in any run state.
+An unknown thread has an empty family; a deleted one still names its root.
+
+**Kind**: global constant  
+<a name="OrchestrationV2OlderSettledCursor"></a>
+
+## OrchestrationV2OlderSettledCursor
+
+Where a page of older settled threads starts: below this settle time, then after this id.
+
+**Kind**: global constant  
+<a name="OrchestrationV2OlderSettledThreadsPage"></a>
+
+## OrchestrationV2OlderSettledThreadsPage
+
+Older settled threads below the cursor, newest settle first. A `limit: 0` read fills `counts`
+instead, per project. A cursor without an id is strict.
 
 **Kind**: global constant  
 <a name="ModelSelection"></a>

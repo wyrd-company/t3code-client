@@ -5,6 +5,7 @@
 import { afterEach, beforeEach, expect, it } from "vite-plus/test";
 import { FakeT3Server } from "../../test/support/fakeServer.ts";
 import {
+  makeShellThread,
   at,
   ids,
   makeProjection,
@@ -159,6 +160,37 @@ it("bounds cross-thread search with the server's limit and reports it", async ()
     await expect(threads.search(input)).rejects.toBeInstanceOf(T3PreconditionError);
   }
   expect(payloads["orchestration.searchThreads"]).toHaveLength(2);
+});
+
+it("sends the search filters and keeps match metadata and older settled rows", async () => {
+  const match = {
+    threadId: ids.threadId,
+    projectId: ids.projectId,
+    source: "user",
+    snippet: "sample needle",
+    messageCreatedAt: null,
+    quality: 1,
+    hits: 2,
+    messageId: "message-1",
+  };
+  const row = makeShellThread();
+  capture("orchestration.searchThreads", {
+    matches: [match],
+    snapshotSequence: 9,
+    threads: [row],
+  });
+  const filters = {
+    olderSettledBefore: "2020-01-02T00:00:00.000Z",
+    projectIds: [ids.projectId],
+    environmentLabel: "Sample",
+    titlesOnly: true,
+  };
+  const result = await threads.search({ query: "needle", ...filters });
+  expect(result).toMatchObject({ matches: [match], snapshotSequence: 9, limit: 50 });
+  expect(result.threads?.map((thread) => thread.id)).toEqual([row.id]);
+  expect(payloads["orchestration.searchThreads"]).toEqual([
+    { query: "needle", limit: 50, ...filters },
+  ]);
 });
 
 it("searches within one thread and keeps the server's position and completeness", async () => {

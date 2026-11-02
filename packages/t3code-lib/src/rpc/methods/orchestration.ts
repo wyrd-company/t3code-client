@@ -16,6 +16,14 @@ import {
   OrchestrationV2SubscribeShellInput,
 } from "../../schemas/orchestration/shell.ts";
 import {
+  OrchestrationV2GetOlderSettledThreadsInput,
+  OrchestrationV2GetThreadFamilyInput,
+  OrchestrationV2GetWorktreeThreadIdsInput,
+  OrchestrationV2OlderSettledThreadsPage,
+  OrchestrationV2ThreadFamily,
+  OrchestrationV2WorktreeThreadIds,
+} from "../../schemas/orchestration/shellOmittedRows.ts";
+import {
   OrchestrationGetFullThreadDiffInput,
   OrchestrationGetFullThreadDiffResult,
   OrchestrationGetTurnDiffInput,
@@ -38,6 +46,10 @@ import {
   OrchestrationV2SearchThreadInput,
   OrchestrationV2SearchThreadResult,
 } from "../../schemas/orchestration/threadFind.ts";
+import {
+  OrchestrationV2ForceStopThreadInput,
+  OrchestrationV2ForceStopThreadResult,
+} from "../../schemas/orchestration/threadForceStop.ts";
 
 const read = "orchestration:read";
 const operate = "orchestration:operate";
@@ -83,6 +95,12 @@ export const orchestrationMethods = {
     stream: false,
     scope: operate,
   }),
+  "orchestration.forceStopThread": defineMethod({
+    payload: OrchestrationV2ForceStopThreadInput,
+    success: OrchestrationV2ForceStopThreadResult,
+    stream: false,
+    scope: operate,
+  }),
   "orchestration.getTurnDiff": defineMethod({
     payload: OrchestrationGetTurnDiffInput,
     success: OrchestrationGetTurnDiffResult,
@@ -117,6 +135,24 @@ export const orchestrationMethods = {
   "orchestration.getArchivedShellSnapshot": defineMethod({
     payload: z.looseObject({}),
     success: OrchestrationV2ArchivedShellSnapshot,
+    stream: false,
+    scope: read,
+  }),
+  "orchestration.getThreadFamily": defineMethod({
+    payload: OrchestrationV2GetThreadFamilyInput,
+    success: OrchestrationV2ThreadFamily,
+    stream: false,
+    scope: read,
+  }),
+  "orchestration.getWorktreeThreadIds": defineMethod({
+    payload: OrchestrationV2GetWorktreeThreadIdsInput,
+    success: OrchestrationV2WorktreeThreadIds,
+    stream: false,
+    scope: read,
+  }),
+  "orchestration.getOlderSettledThreads": defineMethod({
+    payload: OrchestrationV2GetOlderSettledThreadsInput,
+    success: OrchestrationV2OlderSettledThreadsPage,
     stream: false,
     scope: read,
   }),

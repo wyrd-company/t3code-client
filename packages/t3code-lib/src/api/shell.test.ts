@@ -5,7 +5,9 @@ import {
   makeShellSnapshot,
   makeShellThread,
 } from "../../test/support/threadFixtures.ts";
+import { T3PreconditionError } from "../errors.ts";
 import { RpcClient } from "../rpc/client.ts";
+import type { ThreadId } from "../schemas/common.ts";
 import { rpcMethods } from "../rpc/registry.ts";
 import { HttpTransport } from "../transport/http.ts";
 import { RpcConnection } from "../transport/rpcConnection.ts";
@@ -48,6 +50,71 @@ describe("ShellApi", () => {
   afterEach(async () => {
     await connection.close();
     await server.close();
+  });
+
+  it("asks the snapshot route to omit rows only when told to", async () => {
+    server.routes.route("GET /api/orchestration/shell", () => ({
+      status: 200,
+      body: {
+        ...makeShellSnapshot({}),
+        olderSettled: {
+          before: "2020-01-02T00:00:00.000Z",
+          asOfSequence: 4,
+          counts: [{ projectId: "project-1", count: 2 }],
+        },
+      },
+    }));
+    const omitted = await shell.snapshot(undefined, {
+      omitIdleSubagents: true,
+      omitOlderSettled: true,
+    });
+    expect(omitted.olderSettled?.counts).toEqual([{ projectId: "project-1", count: 2 }]);
+    await shell.snapshot();
+    const queries = server.routes.requests.map((request) => request.query.toString());
+    expect(queries).toEqual(["omitIdleSubagents=1&omitOlderSettled=1", ""]);
+  });
+
+  it("keeps the omit options when the watch resubscribes", async () => {
+    const payloads: Record<string, unknown>[] = [];
+    server.handle("orchestration.subscribeShell", (payload, context) => {
+      payloads.push(payload as Record<string, unknown>);
+      if (payloads.length > 1) return { kind: "stream", chunks: [[{ kind: "synchronized" }]] };
+      context.connection.send({
+        _tag: "Chunk",
+        requestId: context.requestId,
+        values: [threadUpdated(7)],
+      });
+      return { kind: "hang" };
+    });
+    const omit = { omitIdleSubagents: true, omitOlderSettled: false };
+    for await (const item of shell.watch(omit)) {
+      if (item.kind === "thread.updated") server.connections[0]?.drop();
+    }
+    expect(payloads).toEqual([
+      { requestCompletionMarker: true, ...omit },
+      { requestCompletionMarker: true, afterSequence: 7, ...omit },
+    ]);
+  });
+
+  it("reads the rows a snapshot leaves out over RPC", async () => {
+    const page = { snapshotSequence: 5, threads: [makeShellThread()], counts: [] };
+    server.respond("orchestration.getThreadFamily", {
+      snapshotSequence: 5,
+      threads: [makeShellThread({ id: "thread-child" })],
+    });
+    server.respond("orchestration.getWorktreeThreadIds", { threadIds: ["thread-child"] });
+    server.respond("orchestration.getOlderSettledThreads", page);
+    const family = await shell.threadFamily("thread-1" as ThreadId);
+    expect(family.threads.map((thread) => thread.id)).toEqual(["thread-child"]);
+    expect(await shell.worktreeThreadIds("/sample/worktree")).toEqual(["thread-child"]);
+    const older = await shell.olderSettledThreads({
+      before: { settledAt: "2020-01-02T00:00:00.000Z" },
+      limit: 1,
+    });
+    expect(older.threads).toHaveLength(1);
+    await expect(
+      shell.olderSettledThreads({ before: { settledAt: "2020-01-02T00:00:00.000Z" }, limit: 51 }),
+    ).rejects.toBeInstanceOf(T3PreconditionError);
   });
 
   it("reads the snapshot over HTTP with the protocol header", async () => {

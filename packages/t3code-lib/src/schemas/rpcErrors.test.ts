@@ -60,6 +60,14 @@ describe("RpcErrorRecord", () => {
     expect(isRpcErrorOfTag(stop, "OrchestrationV2StopWorkflowError") && stop.reason).toBe(
       "not-running",
     );
+    const forceStop = decodeRpcErrorRecord({
+      _tag: "OrchestrationV2ForceStopThreadError",
+      threadId: "thread-1",
+      reason: "superseded",
+    });
+    expect(
+      isRpcErrorOfTag(forceStop, "OrchestrationV2ForceStopThreadError") && forceStop.reason,
+    ).toBe("superseded");
     const app = decodeRpcErrorRecord({
       _tag: "McpAppRequestError",
       threadId: "thread-1",

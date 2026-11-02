@@ -91,6 +91,9 @@ proposed-design:
     sessions outside the bounded RPC projection window, duplicate matches,
     deleted threads and failed reads. CLI unit tests
     verify argument validation, text and JSON null results, and error mapping.
+    `shellOmittedRows.live.test.ts` reads thread families, older settled pages and
+    omitted snapshots from stock T3 Code, checks the force stop refusal and, with
+    `T3_LIVE_AGENT=1`, force stops a `gpt-6-luna` subject that runs a command.
     `threadFind.live.test.ts` checks no-match output against stock T3 Code; its
     `T3_LIVE_AGENT=1` case resolves a real Luna session before and after archiving
     the owning T3 thread, and checks provider separation.

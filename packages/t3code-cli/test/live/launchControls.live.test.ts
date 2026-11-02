@@ -144,6 +144,13 @@ it.skipIf(!agent)(
         id: advertised.id,
         value: advertised.value,
       });
+    // A message sent while a run is active joins that run instead of starting one.
+    const settled = Date.now() + 120_000;
+    while (Date.now() < settled) {
+      const shell = await client.threads.get(threadId(id));
+      if (shell?.latestRunId && !shell.activeRunId) break;
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
     const continued = await cli([
       ...runCommand,
       "Reply SAMPLE only.",

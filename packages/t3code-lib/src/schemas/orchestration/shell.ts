@@ -162,6 +162,23 @@ export const OrchestrationV2ThreadShell = z.looseObject({
 });
 export type OrchestrationV2ThreadShell = z.infer<typeof OrchestrationV2ThreadShell>;
 
+export const OrchestrationV2OlderSettledCount = z.looseObject({
+  projectId: ProjectId,
+  count: NonNegativeInt,
+});
+export type OrchestrationV2OlderSettledCount = z.infer<typeof OrchestrationV2OlderSettledCount>;
+
+/**
+ * Snapshots that leave out older settled threads name the cut and count them per project.
+ * `asOfSequence` is the snapshot's own sequence: the counts are exact until a later change.
+ */
+export const OrchestrationV2OlderSettledThreads = z.looseObject({
+  before: IsoDateTime,
+  asOfSequence: NonNegativeInt,
+  counts: z.array(OrchestrationV2OlderSettledCount),
+});
+export type OrchestrationV2OlderSettledThreads = z.infer<typeof OrchestrationV2OlderSettledThreads>;
+
 export const OrchestrationV2ThreadShellSnapshot = z.looseObject({
   schemaVersion: PositiveInt,
   snapshotSequence: NonNegativeInt,
@@ -171,6 +188,7 @@ export const OrchestrationV2ThreadShellSnapshot = z.looseObject({
 export const OrchestrationV2ShellSnapshot = z.looseObject({
   ...OrchestrationV2ThreadShellSnapshot.shape,
   projects: z.array(OrchestrationProjectShell),
+  olderSettled: OrchestrationV2OlderSettledThreads.optional(),
 });
 export type OrchestrationV2ShellSnapshot = z.infer<typeof OrchestrationV2ShellSnapshot>;
 
@@ -211,6 +229,16 @@ export const OrchestrationV2SubscribeShellInput = z.looseObject({
   afterSequence: NonNegativeInt.optional(),
   /** Requests a `synchronized` marker between catch-up and live delivery. */
   requestCompletionMarker: z.boolean().optional(),
+  /**
+   * Snapshots leave out idle subagent children; read them with `orchestration.getThreadFamily`.
+   * Send only to servers that advertise `shellThreadFamilies`.
+   */
+  omitIdleSubagents: z.boolean().optional(),
+  /**
+   * Snapshots leave out older settled threads and count them in `olderSettled`; read them with
+   * `orchestration.getOlderSettledThreads`. Send only to servers that advertise `shellOlderSettled`.
+   */
+  omitOlderSettled: z.boolean().optional(),
 });
 export type OrchestrationV2SubscribeShellInput = z.infer<typeof OrchestrationV2SubscribeShellInput>;
 

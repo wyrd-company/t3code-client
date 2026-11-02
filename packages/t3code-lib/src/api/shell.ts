@@ -10,6 +10,7 @@
 import { T3InterruptedError, type T3DecodeError } from "../errors.ts";
 import type { RpcClient } from "../rpc/client.ts";
 import type { RpcMethods } from "../rpc/registry.ts";
+import type { ThreadId } from "../schemas/common.ts";
 import {
   ORCHESTRATION_PROTOCOL_HEADER,
   ORCHESTRATION_PROTOCOL_VERSION_TEXT,
@@ -19,6 +20,11 @@ import {
   type OrchestrationV2ArchivedShellSnapshot,
   type OrchestrationV2ShellStreamItem,
 } from "../schemas/orchestration/shell.ts";
+import type {
+  OrchestrationV2GetOlderSettledThreadsInput,
+  OrchestrationV2OlderSettledThreadsPage,
+  OrchestrationV2ThreadFamily,
+} from "../schemas/orchestration/shellOmittedRows.ts";
 import type { HttpTransport } from "../transport/http.ts";
 import { isKnownVariant } from "./threadProjection.ts";
 import { shouldResubscribe } from "./watchRetry.ts";
@@ -28,7 +34,18 @@ export type ShellWatchItem =
   | { readonly kind: "decode-error"; readonly error: T3DecodeError }
   | { readonly kind: "reconnected"; readonly afterSequence: number };
 
-export interface ShellWatchOptions {
+/**
+ * Rows a snapshot leaves out. Send `omitIdleSubagents` only to servers that advertise
+ * `shellThreadFamilies`, and `omitOlderSettled` only to servers that advertise `shellOlderSettled`.
+ */
+export interface ShellOmitOptions {
+  /** Read these rows with `threadFamily` and `worktreeThreadIds`. */
+  readonly omitIdleSubagents?: boolean;
+  /** Counts these rows in `snapshot.olderSettled`; read them with `olderSettledThreads`. */
+  readonly omitOlderSettled?: boolean;
+}
+
+export interface ShellWatchOptions extends ShellOmitOptions {
   readonly afterSequence?: number;
   readonly signal?: AbortSignal;
 }
@@ -41,12 +58,17 @@ export const orchestrationHttpHeaders = {
 export function loadShellSnapshot(
   http: HttpTransport,
   signal?: AbortSignal,
+  options: ShellOmitOptions = {},
 ): Promise<OrchestrationV2ShellSnapshot> {
   return http.request({
     method: "GET",
     path: "/api/orchestration/shell",
     auth: "required",
     headers: orchestrationHttpHeaders,
+    query: {
+      omitIdleSubagents: options.omitIdleSubagents === true ? "1" : undefined,
+      omitOlderSettled: options.omitOlderSettled === true ? "1" : undefined,
+    },
     decode: OrchestrationV2ShellSnapshot,
     ...(signal === undefined ? {} : { signal }),
   });
@@ -76,13 +98,42 @@ export class ShellApi {
   }
 
   /** Projects plus active and archived thread shells, over HTTP. */
-  snapshot(signal?: AbortSignal): Promise<OrchestrationV2ShellSnapshot> {
-    return loadShellSnapshot(this.http, signal);
+  snapshot(
+    signal?: AbortSignal,
+    options?: ShellOmitOptions,
+  ): Promise<OrchestrationV2ShellSnapshot> {
+    return loadShellSnapshot(this.http, signal, options);
   }
 
   /** Archived thread shells and projects, over RPC. The server has no live archived stream. */
   archivedSnapshot(signal?: AbortSignal): Promise<OrchestrationV2ArchivedShellSnapshot> {
     return this.rpc.call("orchestration.getArchivedShellSnapshot", {}, signal);
+  }
+
+  /**
+   * The active threads that share this thread's root, in any run state: the root, its forks and
+   * their subagent trees. An unknown thread has an empty family.
+   */
+  threadFamily(threadId: ThreadId, signal?: AbortSignal): Promise<OrchestrationV2ThreadFamily> {
+    return this.rpc.call("orchestration.getThreadFamily", { threadId }, signal);
+  }
+
+  /** Active threads on a worktree path, including subagent children a snapshot can leave out. */
+  async worktreeThreadIds(worktreePath: string, signal?: AbortSignal): Promise<ThreadId[]> {
+    const { threadIds } = await this.rpc.call(
+      "orchestration.getWorktreeThreadIds",
+      { worktreePath },
+      signal,
+    );
+    return threadIds;
+  }
+
+  /** A page of older settled threads below the cursor; `limit: 0` fills only `counts`. */
+  olderSettledThreads(
+    input: OrchestrationV2GetOlderSettledThreadsInput,
+    signal?: AbortSignal,
+  ): Promise<OrchestrationV2OlderSettledThreadsPage> {
+    return this.rpc.call("orchestration.getOlderSettledThreads", input, signal);
   }
 
   /** Subscribes with `orchestration.subscribeShell`; resubscribes after a dropped socket. */
@@ -100,6 +151,12 @@ export class ShellApi {
             const payload = {
               requestCompletionMarker: true,
               ...(afterSequence === undefined ? {} : { afterSequence }),
+              ...(options.omitIdleSubagents === undefined
+                ? {}
+                : { omitIdleSubagents: options.omitIdleSubagents }),
+              ...(options.omitOlderSettled === undefined
+                ? {}
+                : { omitOlderSettled: options.omitOlderSettled }),
             };
             const stream = rpc.stream(
               "orchestration.subscribeShell",

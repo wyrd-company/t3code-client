@@ -283,6 +283,7 @@ older server. The library does not render terminal output.
   - [.setModelSelection()](https://wyrd.foo/docs/t3c/library-thread-lifecycle#ThreadsApi+setModelSelection)
   - [.startTurn()](https://wyrd.foo/docs/t3c/library-thread-runs#ThreadsApi+startTurn)
   - [.interrupt()](https://wyrd.foo/docs/t3c/library-thread-runs#ThreadsApi+interrupt)
+  - [.forceStop()](https://wyrd.foo/docs/t3c/library-thread-runs#ThreadsApi+forceStop)
   - [.stop()](https://wyrd.foo/docs/t3c/library-thread-runs#ThreadsApi+stop)
   - [.stopThread()](https://wyrd.foo/docs/t3c/library-thread-runs#ThreadsApi+stopThread)
   - [.resumeQueue()](https://wyrd.foo/docs/t3c/library-thread-runs#ThreadsApi+resumeQueue)

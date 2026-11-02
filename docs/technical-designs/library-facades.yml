@@ -66,7 +66,7 @@ proposed-design:
       status(threadId, signal?): Promise<ThreadStatus>  // full detail plus shell-derived background work
       usage(threadId, signal?): Promise<ThreadUsage>  // historical provider records, no invented totals
       diff(threadId, range?, signal?): Promise<ThreadDiff>  // completed ready checkpoint or explicit turn-count range
-      search({ query, limit? }, signal?): Promise<ThreadSearchResult>  // bounded matches plus applied limit
+      search({ query, limit?, olderSettledBefore?, projectIds?, environmentLabel?, titlesOnly? }, signal?): Promise<ThreadSearchResult>  // bounded matches plus applied limit
       searchContent(input, signal?): Promise<ThreadContentSearchResult>  // within-thread count and selected match
       historyPage(threadId, cursor, options?: { throughEntryId?; view?: "conversation" | "activity" }): Promise<OrchestrationV2ThreadHistoryPage>
       transcript(threadId): Promise<OrchestrationV2ThreadTranscript>  // HTTP, the visible timeline; T3NotFoundError, T3HttpError thread_transcript_too_large
@@ -79,6 +79,7 @@ proposed-design:
       startTurn(input: StartTurnInput): Promise<TurnHandle>
       interrupt(threadId, runId?, options?: { reason?; holdQueue? }): Promise<void>  // active run when runId omitted; no-op when idle
       stop(threadId): Promise<void>                                                // legacy active-run interrupt + holdQueue; idle no-op
+      forceStop(threadId, options?: { runId? }, signal?): Promise<OrchestrationV2ForceStopThreadResult>  // orchestration.forceStopThread; superseded when runId is not the latest
       stopThread(threadId, options?: { reason?: string }, signal?): Promise<void>   // native thread.stop, including idle/background work
       resumeQueue(threadId, signal?): Promise<void>                               // release queue hold
       startQueuedRun(threadId, runId, signal?): Promise<void>                      // select queued run first and release queue hold
@@ -167,9 +168,12 @@ proposed-design:
 
     ```ts
     export class ShellApi {
-      snapshot(): Promise<OrchestrationV2ShellSnapshot>; // HTTP: projects, threads, archivedThreads
+      snapshot(signal?, options?: ShellOmitOptions): Promise<OrchestrationV2ShellSnapshot>; // HTTP: projects, threads, archivedThreads, olderSettled
       archivedSnapshot(): Promise<OrchestrationV2ArchivedShellSnapshot>; // RPC
-      watch(options?): AsyncIterable<ShellWatchItem>; // resumable like threads
+      threadFamily(threadId, signal?): Promise<OrchestrationV2ThreadFamily>; // RPC
+      worktreeThreadIds(worktreePath, signal?): Promise<ThreadId[]>; // RPC
+      olderSettledThreads(input, signal?): Promise<OrchestrationV2OlderSettledThreadsPage>; // RPC
+      watch(options?): AsyncIterable<ShellWatchItem>; // resumable like threads; takes ShellOmitOptions
     }
     export class ServerApi {
       probe();

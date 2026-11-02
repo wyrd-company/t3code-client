@@ -122,13 +122,17 @@ proposed-design:
     | `orchestration.getTurnItem`              | orch:read    | `{threadId, itemId}` → `{item}` with the full, size-bounded input and output                                                                          |
     | `orchestration.getWorkflowScript`        | orch:read    | unchanged                                                                                                                                             |
     | `orchestration.stopWorkflow`             | orch:operate | `{threadId, subagentId}` → nothing; fails `OrchestrationV2StopWorkflowError` with a `reason`                                                          |
+    | `orchestration.forceStopThread`          | orch:operate | `{threadId, runId?}` → `{outcome, sharedWithThreadIds}`; fails `OrchestrationV2ForceStopThreadError`, `reason: "superseded"`                          |
     | `orchestration.getTurnDiff`              | orch:read    | unchanged                                                                                                                                             |
     | `orchestration.getFullThreadDiff`        | orch:read    | unchanged                                                                                                                                             |
-    | `orchestration.searchThreads`            | orch:read    | unchanged                                                                                                                                             |
+    | `orchestration.searchThreads`            | orch:read    | `{query, limit?, olderSettledBefore?, projectIds?, environmentLabel?, titlesOnly?}` → `{matches, snapshotSequence?, threads?}`                        |
     | `orchestration.searchThread`             | orch:read    | `OrchestrationV2SearchThreadInput` → `OrchestrationV2SearchThreadResult`: one match and the navigation around it                                      |
     | `orchestration.searchThreadStream`       | orch:read    | the same input → stream of results that converge; the last has `complete: true`                                                                       |
     | `orchestration.getArchivedShellSnapshot` | orch:read    | `{}` → `OrchestrationV2ArchivedShellSnapshot`                                                                                                         |
-    | `orchestration.subscribeShell`           | orch:read    | `{afterSequence?, requestCompletionMarker?}` → stream of `OrchestrationV2ShellStreamItem`                                                             |
+    | `orchestration.getThreadFamily`          | orch:read    | `{threadId}` → `{snapshotSequence, threads}`: active threads with the same root                                                                       |
+    | `orchestration.getWorktreeThreadIds`     | orch:read    | `{worktreePath}` → `{threadIds}`                                                                                                                      |
+    | `orchestration.getOlderSettledThreads`   | orch:read    | `{before: {settledAt, threadId?}, projectIds?, limit}` → `{snapshotSequence, threads, counts}`; `limit: 0` fills only `counts`                        |
+    | `orchestration.subscribeShell`           | orch:read    | `{afterSequence?, requestCompletionMarker?, omitIdleSubagents?, omitOlderSettled?}` → stream of `OrchestrationV2ShellStreamItem`                      |
     | `orchestration.subscribeThread`          | orch:read    | `{threadId, afterSequence?, requestCompletionMarker?, acceptBoundedSnapshot?, acceptCompactTurnItems?}` → stream of `OrchestrationV2ThreadStreamItem` |
     | `orchestration.subscribeCommandOutput`   | orch:read    | `{threadId, itemId}` → stream of `{kind, text, truncated, running}` frames, ending after `running: false`; fails `OrchestrationV2CommandOutputError`    |
 
@@ -328,6 +332,18 @@ proposed-design:
     snapshot; archived threads are read with
     `orchestration.getArchivedShellSnapshot`. The server has no live archived
     stream.
+
+    A shell reader can ask for fewer rows, on the socket with the booleans
+    `omitIdleSubagents` and `omitOlderSettled` and over HTTP with the query value
+    `1` for the same names. `ServerConfig.shellThreadFamilies` and
+    `ServerConfig.shellOlderSettled` advertise them; the client sends them only when
+    its caller asks. `omitIdleSubagents` rows are read with
+    `orchestration.getThreadFamily` and `orchestration.getWorktreeThreadIds`.
+    `omitOlderSettled` adds `olderSettled` (`before`, `asOfSequence`, `counts`) to
+    the snapshot, and those rows are read with
+    `orchestration.getOlderSettledThreads` or with `olderSettledBefore` on
+    `orchestration.searchThreads`. Search matches carry optional `quality`, `hits`
+    and `messageId`.
 
     `ServerConfig.lastEventLoopStall` is optional recent server event-loop stall
     metadata in configuration reads and configuration stream snapshots. Its

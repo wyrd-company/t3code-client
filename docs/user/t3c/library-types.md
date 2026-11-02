@@ -10,6 +10,17 @@ relationships:
 
 # Shared types and constants
 
+## Members
+
+<dl>
+<dt><a href="#messageId">messageId</a></dt>
+<dd><p>The message the snippet is from. Older servers omit it.</p>
+</dd>
+<dt><a href="#runId">runId</a></dt>
+<dd><p>The run that ignored Stop; the server refuses once a newer run has started.</p>
+</dd>
+</dl>
+
 ## Constants
 
 <dl>
@@ -43,6 +54,20 @@ tokens. <code>reasoningTokens</code> is a subset of <code>outputTokens</code>; n
 </dd>
 </dl>
 
+<a name="messageId"></a>
+
+## messageId
+
+The message the snippet is from. Older servers omit it.
+
+**Kind**: global variable  
+<a name="runId"></a>
+
+## runId
+
+The run that ignored Stop; the server refuses once a newer run has started.
+
+**Kind**: global variable  
 <a name="SecretRef"></a>
 
 ## SecretRef

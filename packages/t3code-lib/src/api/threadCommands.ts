@@ -41,6 +41,11 @@ export interface InterruptOptions {
   readonly holdQueue?: boolean;
 }
 
+export interface ForceStopThreadOptions {
+  /** The run that ignored Stop; the server refuses once another run is the latest. */
+  readonly runId?: RunId;
+}
+
 export class ThreadCommands {
   readonly dispatcher: CommandDispatcher;
 

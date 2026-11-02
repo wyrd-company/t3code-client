@@ -74,6 +74,7 @@ export {
 } from "./api/threadDiffSearch.ts";
 export type {
   ApprovalResponseInput,
+  ForceStopThreadOptions,
   InterruptOptions,
   StopThreadOptions,
   UserInputDismissInput,
@@ -86,7 +87,12 @@ export type {
   TurnHandle,
   TurnOutcome,
 } from "./api/turns.ts";
-export { ShellApi, type ShellWatchItem, type ShellWatchOptions } from "./api/shell.ts";
+export {
+  ShellApi,
+  type ShellOmitOptions,
+  type ShellWatchItem,
+  type ShellWatchOptions,
+} from "./api/shell.ts";
 export { ServerApi } from "./api/server.ts";
 export type {
   WatchDatabaseStorageOptions,
@@ -212,8 +218,17 @@ export { isTurnItemOfType } from "./schemas/orchestration/turnItems.ts";
 export type {
   OrchestrationProjectShell,
   OrchestrationV2ThreadShell,
+  OrchestrationV2OlderSettledCount,
+  OrchestrationV2OlderSettledThreads,
   OrchestrationV2ShellSnapshot,
 } from "./schemas/orchestration/shell.ts";
+export type {
+  OrchestrationV2GetOlderSettledThreadsInput,
+  OrchestrationV2OlderSettledCursor,
+  OrchestrationV2OlderSettledThreadsPage,
+  OrchestrationV2ThreadFamily,
+} from "./schemas/orchestration/shellOmittedRows.ts";
+export type { OrchestrationV2ForceStopThreadResult } from "./schemas/orchestration/threadForceStop.ts";
 export type {
   OrchestrationV2DomainEvent,
   KnownOrchestrationV2DomainEvent,

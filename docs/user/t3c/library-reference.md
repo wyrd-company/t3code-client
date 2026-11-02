@@ -30,6 +30,7 @@ TypeScript declarations ship with the package.
 
 ## Members
 
+- [Shared types and constants](https://wyrd.foo/docs/t3c/library-types)
 - [Thread state and helpers](https://wyrd.foo/docs/t3c/library-thread-state)
 
 ## Constants

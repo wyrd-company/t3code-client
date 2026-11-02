@@ -589,6 +589,12 @@ transport failures retain connection and rejected credentials retain auth_invali
 ## Members
 
 <dl>
+<dt><a href="#messageId">messageId</a></dt>
+<dd><p>The message the snippet is from. Older servers omit it.</p>
+</dd>
+<dt><a href="#runId">runId</a></dt>
+<dd><p>The run that ignored Stop; the server refuses once a newer run has started.</p>
+</dd>
 <dt><a href="#threadId">threadId</a></dt>
 <dd><p>Omit or null to start a new thread per run.</p>
 </dd>
@@ -651,6 +657,21 @@ count is valid but the full total is not known.</p>
 </dd>
 <dt><a href="#OrchestrationProjectShell">OrchestrationProjectShell</a></dt>
 <dd><p>Project summary shared by the shell and the application project APIs.</p>
+</dd>
+<dt><a href="#OrchestrationV2OlderSettledThreads">OrchestrationV2OlderSettledThreads</a></dt>
+<dd><p>Snapshots that leave out older settled threads name the cut and count them per project.
+<code>asOfSequence</code> is the snapshot&#39;s own sequence: the counts are exact until a later change.</p>
+</dd>
+<dt><a href="#OrchestrationV2ThreadFamily">OrchestrationV2ThreadFamily</a></dt>
+<dd><p>The active threads that share the requested thread&#39;s <code>lineage.rootThreadId</code>, in any run state.
+An unknown thread has an empty family; a deleted one still names its root.</p>
+</dd>
+<dt><a href="#OrchestrationV2OlderSettledCursor">OrchestrationV2OlderSettledCursor</a></dt>
+<dd><p>Where a page of older settled threads starts: below this settle time, then after this id.</p>
+</dd>
+<dt><a href="#OrchestrationV2OlderSettledThreadsPage">OrchestrationV2OlderSettledThreadsPage</a></dt>
+<dd><p>Older settled threads below the cursor, newest settle first. A <code>limit: 0</code> read fills <code>counts</code>
+instead, per project. A cursor without an id is strict.</p>
 </dd>
 <dt><a href="#ProjectMutation">ProjectMutation</a></dt>
 <dd><p>What <code>projects.mutate</code> and <code>POST /api/projects/mutate</code> accept.</p>
@@ -1604,6 +1625,7 @@ older server. The library does not render terminal output.
   - [.setModelSelection()](#ThreadsApi+setModelSelection)
   - [.startTurn()](#ThreadsApi+startTurn)
   - [.interrupt()](#ThreadsApi+interrupt)
+  - [.forceStop()](#ThreadsApi+forceStop)
   - [.stop()](#ThreadsApi+stop)
   - [.stopThread()](#ThreadsApi+stopThread)
   - [.resumeQueue()](#ThreadsApi+resumeQueue)
@@ -1900,6 +1922,23 @@ async interrupt(
 ```
 
 **Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+forceStop"></a>
+
+### threadsApi.forceStop()
+
+Force stop for an agent that ignored Stop: ends the turn and kills or releases its agent
+process. With `runId`, fails `OrchestrationV2ForceStopThreadError` with reason `superseded`
+and stops nothing once another run is the latest.
+
+```ts
+forceStop(
+    threadId: ThreadId,
+    options: ForceStopThreadOptions = {},
+    signal?: AbortSignal,
+  ): Promise<OrchestrationV2ForceStopThreadResult>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
 <a name="ThreadsApi+stop"></a>
 
 ### threadsApi.stop()
@@ -2042,7 +2081,11 @@ async diff(
 ### threadsApi.search()
 
 Substring search of active threads' finished user and assistant messages: one
-match per thread, at most `limit` (default and maximum 50).
+match per thread, at most `limit` (default and maximum 50). `titlesOnly` skips
+message search. `olderSettledBefore` also returns in `threads` the rows of the
+best matching threads settled before it; send it, `projectIds`,
+`environmentLabel` and `titlesOnly` only to servers that advertise
+`shellOlderSettled`.
 
 ```ts
 search(input: ThreadSearchInput, signal?: AbortSignal): Promise<ThreadSearchResult>;
@@ -2132,6 +2175,9 @@ survive; malformed values fail decoding. This metadata does not grant permission
 - [ShellApi](#ShellApi)
   - [.snapshot()](#ShellApi+snapshot)
   - [.archivedSnapshot()](#ShellApi+archivedSnapshot)
+  - [.threadFamily()](#ShellApi+threadFamily)
+  - [.worktreeThreadIds()](#ShellApi+worktreeThreadIds)
+  - [.olderSettledThreads()](#ShellApi+olderSettledThreads)
   - [.watch()](#ShellApi+watch)
 
 <a name="ShellApi+snapshot"></a>
@@ -2141,7 +2187,10 @@ survive; malformed values fail decoding. This metadata does not grant permission
 Projects plus active and archived thread shells, over HTTP.
 
 ```ts
-snapshot(signal?: AbortSignal): Promise<OrchestrationV2ShellSnapshot>;
+snapshot(
+    signal?: AbortSignal,
+    options?: ShellOmitOptions,
+  ): Promise<OrchestrationV2ShellSnapshot>;
 ```
 
 **Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
@@ -2153,6 +2202,43 @@ Archived thread shells and projects, over RPC. The server has no live archived s
 
 ```ts
 archivedSnapshot(signal?: AbortSignal): Promise<OrchestrationV2ArchivedShellSnapshot>;
+```
+
+**Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
+<a name="ShellApi+threadFamily"></a>
+
+### shellApi.threadFamily()
+
+The active threads that share this thread's root, in any run state: the root, its forks and
+their subagent trees. An unknown thread has an empty family.
+
+```ts
+threadFamily(threadId: ThreadId, signal?: AbortSignal): Promise<OrchestrationV2ThreadFamily>;
+```
+
+**Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
+<a name="ShellApi+worktreeThreadIds"></a>
+
+### shellApi.worktreeThreadIds()
+
+Active threads on a worktree path, including subagent children a snapshot can leave out.
+
+```ts
+async worktreeThreadIds(worktreePath: string, signal?: AbortSignal): Promise<ThreadId[]>;
+```
+
+**Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
+<a name="ShellApi+olderSettledThreads"></a>
+
+### shellApi.olderSettledThreads()
+
+A page of older settled threads below the cursor; `limit: 0` fills only `counts`.
+
+```ts
+olderSettledThreads(
+    input: OrchestrationV2GetOlderSettledThreadsInput,
+    signal?: AbortSignal,
+  ): Promise<OrchestrationV2OlderSettledThreadsPage>;
 ```
 
 **Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
@@ -3393,6 +3479,20 @@ async logout(name?: string): Promise<void>;
 ```
 
 **Kind**: instance method of [<code>ProfileManager</code>](#ProfileManager)  
+<a name="messageId"></a>
+
+## messageId
+
+The message the snippet is from. Older servers omit it.
+
+**Kind**: global variable  
+<a name="runId"></a>
+
+## runId
+
+The run that ignored Stop; the server refuses once a newer run has started.
+
+**Kind**: global variable  
 <a name="threadId"></a>
 
 ## threadId
@@ -3521,6 +3621,37 @@ A turn item of any type, including a type this build does not know.
 ## OrchestrationProjectShell
 
 Project summary shared by the shell and the application project APIs.
+
+**Kind**: global constant  
+<a name="OrchestrationV2OlderSettledThreads"></a>
+
+## OrchestrationV2OlderSettledThreads
+
+Snapshots that leave out older settled threads name the cut and count them per project.
+`asOfSequence` is the snapshot's own sequence: the counts are exact until a later change.
+
+**Kind**: global constant  
+<a name="OrchestrationV2ThreadFamily"></a>
+
+## OrchestrationV2ThreadFamily
+
+The active threads that share the requested thread's `lineage.rootThreadId`, in any run state.
+An unknown thread has an empty family; a deleted one still names its root.
+
+**Kind**: global constant  
+<a name="OrchestrationV2OlderSettledCursor"></a>
+
+## OrchestrationV2OlderSettledCursor
+
+Where a page of older settled threads starts: below this settle time, then after this id.
+
+**Kind**: global constant  
+<a name="OrchestrationV2OlderSettledThreadsPage"></a>
+
+## OrchestrationV2OlderSettledThreadsPage
+
+Older settled threads below the cursor, newest settle first. A `limit: 0` read fills `counts`
+instead, per project. A cursor without an id is strict.
 
 **Kind**: global constant  
 <a name="ProjectMutation"></a>

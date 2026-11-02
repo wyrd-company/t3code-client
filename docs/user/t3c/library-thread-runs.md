@@ -37,6 +37,23 @@ async interrupt(
 ```
 
 **Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
+<a name="ThreadsApi+forceStop"></a>
+
+### threadsApi.forceStop()
+
+Force stop for an agent that ignored Stop: ends the turn and kills or releases its agent
+process. With `runId`, fails `OrchestrationV2ForceStopThreadError` with reason `superseded`
+and stops nothing once another run is the latest.
+
+```ts
+forceStop(
+    threadId: ThreadId,
+    options: ForceStopThreadOptions = {},
+    signal?: AbortSignal,
+  ): Promise<OrchestrationV2ForceStopThreadResult>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+stop"></a>
 
 ### threadsApi.stop()
@@ -179,7 +196,11 @@ async diff(
 ### threadsApi.search()
 
 Substring search of active threads' finished user and assistant messages: one
-match per thread, at most `limit` (default and maximum 50).
+match per thread, at most `limit` (default and maximum 50). `titlesOnly` skips
+message search. `olderSettledBefore` also returns in `threads` the rows of the
+best matching threads settled before it; send it, `projectIds`,
+`environmentLabel` and `titlesOnly` only to servers that advertise
+`shellOlderSettled`.
 
 ```ts
 search(input: ThreadSearchInput, signal?: AbortSignal): Promise<ThreadSearchResult>;

@@ -46,6 +46,42 @@ describe("native Stop and queue facade controls", () => {
     await server.close();
   });
 
+  it("force stops with an optional run and types the superseded refusal", async () => {
+    const inputs: unknown[] = [];
+    server.handle("orchestration.forceStopThread", (payload) => {
+      inputs.push(payload);
+      return inputs.length < 3
+        ? { kind: "value", value: { outcome: "shared", sharedWithThreadIds: ["thread-other"] } }
+        : {
+            kind: "fail",
+            error: {
+              _tag: "OrchestrationV2ForceStopThreadError",
+              threadId: ids.threadId,
+              reason: "superseded",
+            },
+          };
+    });
+    await expect(client.threads.forceStop(ids.threadId)).resolves.toEqual({
+      outcome: "shared",
+      sharedWithThreadIds: ["thread-other"],
+    });
+    await client.threads.forceStop(ids.threadId, { runId: ids.runId });
+    const refused = await client.threads
+      .forceStop(ids.threadId, { runId: ids.runId })
+      .catch((error: unknown) => error);
+    expect(refused).toBeInstanceOf(T3RpcError);
+    expect(
+      refused instanceof T3RpcError &&
+        refused.is("OrchestrationV2ForceStopThreadError") &&
+        refused.record.reason,
+    ).toBe("superseded");
+    expect(inputs).toEqual([
+      { threadId: ids.threadId },
+      { threadId: ids.threadId, runId: ids.runId },
+      { threadId: ids.threadId, runId: ids.runId },
+    ]);
+  });
+
   const controls = [
     {
       type: "thread.stop",
