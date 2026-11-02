@@ -200,6 +200,18 @@ describe("commands", () => {
       },
     ],
     [{ type: "runtime-request.respond", requestId: "r", decision: "decline", feedback: "No" }],
+    [
+      {
+        type: "message.dispatch",
+        createdBy: "agent",
+        creationSource: "server",
+        idleCompaction: "beforeCacheExpires",
+        messageId: "message-1",
+        text: "/compact",
+        attachments: [],
+        dispatchMode: { type: "start_immediately" },
+      },
+    ],
   ])("keeps the fields of %o", (fields) => {
     const command = { commandId: "command-1", threadId: "thread-1", ...fields };
     expect(OrchestrationV2Command.parse(command)).toMatchObject(fields);

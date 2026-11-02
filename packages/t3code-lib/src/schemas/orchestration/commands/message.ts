@@ -22,7 +22,7 @@ import {
 } from "../../common.ts";
 import { ChatAttachment } from "../attachments.ts";
 import { OrchestrationMessageContext } from "../messageContext.ts";
-import { OrchestrationV2Notification } from "../messages.ts";
+import { OrchestrationV2IdleCompaction, OrchestrationV2Notification } from "../messages.ts";
 import {
   ModelSelection,
   OrchestrationV2CreationFields,
@@ -57,6 +57,7 @@ export const MessageDispatchCommand = z.looseObject({
   ...OrchestrationV2CreationFields,
   scheduledTaskId: ScheduledTaskId.optional(),
   senderThreadId: ThreadId.optional(),
+  idleCompaction: OrchestrationV2IdleCompaction.optional(),
   ...stamped,
   messageId: MessageId,
   text: z.string(),
