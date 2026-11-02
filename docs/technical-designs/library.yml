@@ -210,13 +210,18 @@ proposed-design:
        its vocabulary for "send a message and follow its execution" and carries
        the server's `runId`, so a workflow does not have to learn the server's
        run and attempt model to wait for an answer.
-  out-of-scope-for-this-version: |
-    Pull requests, previews, devices, cloud relay, DPoP, desktop bootstrap, a
-    guest's own `/api/guest` routes, attachment upload signing, source-control
-    repository, clone and sign-in flows, MCP OAuth, forks and merge-backs,
-    delegated tasks, and settings mutation. They
-    stay reachable through `rpc.callRaw`, `rpc.streamRaw`, and
-    `threads.dispatch` with the full `OrchestrationV2Command` union.
+  typed-coverage: |
+    The library is fully typed against the target T3 Code build. Every RPC
+    method, HTTP route and orchestration command that the build exposes to a
+    client has a schema-validated entry. This covers pull requests, previews,
+    devices, cloud relay, DPoP, desktop bootstrap, a guest's own `/api/guest`
+    routes, attachment upload signing, source-control repository, clone and
+    sign-in flows, MCP OAuth, forks and merge-backs, delegated tasks and settings
+    mutation. Commands that the server accepts only from itself are not client
+    surface.
+
+    `rpc.callRaw` and `rpc.streamRaw` serve a method that a server newer than the
+    target build offers. They are not the path for a method of the target build.
   profiles-and-target: >-
     TARGET_T3_CODE_VERSION exports the target version. ProfileManager owns shared
     named-server resolution and CredentialSource plugs in credential stores.

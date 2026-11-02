@@ -61,7 +61,7 @@ proposed-design:
     | `GET /api/orchestration/threads/:threadId/bounded`    | bearer, orch:read    | `OrchestrationV2ThreadBoundedSnapshot`: a recent window plus `historyCursor`               |
     | `GET /api/orchestration/threads/:threadId/history`    | bearer, orch:read    | query `cursor`; `OrchestrationV2ThreadHistoryPage`; 400 `invalid_history_cursor`           |
     | `GET /api/orchestration/threads/:threadId/transcript` | bearer, orch:read    | `OrchestrationV2ThreadTranscript`: the visible timeline; 400 `thread_transcript_too_large` |
-    | `POST /api/pull-requests/diff`                        | bearer               | out of scope for this version                                                              |
+    | `POST /api/pull-requests/diff`                        | bearer               | `PullRequestDiffInput` → `PullRequestDiffResult`                                                              |
 
     HTTP errors are JSON tagged records: `EnvironmentRequestInvalidError` (400),
     `EnvironmentAuthInvalidError` (401), `EnvironmentScopeRequiredError` and
