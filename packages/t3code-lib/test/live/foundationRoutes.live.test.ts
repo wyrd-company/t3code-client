@@ -7,16 +7,14 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
+import { T3NotFoundError, commandId, projectId, schemas, threadId } from "../../src/index.ts";
 import {
-  T3Client,
-  T3NotFoundError,
-  commandId,
-  memoryCredentialStore,
-  projectId,
-  schemas,
-  threadId,
-} from "../../src/index.ts";
-import { connect, hasAgent, hasLiveServer, modelSelection } from "./liveClient.ts";
+  connect,
+  connectWithScopes,
+  hasAgent,
+  hasLiveServer,
+  modelSelection,
+} from "./liveClient.ts";
 
 describe.skipIf(!hasLiveServer)("foundation routes", () => {
   const client = connect();
@@ -110,15 +108,7 @@ describe.skipIf(!hasLiveServer)("foundation routes", () => {
   });
 
   it("needs the settings grant for a mutation that carries scripts", async () => {
-    const { credential } = await client.auth.createPairingCredential({
-      label: "live route test",
-      scopes: ["orchestration:read", "orchestration:operate"],
-    });
-    const narrow = T3Client.create({
-      baseUrl: process.env["T3_LIVE_URL"] ?? "",
-      credentials: memoryCredentialStore(),
-    });
-    await narrow.auth.exchangePairingToken(credential);
+    const narrow = await connectWithScopes(client, ["orchestration:read", "orchestration:operate"]);
     const body = {
       type: "project.update" as const,
       commandId: commandId(`command-${crypto.randomUUID()}`),

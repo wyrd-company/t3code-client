@@ -154,21 +154,25 @@ export const ChatGptReconnectProfile = z.looseObject({
 });
 export type ChatGptReconnectProfile = z.infer<typeof ChatGptReconnectProfile>;
 
-/** A ChatGPT connection with its tokens. Handle it as a credential. */
-export const ChatGptTransferredProfile = z.looseObject({
-  registration: ChatGptReconnectProfile,
-  credentials: z.looseObject({
+/** The tokens of a ChatGPT connection, with `token` as the form of each. */
+const chatGptCredentials = (token: z.ZodString) =>
+  z.looseObject({
     clientId: z.string(),
-    accessToken: z.string().min(1),
-    refreshToken: z.string().nullable(),
-    idToken: z.string().min(1),
+    accessToken: token.min(1),
+    refreshToken: token.nullable(),
+    idToken: token.min(1),
     issuer: z.string(),
     expiresAt: z.number(),
     earliestRefreshAt: z.number().nullable(),
     scopes: z.array(z.string()),
     subject: z.string(),
     email: z.string().nullable(),
-  }),
+  });
+
+/** A ChatGPT connection with its tokens. Handle it as a credential. */
+export const ChatGptTransferredProfile = z.looseObject({
+  registration: ChatGptReconnectProfile,
+  credentials: chatGptCredentials(z.string()),
 });
 export type ChatGptTransferredProfile = z.infer<typeof ChatGptTransferredProfile>;
 
@@ -195,18 +199,7 @@ export const ChatGptImportProfileInput = z.looseObject({
   instanceId: ProviderInstanceId,
   profile: z.looseObject({
     registration: ChatGptReconnectProfileWrite,
-    credentials: z.looseObject({
-      clientId: z.string(),
-      accessToken: TokenText.min(1),
-      refreshToken: TokenText.nullable(),
-      idToken: TokenText.min(1),
-      issuer: z.string(),
-      expiresAt: z.number(),
-      earliestRefreshAt: z.number().nullable(),
-      scopes: z.array(z.string()),
-      subject: z.string(),
-      email: z.string().nullable(),
-    }),
+    credentials: chatGptCredentials(TokenText),
   }),
 });
 export type ChatGptImportProfileInput = z.infer<typeof ChatGptImportProfileInput>;

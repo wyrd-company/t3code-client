@@ -86,6 +86,7 @@ proposed-design:
         git.ts                  stacked Git actions and their progress events, pull request resolution and preparation
         review.ts               a branch's commits, diff previews and the contents of a changed file
         settingsPatch.ts        the server settings mutation and the scopes it requires
+        settingsPatchFields.ts  the nested shapes of the settings mutation
         providerInstance.ts     provider instances, usage limit sources and secret providers as a settings write sends them
         deviceHosts.ts          the device hosts a settings patch can write
         serverActions.ts        keybinding, provider update, client activity and secret request inputs and results

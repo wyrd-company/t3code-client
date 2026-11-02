@@ -13,30 +13,10 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodeHttp from "node:http";
 import type { AddressInfo } from "node:net";
 import * as NodePath from "node:path";
-import { WebSocket as WsWebSocket } from "ws";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
-import { T3AuthError, T3Client } from "../../src/index.ts";
-import type { WebSocketConstructor } from "../../src/internal/websocket.ts";
-import { hasLiveServer, waitFor } from "./liveClient.ts";
+import { T3AuthError, type T3Client } from "../../src/index.ts";
+import { connectWithScopes, firstItem, hasLiveServer, waitFor } from "./liveClient.ts";
 import { startPeerServer, type PeerServer } from "./peerServer.ts";
-
-const webSocket = WsWebSocket as unknown as WebSocketConstructor;
-
-/** The first item that `accept` keeps. A decode error fails the test. */
-async function firstItem<T, R>(
-  items: AsyncIterable<
-    | { readonly kind: "item"; readonly value: T }
-    | { readonly kind: "decode-error"; readonly error: Error }
-  >,
-  accept: (value: T) => R | undefined,
-): Promise<R> {
-  for await (const item of items) {
-    if (item.kind === "decode-error") throw item.error;
-    const kept = accept(item.value);
-    if (kept !== undefined) return kept;
-  }
-  throw new Error("The stream ended without the expected item.");
-}
 
 const statusStub = async (status: number) => {
   const received: string[] = [];
@@ -224,20 +204,18 @@ describe.skipIf(!hasLiveServer)("diagnostics methods", () => {
   }, 180_000);
 
   describe("scopes", () => {
-    const connectWith = async (...scopes: string[]) => {
-      const { credential } = await client.auth.createPairingCredential({
-        label: "sample-diagnostics",
-        scopes: scopes as never,
-      });
-      const scoped = T3Client.create({ baseUrl: peer.baseUrl, webSocket });
-      await scoped.auth.exchangePairingToken(credential);
-      return scoped;
-    };
-
     it("needs both scopes for a retry, and refuses locally what the server refuses", async () => {
-      const reader = await connectWith("orchestration:read", "diagnostics:read");
-      const maintainer = await connectWith("environment:maintain");
-      const both = await connectWith("diagnostics:read", "environment:maintain");
+      const reader = await connectWithScopes(
+        client,
+        ["orchestration:read", "diagnostics:read"],
+        peer.baseUrl,
+      );
+      const maintainer = await connectWithScopes(client, ["environment:maintain"], peer.baseUrl);
+      const both = await connectWithScopes(
+        client,
+        ["diagnostics:read", "environment:maintain"],
+        peer.baseUrl,
+      );
       try {
         for (const scoped of [reader, maintainer]) {
           await expect(scoped.rpc.call("server.retryResourceTelemetry", {})).rejects.toBeInstanceOf(

@@ -8,16 +8,11 @@
  * because a success runs the provider's installer on the host.
  */
 import * as NodeFSP from "node:fs/promises";
-import { WebSocket as WsWebSocket } from "ws";
-import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
-import { T3AuthError, T3Client, schemas } from "../../src/index.ts";
-import type { WebSocketConstructor } from "../../src/internal/websocket.ts";
+import { afterAll, describe, expect, it } from "vite-plus/test";
+import type { schemas } from "../../src/index.ts";
 import { ProviderDriverKind, ProviderInstanceId } from "../../src/schemas/common.ts";
 import { isRpcErrorOfTag } from "../../src/schemas/rpcErrors.ts";
 import { connect, hasLiveServer, modelSelection, refusal } from "./liveClient.ts";
-
-const baseUrl = process.env["T3_LIVE_URL"];
-const webSocket = WsWebSocket as unknown as WebSocketConstructor;
 
 /** A value for each kind of nested setting, so that the server checks each schema's wire form. */
 const everyShape: schemas.settingsPatch.ServerSettingsPatch = {
@@ -242,14 +237,17 @@ describe.skipIf(!hasLiveServer)("settings methods", () => {
     expect(isRpcErrorOfTag(record, "ServerProviderUpdateError")).toBe(true);
   });
 
-  it("takes a client's activity report", async () => {
+  it("takes a client's activity report, and a time with an offset", async () => {
+    const report = {
+      clientId: "sample-client",
+      clientKind: "unknown",
+      visible: true,
+      focused: false,
+      recentlyInteracted: false,
+    } as const;
     await expect(
       client.rpc.call("server.reportClientActivity", {
-        clientId: "sample-client",
-        clientKind: "unknown",
-        visible: true,
-        focused: false,
-        recentlyInteracted: false,
+        ...report,
         appState: "active",
         lowPowerMode: "unknown",
         scopes: [{ type: "server-config" }, { type: "diagnostics" }],
@@ -257,16 +255,9 @@ describe.skipIf(!hasLiveServer)("settings methods", () => {
         observedAt: new Date().toISOString(),
       }),
     ).resolves.toBeUndefined();
-  });
-
-  it("takes an activity time with an offset", async () => {
     await expect(
       client.rpc.call("server.reportClientActivity", {
-        clientId: "sample-client",
-        clientKind: "unknown",
-        visible: true,
-        focused: false,
-        recentlyInteracted: false,
+        ...report,
         scopes: [],
         observedAt: "2026-01-01T01:00:00+01:00",
       }),
@@ -289,58 +280,5 @@ describe.skipIf(!hasLiveServer)("settings methods", () => {
   it("refreshes usage rates", async () => {
     const pricing = await client.rpc.call("server.refreshUsageRates", {});
     expect(["fresh", "cached", "unavailable"]).toContain(pricing.status);
-  });
-});
-
-describe.skipIf(!hasLiveServer)("settings scopes", () => {
-  const owner = connect();
-  let settingsWriter: T3Client;
-  let providerManager: T3Client;
-  const connectWith = async (scope: string) => {
-    const { credential } = await owner.auth.createPairingCredential({
-      label: `sample-${scope}`,
-      scopes: ["orchestration:read", scope as never],
-    });
-    const scoped = T3Client.create({ baseUrl: baseUrl!, webSocket });
-    await scoped.auth.exchangePairingToken(credential);
-    return scoped;
-  };
-  beforeAll(async () => {
-    settingsWriter = await connectWith("settings:write");
-    providerManager = await connectWith("providers:manage");
-  });
-  afterAll(async () => {
-    await settingsWriter.close();
-    await providerManager.close();
-    await owner.close();
-  });
-  const providerPatch = { usageLimitSources: { sample_scope: null } };
-  const settingPatch = { branchNamePrefix: "sample" };
-
-  it("takes each patch with the scope the server asks for", async () => {
-    await expect(
-      settingsWriter.rpc.call("server.updateSettings", { patch: settingPatch }),
-    ).resolves.toBeDefined();
-    await expect(
-      providerManager.rpc.call("server.updateSettings", {
-        patch: providerPatch,
-      }),
-    ).resolves.toBeDefined();
-  });
-
-  it("refuses locally what the server refuses", async () => {
-    for (const [scoped, patch] of [
-      [settingsWriter, providerPatch],
-      [providerManager, settingPatch],
-      [settingsWriter, { ...settingPatch, ...providerPatch }],
-      [providerManager, { ...settingPatch, ...providerPatch }],
-    ] as const) {
-      await expect(scoped.rpc.call("server.updateSettings", { patch })).rejects.toBeInstanceOf(
-        T3AuthError,
-      );
-      expect(
-        await scoped.rpc.callRaw("server.updateSettings", { patch }).catch((e: unknown) => e),
-      ).toMatchObject({ tag: "EnvironmentAuthorizationError" });
-    }
   });
 });

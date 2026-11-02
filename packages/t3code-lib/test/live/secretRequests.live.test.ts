@@ -19,6 +19,7 @@ import {
   hasLiveServer,
   modelSelection,
   refusal,
+  turnEnded,
   waitFor,
 } from "./liveClient.ts";
 
@@ -102,13 +103,7 @@ describe.skipIf(!hasLiveServer || !hasAgent)("an agent's secret request", () => 
           ? row
           : undefined;
       }, `a ${wanted} secret request`);
-    const idle = () =>
-      waitFor(async () => {
-        const row = (await client.shell.snapshot()).threads.find((entry) => entry.id === id);
-        return row && ["completed", "idle", "failed", "interrupted"].includes(row.status)
-          ? row
-          : undefined;
-      }, "the turn to end");
+    const idle = () => turnEnded(client, id);
     try {
       const first = await ask(1);
       const save = {

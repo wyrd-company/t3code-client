@@ -20,7 +20,7 @@ import {
   isUnknownVariant,
 } from "../../src/schemas/common.ts";
 import type { ProviderAuthState } from "../../src/schemas/providerSetup.ts";
-import { hasLiveServer, refusal } from "./liveClient.ts";
+import { firstItem, hasLiveServer, refusal } from "./liveClient.ts";
 import { startPeerServer, type PeerServer } from "./peerServer.ts";
 
 const managed = ProviderInstanceId.parse("signin");
@@ -30,17 +30,14 @@ const missing = ProviderInstanceId.parse("absent");
 const metadataUnreachable = /Could not reach ChatGPT sign-in/;
 
 /** The first state of the instance's stream that `accept` keeps. */
-async function nextState(
+const nextState = (
   client: T3Client,
   instanceId: ProviderInstanceId,
   accept: (state: ProviderAuthState) => boolean,
-): Promise<ProviderAuthState> {
-  for await (const item of client.rpc.stream("provider.auth.subscribe", { instanceId })) {
-    if (item.kind === "decode-error") throw item.error;
-    if (accept(item.value)) return item.value;
-  }
-  throw new Error("The stream ended without the expected state.");
-}
+): Promise<ProviderAuthState> =>
+  firstItem(client.rpc.stream("provider.auth.subscribe", { instanceId }), (state) =>
+    accept(state) ? state : undefined,
+  );
 
 /** A profile whose client ids differ, so that the server refuses it before any other check. */
 const mismatchedProfile = {

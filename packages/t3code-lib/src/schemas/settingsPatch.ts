@@ -14,8 +14,6 @@ import type { AuthEnvironmentScope } from "./auth.ts";
 import { ProviderInstanceId, ProviderSlug, TrimmedNonEmptyString } from "./common.ts";
 import { EasDeviceHosts, SimlockDeviceHosts, SshDeviceHosts } from "./deviceHosts.ts";
 import { ModelSelection } from "./orchestration/model.ts";
-import { ProjectScript } from "./projects.ts";
-import { ProviderOptionSelections } from "./provider.ts";
 import {
   ProviderInstanceConfig,
   ProviderInstanceMutation,
@@ -23,186 +21,33 @@ import {
   SecretProviderSlug,
   UsageLimitSourceConfig,
 } from "./providerInstance.ts";
-
-const TrimmedString = z.string().trim();
-const ProjectKey = TrimmedNonEmptyString;
-const Millis = z.number();
-const int = (minimum: number, maximum: number) => z.number().int().min(minimum).max(maximum);
-
-const RuntimeMode = z.enum(["approval-required", "auto-accept-edits", "auto", "full-access"]);
-const ThreadEnvMode = z.enum(["local", "worktree"]);
-const WorktreeSubmodules = z.enum(["recursive", "top-level", "none"]);
-const WorktreeKeepWhen = z.enum(["any-local-files", "uncommitted-changes", "tracked-changes"]);
-const ResponseStreamingMode = z.enum(["turn", "paragraph"]);
-const IdleCompactionMode = z.enum(["onReturn", "beforeCacheExpires", "off"]);
-const BranchNamingMode = z.enum(["static", "semantic", "custom"]);
-const PullRequestMergeMethod = z.enum(["merge", "squash", "rebase"]);
-const BackgroundActivityProfile = z.enum(["balanced", "performance", "battery-saver"]);
-const SourceControlWritingStyleMode = z.enum([
-  "repo_conventions",
-  "conventional_commits",
-  "custom",
-]);
-const EnvironmentMachineKind = z.enum([
-  "server",
-  "cloud",
-  "linux",
-  "desktop",
-  "laptop",
-  "mac-mini",
-  "mac-studio",
-]);
-
-const StorageRetentionDays = int(1, 3650).nullable();
-const SettledWorktreeRetentionDays = int(0, 3650).nullable();
-const SidebarAutoSettleAfterDays = z.number().min(1).max(90);
-
-const ProjectScriptInput = ProjectScript.extend({
-  icon: z.enum(["play", "test", "lint", "configure", "build", "debug"]),
-});
-
-const ModelFavorite = z.looseObject({
-  provider: ProviderInstanceId,
-  model: TrimmedNonEmptyString,
-});
-const ModelFavorites = z.array(ModelFavorite);
-const ProviderModelPreferences = z.record(
-  ProviderSlug,
-  z.looseObject({
-    hiddenModels: z.array(z.string()).optional(),
-    modelOrder: z.array(z.string()).optional(),
-  }),
-);
-const ModelSelectionPatch = z
-  .looseObject({
-    instanceId: ProviderInstanceId,
-    model: TrimmedNonEmptyString,
-    options: ProviderOptionSelections,
-  })
-  .partial();
-
-const WORKTREE_RULE_FIELDS = {
-  worktreeKeepWhen: WorktreeKeepWhen,
-  worktreeAfterDays: StorageRetentionDays,
-  worktreeSettledAfterDays: SettledWorktreeRetentionDays,
-  worktreeOnMerge: z.boolean(),
-  worktreeOnDelete: z.boolean(),
-  worktreeUnchanged: z.boolean(),
-};
-const WorktreeCleanupPatch = z
-  .discriminatedUnion("mode", [
-    z.looseObject({ mode: z.literal("off") }),
-    z.looseObject({
-      mode: z.literal("custom"),
-      rules: z.looseObject(WORKTREE_RULE_FIELDS).partial(),
-    }),
-  ])
-  .nullable();
-/** A project's override replaces the whole setting, so its rules are whole. */
-const WorktreeCleanupOverride = z
-  .discriminatedUnion("mode", [
-    z.looseObject({ mode: z.literal("off") }),
-    z.looseObject({
-      mode: z.literal("custom"),
-      rules: z.looseObject({
-        worktreeKeepWhen: WorktreeKeepWhen.optional(),
-        worktreeAfterDays: StorageRetentionDays,
-        worktreeSettledAfterDays: SettledWorktreeRetentionDays.optional(),
-        worktreeOnMerge: z.boolean(),
-        worktreeOnDelete: z.boolean(),
-        worktreeUnchanged: z.boolean(),
-      }),
-    }),
-  ])
-  .nullable();
-const StorageCleanupPatch = z
-  .looseObject({
-    ...WORKTREE_RULE_FIELDS,
-    browserArtifactsAfterDays: StorageRetentionDays,
-    logsAfterDays: StorageRetentionDays,
-  })
-  .partial();
-
-const SnoozePreset = z.discriminatedUnion("kind", [
-  z.looseObject({ kind: z.literal("after"), minutes: int(1, 30 * 24 * 60) }),
-  z.looseObject({
-    kind: z.literal("at"),
-    day: z.enum([
-      "today",
-      "tomorrow",
-      "monday",
-      "tuesday",
-      "wednesday",
-      "thursday",
-      "friday",
-      "saturday",
-      "sunday",
-    ]),
-    time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
-  }),
-]);
-
-const BackgroundActivityOverrides = z
-  .looseObject({
-    automaticGitFetchInterval: Millis,
-    providerHealthRefreshInterval: Millis,
-    hostPowerMonitorActiveInterval: Millis,
-    hostPowerMonitorIdleInterval: Millis,
-    pauseWhenHostLocked: z.boolean(),
-    pauseWhenHostLowPower: z.boolean(),
-    pauseWhenClientLowPower: z.boolean(),
-    pauseWhenOnBattery: z.boolean(),
-  })
-  .partial();
-
-const WritingStylePatch = z
-  .looseObject({
-    mode: SourceControlWritingStyleMode,
-    customInstructions: TrimmedString,
-    followChangeRequestTemplates: z.boolean(),
-  })
-  .partial();
-
-/** Absent keys inherit; null is a value for nullable settings. */
-const ProjectSettingsOverride = z
-  .looseObject({
-    worktreeCleanup: WorktreeCleanupOverride,
-    defaultModelSelection: ModelSelection.nullable(),
-    defaultRuntimeMode: RuntimeMode,
-    defaultThreadEnvMode: ThreadEnvMode,
-    newWorktreesStartFromOrigin: z.boolean(),
-    worktreeSubmodules: WorktreeSubmodules,
-    defaultAutoPull: z.boolean(),
-    defaultProjectScripts: z.array(ProjectScriptInput),
-    enableAgentBrowserAccess: z.boolean(),
-    enableAgentDeviceAccess: z.boolean(),
-    textGenerationModelSelection: ModelSelection,
-    threadTitleInstructions: TrimmedString,
-    sourceControlWriterModelSelection: ModelSelection.nullable(),
-    reviewGuideModelSelection: ModelSelection.nullable(),
-    reviewGuideInstructions: TrimmedString,
-    sourceControlWritingStyle: WritingStylePatch,
-    removeAgentCreditsOnMerge: z.boolean(),
-    branchNamingMode: BranchNamingMode,
-    branchNamePrefix: TrimmedString,
-    branchNameInstructions: TrimmedString,
-    pullRequestMergeMethod: PullRequestMergeMethod.nullable(),
-    sidebarAutoSettleOnMerge: z.boolean(),
-    sidebarAutoSettleAfterDays: SidebarAutoSettleAfterDays.nullable(),
-    sidebarAutoSettleKeepPullRequests: z.boolean(),
-    continueThreadsAfterServerUpdate: z.boolean(),
-    responseStreamingMode: ResponseStreamingMode,
-    providerInstances: z.record(ProviderSlug, z.looseObject({ enabled: z.boolean().optional() })),
-  })
-  .partial();
-
-const UsageTokenPrice = z.number().min(0);
-const UsageModelPriceOverride = z.looseObject({
-  inputCostPerMillionTokens: UsageTokenPrice,
-  outputCostPerMillionTokens: UsageTokenPrice,
-  cacheReadCostPerMillionTokens: UsageTokenPrice.optional(),
-  cacheWriteCostPerMillionTokens: UsageTokenPrice.optional(),
-});
+import {
+  BackgroundActivityOverrides,
+  BackgroundActivityProfile,
+  BranchNamingMode,
+  EnvironmentMachineKind,
+  IdleCompactionMode,
+  Millis,
+  ModelFavorite,
+  ModelFavorites,
+  ModelSelectionPatch,
+  ProjectKey,
+  ProjectScriptInput,
+  ProjectSettingsOverride,
+  ProviderModelPreferences,
+  PullRequestMergeMethod,
+  ResponseStreamingMode,
+  RuntimeMode,
+  SidebarAutoSettleAfterDays,
+  SnoozePreset,
+  StorageCleanupPatch,
+  ThreadEnvMode,
+  TrimmedString,
+  UsageModelPriceOverride,
+  WorktreeCleanupPatch,
+  WorktreeSubmodules,
+  WritingStylePatch,
+} from "./settingsPatchFields.ts";
 
 /** Keys that the server treats as provider management in place of a settings write. */
 const PROVIDER_PATCH_KEYS: ReadonlySet<string> = new Set([
