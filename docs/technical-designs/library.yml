@@ -90,7 +90,8 @@ proposed-design:
           messageContext.ts     OrchestrationMessageContext and its records
           pullRequest.ts        thread ↔ pull request links
           thread.ts             OrchestrationV2AppThread
-          runs.ts               runs, attempts, execution nodes, subagents, checkpoints, workspace strategy
+          runs.ts               runs, attempts, execution nodes, subagents, workspace strategy
+          checkpoints.ts        checkpoint scopes, checkpoints, rollback requests
           workflow.ts           a workflow coordinator's phases, agents, and run handles
           providerState.ts      provider sessions, threads, turns, runtime requests
           providerCapabilities.ts
