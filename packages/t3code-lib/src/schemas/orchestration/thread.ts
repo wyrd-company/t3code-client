@@ -26,6 +26,7 @@ import {
   RuntimeMode,
 } from "./model.ts";
 import { ThreadLinkedPullRequest, ThreadPullRequestLink } from "./pullRequest.ts";
+import { OrchestrationV2DelegatedFrom, OrchestrationV2LinkOrigin } from "./threadLink.ts";
 
 export const OrchestrationV2AppThreadLineage = z.looseObject({
   parentThreadId: ThreadId.nullable(),
@@ -90,6 +91,8 @@ export const OrchestrationV2AppThread = z.looseObject({
   branchPullRequest: ThreadLinkedPullRequest.nullable().optional(),
   activeProviderThreadId: ProviderThreadId.nullable(),
   historyOrigin: OrchestrationV2ThreadHistoryOrigin.optional(),
+  linkOrigin: OrchestrationV2LinkOrigin.optional(),
+  delegatedFrom: OrchestrationV2DelegatedFrom.optional(),
   lineage: OrchestrationV2AppThreadLineage,
   forkedFrom: OrchestrationV2ThreadForkedFrom.nullable(),
   createdAt: IsoDateTime,

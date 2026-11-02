@@ -48,6 +48,7 @@ import {
 import {
   OrchestrationV2FileChangeDetail,
   OrchestrationV2FileSearchResult,
+  OrchestrationV2LinkRequestFields,
   OrchestrationV2ProviderFailure,
   OrchestrationV2ProviderRetry,
   OrchestrationV2SecretRequestStatus,
@@ -234,6 +235,7 @@ export const OrchestrationV2TurnItemMembers = [
     placeholder: z.string().optional(),
     secretStatus: OrchestrationV2SecretRequestStatus,
   }),
+  z.looseObject({ ...base, ...OrchestrationV2LinkRequestFields }),
   z.looseObject({
     ...base,
     type: z.literal("subagent"),

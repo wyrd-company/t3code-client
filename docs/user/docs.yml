@@ -74,6 +74,7 @@ products:
               - library-server
               - library-server-methods
               - library-schedules
+              - library-peer-links
     kinds:
       - kind: cli
         install:

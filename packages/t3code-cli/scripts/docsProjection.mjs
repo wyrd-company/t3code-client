@@ -23,6 +23,7 @@ const areas = [
   ["server", "Server API", "Server and automation"],
   ["server-methods", "Server API methods", "Server and automation"],
   ["schedules", "Scheduled tasks API", "Server and automation"],
+  ["peer-links", "Peer links API", "Server and automation"],
   ["vcs", "Version control API", "Workspace facades"],
   ["terminal", "Terminal API", "Workspace facades"],
 ];
@@ -40,6 +41,7 @@ function areaOf(name, summary = false) {
     ShellApi: "shell",
     VcsApi: "vcs",
     TerminalApi: "terminal",
+    PeerLinksApi: "peer-links",
   };
   if (Object.hasOwn(facades, name)) return facades[name];
   if (/^(?:T3Client|RpcClient|CommandDispatcher|consoleLogger)$/u.test(name)) return "client";

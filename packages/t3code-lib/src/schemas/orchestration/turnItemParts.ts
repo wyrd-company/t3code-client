@@ -4,7 +4,9 @@
 // ---
 /** The fields every turn item shares and the small records some of them carry. */
 import { z } from "zod";
+import { AuthMcpClientGrantedAccess } from "../auth.ts";
 import {
+  EnvironmentId,
   IsoDateTime,
   NodeId,
   NonNegativeInt,
@@ -112,6 +114,35 @@ export const OrchestrationV2SecretRequestStatus = forwardCompatibleLiteral([
   "declined",
   "cancelled",
 ]);
+/**
+ * An agent asked the user to link another environment. The pairing code never
+ * passes through orchestration, so the item has only what was asked and how it ended.
+ */
+export const OrchestrationV2LinkRequestStatus = forwardCompatibleLiteral([
+  "pending",
+  "linked",
+  "declined",
+  "cancelled",
+  "failed",
+]);
+export const OrchestrationV2LinkRequestFields = {
+  type: z.literal("link_request"),
+  /** The address the agent named, if it named one. */
+  url: TrimmedNonEmptyString.optional(),
+  reason: z.string(),
+  /** The environment the agent named, or the one answering at `url`. */
+  environmentId: EnvironmentId.optional(),
+  label: z.string().optional(),
+  /** A phrase from the user's words, such as "vps", that preselects a machine. */
+  hint: z.string().optional(),
+  /** The access the agent suggested; the user's choice is final. */
+  requestedAccess: AuthMcpClientGrantedAccess.optional(),
+  linkStatus: OrchestrationV2LinkRequestStatus,
+  linkedEnvironmentId: EnvironmentId.optional(),
+  linkedLabel: z.string().optional(),
+  linkedAccess: AuthMcpClientGrantedAccess.optional(),
+  failure: z.string().optional(),
+} as const;
 export const OrchestrationV2UserMessageInputIntent = forwardCompatibleLiteral([
   "turn_start",
   "queued_turn",

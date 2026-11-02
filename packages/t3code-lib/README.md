@@ -137,6 +137,7 @@ const launched = await client.threads.launch({
 | `client.vcs`            | Refs, status, worktrees, branches.                                                                            |
 | `client.terminal`       | Open, attach, write, resize, close terminals.                                                                 |
 | `client.scheduledTasks` | List, get, create, update, enable, delete, run, watch scheduled tasks; webhook endpoints, tokens, deliveries. |
+| `client.peerLinks`      | List, link, unlink peer environments; answer an agent's link request.                                         |
 | `client.rpc`            | Typed `call` and `stream` for every registered method, plus `callRaw` and `streamRaw` for the rest.           |
 
 ## Vocabulary

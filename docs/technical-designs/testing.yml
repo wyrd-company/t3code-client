@@ -100,6 +100,11 @@ proposed-design:
     `serverRelease.live.test.ts` reads a stock T3 Code npm release, starts a triage
     session, compares on-demand provider snapshots with the full stream, and reads a
     local-only VCS status.
+    `peerLinks.live.test.ts` starts a second isolated stock server, checks the
+    refusals, and links, lists and removes it. With `T3_LIVE_AGENT=1` a `gpt-6-luna`
+    subject asks for the link twice: the test declines once and links once, then the
+    subject starts a thread and a delegated task in the peer, which carry `linkOrigin`
+    and `delegatedFrom`. It runs only on the server that the harness owns.
     `threadFind.live.test.ts` checks no-match output against stock T3 Code; its
     `T3_LIVE_AGENT=1` case resolves a real Luna session before and after archiving
     the owning T3 thread, and checks provider separation.

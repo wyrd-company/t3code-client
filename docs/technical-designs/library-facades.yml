@@ -197,6 +197,12 @@ proposed-design:
       switchRef;
       watchStatus;
     }
+    export class PeerLinksApi {
+      list(signal?): Promise<readonly PeerLinkSummary[]>; // access:read
+      link(input, signal?): Promise<PeerLink>; // access:write
+      unlink(environmentId, signal?): Promise<boolean>; // access:write
+      answerRequest(input, signal?): Promise<void>; // access:write
+    }
     export class TerminalApi {
       open;
       attach(stream);
@@ -364,6 +370,34 @@ proposed-design:
     advertise support. Supplied non-boolean values fail decoding. The library does
     not check them before a call. `server.prepareTriage` needs `orchestration:operate`.
     `vcs.status` takes `localOnly`, which refreshes only the local state.
+
+  peer-links: |
+    `client.peerLinks` manages the links from this environment to other T3 Code
+    environments. `ExecutionEnvironmentCapabilities.peerLinks` advertises them.
+    `mcpModeLimitHeader` and `linkFence` are what a peer must advertise before an
+    environment links to it. All three are optional booleans available through
+    `server.environment`, `server.getConfig` and configuration stream snapshots.
+    False and omission are preserved, supplied non-boolean values fail decoding, and
+    the library does not check them before a call.
+
+    The server setting `linkedEnvironmentsEnabled` is off by default and is needed
+    on both sides. Off on this side, `link` rejects with reason `disabled`; off on
+    the peer, it rejects with `pairing_rejected`. The library reads the setting
+    through `server.getSettings` and does not write it: settings mutation stays raw.
+
+    A pairing code must carry the scopes of the chosen `access`. The library sends it
+    to the server and keeps it out of its errors. A refusal is a `PeerLinkError` record.
+    An `answerRequest` that the peer refuses still resolves, and the `link_request`
+    turn item records `failed` with its `failure` text. `PeerLinkRequestError` means
+    that nothing was linked: an unknown thread is `load_failed`, an unknown item
+    `not_found` and a closed request `already_answered`.
+
+    Thread rows have `linkOrigin` when a linked environment's agent started the work,
+    and `delegatedFrom` when the thread is that environment's delegated task. The
+    server sets both. They are not on `threads.create`, and the internal
+    `link_request.record` command is not on the client command union. A thread's
+    `linkOrigin` has no fenced flag: `access` below `full-access`, or omitted, means
+    that the work may change only work from the same link.
 
   optional-project-clone-tracking-capability: |
     `ExecutionEnvironmentCapabilities.projectCloneTracking` is an optional boolean

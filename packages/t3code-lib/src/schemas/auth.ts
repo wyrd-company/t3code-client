@@ -69,6 +69,22 @@ export type AuthGrantScope = z.infer<typeof AuthGrantScope>;
 export const AuthGrantedScope = forwardCompatibleLiteral(authEnvironmentScopes);
 export type AuthGrantedScope = KnownOr<AuthEnvironmentScope>;
 
+const authMcpClientAccessLevels = [
+  "read-only",
+  "approval-required",
+  "auto-accept-edits",
+  "auto",
+  "full-access",
+] as const;
+
+/** Strict: validates the access a caller asks for. */
+export const AuthMcpClientAccess = z.enum(authMcpClientAccessLevels);
+export type AuthMcpClientAccess = z.infer<typeof AuthMcpClientAccess>;
+
+/** An access level as the server reports it; a newer level must decode. */
+export const AuthMcpClientGrantedAccess = forwardCompatibleLiteral(authMcpClientAccessLevels);
+export type AuthMcpClientGrantedAccess = KnownOr<AuthMcpClientAccess>;
+
 export const AuthStandardClientScopes = [
   "orchestration:read",
   "orchestration:operate",

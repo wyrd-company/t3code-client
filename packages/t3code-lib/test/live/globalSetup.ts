@@ -22,13 +22,13 @@ import { processAbsent, processIdentities } from "./serverEvidence.ts";
 const READY_TIMEOUT_MS = 60_000;
 const PROBE_TIMEOUT_MS = 2_000;
 
-function serverBin(): string {
+export function serverBin(): string {
   const require = NodeModule.createRequire(import.meta.url);
   const manifest = require.resolve("t3/package.json");
   return NodePath.join(NodePath.dirname(manifest), "dist", "bin.mjs");
 }
 
-function freePort(): Promise<number> {
+export function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
     const probe = NodeNet.createServer();
     probe.once("error", reject);
@@ -44,11 +44,11 @@ function freePort(): Promise<number> {
 }
 
 /** Whether the process has ended, by exit code or by signal. */
-function hasExited(child: NodeChildProcess.ChildProcess): boolean {
+export function hasExited(child: NodeChildProcess.ChildProcess): boolean {
   return child.exitCode !== null || child.signalCode !== null;
 }
 
-async function waitForReady(baseUrl: string, server: NodeChildProcess.ChildProcess) {
+export async function waitForReady(baseUrl: string, server: NodeChildProcess.ChildProcess) {
   const deadline = Date.now() + READY_TIMEOUT_MS;
   while (Date.now() < deadline) {
     if (hasExited(server)) {
@@ -69,7 +69,7 @@ async function waitForReady(baseUrl: string, server: NodeChildProcess.ChildProce
   throw new Error(`t3 was not ready within ${READY_TIMEOUT_MS} ms.`);
 }
 
-function issueToken(bin: string, baseDir: string): string {
+export function issueToken(bin: string, baseDir: string): string {
   const output = NodeChildProcess.execFileSync(
     process.execPath,
     [

@@ -118,6 +118,32 @@ export const ServerPrepareTriageError = taggedError("ServerPrepareTriageError", 
   cause: Defect.optional(),
 });
 
+// peerLink.ts
+
+export const PeerLinkError = taggedError("PeerLinkError", {
+  reason: forwardCompatibleLiteral([
+    "unreachable",
+    "not_a_t3_environment",
+    "incompatible",
+    "self",
+    "pairing_rejected",
+    "expired",
+    "unknown_link",
+    "storage",
+    "disabled",
+  ]),
+  ...messageAndCause,
+});
+export const PeerLinkRequestError = taggedError("PeerLinkRequestError", {
+  reason: forwardCompatibleLiteral([
+    "load_failed",
+    "not_found",
+    "already_answered",
+    "record_failed",
+  ]),
+  cause: Defect.optional(),
+});
+
 // project.ts
 
 export const ProjectEntriesFailure = forwardCompatibleLiteral([
@@ -217,6 +243,8 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   ProviderSetupError,
   ServerNpmReleaseError,
   ServerPrepareTriageError,
+  PeerLinkError,
+  PeerLinkRequestError,
   ProjectListEntriesError,
   ProjectSearchEntriesError,
   ProjectSearchContentsError,

@@ -108,6 +108,12 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   triage: z.boolean().optional(),
   /** Server honors `workspaceSnapshotsOnDemand`. Older servers still send every snapshot. */
   providerWorkspaceSnapshotsOnDemand: z.boolean().optional(),
+  /** Server links to other environments, and its agents can work in them. */
+  peerLinks: z.boolean().optional(),
+  /** Server's `/mcp` narrows an OAuth client's modes from `T3-Mode-Limit`. A peer needs it to link. */
+  mcpModeLimitHeader: z.boolean().optional(),
+  /** Work a linked environment starts here stays within its link. A peer needs it to link. */
+  linkFence: z.boolean().optional(),
 });
 export type ExecutionEnvironmentCapabilities = z.infer<typeof ExecutionEnvironmentCapabilities>;
 

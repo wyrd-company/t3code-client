@@ -22,7 +22,7 @@
     "node_modules/@wyrd-company/t3code-lib": {
       "version": "0.3.0",
       "resolved": "https://registry.npmjs.org/@wyrd-company/t3code-lib/-/t3code-lib-0.3.0.tgz",
-      "integrity": "sha512-oPoy5L78tQGTW2AHFnjiNgSHBUSjlB8FL7rSV2e5Gdl1zeR2gfL8XZDWI8tG7zn3jCMU1Y53fRl460K6Sf1qXA==",
+      "integrity": "sha512-b/M82iVLLB/1/y6gLVApYYukh1LPnisapGG5RwsqymUUfj2zCv18VRdw8I5rd4B8gUcZy13l7A0hTHAcDdj+Ug==",
       "license": "MIT",
       "dependencies": {
         "zod": "^4.6.5"
