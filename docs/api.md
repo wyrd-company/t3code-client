@@ -815,6 +815,16 @@ unrecognised <code>_tag</code> decodes as <code>{ unknown: true, raw }</code>. U
 <pre><code class="language-ts">export function currentDesktopBootstrapToken(secret: string, nowMs: number = Date.now()): string;
 </code></pre>
 </dd>
+<dt><a href="#assetUrlParams">assetUrlParams()</a></dt>
+<dd><p>The <code>assets.read</code> params of a <code>relativeUrl</code> from <code>assets.createUrl</code>.</p>
+<pre><code class="language-ts">export function assetUrlParams(relativeUrl: string): { token: string; path: string };
+</code></pre>
+</dd>
+<dt><a href="#attachmentUploadUrlParams">attachmentUploadUrlParams()</a></dt>
+<dd><p>The <code>attachments.upload</code> params of a <code>relativeUrl</code> from <code>attachments.createUploadUrl</code>.</p>
+<pre><code class="language-ts">export function attachmentUploadUrlParams(relativeUrl: string): { token: string };
+</code></pre>
+</dd>
 <dt><a href="#watchAccess">watchAccess()</a></dt>
 <dd><p>Watch changes to access grants and authenticated clients.</p>
 <pre><code class="language-ts">export function watchAccess(
@@ -4203,6 +4213,28 @@ The token of the current window. The server also accepts the windows on each sid
 
 ```ts
 export function currentDesktopBootstrapToken(secret: string, nowMs: number = Date.now()): string;
+```
+
+**Kind**: global function  
+<a name="assetUrlParams"></a>
+
+## assetUrlParams()
+
+The `assets.read` params of a `relativeUrl` from `assets.createUrl`.
+
+```ts
+export function assetUrlParams(relativeUrl: string): { token: string; path: string };
+```
+
+**Kind**: global function  
+<a name="attachmentUploadUrlParams"></a>
+
+## attachmentUploadUrlParams()
+
+The `attachments.upload` params of a `relativeUrl` from `attachments.createUploadUrl`.
+
+```ts
+export function attachmentUploadUrlParams(relativeUrl: string): { token: string };
 ```
 
 **Kind**: global function  

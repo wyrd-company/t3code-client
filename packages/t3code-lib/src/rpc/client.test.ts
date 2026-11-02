@@ -15,6 +15,13 @@ const table = {
     scope: "orchestration:read",
     payloadScopes: (shape) => (shape.width > 100 ? ["settings:write"] : []),
   }),
+  "shapes.locate": defineMethod({
+    payload: z.looseObject({ onDisk: z.boolean() }),
+    success: z.looseObject({ found: z.boolean() }),
+    stream: false,
+    scope: "orchestration:read",
+    scopeForPayload: ({ onDisk }) => (onDisk ? "filesystem:read" : "orchestration:read"),
+  }),
   "shapes.watch": defineMethod({
     payload: z.looseObject({ kind: z.enum(["square", "circle"]) }),
     success: z.looseObject({ id: z.string(), sides: z.number() }),
@@ -79,6 +86,16 @@ describe("RpcClient", () => {
     expect(items.map((i) => i.kind)).toEqual(["item", "decode-error", "item"]);
     expect(items[0]?.kind === "item" && items[0].value.sides).toBe(4);
     expect(items[1]?.kind === "decode-error" && items[1].error.raw).toEqual({ id: "b" });
+  });
+
+  it("checks the scope of the payload in place of the method's scope", async () => {
+    server.respond("shapes.locate", { found: true });
+    scopes = ["filesystem:read"];
+    await expect(make().call("shapes.locate", { onDisk: true })).resolves.toEqual({ found: true });
+    await expect(make().call("shapes.locate", { onDisk: false })).rejects.toMatchObject({
+      code: "insufficient_scope",
+      requiredScope: "orchestration:read",
+    });
   });
 
   it("checks scopes locally when they are known", async () => {

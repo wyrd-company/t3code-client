@@ -30,7 +30,9 @@ export interface PeerServer {
   stop(): Promise<void>;
 }
 
-export async function startPeerServer(): Promise<PeerServer> {
+export async function startPeerServer(
+  options: { readonly environment?: NodeJS.ProcessEnv } = {},
+): Promise<PeerServer> {
   const bin = serverBin();
   const root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-lib-peer-"));
   const baseDir = NodePath.join(root, "home");
@@ -39,7 +41,15 @@ export async function startPeerServer(): Promise<PeerServer> {
   const port = await freePort();
   const baseUrl = `http://127.0.0.1:${port}`;
   const log = await NodeFSP.open(NodePath.join(root, "server.log"), "w");
-  const start = () => spawnServer({ bin, port, baseDir, workspace, logFd: log.fd });
+  const start = () =>
+    spawnServer({
+      bin,
+      port,
+      baseDir,
+      workspace,
+      logFd: log.fd,
+      ...(options.environment === undefined ? {} : { environment: options.environment }),
+    });
   const connect = () => connectTo(baseUrl, issueToken(bin, baseDir));
   let server = start();
   const stopProcess = async () => {

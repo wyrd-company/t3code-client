@@ -8,6 +8,8 @@ import { httpRoutes } from "./registry.ts";
 
 /** Method, path, authentication and scope, read from upstream's `environmentHttp.ts` and handlers. */
 const expected: Record<string, [string, string, string, string | undefined]> = {
+  "assets.read": ["GET", "/api/assets/:token/:path", "none", undefined],
+  "attachments.upload": ["POST", "/api/attachments/upload/:token", "none", undefined],
   "metadata.descriptor": ["GET", "/.well-known/t3/environment", "none", undefined],
   "auth.session": ["GET", "/api/auth/session", "optional", undefined],
   "auth.browserSession": ["POST", "/api/auth/browser-session", "none", undefined],

@@ -3,8 +3,11 @@
  * mirrors `packages/contracts/src` so names never collide.
  */
 export * as common from "./common.ts";
+export * as assets from "./assets.ts";
 export * as auth from "./auth.ts";
+export * as editor from "./editor.ts";
 export * as environment from "./environment.ts";
+export * as filesystem from "./filesystem.ts";
 export * as httpErrors from "./httpErrors.ts";
 export * as keybindings from "./keybindings.ts";
 export * as mcpApps from "./mcpApps.ts";

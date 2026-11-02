@@ -13,12 +13,12 @@ import {
   forwardCompatibleLiteral,
   taggedUnionWithUnknown,
 } from "./common.ts";
+import { EditorId } from "./editor.ts";
 import { ExecutionEnvironmentDescriptor } from "./environment.ts";
 import { ResolvedKeybindingsConfig } from "./keybindings.ts";
 import { ServerProviders, ServerProviderUsageLimits } from "./provider.ts";
 
-export const EditorId = forwardCompatibleLiteral(["cursor", "vscode", "zed", "file-manager"]);
-export type EditorId = z.infer<typeof EditorId>;
+export { EditorId };
 const EnvironmentThemeVariantColors = z.record(
   z.string().regex(/^[a-zA-Z][a-zA-Z0-9]{0,63}$/),
   TrimmedNonEmptyString.max(64),

@@ -123,7 +123,7 @@ export class RpcClient<Table extends RpcMethodTable> {
   /** Scope check, then validation and normalisation through the payload schema. */
   #preparePayload(method: string, spec: RpcMethodSpec, payload: unknown): unknown {
     const scopes = this.#getScopes();
-    if (scopes && !scopes.includes(spec.scope)) {
+    if (scopes && spec.scopeForPayload === undefined && !scopes.includes(spec.scope)) {
       throw T3AuthError.insufficientScope(spec.scope, method);
     }
     const result = spec.payload.safeParse(payload);
@@ -132,6 +132,10 @@ export class RpcClient<Table extends RpcMethodTable> {
         `${method} payload is invalid: ${summarizeIssues(result.error)}`,
         { cause: result.error },
       );
+    }
+    const payloadScope = spec.scopeForPayload?.(result.data);
+    if (scopes && payloadScope !== undefined && !scopes.includes(payloadScope)) {
+      throw T3AuthError.insufficientScope(payloadScope, method);
     }
     const missing = scopes && spec.payloadScopes?.(result.data).find((s) => !scopes.includes(s));
     if (missing) throw T3AuthError.insufficientScope(missing, method);

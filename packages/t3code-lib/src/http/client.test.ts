@@ -5,11 +5,12 @@
 import { describe, expect, expectTypeOf, it, vi } from "vite-plus/test";
 
 import { generateDpopKey } from "../auth/dpop.ts";
-import { T3AuthError, T3PreconditionError } from "../errors.ts";
+import { T3AuthError, T3NotFoundError, T3PreconditionError } from "../errors.ts";
 import { commandId, projectId, threadId } from "../schemas/common.ts";
 import type { AuthBrowserSessionResult } from "../schemas/auth.ts";
 import { HttpTransport } from "../transport/http.ts";
 import { callRoute, HttpRouteClient } from "./client.ts";
+import { assetUrlParams, attachmentUploadUrlParams } from "./routes/assets.ts";
 import { httpRoutes, type HttpRoutes } from "./registry.ts";
 import type { HttpRouteSuccess } from "./spec.ts";
 
@@ -135,5 +136,77 @@ describe("callRoute", () => {
     expect(request?.headers.get("dpop")?.split(".")).toHaveLength(3);
     // A token exchange presents no access token.
     expect(request?.headers.get("authorization")).toBeNull();
+  });
+});
+
+describe("signed file routes", () => {
+  const token = "c2FtcGxl.c2lnbmF0dXJl";
+
+  function setupAnswer(answer: () => Response) {
+    const requests: Request[] = [];
+    const fetch = vi.fn<typeof globalThis.fetch>(async (input, init) => {
+      requests.push(new Request(input, init));
+      return answer();
+    });
+    const http = new HttpTransport({
+      baseUrl: "https://host.invalid",
+      fetch,
+      getAccessToken: async () => "sample-token",
+    });
+    return { requests, routes: new HttpRouteClient(http, httpRoutes) };
+  }
+
+  it("reads an asset as bytes, with no session token", async () => {
+    const bytes = new Uint8Array([0, 255, 1]);
+    const { requests, routes } = setupAnswer(
+      () => new Response(bytes, { headers: { "content-type": "image/png" } }),
+    );
+    const content = await routes.call("assets.read", {
+      params: assetUrlParams(`/api/assets/${token}/a%20b%2Fc.png`),
+    });
+    expect(content).toEqual({ bytes, contentType: "image/png" });
+    expect(new URL(requests[0]?.url ?? "").pathname).toBe(`/api/assets/${token}/a%20b%2Fc.png`);
+    expect(requests[0]?.headers.get("authorization")).toBeNull();
+  });
+
+  it("uploads raw bytes, with no session token, and accepts the empty answer", async () => {
+    const { requests, routes } = setupAnswer(() => new Response(null, { status: 204 }));
+    const answer = await routes.call("attachments.upload", {
+      params: attachmentUploadUrlParams(`/api/attachments/upload/${token}`),
+      body: new Uint8Array([7, 8]),
+    });
+    expect(answer).toBeUndefined();
+    const request = requests[0];
+    expect(request?.headers.get("authorization")).toBeNull();
+    expect(request?.headers.get("content-type")).toBe("application/octet-stream");
+    expect(new Uint8Array((await request?.arrayBuffer()) ?? new ArrayBuffer(0))).toEqual(
+      new Uint8Array([7, 8]),
+    );
+  });
+
+  it("keeps the signed token out of an error", async () => {
+    const { routes } = setupAnswer(() => new Response("Not Found", { status: 404 }));
+    const error = await routes
+      .call("assets.read", { params: { token, path: "a.png" } })
+      .catch((failure: unknown) => failure);
+    expect(error).toBeInstanceOf(T3NotFoundError);
+    expect((error as T3NotFoundError).path).toBe("/api/assets/:token/:path");
+    expect(String((error as Error).message)).not.toContain(token);
+  });
+
+  it("refuses a dot segment, a malformed token and a URL of another route", async () => {
+    const { routes } = setupAnswer(() => new Response(null));
+    await expect(routes.call("assets.read", { params: { token, path: ".." } })).rejects.toThrow(
+      T3PreconditionError,
+    );
+    await expect(
+      routes.call("assets.read", { params: { token: "..", path: "a.png" } }),
+    ).rejects.toThrow(T3PreconditionError);
+    expect(() => assetUrlParams(`/api/other/${token}/a.png`)).toThrow(T3PreconditionError);
+    expect(() => assetUrlParams(`/api/assets/${token}`)).toThrow(T3PreconditionError);
+    expect(() => assetUrlParams(`/api/assets/${token}/%`)).toThrow(T3PreconditionError);
+    expect(() => attachmentUploadUrlParams(`/api/assets/${token}/a.png`)).toThrow(
+      T3PreconditionError,
+    );
   });
 });

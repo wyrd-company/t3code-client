@@ -36,6 +36,10 @@ export interface HttpRequest<T> {
   signal?: AbortSignal;
   /** Signs this request with this key instead of the session's key, as a token exchange does. */
   dpopKey?: DpopPrivateJwk;
+  /** A 2xx answer reaches `decode` as `{ bytes, contentType }`, not parsed as JSON. */
+  binaryResponse?: boolean;
+  /** Errors name this and not `path`, when `path` is a credential. */
+  errorPath?: string;
 }
 
 export class HttpTransport {
@@ -77,11 +81,12 @@ export class HttpTransport {
     accessTokenOverride: string | undefined,
     hasOverride: boolean,
   ): Promise<T> {
+    const errorPath = request.errorPath ?? request.path;
     let url: URL;
     try {
       url = new URL(request.path, this.#baseUrl);
     } catch (cause) {
-      throw new T3PreconditionError(`Invalid HTTP URL for ${request.path}.`, {
+      throw new T3PreconditionError(`Invalid HTTP URL for ${errorPath}.`, {
         cause,
       });
     }
@@ -108,7 +113,7 @@ export class HttpTransport {
         code: "auth_invalid",
         status: 401,
         method: "LOCAL",
-        path: request.path,
+        path: errorPath,
         body: undefined,
         reason: "missing_credential",
       });
@@ -135,13 +140,16 @@ export class HttpTransport {
     if (request.body instanceof URLSearchParams) {
       headers.set("content-type", "application/x-www-form-urlencoded");
       body = request.body;
+    } else if (request.body instanceof Uint8Array) {
+      headers.set("content-type", "application/octet-stream");
+      body = request.body as Uint8Array<ArrayBuffer>;
     } else if (request.body !== undefined) {
       headers.set("content-type", "application/json");
       try {
         body = JSON.stringify(request.body);
       } catch (cause) {
         throw new T3PreconditionError(
-          `${request.method} ${request.path} could not encode its JSON body.`,
+          `${request.method} ${errorPath} could not encode its JSON body.`,
           { cause },
         );
       }
@@ -158,28 +166,30 @@ export class HttpTransport {
     } catch (cause) {
       throw new T3ConnectionError(
         "open_failed",
-        `${request.method} ${request.path} could not reach the server.`,
+        `${request.method} ${errorPath} could not reach the server.`,
         { cause },
       );
     }
 
-    let text: string;
+    let raw: unknown;
     try {
-      text = await response.text();
+      raw =
+        response.ok && request.binaryResponse === true
+          ? binaryBody(new Uint8Array(await response.arrayBuffer()), response)
+          : parseBody(await response.text());
     } catch (cause) {
       throw new T3ConnectionError(
         "open_failed",
-        `${request.method} ${request.path} could not read the server response.`,
+        `${request.method} ${errorPath} could not read the server response.`,
         { cause },
       );
     }
-    const raw = parseBody(text);
-    if (!response.ok) throw httpError(response.status, request, raw);
+    if (!response.ok) throw httpError(response.status, request.method, errorPath, raw);
     if (request.decode === "empty") return undefined as T;
 
     const decoded = request.decode.safeParse(raw);
     if (!decoded.success) {
-      throw new T3DecodeError(`${request.method} ${request.path}`, decoded.error, raw);
+      throw new T3DecodeError(`${request.method} ${errorPath}`, decoded.error, raw);
     }
     return decoded.data;
   }
@@ -194,7 +204,12 @@ function parseBody(text: string): unknown {
   }
 }
 
-function httpError<T>(status: number, request: HttpRequest<T>, body: unknown): T3HttpError {
+function binaryBody(bytes: Uint8Array, response: Response): unknown {
+  const contentType = response.headers.get("content-type");
+  return contentType === null ? { bytes } : { bytes, contentType };
+}
+
+function httpError(status: number, method: string, path: string, body: unknown): T3HttpError {
   const record = asRecord(body);
   const tag = stringField(record, "_tag");
   const reason = stringField(record, "reason") ?? stringField(record, "error");
@@ -202,14 +217,14 @@ function httpError<T>(status: number, request: HttpRequest<T>, body: unknown): T
   const requiredScope = stringField(record, "requiredScope");
   const details: T3HttpErrorDetails = {
     status,
-    method: request.method,
-    path: request.path,
+    method,
+    path,
     body,
     ...(tag === undefined ? {} : { tag }),
     ...(reason === undefined ? {} : { reason }),
     ...(traceId === undefined ? {} : { traceId }),
   };
-  const message = `${request.method} ${request.path} failed with HTTP ${status}${reason ? ` (${reason})` : ""}.`;
+  const message = `${method} ${path} failed with HTTP ${status}${reason ? ` (${reason})` : ""}.`;
   if (status === 401) return new T3AuthError(message, { ...details, code: "auth_invalid" });
   if (status === 403) {
     return new T3AuthError(message, {

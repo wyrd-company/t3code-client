@@ -79,6 +79,13 @@ const expected = {
   "scheduledTasks.rotateWebhookToken": [false, "orchestration:operate"],
   "scheduledTasks.listWebhookDeliveries": [false, "orchestration:operate"],
   "scheduledTasks.getWebhookDelivery": [false, "orchestration:operate"],
+  "filesystem.browse": [false, "filesystem:read"],
+  "filesystem.getMetadata": [false, "filesystem:read"],
+  "assets.createUrl": [false, "orchestration:read"],
+  "assets.persistChatAttachments": [false, "orchestration:operate"],
+  "attachments.createUploadUrl": [false, "orchestration:operate"],
+  "attachments.delete": [false, "orchestration:operate"],
+  "shell.openInEditor": [false, "orchestration:operate"],
 } as const;
 
 describe("RPC contract registry", () => {
@@ -95,6 +102,27 @@ describe("RPC contract registry", () => {
     expect(
       scopes?.(rpcMethods["projects.mutate"].payload.parse({ ...update, scripts: [] })),
     ).toEqual(["settings:write"]);
+  });
+  it("asks for the file grant in place of the orchestration grant for an asset on disk", () => {
+    const spec = rpcMethods["assets.createUrl"];
+    const scopeOf = (resource: unknown) => spec.scopeForPayload?.(spec.payload.parse({ resource }));
+    const threadId = "thread-1";
+    for (const resource of [
+      { _tag: "workspace-file", threadId, path: "a.png" },
+      { _tag: "media-file", threadId, path: "a.png" },
+      { _tag: "draft-workspace-file", cwd: "/sample", path: "a.png" },
+    ]) {
+      expect(scopeOf(resource), resource._tag).toBe("filesystem:read");
+    }
+    for (const resource of [
+      { _tag: "attachment", attachmentId: "attachment-1" },
+      { _tag: "tool-output-image", threadId, itemId: "item-1", index: 0 },
+      { _tag: "project-favicon", cwd: "/sample" },
+      { _tag: "native-app-icon", app: { _tag: "app-id", appId: "sample.app" } },
+      { _tag: "github-media", cwd: "/sample", url: "https://host.invalid/a.png" },
+    ]) {
+      expect(scopeOf(resource), resource._tag).toBe("orchestration:read");
+    }
   });
   it("retains payload, success, and stream types", () => {
     expectTypeOf<"terminal.attach">().toExtend<StreamMethodName<RpcMethods>>();

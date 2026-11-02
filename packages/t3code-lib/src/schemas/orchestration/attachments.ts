@@ -6,7 +6,9 @@
 import { z } from "zod";
 import {
   IsoDateTime,
+  MessageId,
   NonNegativeInt,
+  ThreadId,
   TrimmedNonEmptyString,
   TrimmedString,
   forwardCompatibleLiteral,
@@ -169,3 +171,15 @@ export const UploadChatImageAttachment = z.looseObject({
 export type UploadChatImageAttachment = z.infer<typeof UploadChatImageAttachment>;
 export const UploadChatAttachment = UploadChatImageAttachment;
 export type UploadChatAttachment = z.infer<typeof UploadChatAttachment>;
+
+export const PersistChatAttachmentsInput = z.looseObject({
+  threadId: ThreadId,
+  messageId: MessageId,
+  attachments: z.array(UploadChatAttachment),
+});
+export type PersistChatAttachmentsInput = z.infer<typeof PersistChatAttachmentsInput>;
+
+export const PersistChatAttachmentsResult = z.looseObject({
+  attachments: z.array(ChatAttachment),
+});
+export type PersistChatAttachmentsResult = z.infer<typeof PersistChatAttachmentsResult>;

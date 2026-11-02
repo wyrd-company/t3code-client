@@ -156,6 +156,36 @@ const project = await client.routes.call("projects.mutate", { body: mutation });
 const ticket = await client.routes.call("auth.webSocketTicketFor", { params: { use: "media" } });
 ```
 
+## Files
+
+Upload through a signed URL, and read through another. The token in a signed URL
+is the credential, so treat a `relativeUrl` as a secret until it expires:
+
+```ts
+import { assetUrlParams, attachmentUploadUrlParams } from "@wyrd-company/t3code-lib";
+
+const upload = await client.rpc.call("attachments.createUploadUrl", {
+  type: "file",
+  name: "notes.txt",
+  mimeType: "text/plain",
+  sizeBytes: body.byteLength,
+});
+await client.routes.call("attachments.upload", {
+  params: attachmentUploadUrlParams(upload.relativeUrl),
+  body,
+});
+
+const { relativeUrl } = await client.rpc.call("assets.createUrl", {
+  resource: { _tag: "attachment", attachmentId: upload.attachmentId },
+});
+const { bytes, contentType } = await client.routes.call("assets.read", {
+  params: assetUrlParams(relativeUrl),
+});
+```
+
+`assets.read` holds the whole file in memory. To read part of a large file, fetch
+`relativeUrl` yourself with a `range` header.
+
 ## Proof-bound sessions
 
 A session bound to a DPoP key is useless to someone who holds only its token.

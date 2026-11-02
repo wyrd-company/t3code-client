@@ -63,7 +63,17 @@ proposed-design:
     | `GET /api/orchestration/threads/:threadId/bounded`    | bearer, orch:read    | `OrchestrationV2ThreadBoundedSnapshot`: a recent window plus `historyCursor`; query flags  |
     | `GET /api/orchestration/threads/:threadId/history`    | bearer, orch:read    | query `cursor`; `OrchestrationV2ThreadHistoryPage`; 400 `invalid_history_cursor`           |
     | `GET /api/orchestration/threads/:threadId/transcript` | bearer, orch:read    | `OrchestrationV2ThreadTranscript`: the visible timeline; 400 `thread_transcript_too_large` |
+    | `GET /api/assets/:token/:path`                         | signed URL           | bytes and `content-type`; 404 for a bad or expired token                                   |
+    | `POST /api/attachments/upload/:token`                 | signed URL           | raw bytes of the signed size; 204; 400 for another size; 404 for a bad or expired token    |
     | `POST /api/pull-requests/diff`                        | bearer               | `PullRequestDiffInput` → `PullRequestDiffResult`                                                              |
+
+    A signed URL comes from `assets.createUrl` or `attachments.createUploadUrl` as
+    `relativeUrl`. The token in its path is the credential, so these routes do not
+    send the session's token, and no error names the path. `assetUrlParams` and
+    `attachmentUploadUrlParams` split a `relativeUrl` into route params. `assets.read`
+    holds the whole file in memory and sends no `range` header. A caller that needs
+    part of a large file fetches `relativeUrl` itself, which takes no credential.
+    An asset token for a browser document also reads the files next to it, by path.
 
     In this table "bearer" is any access token. A proof-bound session sends
     `authorization: DPoP <token>` and a `dpop` header in place of

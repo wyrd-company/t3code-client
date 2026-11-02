@@ -60,6 +60,7 @@ import {
   OrchestrationV2ThreadLaunchError,
 } from "./rpcErrors/orchestration.ts";
 import { GuestShareCreateError, PeerLinkError, PeerLinkRequestError } from "./rpcErrors/links.ts";
+import { fileRpcErrors } from "./rpcErrors/files.ts";
 import { McpAppRequestError } from "./rpcErrors/mcpApps.ts";
 import { ScheduledTaskError, UsageReadError } from "./rpcErrors/automation.ts";
 
@@ -67,6 +68,7 @@ export * from "./rpcErrors/terminal.ts";
 export * from "./rpcErrors/vcs.ts";
 export * from "./rpcErrors/orchestration.ts";
 export * from "./rpcErrors/links.ts";
+export * from "./rpcErrors/files.ts";
 export * from "./rpcErrors/mcpApps.ts";
 export * from "./rpcErrors/automation.ts";
 
@@ -242,6 +244,7 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   OrchestrationV2CommandOutputError,
   OrchestrationV2SearchThreadError,
   McpAppRequestError,
+  ...fileRpcErrors,
   ScheduledTaskError,
   UsageReadError,
 ]);

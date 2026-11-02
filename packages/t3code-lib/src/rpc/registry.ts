@@ -12,6 +12,7 @@ import { peerLinksMethods } from "./methods/peerLinks.ts";
 import { guestShareMethods } from "./methods/guestShare.ts";
 import { mcpAppsMethods } from "./methods/mcpApps.ts";
 import { scheduledTasksMethods } from "./methods/scheduledTasks.ts";
+import { filesMethods } from "./methods/files.ts";
 
 export const rpcMethods = {
   ...orchestrationMethods,
@@ -24,6 +25,7 @@ export const rpcMethods = {
   ...guestShareMethods,
   ...mcpAppsMethods,
   ...scheduledTasksMethods,
+  ...filesMethods,
 };
 export type RpcMethods = typeof rpcMethods;
 export type RpcMethodName = keyof RpcMethods;

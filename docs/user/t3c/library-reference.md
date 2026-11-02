@@ -50,6 +50,7 @@ TypeScript declarations ship with the package.
 - [Authentication API](https://wyrd.foo/docs/t3c/library-authentication)
 - [Profiles and credentials](https://wyrd.foo/docs/t3c/library-profiles)
 - [Errors](https://wyrd.foo/docs/t3c/library-errors)
+- [Shared types and constants](https://wyrd.foo/docs/t3c/library-types)
 - [Thread state and helpers](https://wyrd.foo/docs/t3c/library-thread-state)
 
 ## Reference pages

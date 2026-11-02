@@ -15,6 +15,31 @@ describe("RpcErrorRecord", () => {
     expect(record.requiredPermission).toBe("terminal:read");
   });
 
+  it("decodes the file failures", () => {
+    const record = decodeRpcErrorRecord({
+      _tag: "AssetWorkspaceAssetNotFoundError",
+      resource: { _tag: "draft-workspace-file", cwd: "/sample", path: "a.png" },
+      checkedPath: "/sample/a.png",
+    });
+    expect(isRpcErrorOfTag(record, "AssetWorkspaceAssetNotFoundError")).toBe(true);
+    expect(
+      isRpcErrorOfTag(
+        decodeRpcErrorRecord({ _tag: "AssetGitHubMediaUrlValidationError" }),
+        "AssetGitHubMediaUrlValidationError",
+      ),
+    ).toBe(true);
+    expect(
+      isRpcErrorOfTag(
+        decodeRpcErrorRecord({
+          _tag: "ExternalLauncherCommandNotFoundError",
+          editor: "rustrover",
+          command: "rustrover",
+        }),
+        "ExternalLauncherCommandNotFoundError",
+      ),
+    ).toBe(true);
+  });
+
   it("uses the wire tag of the keybindings error", () => {
     const record = decodeRpcErrorRecord({
       _tag: "KeybindingsConfigParseError",

@@ -76,6 +76,7 @@ export function spawnServer(options: {
   readonly baseDir: string;
   readonly workspace: string;
   readonly logFd: number;
+  readonly environment?: NodeJS.ProcessEnv;
 }): NodeChildProcess.ChildProcess {
   return NodeChildProcess.spawn(
     process.execPath,
@@ -93,7 +94,10 @@ export function spawnServer(options: {
       "warn",
       options.workspace,
     ],
-    { stdio: ["ignore", options.logFd, options.logFd], env: serverEnvironment() },
+    {
+      stdio: ["ignore", options.logFd, options.logFd],
+      env: { ...serverEnvironment(), ...options.environment },
+    },
   );
 }
 

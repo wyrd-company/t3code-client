@@ -46,6 +46,7 @@ export {
 } from "./auth/desktopBootstrap.ts";
 export { HttpRouteClient, type HttpRouteClientOptions } from "./http/client.ts";
 export { httpRoutes, type HttpRouteName, type HttpRoutes } from "./http/registry.ts";
+export { assetUrlParams, attachmentUploadUrlParams } from "./http/routes/assets.ts";
 export type {
   HttpRouteAuth,
   HttpRouteInput,

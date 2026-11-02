@@ -35,8 +35,12 @@ export interface HttpRouteSpec<Input = unknown, Success = unknown> {
   inputScopes?(input: Input): readonly AuthEnvironmentScope[];
   /** Extra request headers, such as the orchestration protocol version. */
   readonly headers?: Record<string, string>;
-  /** Sends `input.body` form-encoded; JSON otherwise. */
+  /** Sends `input.body` form-encoded; JSON otherwise, and a `Uint8Array` as raw bytes. */
   readonly form?: true;
+  /** A 2xx answer reaches `success` as `{ bytes, contentType }`, not parsed as JSON. */
+  readonly binaryResponse?: true;
+  /** The path is a credential, so an error names the `path` template and not the sent path. */
+  readonly signedPath?: true;
 }
 
 export type HttpRouteTable = Readonly<Record<string, HttpRouteSpec>>;

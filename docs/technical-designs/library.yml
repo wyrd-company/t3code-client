@@ -79,7 +79,10 @@ proposed-design:
         httpErrors.ts           Environment*Error records
         keybindings.ts          resolved keybinding rules: commands, shortcuts, when nodes
         rpcErrors.ts            RpcErrorRecord: every tagged error the registered RPC methods declare
-        rpcErrors/              orchestration, peer and guest link, MCP app, vcs, and terminal error records, shared tagged-error helpers
+        rpcErrors/              orchestration, peer and guest link, MCP app, file, vcs, and terminal error records, shared tagged-error helpers
+        assets.ts               asset resources and URLs, attachment upload URLs, and the bytes of an asset
+        editor.ts               editor ids and the editor launch input
+        filesystem.ts           host path browsing and metadata
         mcpApps.ts              MCP App tool calls, tool info, resource reads, model context
         projects.ts             Project, ProjectMutation, icons and scripts, file entries, read/write/search
         projectCreation.ts      Scratch, new-project and from-thread creator inputs and results (re-exported by projects.ts)
@@ -131,12 +134,12 @@ proposed-design:
         rpcConnection.ts        RpcConnection: request ids, correlation, Chunk→AsyncIterable with Ack, Interrupt
       http/
         registry.ts             httpRoutes: route name → { method, path, input, success, auth, scope }
-        routes/*.ts             one file per family (auth, orchestration, projects)
+        routes/*.ts             one file per family (assets, auth, orchestration, projects)
         spec.ts                 the shape of one route entry
         client.ts               HttpRouteClient: typed call by route name; callRoute for the facades
       rpc/
         registry.ts             RpcMethodTable: method name → { payload, success, stream } zod schemas + scope
-        methods/*.ts            one file per family (orchestration, server, vcs, projects, terminal, authAccess, peerLinks)
+        methods/*.ts            one file per family (orchestration, server, vcs, projects, terminal, authAccess, peerLinks, files)
         client.ts               RpcClient: typed call/stream over RpcConnection using the registry
       auth/
         credentialStore.ts      CredentialStore seam + memoryCredentialStore + fileCredentialStore

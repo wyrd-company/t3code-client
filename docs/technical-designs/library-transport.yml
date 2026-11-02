@@ -126,12 +126,14 @@ proposed-design:
       method: "GET" | "POST" | "PUT" | "DELETE";
       path: string;
       query?: Record<string, string | number | undefined>;
-      body?: unknown | URLSearchParams;
+      body?: unknown | URLSearchParams | Uint8Array;
       auth?: "required" | "optional" | "none";
       headers?: Record<string, string>; // the orchestration routes add the protocol header
       decode: z.ZodType<T> | "empty";
       signal?: AbortSignal;
       dpopKey?: DpopPrivateJwk; // signs this request with this key, as a token exchange does
+      binaryResponse?: boolean; // a 2xx answer reaches `decode` as `{ bytes, contentType }`
+      errorPath?: string; // what errors name, when `path` is a credential
     }
     export class HttpTransport {
       request<T>(req: HttpRequest<T>): Promise<T>;
@@ -142,7 +144,9 @@ proposed-design:
     `authorization: DPoP` and a new `dpop` proof when the session has a key, maps
     non-2xx to `T3HttpError` subclasses using the tagged error body when present,
     decodes 2xx JSON through the schema, and treats 204 or an empty body as
-    `undefined` when `decode` is `"empty"`.
+    `undefined` when `decode` is `"empty"`. A `Uint8Array` body goes as raw bytes with
+    `content-type: application/octet-stream`. No error names a signed path, because
+    the path is the credential.
   http-route-registry: |
     ```ts
     export interface HttpRouteSpec<Input, Success> {
@@ -154,7 +158,9 @@ proposed-design:
       scope?: AuthEnvironmentScope;
       inputScopes?(input: Input): readonly AuthEnvironmentScope[];
       headers?: Record<string, string>;
-      form?: true; // sends `input.body` form-encoded
+      form?: true; // sends `input.body` form-encoded; a `Uint8Array` body goes as raw bytes
+      binaryResponse?: true; // a 2xx answer reaches `success` as `{ bytes, contentType }`
+      signedPath?: true; // the path is a credential; an error names the `path` template
     }
     export const httpRoutes: { [name: string]: HttpRouteSpec }; // assembled from http/routes/*.ts
 
@@ -260,7 +266,8 @@ proposed-design:
   rpc-registry-ts-and-rpc-client-ts: |
     ```ts
     export interface RpcMethodSpec<P, S> { payload: z.ZodType<P>; success: z.ZodType<S>; stream: boolean; scope: AuthEnvironmentScope;
-      payloadScopes?(payload: P): readonly AuthEnvironmentScope[] }   // further scopes a particular payload needs
+      payloadScopes?(payload: P): readonly AuthEnvironmentScope[];   // further scopes a particular payload needs
+      scopeForPayload?(payload: P): AuthEnvironmentScope }            // the scope for this payload, in place of `scope`
     export const rpcMethods: { [K in RpcMethodName]: RpcMethodSpec<…> }   // assembled from rpc/methods/*.ts
     export type RpcMethodName = keyof typeof rpcMethods
     export type RpcPayload<M> / RpcSuccess<M>
@@ -285,5 +292,5 @@ proposed-design:
     Before sending, `RpcClient` checks the credential's scopes when known and
     raises `T3AuthError("insufficient_scope")` locally so a workflow fails fast
     with the scope name instead of a generic server error. A method whose scope
-    depends on the payload declares `payloadScopes`, checked once the payload is
-    valid.
+    depends on the payload declares `payloadScopes` or `scopeForPayload`, checked once
+    the payload is valid.

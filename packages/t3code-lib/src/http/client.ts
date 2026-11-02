@@ -50,6 +50,8 @@ export function routeRequest<Input, Success>(
       ? {}
       : { body: route.form === true ? formBody(shape.body) : shape.body }),
     ...(route.headers === undefined ? {} : { headers: route.headers }),
+    ...(route.binaryResponse === true ? { binaryResponse: true } : {}),
+    ...(route.signedPath === true ? { errorPath: route.path } : {}),
     ...(options.signal === undefined ? {} : { signal: options.signal }),
     ...(options.dpopKey === undefined ? {} : { dpopKey: options.dpopKey }),
   };
