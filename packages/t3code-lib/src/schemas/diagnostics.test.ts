@@ -47,6 +47,10 @@ describe("diagnostics results", () => {
       expect(OtlpEndpointCheckResult.parse(outcome)).toEqual(outcome);
     }
     expect(OtlpEndpointCheckResult.safeParse({ _tag: "Rejected" }).success).toBe(false);
+    expect(OtlpEndpointCheckResult.parse({ _tag: "SampleOutcome", detail: 1 })).toEqual({
+      unknown: true,
+      raw: { _tag: "SampleOutcome", detail: 1 },
+    });
   });
 
   it("decodes an Option field from both of its records", () => {

@@ -15,6 +15,7 @@ import {
   TrimmedNonEmptyString,
   effectOption,
   forwardCompatibleLiteral,
+  taggedUnionWithUnknown,
 } from "./common.ts";
 
 export const OtlpSignal = z.enum(["traces", "metrics", "logs"]);
@@ -26,7 +27,7 @@ export const OtlpEndpointCheckInput = z.looseObject({
 });
 export type OtlpEndpointCheckInput = z.infer<typeof OtlpEndpointCheckInput>;
 
-export const OtlpEndpointCheckResult = z.discriminatedUnion("_tag", [
+export const OtlpEndpointCheckResult = taggedUnionWithUnknown("_tag", [
   z.looseObject({ _tag: z.literal("Accepted"), latencyMs: z.number() }),
   z.looseObject({ _tag: z.literal("Rejected"), status: z.number() }),
   z.looseObject({ _tag: z.literal("Unreachable"), timedOut: z.boolean() }),
