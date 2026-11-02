@@ -93,6 +93,7 @@ proposed-design:
         diagnostics.ts          trace and process diagnostics, process resource history, the process signal and the OTLP endpoint check
         resourceTelemetry.ts    host resources and the server's process telemetry, as a client reads them
         storageCleanup.ts       the storage cleanup report
+        providerSetup.ts        the provider sign-in flow, ChatGPT profile transfer, reset credit and feedback upload
         mcpApps.ts              MCP App tool calls, tool info, resource reads, model context
         projects.ts             Project, ProjectMutation, icons and scripts, file entries, read/write/search
         projectCreation.ts      Scratch, new-project and from-thread creator inputs and results (re-exported by projects.ts)
@@ -149,7 +150,7 @@ proposed-design:
         client.ts               HttpRouteClient: typed call by route name; callRoute for the facades
       rpc/
         registry.ts             RpcMethodTable: method name → { payload, success, stream } zod schemas + scope
-        methods/*.ts            one file per family (orchestration, server, vcs, git, projects, terminal, authAccess, peerLinks, files)
+        methods/*.ts            one file per family (orchestration, server, vcs, git, projects, terminal, authAccess, peerLinks, files, diagnostics, providerAuth)
         client.ts               RpcClient: typed call/stream over RpcConnection using the registry
       auth/
         credentialStore.ts      CredentialStore seam + memoryCredentialStore + fileCredentialStore

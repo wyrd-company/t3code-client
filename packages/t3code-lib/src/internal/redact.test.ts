@@ -34,6 +34,22 @@ describe("redactSecrets", () => {
     });
   });
 
+  it("replaces a device code and a sign-in URL with a code or an identity token", () => {
+    expect(
+      redactSecrets({
+        userCode: "ABCD-EFGH",
+        callbackUrl: "http://127.0.0.1:1/auth/callback?state=s&code=abc",
+        interaction: { url: "https://example.invalid/authorize?id_token_hint=abc" },
+        url: "https://example.invalid/authorize?code_challenge=public",
+      }),
+    ).toEqual({
+      userCode: "[redacted]",
+      callbackUrl: "[redacted]",
+      interaction: { url: "[redacted]" },
+      url: "https://example.invalid/authorize?code_challenge=public",
+    });
+  });
+
   it("copies instead of mutating and leaves non-string secrets and non-plain values alone", () => {
     const input = { token: 42, tokens: ["a"], when: new Date(0) };
     const out = redactSecrets(input) as typeof input;

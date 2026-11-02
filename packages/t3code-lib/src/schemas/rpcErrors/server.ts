@@ -45,6 +45,13 @@ export const ProviderSetupError = taggedError("ProviderSetupError", {
   detail: z.string(),
   cause: Defect.optional(),
 });
+export const UsageLimitSourceError = taggedError("UsageLimitSourceError", {
+  detail: z.string(),
+});
+export const ProviderUploadFeedbackError = taggedError("ProviderUploadFeedbackError", {
+  threadId: z.string(),
+  cause: Defect.optional(),
+});
 export const ServerNpmReleaseError = taggedError("ServerNpmReleaseError", {
   reason: z.string(),
 });

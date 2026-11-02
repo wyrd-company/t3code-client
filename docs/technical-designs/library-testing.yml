@@ -35,6 +35,15 @@ proposed-design:
     folder, a process signal stops only a process that the test starts in that
     server's terminal, and an endpoint check reaches only a loopback stub.
 
+    The provider sign-in tests run on an owned server with its own `HOME` and
+    `CODEX_HOME`, so that a sign-out or a reset credit cannot reach a login of the
+    machine. A managed Codex instance keeps its connection in that server's home.
+    A test starts a flow and never opens its URL, so no sign-in happens. Starting
+    a flow reads the provider's public sign-in metadata. With no route to it, the
+    flow ends in `failed`, and the test accepts that message. A reset credit and a
+    feedback upload are tested to their refusals. A success spends account credit
+    or sends data to the provider.
+
     A live test that needs a forge uses a local stub: an owned server with a
     `glab` script on its `PATH` and `GIT_SSH_COMMAND` set to a script that serves
     a local bare repository. The remote host is under `.invalid`, and the test

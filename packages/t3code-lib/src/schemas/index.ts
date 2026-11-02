@@ -6,6 +6,7 @@ export * as common from "./common.ts";
 export * as assets from "./assets.ts";
 export * as auth from "./auth.ts";
 export * as diagnostics from "./diagnostics.ts";
+export * as providerSetup from "./providerSetup.ts";
 export * as editor from "./editor.ts";
 export * as environment from "./environment.ts";
 export * as filesystem from "./filesystem.ts";

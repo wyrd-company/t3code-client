@@ -27,11 +27,13 @@ import {
   EnvironmentAuthorizationError,
   KeybindingsConfigError,
   ProviderSetupError,
+  ProviderUploadFeedbackError,
   SecretRequestError,
   ServerNpmReleaseError,
   ServerPrepareTriageError,
   ServerProviderUpdateError,
   ServerSettingsError,
+  UsageLimitSourceError,
 } from "./rpcErrors/server.ts";
 import {
   TerminalCwdNotDirectoryError,
@@ -110,6 +112,8 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   KeybindingsConfigError,
   ServerSettingsError,
   ProviderSetupError,
+  ProviderUploadFeedbackError,
+  UsageLimitSourceError,
   ServerNpmReleaseError,
   ServerPrepareTriageError,
   ServerProviderUpdateError,

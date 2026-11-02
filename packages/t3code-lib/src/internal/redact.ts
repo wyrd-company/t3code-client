@@ -4,13 +4,16 @@
  * a body that failed to decode must not travel with them. No T3 knowledge.
  */
 // `d` is the private part of a JSON Web Key.
-const SECRET_KEY = /token|credential|secret|authorization|password|ticket|^dpop$|^d$/iu;
+const SECRET_KEY = /token|credential|secret|authorization|password|ticket|usercode|^dpop$|^d$/iu;
+// A sign-in URL can carry a one-use code or an identity token in its query.
+const SECRET_QUERY = /[?&](?:code|id_token_hint)=/iu;
 
 export const REDACTED = "[redacted]";
 
 /**
  * Deep-copies plain objects and arrays, replacing every string value whose
- * key matches a credential-like name with `"[redacted]"`. Other values
+ * key matches a credential-like name, or that holds a sign-in query, with
+ * `"[redacted]"`. Other values
  * (primitives, class instances) are returned as they are.
  */
 export function redactSecrets(value: unknown): unknown {
@@ -28,7 +31,10 @@ function redact(value: unknown, seen: WeakSet<object>): unknown {
   seen.add(value);
   const out: Record<string, unknown> = {};
   for (const [key, item] of Object.entries(value)) {
-    out[key] = typeof item === "string" && SECRET_KEY.test(key) ? REDACTED : redact(item, seen);
+    out[key] =
+      typeof item === "string" && (SECRET_KEY.test(key) || SECRET_QUERY.test(item))
+        ? REDACTED
+        : redact(item, seen);
   }
   return out;
 }

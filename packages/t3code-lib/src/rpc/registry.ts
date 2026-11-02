@@ -15,6 +15,7 @@ import { scheduledTasksMethods } from "./methods/scheduledTasks.ts";
 import { filesMethods } from "./methods/files.ts";
 import { gitMethods } from "./methods/git.ts";
 import { diagnosticsMethods } from "./methods/diagnostics.ts";
+import { providerAuthMethods } from "./methods/providerAuth.ts";
 
 export const rpcMethods = {
   ...orchestrationMethods,
@@ -30,6 +31,7 @@ export const rpcMethods = {
   ...filesMethods,
   ...gitMethods,
   ...diagnosticsMethods,
+  ...providerAuthMethods,
 };
 export type RpcMethods = typeof rpcMethods;
 export type RpcMethodName = keyof RpcMethods;

@@ -265,6 +265,36 @@ needs `settings:write`: the server sends an empty export to the URL, and the ans
 is `Accepted`, `Rejected` or `Unreachable`. `server.retryResourceTelemetry` needs
 `diagnostics:read` and `environment:maintain`.
 
+## Provider sign-in
+
+An instance with a sign-in controller, such as a managed Codex instance, signs in
+through the server. These methods need `providers:manage`. Any other instance
+refuses with `ProviderSetupError`.
+
+```ts
+const instanceId = schemas.common.providerInstanceId("managed-codex");
+const { flowId } = await client.rpc.call("provider.auth.start", { instanceId });
+
+for await (const item of client.rpc.stream("provider.auth.subscribe", { instanceId })) {
+  if (item.kind !== "item") continue;
+  if (item.value.phase === "waiting") console.log(item.value.authorizationUrl);
+  if (["succeeded", "failed", "cancelled"].includes(item.value.phase)) break;
+}
+```
+
+A person opens the URL. If the browser cannot reach the server's callback, pass the
+address it ended on to `provider.auth.complete`, with the `flowId`. An interaction
+that needs an answer goes to `provider.auth.respond`. `provider.auth.cancel` ends a
+flow and `provider.auth.logout` signs the instance out and stops its sessions.
+
+`provider.chatgpt.handoff.subscribe` runs a sign-in for another environment. The
+`profile` of its `finished` item holds live tokens, so handle it as a credential and
+pass it to `provider.chatgpt.import-profile` on that environment.
+
+`provider.consumeResetCredit` spends a banked credit of the account, for an instance
+or for an account in a usage limit source. `provider.uploadFeedback` sends feedback on
+a thread's running provider session to that provider, and needs `orchestration:operate`.
+
 ## Proof-bound sessions
 
 A session bound to a DPoP key is useless to someone who holds only its token.

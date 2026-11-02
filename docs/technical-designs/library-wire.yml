@@ -126,6 +126,19 @@ proposed-design:
     `server.retryResourceTelemetry` restarts the server's resource monitor, so it
     needs `diagnostics:read` and `environment:maintain`.
 
+    The provider sign-in methods need `providers:manage`, as does
+    `provider.consumeResetCredit`. `provider.uploadFeedback` needs
+    `orchestration:operate`. An instance has sign-in methods only when its driver
+    has a sign-in controller, and any other instance refuses with
+    `ProviderSetupError`. A flow belongs to the session that started it: another
+    session sees its phase without its `flowId`, URL or interaction.
+
+    `provider.chatgpt.handoff.subscribe` runs a sign-in in memory for another
+    environment, and closing the stream ends it. Its `finished` item holds a
+    `ChatGptTransferredProfile` with live tokens, and
+    `provider.chatgpt.import-profile` takes that profile. The library does not store
+    it.
+
     An Effect `Option` field arrives as a `{ _tag: "None" }` or
     `{ _tag: "Some", value }` record, and a schema keeps that form. The
     diagnostics results report a failed read in an `Option` field and keep what
