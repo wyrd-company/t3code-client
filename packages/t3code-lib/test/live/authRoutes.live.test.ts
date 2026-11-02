@@ -12,6 +12,7 @@ import type { WebSocketConstructor } from "../../src/internal/websocket.ts";
 import {
   T3AuthError,
   T3Client,
+  createDpopProof,
   currentDesktopBootstrapToken,
   generateDpopKey,
   memoryCredentialStore,
@@ -113,39 +114,61 @@ describe.skipIf(!hasLiveServer)("auth foundation", () => {
     await client.close();
   });
 
-  it("creates a browser session whose cookie authenticates", async () => {
+  it("uses a browser session through a client whose fetch keeps the cookie", async () => {
     let cookie = "";
     const client = session(baseUrl(), {
+      fetchAuthenticates: true,
       fetch: (async (input: URL, init: RequestInit) => {
-        const response = await fetch(input, init);
-        cookie = response.headers.get("set-cookie") ?? cookie;
+        const headers = new Headers(init.headers);
+        if (cookie !== "") headers.set("cookie", cookie);
+        const response = await fetch(input, { ...init, headers });
+        const setCookie = response.headers.get("set-cookie");
+        if (setCookie !== null) cookie = setCookie.split(";")[0] ?? "";
         return response;
       }) as typeof fetch,
     });
     const result = await client.routes.call("auth.browserSession", {
-      body: { credential: await pair(["orchestration:read"]) },
+      body: { credential: await pair(["orchestration:read", "orchestration:operate"]) },
     });
     expect(result).toMatchObject({
       authenticated: true,
       sessionMethod: "browser-session-cookie",
-      scopes: ["orchestration:read"],
     });
-    const nameAndValue = cookie.split(";")[0] ?? "";
-    expect(cookie.toLowerCase()).toContain("httponly");
-    const state = await fetch(new URL("/api/auth/session", baseUrl()), {
-      headers: { cookie: nameAndValue },
-    });
-    expect(await state.json()).toMatchObject({
+    expect(await client.auth.sessionState()).toMatchObject({
       authenticated: true,
       sessionMethod: "browser-session-cookie",
     });
+    expect((await client.routes.call("projects.snapshot")).projects).toBeInstanceOf(Array);
+    expect(await client.rpc.call("server.probe", {})).toBeDefined();
     await client.close();
 
     const unused = session(baseUrl());
     await expect(
       unused.routes.call("auth.browserSession", { body: { credential: "sample-unknown" } }),
     ).rejects.toMatchObject({ code: "auth_invalid" });
+    await expect(unused.routes.call("projects.snapshot")).rejects.toMatchObject({
+      reason: "missing_credential",
+    });
     await unused.close();
+  });
+
+  it("refuses the RPC ticket of a bound session without its proof", async () => {
+    const dpopKey = generateDpopKey();
+    const client = session(baseUrl());
+    await client.auth.exchangePairingToken(await pair(), { dpopKey });
+    const proofFor = (ticket: string, key = dpopKey) =>
+      createDpopProof({ key, method: "GET", url: new URL("/ws", baseUrl()), accessToken: ticket });
+    const mint = async () =>
+      (await client.routes.call("auth.webSocketTicketFor", { params: { use: "rpc" } })).ticket;
+
+    expect(await upgradeOpens(baseUrl(), await mint())).toBe(false);
+    const other = await mint();
+    expect(await upgradeOpens(baseUrl(), other, proofFor(other, generateDpopKey()))).toBe(false);
+    const good = await mint();
+    expect(await upgradeOpens(baseUrl(), good, proofFor(good))).toBe(true);
+    // The default socket path of a bound session mints this kind of ticket.
+    expect(await client.rpc.call("server.probe", {})).toBeDefined();
+    await client.close();
   });
 
   it("mints a ticket for one use, which the other route refuses", async () => {

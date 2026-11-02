@@ -16,7 +16,7 @@ import {
   schemas,
   threadId,
 } from "../../src/index.ts";
-import { connect, hasLiveServer, modelSelection } from "./liveClient.ts";
+import { connect, hasAgent, hasLiveServer, modelSelection } from "./liveClient.ts";
 
 describe.skipIf(!hasLiveServer)("foundation routes", () => {
   const client = connect();
@@ -70,16 +70,42 @@ describe.skipIf(!hasLiveServer)("foundation routes", () => {
 
     const compact = await client.routes.call("orchestration.threadBoundedSnapshot", {
       params,
-      query: { deferWork: "1", compactTurnItems: "1", dedupeBodies: "1" },
+      query: { deferWork: "1", compactTurnItems: "1" },
     });
     const restored = schemas.orchestrationBoundedSnapshot.boundedSnapshotProjection(compact);
-    expect(restored.turnItems.length).toBe(whole.projection.turnItems.length);
+    expect(restored.turnItems).toEqual(whole.projection.turnItems);
 
     await expect(
       client.routes.call("orchestration.threadBoundedSnapshot", {
         params: { threadId: threadId(`thread-${crypto.randomUUID()}`) },
       }),
     ).rejects.toBeInstanceOf(T3NotFoundError);
+    await client.threads.delete(thread.id);
+  });
+
+  it.skipIf(!hasAgent)("restores a populated compact snapshot to the whole list", async () => {
+    const thread = await client.threads.create({
+      projectId: id,
+      title: "Sample agent thread",
+      modelSelection,
+    });
+    const turn = await client.threads.startTurn({
+      threadId: thread.id,
+      text: "Reply with one short sentence.",
+    });
+    await turn.completion;
+    const params = { threadId: thread.id };
+    const whole = await client.routes.call("orchestration.threadBoundedSnapshot", { params });
+    const compact = await client.routes.call("orchestration.threadBoundedSnapshot", {
+      params,
+      query: { compactTurnItems: "1" },
+    });
+    expect(whole.projection.turnItems.length).toBeGreaterThan(0);
+    expect(compact.turnItemsOmitLocalVisible).toBe(true);
+    expect(compact.projection.turnItems.length).toBeLessThan(whole.projection.turnItems.length);
+    expect(
+      schemas.orchestrationBoundedSnapshot.boundedSnapshotProjection(compact).turnItems,
+    ).toEqual(whole.projection.turnItems);
     await client.threads.delete(thread.id);
   });
 

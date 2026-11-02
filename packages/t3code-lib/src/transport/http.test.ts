@@ -120,6 +120,21 @@ describe("HttpTransport", () => {
       makeTransport(invalidFetch).request({ method: "GET", path: "/records", decode: Result }),
     ).rejects.toBeInstanceOf(T3DecodeError);
   });
+
+  it("sends a required route without a token when the fetch carries the session", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>(async () => Response.json({ value: "ok" }));
+    const transport = new HttpTransport({
+      baseUrl: "https://example.invalid",
+      fetch,
+      fetchAuthenticates: true,
+      getAccessToken: async () => undefined,
+    });
+    await expect(
+      transport.request({ method: "GET", path: "/records", auth: "required", decode: "empty" }),
+    ).resolves.toBeUndefined();
+    const headers = new Headers(fetch.mock.calls[0]?.[1]?.headers);
+    expect(headers.get("authorization")).toBeNull();
+  });
 });
 
 function makeTransport(fetch: typeof globalThis.fetch, token?: string): HttpTransport {

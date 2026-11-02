@@ -75,18 +75,20 @@ proposed-design:
     and the claims `htm`, `htu` (the URL without query and fragment), `jti`, `iat`
     (within 300 seconds of the server clock) and, with a token, `ath` (the base64url
     SHA-256 of that token). The server refuses a `jti` it has seen. A socket upgrade
-    names `http` or `https` in `htu`. Its ticket is bound to the key, and the proof
-    rides in the `dpop` query parameter with `ath` over the ticket. A refused proof
+    names `http` or `https` in `htu`. A ticket minted for the `rpc` use is bound to
+    the key, and the proof rides in the `dpop` query parameter with `ath` over the
+    ticket. A bare or `media` ticket is not bound, so a proof-bound client mints for
+    `rpc`. A refused proof
     is a 401 `EnvironmentAuthInvalidError` with `dpopFailureReason` and a
     `www-authenticate: DPoP` header.
 
     The server refuses a bound token sent as a bearer token.
 
-    The orchestration query options take effect only with the value `1`: `deferWork`,
-    `compactTurnItems` and `dedupeBodies` on the bounded route, `deferWork` on the
-    history route, `omitIdleSubagents` and `omitOlderSettled` on the shell route.
-    The route table does not offer `compactIds`, an id table for the browser's
-    bytes: the snapshot schemas decode whole ids.
+    The orchestration query options take effect only with the value `1`: `deferWork`
+    and `compactTurnItems` on the bounded route, `deferWork` on the history route,
+    `omitIdleSubagents` and `omitOlderSettled` on the shell route. The route table
+    does not offer the wire forms `compactIds` and `dedupeBodies`: they save bytes,
+    and the snapshot schemas decode whole ids and bodies.
 
     HTTP errors are JSON tagged records: `EnvironmentRequestInvalidError` (400),
     `EnvironmentAuthInvalidError` (401), `EnvironmentScopeRequiredError` and

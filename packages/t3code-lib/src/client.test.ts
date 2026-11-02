@@ -115,6 +115,10 @@ describe("T3Client", () => {
   });
 
   it("carries a proof for the ticket of a proof-bound session", async () => {
+    server.routes.route("POST /api/auth/websocket-ticket/rpc", () => ({
+      status: 200,
+      body: { ticket: server.issueTicket(), expiresAt: "2020-01-01T00:05:00.000Z" },
+    }));
     client = T3Client.create({
       baseUrl: server.httpUrl,
       credentials: memoryCredentialStore({ accessToken: "token-1", dpopKey: generateDpopKey() }),
@@ -131,7 +135,7 @@ describe("T3Client", () => {
         .update(upgrade?.query["wsTicket"] ?? "")
         .digest("base64url"),
     );
-    const mint = server.routes.requests.find((r) => r.path === "/api/auth/websocket-ticket");
+    const mint = server.routes.requests.find((r) => r.path === "/api/auth/websocket-ticket/rpc");
     expect(mint?.headers["authorization"]).toBe("DPoP token-1");
     expect(proofPayload(mint?.headers["dpop"])["htm"]).toBe("POST");
   });

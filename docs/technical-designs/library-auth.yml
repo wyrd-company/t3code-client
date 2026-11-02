@@ -89,8 +89,9 @@ proposed-design:
     A caller that wants a session a stolen token cannot use generates a key and
     passes it to `exchangePairingToken`. The key is stored with the token, because
     the token is useless without it: a file store keeps both in the same 0600 file.
-    From then on `HttpTransport` signs a new proof for each request, and `T3Client`
-    signs one for each socket upgrade in both socket modes. If the server issues a
+    From then on `HttpTransport` signs a new proof for each request. `T3Client`
+    signs one for each socket upgrade in both socket modes, and in ticket mode it
+    mints for the `rpc` use, the only ticket the server binds to the key. If the server issues a
     plain bearer token, the key is not stored. `redactSecrets` removes the private
     part of a key from anything an error carries.
 
@@ -106,10 +107,12 @@ proposed-design:
     is the launcher's concern and has no schema here.
   browser-sessions: |
     The `auth.browserSession` route exchanges a bootstrap credential for a session
-    whose token is only in an HttpOnly cookie. The client keeps nothing: it is not a
-    credential the store holds, and a Node `fetch` does not keep cookies. A program
-    that wants the session supplies a `fetch` with a cookie jar through
-    `T3ClientOptions.fetch`.
+    whose token is only in an HttpOnly cookie. The credential store holds nothing
+    for it, and a Node `fetch` does not keep cookies. A program that wants the
+    session supplies a `fetch` with a cookie jar and sets
+    `T3ClientOptions.fetchAuthenticates`, so that a route that requires a session
+    sends without a stored token. The client then mints socket tickets through
+    that `fetch`.
   scope-groups: >-
     AuthStandardClientScopes mirrors the stock 0.1.6 standard client grant,
     including access:read, access:write and relay:write. There is no separate

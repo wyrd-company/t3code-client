@@ -52,17 +52,15 @@ export const orchestrationRoutes = {
   }),
   /**
    * With `compactTurnItems`, restore the turn items with
-   * `boundedSnapshotProjection`. The `compactIds` wire form is not offered: it
-   * saves bytes for a browser and the snapshot schema decodes whole ids.
+   * `boundedSnapshotProjection`. The wire forms `compactIds` and `dedupeBodies`
+   * are not offered: they save bytes, and the schemas decode whole ids and bodies.
    */
   "orchestration.threadBoundedSnapshot": defineRoute({
     ...common,
     path: "/api/orchestration/threads/:threadId/bounded",
     input: z.strictObject({
       params: ThreadParams,
-      query: z
-        .strictObject({ deferWork: Flag, compactTurnItems: Flag, dedupeBodies: Flag })
-        .optional(),
+      query: z.strictObject({ deferWork: Flag, compactTurnItems: Flag }).optional(),
     }),
     success: OrchestrationV2ThreadBoundedSnapshot,
   }),

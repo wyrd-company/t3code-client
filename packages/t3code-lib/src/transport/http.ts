@@ -19,6 +19,8 @@ export interface HttpTransportOptions {
   getAccessToken: () => Promise<string | undefined>;
   /** The key of a proof-bound session; its requests carry `Authorization: DPoP` and a proof. */
   getDpopKey?: () => Promise<DpopPrivateJwk | undefined>;
+  /** The `fetch` carries the session itself, as a cookie jar does; no token is required. */
+  fetchAuthenticates?: boolean;
   userAgent?: string;
 }
 
@@ -41,6 +43,7 @@ export class HttpTransport {
   readonly #fetch: typeof fetch;
   readonly #getAccessToken: () => Promise<string | undefined>;
   readonly #getDpopKey: (() => Promise<DpopPrivateJwk | undefined>) | undefined;
+  readonly #fetchAuthenticates: boolean;
   readonly #userAgent: string | undefined;
 
   constructor(options: HttpTransportOptions) {
@@ -48,6 +51,7 @@ export class HttpTransport {
     this.#fetch = options.fetch ?? globalThis.fetch;
     this.#getAccessToken = options.getAccessToken;
     this.#getDpopKey = options.getDpopKey;
+    this.#fetchAuthenticates = options.fetchAuthenticates ?? false;
     this.#userAgent = options.userAgent;
   }
 
@@ -99,7 +103,7 @@ export class HttpTransport {
         });
       }
     }
-    if (auth === "required" && accessToken === undefined) {
+    if (auth === "required" && accessToken === undefined && !this.#fetchAuthenticates) {
       throw new T3AuthError("This request requires an access token.", {
         code: "auth_invalid",
         status: 401,

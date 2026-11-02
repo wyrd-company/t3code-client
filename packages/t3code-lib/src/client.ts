@@ -48,6 +48,8 @@ export interface T3ClientOptions {
   /** Sent as `clientAppVersion` on the socket upgrade. */
   readonly clientAppVersion?: string;
   readonly fetch?: typeof fetch;
+  /** `fetch` carries the session itself, as a cookie jar for a browser session does. */
+  readonly fetchAuthenticates?: boolean;
   readonly webSocket?: WebSocketConstructor;
   readonly logger?: Logger;
   /** Reconnect delays; defaults to 500 ms × 1.5, capped at 5 s, with jitter 0.2. */
@@ -94,6 +96,9 @@ export class T3Client {
       getDpopKey: () => this.auth.currentDpopKey(),
       userAgent: userAgent(options),
       ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
+      ...(options.fetchAuthenticates === undefined
+        ? {}
+        : { fetchAuthenticates: options.fetchAuthenticates }),
     });
     this.auth = new AuthClient(http, credentials);
     this.routes = new HttpRouteClient(http, httpRoutes, {
@@ -106,10 +111,14 @@ export class T3Client {
       url: async () => {
         const url = socketUrl(options);
         if (socketAuth === "ticket") {
-          const { ticket } = await this.auth.websocketTicket();
-          url.searchParams.set("wsTicket", ticket);
-          // A socket cannot set headers, so the proof of a proof-bound ticket rides in the query.
+          // Only a ticket minted for the RPC use is bound to the key; a bare ticket is not.
           const key = await this.auth.currentDpopKey();
+          const { ticket } =
+            key === undefined
+              ? await this.auth.websocketTicket()
+              : await this.routes.call("auth.webSocketTicketFor", { params: { use: "rpc" } });
+          url.searchParams.set("wsTicket", ticket);
+          // A socket cannot set headers, so the proof rides in the query.
           if (key !== undefined) {
             const proof = createDpopProof({ key, method: "GET", url, accessToken: ticket });
             url.searchParams.set("dpop", proof);
