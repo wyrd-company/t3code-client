@@ -14,7 +14,7 @@ import * as NodePath from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import type { T3Client } from "../../src/index.ts";
-import { T3RpcError } from "../../src/index.ts";
+import { T3RpcDefectError, T3RpcError } from "../../src/index.ts";
 import { GuestMessageId, threadId as toThreadId, type ThreadId } from "../../src/schemas/common.ts";
 import { isTurnItemOfType } from "../../src/schemas/orchestration/turnItems.ts";
 import { isRpcErrorOfTag } from "../../src/schemas/rpcErrors.ts";
@@ -133,7 +133,7 @@ describe.skipIf(!hasLiveServer)("live guest shares", () => {
         host: "tunnel.example.test",
         expiresAt: "2026-01-02T00:00:00.000Z",
       }),
-    ).rejects.toBeInstanceOf(T3RpcError);
+    ).rejects.toBeInstanceOf(T3RpcDefectError);
     await expect(share()).resolves.toBeFalsy();
   });
 
