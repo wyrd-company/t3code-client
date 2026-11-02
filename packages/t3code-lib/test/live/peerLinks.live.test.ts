@@ -110,6 +110,14 @@ describe.skipIf(!ownsServer)("live peer links", () => {
     expect(peerLinkReason(await link("http://peer.example.test", "sample-code"))).toBe(
       "unreachable",
     );
+    const narrow = await refusal(
+      client.peerLinks.link({
+        url: peer.baseUrl,
+        pairingCode: await pairingCode(peer),
+        access: "full-access",
+      }),
+    );
+    expect(peerLinkReason(narrow)).toBe("pairing_rejected");
     await expect(client.peerLinks.unlink(EnvironmentId.parse("environment-none"))).resolves.toBe(
       false,
     );

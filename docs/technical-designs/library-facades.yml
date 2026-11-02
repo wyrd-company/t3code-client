@@ -385,7 +385,8 @@ proposed-design:
     the peer, it rejects with `pairing_rejected`. The library reads the setting
     through `server.getSettings` and does not write it: settings mutation stays raw.
 
-    A pairing code must carry the scopes of the chosen `access`. The library sends it
+    A pairing code must carry the scopes of the chosen `access`; `link` otherwise
+    rejects with `pairing_rejected`. The library sends the code
     to the server and keeps it out of its errors. A refusal is a `PeerLinkError` record.
     An `answerRequest` that the peer refuses still resolves, and the `link_request`
     turn item records `failed` with its `failure` text. `PeerLinkRequestError` means
