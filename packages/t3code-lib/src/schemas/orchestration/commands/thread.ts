@@ -6,6 +6,7 @@
 import { z } from "zod";
 import {
   CommandId,
+  GuestMessageId,
   IsoDateTime,
   ProjectId,
   ProviderDriverKind,
@@ -67,6 +68,12 @@ export const ThreadUnarchiveCommand = simple("thread.unarchive");
 export const ThreadDeleteCommand = simple("thread.delete");
 export const ThreadUnpinCommand = simple("thread.unpin");
 export const ThreadMarkUnreadCommand = simple("thread.mark-unread");
+export const ThreadGuestShareCloseCommand = simple("thread.guest-share.close");
+export const ThreadGuestMessageDismissCommand = z.looseObject({
+  type: z.literal("thread.guest-message.dismiss"),
+  ...stamped,
+  guestMessageId: GuestMessageId,
+});
 export const ThreadSettleCommand = z.looseObject({
   type: z.literal("thread.settle"),
   ...stamped,
@@ -193,6 +200,8 @@ export const threadCommandMembers = [
   ThreadActiveReorderCommand,
   ThreadVisitCommand,
   ThreadMarkUnreadCommand,
+  ThreadGuestShareCloseCommand,
+  ThreadGuestMessageDismissCommand,
   ThreadMetadataUpdateCommand,
   ThreadTitleRegenerationCompleteCommand,
   ThreadRuntimeModeSetCommand,

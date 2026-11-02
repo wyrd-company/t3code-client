@@ -37,6 +37,7 @@ export * as orchestrationShell from "./orchestration/shell.ts";
 export * as orchestrationShellOmittedRows from "./orchestration/shellOmittedRows.ts";
 export * as orchestrationStream from "./orchestration/stream.ts";
 export * as orchestrationThreadLink from "./orchestration/threadLink.ts";
+export * as orchestrationGuestShare from "./orchestration/guestShare.ts";
 export * as orchestrationThread from "./orchestration/thread.ts";
 export * as orchestrationThreadFind from "./orchestration/threadFind.ts";
 export * as orchestrationThreadForceStop from "./orchestration/threadForceStop.ts";

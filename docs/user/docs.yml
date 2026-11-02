@@ -75,6 +75,7 @@ products:
               - library-server-methods
               - library-schedules
               - library-peer-links
+              - library-guest-shares
     kinds:
       - kind: cli
         install:

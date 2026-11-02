@@ -5,6 +5,8 @@
 import { z } from "zod";
 import {
   EnvironmentId,
+  GuestMessageId,
+  GuestShareId,
   NonNegativeInt,
   PositiveInt,
   ThreadId,
@@ -197,8 +199,21 @@ export const ComposerContextRecord = z.union([
   UnknownContextRecord,
 ]);
 export type ComposerContextRecord = z.infer<typeof ComposerContextRecord>;
+/**
+ * Marks a user message as a guest's, sent by the owner. The message `text` is the
+ * attributed form that the agent reads. The server sets this field.
+ */
+export const GuestMessageAttribution = z.looseObject({
+  guestMessageId: GuestMessageId,
+  name: TrimmedNonEmptyString.max(40),
+  text: z.string().max(4000),
+  /** The link that the guest used. */
+  shareId: GuestShareId.optional(),
+});
+export type GuestMessageAttribution = z.infer<typeof GuestMessageAttribution>;
 export const OrchestrationMessageContext = z.looseObject({
   version: z.literal(1),
+  guest: GuestMessageAttribution.optional(),
   records: z
     .array(z.unknown())
     .max(200)

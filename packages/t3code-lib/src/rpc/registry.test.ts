@@ -42,6 +42,7 @@ const expected = {
   "peerLinks.link": [false, "access:write"],
   "peerLinks.unlink": [false, "access:write"],
   "peerLinks.answerRequest": [false, "access:write"],
+  "guestShare.create": [false, "access:write"],
   "vcs.listRefs": [false, "orchestration:read"],
   "vcs.refreshStatus": [false, "orchestration:read"],
   "vcs.createWorktree": [false, "source-control:write"],

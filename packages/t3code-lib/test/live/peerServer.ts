@@ -19,7 +19,10 @@ import { freePort, hasExited, issueToken, serverBin, waitForReady } from "./glob
 
 export interface PeerServer {
   readonly baseUrl: string;
+  /** The client of the running server. `restart` replaces it. */
   readonly client: T3Client;
+  /** Stop the server, run `change` on its stopped home, and start it again on the same port. */
+  restart(change: (home: string) => Promise<void>): Promise<void>;
   stop(): Promise<void>;
 }
 
@@ -32,43 +35,59 @@ export async function startPeerServer(): Promise<PeerServer> {
   const port = await freePort();
   const baseUrl = `http://127.0.0.1:${port}`;
   const log = await NodeFSP.open(NodePath.join(root, "server.log"), "w");
-  const server = NodeChildProcess.spawn(
-    process.execPath,
-    [
-      bin,
-      "serve",
-      "--port",
-      String(port),
-      "--host",
-      "127.0.0.1",
-      "--base-dir",
-      baseDir,
-      "--no-browser",
-      "--log-level",
-      "warn",
-      workspace,
-    ],
-    { stdio: ["ignore", log.fd, log.fd], env: serverEnvironment() },
-  );
+  const start = () =>
+    NodeChildProcess.spawn(
+      process.execPath,
+      [
+        bin,
+        "serve",
+        "--port",
+        String(port),
+        "--host",
+        "127.0.0.1",
+        "--base-dir",
+        baseDir,
+        "--no-browser",
+        "--log-level",
+        "warn",
+        workspace,
+      ],
+      { stdio: ["ignore", log.fd, log.fd], env: serverEnvironment() },
+    );
+  const connect = () =>
+    T3Client.create({
+      baseUrl,
+      accessToken: issueToken(bin, baseDir),
+      webSocket: WsWebSocket as unknown as WebSocketConstructor,
+    });
+  let server = start();
+  const stopProcess = async () => {
+    if (hasExited(server)) return;
+    const exited = new Promise((resolve) => server.once("exit", resolve));
+    server.kill("SIGTERM");
+    await exited;
+  };
   const stopServer = async () => {
-    if (!hasExited(server)) {
-      const exited = new Promise((resolve) => server.once("exit", resolve));
-      server.kill("SIGTERM");
-      await exited;
-    }
+    await stopProcess();
     await log.close();
     await NodeFSP.rm(root, { recursive: true, force: true });
   };
   try {
     await waitForReady(baseUrl, server);
-    const client = T3Client.create({
-      baseUrl,
-      accessToken: issueToken(bin, baseDir),
-      webSocket: WsWebSocket as unknown as WebSocketConstructor,
-    });
+    let client = connect();
     return {
       baseUrl,
-      client,
+      get client() {
+        return client;
+      },
+      restart: async (change) => {
+        await client.close();
+        await stopProcess();
+        await change(baseDir);
+        server = start();
+        await waitForReady(baseUrl, server);
+        client = connect();
+      },
       stop: async () => {
         try {
           await client.close();

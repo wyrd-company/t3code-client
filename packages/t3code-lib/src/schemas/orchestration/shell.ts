@@ -137,6 +137,8 @@ export const OrchestrationV2ThreadShell = z.looseObject({
   lastErrorCode: z.string().nullable().optional(),
   usageLimitResetAt: IsoDateTime.nullable().optional(),
   pendingRuntimeRequest: OrchestrationV2PendingRuntimeRequestSummary.nullable(),
+  /** Guest messages waiting for the owner to send or dismiss. */
+  pendingGuestMessageCount: NonNegativeInt.optional(),
   latestVisibleMessage: OrchestrationV2LatestVisibleMessageSummary.nullable(),
   latestUserMessageAt: IsoDateTime.nullable(),
   latestUserAuthoredMessageAt: IsoDateTime.nullable().optional(),

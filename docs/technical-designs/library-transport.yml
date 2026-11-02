@@ -246,7 +246,7 @@ proposed-design:
     `server.getDatabaseStorage`,
     `server.getUsageSummary`,
     `subscribeServerConfig`, `subscribeServerLifecycle`, `subscribeAuthAccess`;
-    `peerLinks.list`, `peerLinks.link`, `peerLinks.unlink`, `peerLinks.answerRequest`; `vcs.listRefs`,
+    `peerLinks.list`, `peerLinks.link`, `peerLinks.unlink`, `peerLinks.answerRequest`; `guestShare.create`; `vcs.listRefs`,
     `vcs.refreshStatus`, `vcs.createWorktree`, `vcs.removeWorktree`,
     `vcs.createRef`, `vcs.switchRef`, `subscribeVcsStatus`,
     `subscribeWorktreeSetup`, `worktreeSetup.cancel`; `projects.listEntries`,

@@ -8,6 +8,7 @@ import {
   CheckpointId,
   CheckpointScopeId,
   CommandId,
+  GuestMessageId,
   MessageId,
   NodeId,
   PlanId,
@@ -51,6 +52,8 @@ export type MessageDeliveryIntent = z.infer<typeof MessageDeliveryIntent>;
 export const MessageDispatchCommand = z.looseObject({
   type: z.literal("message.dispatch"),
   notification: OrchestrationV2Notification.optional(),
+  /** Sends this pending guest message; the server uses the guest's text, not `text`. */
+  guestMessageId: GuestMessageId.optional(),
   ...OrchestrationV2CreationFields,
   scheduledTaskId: ScheduledTaskId.optional(),
   senderThreadId: ThreadId.optional(),

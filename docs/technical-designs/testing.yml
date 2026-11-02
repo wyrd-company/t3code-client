@@ -105,6 +105,11 @@ proposed-design:
     subject asks for the link twice: the test declines once and links once, then the
     subject starts a thread and a delegated task in the peer, which carry `linkOrigin`
     and `delegatedFrom`. It runs only on the server that the harness owns.
+    `guestShares.live.test.ts` starts a second isolated stock server and checks the
+    `create` refusals, and that it refuses the internal guest commands. A link needs a
+    T3 Connect tunnel, so the test writes a share into the stopped server's thread
+    record, restarts it, and reads, dismisses and closes the share over the wire. With
+    `T3_LIVE_AGENT=1`, a `gpt-6-luna` subject receives a sent guest message.
     `threadFind.live.test.ts` checks no-match output against stock T3 Code; its
     `T3_LIVE_AGENT=1` case resolves a real Luna session before and after archiving
     the owning T3 thread, and checks provider separation.

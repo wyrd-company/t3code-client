@@ -76,6 +76,7 @@ export const THREAD_STATE_EVENT_TYPES = [
   "thread.interaction-mode-updated",
   "thread.model-selection-updated",
   "thread.provider-switched",
+  "thread.guest-share-updated",
 ] as const;
 
 const event = <T extends string, P extends z.ZodType>(type: T, payload: P) =>

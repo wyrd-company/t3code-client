@@ -26,6 +26,7 @@ import {
   RuntimeMode,
 } from "./model.ts";
 import { ThreadLinkedPullRequest, ThreadPullRequestLink } from "./pullRequest.ts";
+import { ThreadGuestShare } from "./guestShare.ts";
 import { OrchestrationV2DelegatedFrom, OrchestrationV2LinkOrigin } from "./threadLink.ts";
 
 export const OrchestrationV2AppThreadLineage = z.looseObject({
@@ -105,6 +106,7 @@ export const OrchestrationV2AppThread = z.looseObject({
   snoozedAt: IsoDateTime.nullable().optional(),
   lastSnoozeWakeAt: IsoDateTime.nullable().optional(),
   limitRecovery: OrchestrationV2LimitRecovery.nullable().optional(),
+  guestShare: ThreadGuestShare.nullable().optional(),
   pinnedAt: IsoDateTime.nullable().optional(),
   autoSettleDisabledAt: IsoDateTime.nullable().optional(),
   pinOrderKey: TrimmedNonEmptyString.nullable().optional(),

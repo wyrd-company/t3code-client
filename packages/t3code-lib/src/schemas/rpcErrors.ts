@@ -144,6 +144,18 @@ export const PeerLinkRequestError = taggedError("PeerLinkRequestError", {
   cause: Defect.optional(),
 });
 
+// guestShare.ts
+
+export const GuestShareCreateError = taggedError("GuestShareCreateError", {
+  reason: forwardCompatibleLiteral([
+    "disabled",
+    "connect_unavailable",
+    "thread_unavailable",
+    "read_failed",
+    "changed",
+  ]),
+});
+
 // project.ts
 
 export const ProjectEntriesFailure = forwardCompatibleLiteral([
@@ -245,6 +257,7 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   ServerPrepareTriageError,
   PeerLinkError,
   PeerLinkRequestError,
+  GuestShareCreateError,
   ProjectListEntriesError,
   ProjectSearchEntriesError,
   ProjectSearchContentsError,

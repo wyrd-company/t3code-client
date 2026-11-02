@@ -203,6 +203,12 @@ proposed-design:
       unlink(environmentId, signal?): Promise<boolean>; // access:write
       answerRequest(input, signal?): Promise<void>; // access:write
     }
+    export class GuestSharesApi {
+      create(threadId, signal?): Promise<GuestShareCreateResult>; // access:write
+      close(threadId, signal?): Promise<void>;
+      sendMessage(threadId, guestMessageId, signal?): Promise<MessageId>;
+      dismissMessage(threadId, guestMessageId, signal?): Promise<void>;
+    }
     export class TerminalApi {
       open;
       attach(stream);
@@ -370,6 +376,28 @@ proposed-design:
     advertise support. Supplied non-boolean values fail decoding. The library does
     not check them before a call. `server.prepareTriage` needs `orchestration:operate`.
     `vcs.status` takes `localOnly`, which refreshes only the local state.
+
+  guest-shares: |
+    `client.guestShares` is the owner's side of a guest link: one unauthenticated
+    browser watches a thread over T3 Connect and proposes messages that the owner
+    sends or dismisses. The server setting `guestSharingEnabled` is off by default;
+    the library reads it through `server.getSettings` and does not write it. Off,
+    `create` rejects with reason `disabled` and existing links pause. With no running
+    tunnel, it rejects with `connect_unavailable`. A refusal is a
+    `GuestShareCreateError` record.
+
+    `create` returns the link and the share. The link's fragment is the guest's
+    credential, so that a caller treats `url` as a secret. A new link replaces the
+    thread's earlier one, and `close` revokes it. `sendMessage` queues the message
+    after any active run, and the server replaces its text and files with the guest's.
+    The user message then has `context.guest`, and its `text` names the guest.
+
+    Thread records have `guestShare`, shell rows have `pendingGuestMessageCount`, and
+    `thread.guest-share-updated` carries the whole thread record. The commands
+    `thread.guest-share.open`, `thread.guest-share.redeem` and
+    `thread.guest-message.submit` are the server's, and are not on the client
+    command union. The guest's own `/api/guest` routes are for the guest's browser
+    and stay out of the library.
 
   peer-links: |
     `client.peerLinks` manages the links from this environment to other T3 Code
