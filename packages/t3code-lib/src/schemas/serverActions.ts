@@ -10,7 +10,6 @@
 import { z } from "zod";
 import {
   EnvironmentId,
-  IsoDateTime,
   ProviderDriverKind,
   ProviderInstanceId,
   ThreadId,
@@ -76,7 +75,10 @@ export const ClientActivityReportInput = z.looseObject({
   lowPowerMode: BackgroundBooleanState.optional(),
   scopes: z.array(BackgroundScope),
   ttlMs: z.number().optional(),
-  observedAt: IsoDateTime,
+  /** The server refuses a time that it cannot read. */
+  observedAt: z
+    .string()
+    .refine((value) => !Number.isNaN(Date.parse(value)), "Expected a date and time."),
 });
 export type ClientActivityReportInput = z.infer<typeof ClientActivityReportInput>;
 

@@ -259,6 +259,20 @@ describe.skipIf(!hasLiveServer)("settings methods", () => {
     ).resolves.toBeUndefined();
   });
 
+  it("takes an activity time with an offset", async () => {
+    await expect(
+      client.rpc.call("server.reportClientActivity", {
+        clientId: "sample-client",
+        clientKind: "unknown",
+        visible: true,
+        focused: false,
+        recentlyInteracted: false,
+        scopes: [],
+        observedAt: "2026-01-01T01:00:00+01:00",
+      }),
+    ).resolves.toBeUndefined();
+  });
+
   it("discovers source control tools", async () => {
     const found = await client.rpc.call("server.discoverSourceControl", {});
     const git = found.versionControlSystems.find((item) => item.kind === "git");

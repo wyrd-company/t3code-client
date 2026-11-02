@@ -57,6 +57,10 @@ const StorageRetentionDays = int(1, 3650).nullable();
 const SettledWorktreeRetentionDays = int(0, 3650).nullable();
 const SidebarAutoSettleAfterDays = z.number().min(1).max(90);
 
+const ProjectScriptInput = ProjectScript.extend({
+  icon: z.enum(["play", "test", "lint", "configure", "build", "debug"]),
+});
+
 const ModelFavorite = z.looseObject({
   provider: ProviderInstanceId,
   model: TrimmedNonEmptyString,
@@ -169,7 +173,7 @@ const ProjectSettingsOverride = z
     newWorktreesStartFromOrigin: z.boolean(),
     worktreeSubmodules: WorktreeSubmodules,
     defaultAutoPull: z.boolean(),
-    defaultProjectScripts: z.array(ProjectScript),
+    defaultProjectScripts: z.array(ProjectScriptInput),
     enableAgentBrowserAccess: z.boolean(),
     enableAgentDeviceAccess: z.boolean(),
     textGenerationModelSelection: ModelSelection,
@@ -233,8 +237,8 @@ export const ServerSettingsPatch = z
     enableAgentBrowserAccess: z.boolean(),
     projectAgentBrowserAccessOverrides: z.record(ProjectKey, z.boolean().nullable()),
     defaultAutoPull: z.boolean(),
-    defaultProjectScripts: z.array(ProjectScript),
-    projectScriptOverrides: z.record(ProjectKey, z.array(ProjectScript).nullable()),
+    defaultProjectScripts: z.array(ProjectScriptInput),
+    projectScriptOverrides: z.record(ProjectKey, z.array(ProjectScriptInput).nullable()),
     projectAutoPullOverrides: z.record(ProjectKey, z.boolean().nullable()),
     defaultModelSelection: ModelSelection.nullable(),
     defaultRuntimeMode: RuntimeMode,

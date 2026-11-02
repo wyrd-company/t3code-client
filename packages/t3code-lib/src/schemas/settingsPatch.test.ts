@@ -67,6 +67,54 @@ describe("ServerSettingsPatch", () => {
   });
   it.each([
     ["a value outside a closed list", { defaultRuntimeMode: "sample" }],
+    [
+      "a script icon outside its list",
+      {
+        defaultProjectScripts: [
+          {
+            id: "sample",
+            name: "Sample",
+            command: "true",
+            icon: "sample",
+            runOnWorktreeCreate: false,
+          },
+        ],
+      },
+    ],
+    [
+      "a script icon in a project's scripts",
+      {
+        projectScriptOverrides: {
+          p: [
+            {
+              id: "sample",
+              name: "Sample",
+              command: "true",
+              icon: "sample",
+              runOnWorktreeCreate: false,
+            },
+          ],
+        },
+      },
+    ],
+    [
+      "a script icon in a project's override",
+      {
+        projectSettingsOverrides: {
+          p: {
+            defaultProjectScripts: [
+              {
+                id: "sample",
+                name: "Sample",
+                command: "true",
+                icon: "sample",
+                runOnWorktreeCreate: false,
+              },
+            ],
+          },
+        },
+      },
+    ],
     ["a retention outside its range", { storageCleanup: { logsAfterDays: 0 } }],
     ["a cleanup with no mode", { worktreeCleanup: { rules: {} } }],
     ["too many snooze presets", { snoozePresets: Array(9).fill({ kind: "after", minutes: 1 }) }],
@@ -209,4 +257,22 @@ describe("a keybinding write", () => {
       ).toBe(false);
     },
   );
+});
+
+describe("a client activity report", () => {
+  const report = (observedAt: string) =>
+    rpcMethods["server.reportClientActivity"].payload.safeParse({
+      clientId: "client-1",
+      clientKind: "unknown",
+      visible: true,
+      focused: true,
+      recentlyInteracted: true,
+      scopes: [],
+      observedAt,
+    }).success;
+  it("takes a time the server can read, and refuses another", () => {
+    expect(report("2026-01-01T00:00:00.000Z")).toBe(true);
+    expect(report("2026-01-01T01:00:00+01:00")).toBe(true);
+    expect(report("sample-invalid")).toBe(false);
+  });
 });
