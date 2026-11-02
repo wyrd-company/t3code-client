@@ -211,8 +211,9 @@ proposed-design:
        run and attempt model to wait for an answer.
   out-of-scope-for-this-version: |
     Pull requests, previews, devices, cloud relay, DPoP, desktop bootstrap, a
-    guest's own `/api/guest` routes, attachment upload signing, source-control clone flows, MCP
-    OAuth, forks and merge-backs, delegated tasks, and settings mutation. They
+    guest's own `/api/guest` routes, attachment upload signing, source-control
+    repository, clone and sign-in flows, MCP OAuth, forks and merge-backs,
+    delegated tasks, and settings mutation. They
     stay reachable through `rpc.callRaw`, `rpc.streamRaw`, and
     `threads.dispatch` with the full `OrchestrationV2Command` union.
   profiles-and-target: >-
