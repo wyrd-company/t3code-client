@@ -396,8 +396,8 @@ proposed-design:
     `thread.guest-share-updated` carries the whole thread record. The commands
     `thread.guest-share.open`, `thread.guest-share.redeem` and
     `thread.guest-message.submit` are the server's, and are not on the client
-    command union. The guest's own `/api/guest` routes are for the guest's browser
-    and stay out of the library.
+    command union. The guest's own `/api/guest` routes are typed for a client that
+    acts as the guest.
 
   peer-links: |
     `client.peerLinks` manages the links from this environment to other T3 Code
@@ -411,7 +411,7 @@ proposed-design:
     The server setting `linkedEnvironmentsEnabled` is off by default and is needed
     on both sides. Off on this side, `link` rejects with reason `disabled`; off on
     the peer, it rejects with `pairing_rejected`. The library reads the setting
-    through `server.getSettings` and does not write it: settings mutation stays raw.
+    through `server.getSettings` and writes it through `server.updateSettings`.
 
     A pairing code must carry the scopes of the chosen `access`; `link` otherwise
     rejects with `pairing_rejected`. The library sends the code
@@ -837,7 +837,7 @@ proposed-design:
     Growing strings, omission and unknown settings metadata remain intact.
     Non-string values fail decoding; later valid chunks remain available.
     Reading this metadata does not compact threads or change defaults or timing.
-    Other settings remain loose; settings mutation stays outside the facade.
+    Other settings remain loose. `server.updateSettings` is the typed mutation.
 
   configuration-issues: |
     Configuration reads, configuration snapshots and `keybindingsUpdated`

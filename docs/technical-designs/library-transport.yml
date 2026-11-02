@@ -233,33 +233,15 @@ proposed-design:
     export class RpcClient {
       call<M extends UnaryMethod>(method: M, payload: RpcPayload<M>, signal?: AbortSignal): Promise<RpcSuccess<M>>
       stream<M extends StreamMethod>(method: M, payload: RpcPayload<M>, options?: RpcStreamOptions): AsyncIterable<StreamItem<RpcSuccess<M>>>
-      callRaw(tag: string, payload: unknown, signal?: AbortSignal): Promise<unknown>      // any method, no schemas
+      callRaw(tag: string, payload: unknown, signal?: AbortSignal): Promise<unknown>      // a method of a newer server, no schemas
       streamRaw(tag: string, payload: unknown, options?: RpcStreamOptions): AsyncIterable<unknown>
     }
     export type StreamItem<T> = { kind: "item"; value: T } | { kind: "decode-error"; error: T3DecodeError }
     ```
 
-    Registry coverage for this version, all typed: the orchestration
-    methods, including the `orchestration.subscribeCommandOutput` stream; `projects.mutate`; `mcpApps.callTool`, `mcpApps.toolInfo`,
-    `mcpApps.readResource`, `mcpApps.updateModelContext`; `server.probe`, `server.getConfig`,
-    `server.refreshProviders`, `server.getNpmRelease`, `server.prepareTriage`,
-    `server.getDatabaseStorage`,
-    `server.getUsageSummary`,
-    `subscribeServerConfig`, `subscribeServerLifecycle`, `subscribeAuthAccess`;
-    `peerLinks.list`, `peerLinks.link`, `peerLinks.unlink`, `peerLinks.answerRequest`; `guestShare.create`; `vcs.listRefs`,
-    `vcs.refreshStatus`, `vcs.createWorktree`, `vcs.removeWorktree`,
-    `vcs.createRef`, `vcs.switchRef`, `subscribeVcsStatus`,
-    `subscribeWorktreeSetup`, `worktreeSetup.cancel`; `projects.listEntries`,
-    `projects.listIgnoredFiles`, `projects.readFile`, `projects.writeFile`,
-    `projects.searchEntries`, `projects.searchContents`, `projects.ensureScratch`,
-    `projects.createNew`, `projects.createFromThread`;
-    `scheduledTasks.subscribe`, `scheduledTasks.upsert`,
-    `scheduledTasks.setEnabled`, `scheduledTasks.delete`, `scheduledTasks.runNow`,
-    `scheduledTasks.rotateWebhookToken`, `scheduledTasks.listWebhookDeliveries`,
-    `scheduledTasks.getWebhookDelivery`;
-    `terminal.open`, `terminal.attach`, `terminal.write`, `terminal.resize`,
-    `terminal.close`. Everything else goes through
-    `callRaw` and `streamRaw` until it is added; adding a method is one entry in
+    The registry covers every RPC method that the target build exposes to a
+    client, as [the library design](library.yml) defines. `callRaw` and
+    `streamRaw` serve a method of a newer server. Adding a method is one entry in
     a family file. Each entry carries the scope the server checks: file reads
     need `filesystem:read`, file writes `filesystem:write`, worktree and ref
     changes `source-control:write`, terminal event streams `terminal:read`, MCP

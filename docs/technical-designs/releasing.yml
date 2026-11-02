@@ -175,8 +175,8 @@ proposed-design:
        `pnpm-workspace.yaml`.
     2. Compare upstream contracts (`packages/contracts/src`), server RPC handlers,
        auth scopes and HTTP routes between the two tags. Update library schemas
-       and the typed registry. Methods outside the library design's scope stay
-       reachable through `rpc.callRaw` and `rpc.streamRaw`.
+       and the typed registry so that every client method and route of the target
+       build is typed, as the library design's `typed-coverage` defines.
     3. Capture library fixtures again (see [testing](library-testing.yml))
        and run `task lib:test:live`.
     4. Update the build named in the library design and the package intent.
