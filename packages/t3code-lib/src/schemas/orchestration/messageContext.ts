@@ -157,6 +157,13 @@ export const ThreadContextRecord = z.looseObject({
   title: z.string().max(200),
 });
 export type ThreadContextRecord = z.infer<typeof ThreadContextRecord>;
+/** Another environment attached to a message. */
+export const EnvironmentContextRecord = z.looseObject({
+  ...recordBase,
+  kind: z.literal("environment"),
+  environmentId: EnvironmentId,
+});
+export type EnvironmentContextRecord = z.infer<typeof EnvironmentContextRecord>;
 
 const knownKinds = new Set([
   "image",
@@ -168,6 +175,7 @@ const knownKinds = new Set([
   "mention",
   "skill",
   "thread",
+  "environment",
 ]);
 function fitsJson(value: unknown, maximum: number): boolean {
   try {
@@ -196,6 +204,7 @@ export const ComposerContextRecord = z.union([
   MentionContextRecord,
   SkillContextRecord,
   ThreadContextRecord,
+  EnvironmentContextRecord,
   UnknownContextRecord,
 ]);
 export type ComposerContextRecord = z.infer<typeof ComposerContextRecord>;

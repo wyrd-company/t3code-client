@@ -75,6 +75,12 @@ export const ServerConfigIssue = taggedUnionWithUnknown("kind", [
 export type ServerConfigIssue = z.infer<typeof ServerConfigIssue>;
 export const ServerConfigIssues = forwardCompatibleArray(ServerConfigIssue);
 export type ServerConfigIssues = z.infer<typeof ServerConfigIssues>;
+export const OtlpEndpointSource = forwardCompatibleLiteral([
+  "environment",
+  "bootstrap",
+  "settings",
+]);
+export type OtlpEndpointSource = z.infer<typeof OtlpEndpointSource>;
 export const ServerObservability = z.looseObject({
   logsDirectoryPath: TrimmedNonEmptyString.optional(),
   localTracingEnabled: z.boolean().optional(),
@@ -84,6 +90,13 @@ export const ServerObservability = z.looseObject({
   otlpTracesUrl: TrimmedNonEmptyString.optional(),
   otlpMetricsUrl: TrimmedNonEmptyString.optional(),
   otlpLogsUrl: TrimmedNonEmptyString.optional(),
+  /** Where each endpoint comes from. A 0.1.6 server sends a null variable for a settings endpoint. */
+  otlpTracesSource: OtlpEndpointSource.optional(),
+  otlpTracesVariable: TrimmedNonEmptyString.nullable().optional(),
+  otlpMetricsSource: OtlpEndpointSource.optional(),
+  otlpMetricsVariable: TrimmedNonEmptyString.nullable().optional(),
+  otlpLogsSource: OtlpEndpointSource.optional(),
+  otlpLogsVariable: TrimmedNonEmptyString.nullable().optional(),
 });
 export type ServerObservability = z.infer<typeof ServerObservability>;
 export const ServerSettings = z.looseObject({
@@ -152,11 +165,13 @@ export const ServerConfig = z.looseObject({
   shellRevealInFileManagerKind: FileManagerRevealKind.optional(),
   threadResumeCompletionMarker: z.boolean().optional(),
   threadSnapshotPagination: z.boolean().optional(),
-  /** Thread reads accept the `reasoningMessages` opt-in. */
-  reasoningMessages: z.boolean().optional(),
   /** The server answers `orchestration.searchThread`; progressive adds its streaming form. */
   threadFind: z.boolean().optional(),
   threadFindProgressive: z.boolean().optional(),
+  /** Settings patches may carry `secretProviders`. Older servers drop the key without an error. */
+  secretProviderSettings: z.boolean().optional(),
+  /** Secret settings may point at a secret provider. Older servers drop the reference. */
+  secretReferences: z.boolean().optional(),
   /**
    * Folder behind the environment's Scratch project. Present only when the
    * server answers `projects.ensureScratch` and its data directory is outside

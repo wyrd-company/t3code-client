@@ -578,13 +578,18 @@ proposed-design:
     exposes optional
     `reason`: a growing literal set of Git failure tags (`authentication_failed`,
     `branch_already_exists`, `branch_checked_out_in_worktree`,
-    `host_key_unverified`, `not_a_repository`, `path_already_exists`,
+    `config_locked`, `host_key_unverified`, `not_a_repository`, `path_already_exists`,
     `push_rejected_by_remote`, `push_rejected_non_fast_forward`, `ref_not_found`,
     `remote_unreachable`, `tag_would_be_clobbered`). The server sends it only
     when it recognises the failure; omission stays absent. An unknown reason
     string is preserved. A non-string reason makes the record unrecognised, so
     `T3RpcError.is("GitCommandError")` is false while `tag` and `detail` keep the
     raw failure. Reading the reason does not retry or change any Git operation.
+
+  terminal-grid: |
+    `TerminalSessionSnapshot` and the terminal `activity` event expose optional
+    `cols` and `rows`: the PTY grid that every renderer of the terminal should
+    draw. Omission stays absent. The grid does not resize a terminal.
 
   terminal-attach: |
     `terminal.attach` accepts optional boolean `resume`. With `resume: true`,

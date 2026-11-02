@@ -27,6 +27,7 @@ export const UsageProviderKind = forwardCompatibleLiteral([
   "opencode",
   "antigravity",
   "pi",
+  "muse",
 ]);
 export type UsageProviderKind = z.infer<typeof UsageProviderKind>;
 

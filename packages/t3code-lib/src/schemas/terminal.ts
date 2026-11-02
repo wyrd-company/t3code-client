@@ -95,6 +95,9 @@ export const TerminalSessionSnapshot = z.looseObject({
   label: z.string().max(128),
   updatedAt: z.string(),
   sequence: z.number().int().min(0).optional(),
+  /** The PTY grid every renderer of this terminal should draw; absent from older servers. */
+  cols: TerminalColsSchema.optional(),
+  rows: TerminalRowsSchema.optional(),
 });
 export type TerminalSessionSnapshot = z.infer<typeof TerminalSessionSnapshot>;
 export const TerminalEventBaseSchema = z.looseObject({
@@ -108,6 +111,9 @@ export const TerminalActivityEvent = z.looseObject({
   type: z.literal("activity"),
   hasRunningSubprocess: z.boolean(),
   label: z.string().max(128),
+  /** A shared PTY grid change. */
+  cols: TerminalColsSchema.optional(),
+  rows: TerminalRowsSchema.optional(),
 });
 export type TerminalActivityEvent = z.infer<typeof TerminalActivityEvent>;
 export const TerminalClearedEvent = z.looseObject({

@@ -555,6 +555,13 @@ plain string; all four fields are required and unknown fields are preserved.
 A malformed item is delivered as a decode error and later items continue.
 Returning early or aborting the signal ends the subscription. Watching does not
 reclaim space or run the compact command.</p>
+<p>Environment capabilities also include optional booleans <code>sideChats</code>,
+<code>threadForceStop</code>, <code>localServerStop</code> and <code>desktopAppChannelSwitch</code>. Omission is
+preserved and advertises no support. The descriptor exposes optional
+<code>databaseMigration</code>, the highest migration that the server database holds.
+Configuration reads expose optional <code>secretProviderSettings</code> and <code>secretReferences</code>,
+and <code>observability</code> exposes the optional source and variable of each OTLP endpoint.
+A settings endpoint has a null variable. These flags and fields do not change a setting.</p>
 </dd>
 <dt><a href="#VcsApi">VcsApi</a></dt>
 <dd><p>Repository references, worktrees and status. A failed Git command rejects
@@ -2653,6 +2660,14 @@ plain string; all four fields are required and unknown fields are preserved.
 A malformed item is delivered as a decode error and later items continue.
 Returning early or aborting the signal ends the subscription. Watching does not
 reclaim space or run the compact command.
+
+Environment capabilities also include optional booleans `sideChats`,
+`threadForceStop`, `localServerStop` and `desktopAppChannelSwitch`. Omission is
+preserved and advertises no support. The descriptor exposes optional
+`databaseMigration`, the highest migration that the server database holds.
+Configuration reads expose optional `secretProviderSettings` and `secretReferences`,
+and `observability` exposes the optional source and variable of each OTLP endpoint.
+A settings endpoint has a null variable. These flags and fields do not change a setting.
 
 **Kind**: global class
 

@@ -114,6 +114,14 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   mcpModeLimitHeader: z.boolean().optional(),
   /** Work a linked environment starts here stays within its link. A peer needs it to link. */
   linkFence: z.boolean().optional(),
+  /** Side chats: hidden `lineage.sideChat` forks. Older servers ignore the fork flag. */
+  sideChats: z.boolean().optional(),
+  /** Server answers `orchestration.forceStopThread`. */
+  threadForceStop: z.boolean().optional(),
+  /** Absent on older servers and on Windows hosts, which cannot stop a discovered server. */
+  localServerStop: z.boolean().optional(),
+  /** The desktop app switches update tracks when a server update request names one. */
+  desktopAppChannelSwitch: z.boolean().optional(),
 });
 export type ExecutionEnvironmentCapabilities = z.infer<typeof ExecutionEnvironmentCapabilities>;
 
@@ -124,6 +132,8 @@ export const ExecutionEnvironmentDescriptor = z.looseObject({
   serverVersion: TrimmedNonEmptyString,
   /** Orchestration wire version; absent on hosts from before explicit negotiation. */
   orchestrationProtocolVersion: z.number().int().optional(),
+  /** Highest migration this server's database holds; absent on older servers. */
+  databaseMigration: z.number().int().optional(),
   capabilities: ExecutionEnvironmentCapabilities,
 });
 export type ExecutionEnvironmentDescriptor = z.infer<typeof ExecutionEnvironmentDescriptor>;
