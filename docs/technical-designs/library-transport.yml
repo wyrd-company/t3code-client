@@ -145,8 +145,8 @@ proposed-design:
     non-2xx to `T3HttpError` subclasses using the tagged error body when present,
     decodes 2xx JSON through the schema, and treats 204 or an empty body as
     `undefined` when `decode` is `"empty"`. A `Uint8Array` body goes as raw bytes with
-    `content-type: application/octet-stream`. No error names a signed path, because
-    the path is the credential.
+    `content-type: application/octet-stream`. No error names a signed path or keeps a
+    cause that could quote it, because the path is the credential.
   http-route-registry: |
     ```ts
     export interface HttpRouteSpec<Input, Success> {

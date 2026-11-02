@@ -55,8 +55,8 @@ export function assetUrlParams(relativeUrl: string): { token: string; path: stri
       token: suffix.slice(0, separator),
       path: decodeURIComponent(suffix.slice(separator + 1)),
     };
-  } catch (cause) {
-    throw malformed(ASSET_PREFIX, cause);
+  } catch {
+    throw malformed(ASSET_PREFIX);
   }
 }
 
@@ -71,9 +71,6 @@ function signedSuffix(relativeUrl: string, prefix: string): string {
 }
 
 /** The message leaves out the URL, because the URL is a credential. */
-function malformed(prefix: string, cause?: unknown): T3PreconditionError {
-  return new T3PreconditionError(
-    `The signed URL is not under ${prefix}.`,
-    cause === undefined ? undefined : { cause },
-  );
+function malformed(prefix: string): T3PreconditionError {
+  return new T3PreconditionError(`The signed URL is not under ${prefix}.`);
 }

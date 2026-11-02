@@ -2,10 +2,11 @@
 // relationships:
 //   verifies: library-transport
 // ---
+import * as NodeUtil from "node:util";
 import { describe, expect, expectTypeOf, it, vi } from "vite-plus/test";
 
 import { generateDpopKey } from "../auth/dpop.ts";
-import { T3AuthError, T3NotFoundError, T3PreconditionError } from "../errors.ts";
+import { T3AuthError, T3Error, T3NotFoundError, T3PreconditionError } from "../errors.ts";
 import { commandId, projectId, threadId } from "../schemas/common.ts";
 import type { AuthBrowserSessionResult } from "../schemas/auth.ts";
 import { HttpTransport } from "../transport/http.ts";
@@ -192,6 +193,40 @@ describe("signed file routes", () => {
     expect(error).toBeInstanceOf(T3NotFoundError);
     expect((error as T3NotFoundError).path).toBe("/api/assets/:token/:path");
     expect(String((error as Error).message)).not.toContain(token);
+  });
+
+  it("keeps the signed token out of the whole error when the request cannot start", async () => {
+    const failing: typeof globalThis.fetch = async (input) => {
+      throw new TypeError(`Request cannot be constructed from ${String(input)}`);
+    };
+    const reachable = new HttpTransport({
+      baseUrl: "https://host.invalid",
+      fetch: failing,
+      getAccessToken: async () => undefined,
+    });
+    const unreadable = new HttpTransport({
+      baseUrl: "https://host.invalid",
+      fetch: async () =>
+        new Response(
+          new ReadableStream({
+            start: (controller) => {
+              controller.error(new Error(`Lost ${token}`));
+            },
+          }),
+        ),
+      getAccessToken: async () => undefined,
+    });
+    const invalid = new HttpTransport({
+      baseUrl: "not a base",
+      getAccessToken: async () => undefined,
+    });
+    for (const http of [reachable, unreadable, invalid]) {
+      const error = await new HttpRouteClient(http, httpRoutes)
+        .call("assets.read", { params: { token, path: "a.png" } })
+        .catch((failure: unknown) => failure);
+      expect(error).toBeInstanceOf(T3Error);
+      expect(NodeUtil.inspect(error, { depth: 10 })).not.toContain(token);
+    }
   });
 
   it("refuses a dot segment, a malformed token and a URL of another route", async () => {

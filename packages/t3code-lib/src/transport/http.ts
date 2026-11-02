@@ -82,13 +82,13 @@ export class HttpTransport {
     hasOverride: boolean,
   ): Promise<T> {
     const errorPath = request.errorPath ?? request.path;
+    // A URL or fetch failure can quote the URL, so a signed path's error keeps no cause.
+    const withCause = (cause: unknown) => (request.errorPath === undefined ? { cause } : {});
     let url: URL;
     try {
       url = new URL(request.path, this.#baseUrl);
     } catch (cause) {
-      throw new T3PreconditionError(`Invalid HTTP URL for ${errorPath}.`, {
-        cause,
-      });
+      throw new T3PreconditionError(`Invalid HTTP URL for ${errorPath}.`, withCause(cause));
     }
     for (const [key, value] of Object.entries(request.query ?? {})) {
       if (value !== undefined) url.searchParams.set(key, String(value));
@@ -167,7 +167,7 @@ export class HttpTransport {
       throw new T3ConnectionError(
         "open_failed",
         `${request.method} ${errorPath} could not reach the server.`,
-        { cause },
+        withCause(cause),
       );
     }
 
@@ -181,7 +181,7 @@ export class HttpTransport {
       throw new T3ConnectionError(
         "open_failed",
         `${request.method} ${errorPath} could not read the server response.`,
-        { cause },
+        withCause(cause),
       );
     }
     if (!response.ok) throw httpError(response.status, request.method, errorPath, raw);
