@@ -376,6 +376,8 @@ proposed-design:
     advertise support. Supplied non-boolean values fail decoding. The library does
     not check them before a call. `server.prepareTriage` needs `orchestration:operate`.
     `vcs.status` takes `localOnly`, which refreshes only the local state.
+    `vcs.watchStatus` takes `includeRemote`: with `false`, a passive observer gets
+    cached remote status and keeps no refresh loop alive.
 
   guest-shares: |
     `client.guestShares` is the owner's side of a guest link: one unauthenticated

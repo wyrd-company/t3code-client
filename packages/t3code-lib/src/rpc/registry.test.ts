@@ -49,6 +49,14 @@ const expected = {
   "vcs.removeWorktree": [false, "source-control:write"],
   "vcs.createRef": [false, "source-control:write"],
   "vcs.switchRef": [false, "source-control:write"],
+  "vcs.pull": [false, "source-control:write"],
+  "vcs.init": [false, "source-control:write"],
+  "git.runStackedAction": [true, "source-control:write"],
+  "git.resolvePullRequest": [false, "orchestration:read"],
+  "git.preparePullRequestThread": [false, "source-control:write"],
+  "review.getBranchCommits": [false, "filesystem:read"],
+  "review.getDiffPreview": [false, "filesystem:read"],
+  "review.getDiffFileContents": [false, "filesystem:read"],
   subscribeVcsStatus: [true, "orchestration:read"],
   subscribeWorktreeSetup: [true, "orchestration:read"],
   "worktreeSetup.cancel": [false, "orchestration:operate"],
@@ -64,6 +72,9 @@ const expected = {
   "projects.createFromThread": [false, "orchestration:operate"],
   "terminal.open": [false, "terminal:operate"],
   "terminal.attach": [true, "terminal:operate"],
+  "terminal.observe": [true, "terminal:read"],
+  "terminal.clear": [false, "terminal:operate"],
+  subscribeTerminalMetadata: [true, "terminal:read"],
   "terminal.write": [false, "terminal:operate"],
   "terminal.resize": [false, "terminal:operate"],
   "terminal.close": [false, "terminal:operate"],
@@ -123,6 +134,32 @@ describe("RPC contract registry", () => {
     ]) {
       expect(scopeOf(resource), resource._tag).toBe("orchestration:read");
     }
+  });
+  it("asks for the thread grant only when a Git action touches a thread", () => {
+    const run = rpcMethods["git.runStackedAction"];
+    const runScopes = (fields: object) =>
+      run.payloadScopes?.(
+        run.payload.parse({ actionId: "action-1", cwd: "/sample", action: "commit", ...fields }),
+      );
+    expect(runScopes({ action: "create_pr", threadId: "thread-1" })).toEqual([
+      "orchestration:read",
+    ]);
+    expect(runScopes({ action: "commit_push_pr", threadId: "thread-1" })).toEqual([
+      "orchestration:read",
+    ]);
+    expect(runScopes({ action: "commit_push", threadId: "thread-1" })).toEqual([]);
+    expect(runScopes({ action: "create_pr" })).toEqual([]);
+
+    const prepare = rpcMethods["git.preparePullRequestThread"];
+    const prepareScopes = (fields: object) =>
+      prepare.payloadScopes?.(
+        prepare.payload.parse({ cwd: "/sample", reference: "1", mode: "local", ...fields }),
+      );
+    expect(prepareScopes({ mode: "worktree", threadId: "thread-1" })).toEqual([
+      "orchestration:operate",
+    ]);
+    expect(prepareScopes({ mode: "worktree" })).toEqual([]);
+    expect(prepareScopes({ threadId: "thread-1" })).toEqual([]);
   });
   it("retains payload, success, and stream types", () => {
     expectTypeOf<"terminal.attach">().toExtend<StreamMethodName<RpcMethods>>();

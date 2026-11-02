@@ -83,6 +83,8 @@ proposed-design:
         assets.ts               asset resources and URLs, attachment upload URLs, and the bytes of an asset
         editor.ts               editor ids and the editor launch input
         filesystem.ts           host path browsing and metadata
+        git.ts                  stacked Git actions and their progress events, pull request resolution and preparation
+        review.ts               a branch's commits, diff previews and the contents of a changed file
         mcpApps.ts              MCP App tool calls, tool info, resource reads, model context
         projects.ts             Project, ProjectMutation, icons and scripts, file entries, read/write/search
         projectCreation.ts      Scratch, new-project and from-thread creator inputs and results (re-exported by projects.ts)
@@ -139,7 +141,7 @@ proposed-design:
         client.ts               HttpRouteClient: typed call by route name; callRoute for the facades
       rpc/
         registry.ts             RpcMethodTable: method name → { payload, success, stream } zod schemas + scope
-        methods/*.ts            one file per family (orchestration, server, vcs, projects, terminal, authAccess, peerLinks, files)
+        methods/*.ts            one file per family (orchestration, server, vcs, git, projects, terminal, authAccess, peerLinks, files)
         client.ts               RpcClient: typed call/stream over RpcConnection using the registry
       auth/
         credentialStore.ts      CredentialStore seam + memoryCredentialStore + fileCredentialStore

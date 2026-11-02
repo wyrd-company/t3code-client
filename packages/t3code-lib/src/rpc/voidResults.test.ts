@@ -21,7 +21,9 @@ const cases = [
   ["orchestration.stopWorkflow", { threadId: "thread-1", subagentId: "node-1" }],
   ["terminal.write", { threadId: "thread-1", terminalId: "terminal-1", data: "sample" }],
   ["terminal.resize", { threadId: "thread-1", terminalId: "terminal-1", cols: 80, rows: 24 }],
+  ["terminal.clear", { threadId: "thread-1", terminalId: "terminal-1" }],
   ["terminal.close", { threadId: "thread-1" }],
+  ["vcs.init", { cwd: "/tmp/sample" }],
   ["vcs.removeWorktree", { cwd: "/tmp/sample", path: "/tmp/sample-worktree" }],
 ] as const;
 

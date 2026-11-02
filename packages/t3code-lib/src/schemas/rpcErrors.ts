@@ -43,6 +43,7 @@ import {
   GitPullRequestMaterializationError,
   SourceControlProviderError,
   TextGenerationError,
+  vcsRpcErrors,
 } from "./rpcErrors/vcs.ts";
 import {
   OrchestrationDispatchCommandError,
@@ -206,6 +207,7 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   GitPullRequestMaterializationError,
   SourceControlProviderError,
   TextGenerationError,
+  ...vcsRpcErrors,
   TerminalCwdNotFoundError,
   TerminalCwdNotDirectoryError,
   TerminalCwdStatError,

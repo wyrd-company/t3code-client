@@ -15,6 +15,30 @@ describe("RpcErrorRecord", () => {
     expect(record.requiredPermission).toBe("terminal:read");
   });
 
+  it("decodes the repository process failures", () => {
+    const record = decodeRpcErrorRecord({
+      _tag: "VcsProcessExitError",
+      operation: "sample",
+      command: "git status",
+      cwd: "/sample",
+      exitCode: 128,
+      detail: "sample failure",
+      failureKind: "newer-kind",
+    });
+    expect(isRpcErrorOfTag(record, "VcsProcessExitError")).toBe(true);
+    expect(
+      isRpcErrorOfTag(
+        decodeRpcErrorRecord({
+          _tag: "VcsUnsupportedOperationError",
+          operation: "sample",
+          kind: "unknown",
+          detail: "sample failure",
+        }),
+        "VcsUnsupportedOperationError",
+      ),
+    ).toBe(true);
+  });
+
   it("decodes the file failures", () => {
     const record = decodeRpcErrorRecord({
       _tag: "AssetWorkspaceAssetNotFoundError",

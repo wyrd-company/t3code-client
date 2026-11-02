@@ -186,6 +186,30 @@ const { bytes, contentType } = await client.routes.call("assets.read", {
 `assets.read` holds the whole file in memory. To read part of a large file, fetch
 `relativeUrl` yourself with a `range` header.
 
+## Repositories and terminals
+
+`git.runStackedAction` streams progress until the action finishes or fails.
+`review.*` reads only inside the server's workspace root or a known workspace:
+
+```ts
+for await (const item of client.rpc.stream("git.runStackedAction", {
+  actionId,
+  cwd,
+  action: "commit_push",
+  commitMessage: "Update the notes",
+})) {
+  if (item.kind === "item" && item.value.kind === "action_finished") {
+    console.log(item.value.result.push.status);
+  }
+}
+
+const { commits } = await client.rpc.call("review.getBranchCommits", { cwd, baseRef: "main" });
+const { sources } = await client.rpc.call("review.getDiffPreview", { cwd, baseRef: "main" });
+```
+
+`terminal.observe` follows a terminal with only `terminal:read`, and it cannot
+start one. `subscribeTerminalMetadata` lists every terminal and then follows them.
+
 ## Proof-bound sessions
 
 A session bound to a DPoP key is useless to someone who holds only its token.
