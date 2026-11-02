@@ -24,6 +24,9 @@ relationships:
 ## Constants
 
 <dl>
+<dt><a href="#TARGET_T3_CODE_VERSION">TARGET_T3_CODE_VERSION</a></dt>
+<dd><p>T3 Code release targeted by this library, independent of the library version.</p>
+</dd>
 <dt><a href="#SecretRef">SecretRef</a></dt>
 <dd><p>A one-use handle to a secret the user entered for an agent; the agent never sees the value.</p>
 </dd>
@@ -49,9 +52,6 @@ relationships:
 <dd><p>Cached and cache-creation input tokens are disjoint from uncached input
 tokens. <code>reasoningTokens</code> is a subset of <code>outputTokens</code>; never add it on top.</p>
 </dd>
-<dt><a href="#TARGET_T3_CODE_VERSION">TARGET_T3_CODE_VERSION</a></dt>
-<dd><p>T3 Code release targeted by this library, independent of the library version.</p>
-</dd>
 </dl>
 
 <a name="messageId"></a>
@@ -68,6 +68,13 @@ The message the snippet is from. Older servers omit it.
 The run that ignored Stop; the server refuses once a newer run has started.
 
 **Kind**: global variable  
+<a name="TARGET_T3_CODE_VERSION"></a>
+
+## TARGET\_T3\_CODE\_VERSION
+
+T3 Code release targeted by this library, independent of the library version.
+
+**Kind**: global constant  
 <a name="SecretRef"></a>
 
 ## SecretRef
@@ -123,12 +130,5 @@ Calendar day as `YYYY-MM-DD`.
 
 Cached and cache-creation input tokens are disjoint from uncached input
 tokens. `reasoningTokens` is a subset of `outputTokens`; never add it on top.
-
-**Kind**: global constant  
-<a name="TARGET_T3_CODE_VERSION"></a>
-
-## TARGET\_T3\_CODE\_VERSION
-
-T3 Code release targeted by this library, independent of the library version.
 
 **Kind**: global constant

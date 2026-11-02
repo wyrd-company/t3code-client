@@ -69,6 +69,7 @@ proposed-design:
     ```text
     src/
       index.ts                    public exports only
+      publicSchemas.ts            the schema ids, types and helpers that index.ts exports by name
       client.ts                   T3Client: composition root, close()
       errors.ts                   T3Error hierarchy (one strategy everywhere)
       schemas/                  zod schemas mirrored from packages/contracts
@@ -78,7 +79,7 @@ proposed-design:
         httpErrors.ts           Environment*Error records
         keybindings.ts          resolved keybinding rules: commands, shortcuts, when nodes
         rpcErrors.ts            RpcErrorRecord: every tagged error the registered RPC methods declare
-        rpcErrors/              orchestration, MCP app, vcs, and terminal error records, shared tagged-error helpers
+        rpcErrors/              orchestration, peer and guest link, MCP app, vcs, and terminal error records, shared tagged-error helpers
         mcpApps.ts              MCP App tool calls, tool info, resource reads, model context
         projects.ts             Project, ProjectMutation, icons and scripts, file entries, read/write/search
         projectCreation.ts      Scratch, new-project and from-thread creator inputs and results (re-exported by projects.ts)
@@ -98,6 +99,7 @@ proposed-design:
           context.ts            context handoffs and transfers
           turnItemParts.ts      turn item base fields, failures, small records
           turnItems.ts          OrchestrationV2TurnItem union, projected rows
+          turnItemMembers.ts    the known row types of that union
           events.ts             OrchestrationV2DomainEvent union
           projection.ts         OrchestrationV2ThreadProjection, detail, bounded, history page
           boundedSnapshot.ts    boundedSnapshotProjection: restores a compact snapshot's turn items

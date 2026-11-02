@@ -634,6 +634,12 @@ transport failures retain connection and rejected credentials retain auth_invali
 <dd><p>The scopes clients released before granular permissions knew. Servers
 report <code>scopes</code> filtered to these and the full grant as <code>permissions</code>.</p>
 </dd>
+<dt><a href="#TARGET_T3_CODE_VERSION">TARGET_T3_CODE_VERSION</a></dt>
+<dd><p>T3 Code release targeted by this library, independent of the library version.</p>
+</dd>
+<dt><a href="#AuthReviewWriteScope">AuthReviewWriteScope</a></dt>
+<dd><p>Retained for decoding existing credentials; grants no current RPC access.</p>
+</dd>
 <dt><a href="#SecretRef">SecretRef</a></dt>
 <dd><p>A one-use handle to a secret the user entered for an agent; the agent never sees the value.</p>
 </dd>
@@ -752,12 +758,6 @@ tokens. <code>reasoningTokens</code> is a subset of <code>outputTokens</code>; n
 unrecognised <code>_tag</code> decodes as <code>{ unknown: true, raw }</code>. Use
 <code>decodeRpcErrorRecord</code> to decode without ever failing.</p>
 </dd>
-<dt><a href="#TARGET_T3_CODE_VERSION">TARGET_T3_CODE_VERSION</a></dt>
-<dd><p>T3 Code release targeted by this library, independent of the library version.</p>
-</dd>
-<dt><a href="#AuthReviewWriteScope">AuthReviewWriteScope</a></dt>
-<dd><p>Retained for decoding existing credentials; grants no current RPC access.</p>
-</dd>
 </dl>
 
 ## Functions
@@ -861,6 +861,23 @@ the active run.</p>
 <pre><code class="language-ts">export function consoleLogger(prefix = &quot;t3code-client&quot;): Logger;
 </code></pre>
 </dd>
+<dt><a href="#hasScope">hasScope()</a></dt>
+<dd><p><code>granted</code> is what the server reported and may hold scopes this client does not know.</p>
+<pre><code class="language-ts">export function hasScope(
+  granted: readonly AuthGrantedScope[] | undefined,
+  required: AuthEnvironmentScope,
+): boolean;
+</code></pre>
+</dd>
+<dt><a href="#ensureScopes">ensureScopes()</a></dt>
+<dd><p>Require every named scope; throw T3AuthError for the first missing scope.</p>
+<pre><code class="language-ts">export function ensureScopes(
+  granted: readonly AuthGrantedScope[] | undefined,
+  required: readonly AuthEnvironmentScope[],
+  context = &quot;operation&quot;,
+): void;
+</code></pre>
+</dd>
 <dt><a href="#isRunTerminalStatus">isRunTerminalStatus()</a></dt>
 <dd><p>Narrow a run status to a terminal status.</p>
 <pre><code class="language-ts">export function isRunTerminalStatus(status: string): status is OrchestrationV2RunTerminalStatus;
@@ -885,23 +902,6 @@ the active run.</p>
   record: RpcErrorRecord,
   tag: Tag,
 ): record is RpcErrorOfTag&lt;Tag&gt;;
-</code></pre>
-</dd>
-<dt><a href="#hasScope">hasScope()</a></dt>
-<dd><p><code>granted</code> is what the server reported and may hold scopes this client does not know.</p>
-<pre><code class="language-ts">export function hasScope(
-  granted: readonly AuthGrantedScope[] | undefined,
-  required: AuthEnvironmentScope,
-): boolean;
-</code></pre>
-</dd>
-<dt><a href="#ensureScopes">ensureScopes()</a></dt>
-<dd><p>Require every named scope; throw T3AuthError for the first missing scope.</p>
-<pre><code class="language-ts">export function ensureScopes(
-  granted: readonly AuthGrantedScope[] | undefined,
-  required: readonly AuthEnvironmentScope[],
-  context = &quot;operation&quot;,
-): void;
 </code></pre>
 </dd>
 </dl>
@@ -3760,6 +3760,20 @@ The scopes clients released before granular permissions knew. Servers
 report `scopes` filtered to these and the full grant as `permissions`.
 
 **Kind**: global constant  
+<a name="TARGET_T3_CODE_VERSION"></a>
+
+## TARGET\_T3\_CODE\_VERSION
+
+T3 Code release targeted by this library, independent of the library version.
+
+**Kind**: global constant  
+<a name="AuthReviewWriteScope"></a>
+
+## AuthReviewWriteScope
+
+Retained for decoding existing credentials; grants no current RPC access.
+
+**Kind**: global constant  
 <a name="SecretRef"></a>
 
 ## SecretRef
@@ -4014,20 +4028,6 @@ unrecognised `_tag` decodes as `{ unknown: true, raw }`. Use
 `decodeRpcErrorRecord` to decode without ever failing.
 
 **Kind**: global constant  
-<a name="TARGET_T3_CODE_VERSION"></a>
-
-## TARGET\_T3\_CODE\_VERSION
-
-T3 Code release targeted by this library, independent of the library version.
-
-**Kind**: global constant  
-<a name="AuthReviewWriteScope"></a>
-
-## AuthReviewWriteScope
-
-Retained for decoding existing credentials; grants no current RPC access.
-
-**Kind**: global constant  
 <a name="isT3Error"></a>
 
 ## isT3Error()
@@ -4210,6 +4210,35 @@ export function consoleLogger(prefix = "t3code-client"): Logger;
 ```
 
 **Kind**: global function  
+<a name="hasScope"></a>
+
+## hasScope()
+
+`granted` is what the server reported and may hold scopes this client does not know.
+
+```ts
+export function hasScope(
+  granted: readonly AuthGrantedScope[] | undefined,
+  required: AuthEnvironmentScope,
+): boolean;
+```
+
+**Kind**: global function  
+<a name="ensureScopes"></a>
+
+## ensureScopes()
+
+Require every named scope; throw T3AuthError for the first missing scope.
+
+```ts
+export function ensureScopes(
+  granted: readonly AuthGrantedScope[] | undefined,
+  required: readonly AuthEnvironmentScope[],
+  context = "operation",
+): void;
+```
+
+**Kind**: global function  
 <a name="isRunTerminalStatus"></a>
 
 ## isRunTerminalStatus()
@@ -4257,35 +4286,6 @@ export function isRpcErrorOfTag<const Tag extends RpcErrorTag>(
   record: RpcErrorRecord,
   tag: Tag,
 ): record is RpcErrorOfTag<Tag>;
-```
-
-**Kind**: global function  
-<a name="hasScope"></a>
-
-## hasScope()
-
-`granted` is what the server reported and may hold scopes this client does not know.
-
-```ts
-export function hasScope(
-  granted: readonly AuthGrantedScope[] | undefined,
-  required: AuthEnvironmentScope,
-): boolean;
-```
-
-**Kind**: global function  
-<a name="ensureScopes"></a>
-
-## ensureScopes()
-
-Require every named scope; throw T3AuthError for the first missing scope.
-
-```ts
-export function ensureScopes(
-  granted: readonly AuthGrantedScope[] | undefined,
-  required: readonly AuthEnvironmentScope[],
-  context = "operation",
-): void;
 ```
 
 **Kind**: global function
