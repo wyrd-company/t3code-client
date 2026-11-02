@@ -217,6 +217,7 @@ describe("requiredScopesForSettingsUpdate", () => {
     ],
     ["only an unknown key", { futureSetting: 1 }, undefined, ["settings:write"]],
     ["an unknown key and a mutation", { futureSetting: 1 }, remove, ["providers:manage"]],
+    ["an inherited name and a mutation", { constructor: 1 }, remove, ["providers:manage"]],
   ])("for %s", (_name, patch, providerInstanceMutation, expected) => {
     const input = ServerUpdateSettingsInput.parse({
       patch,

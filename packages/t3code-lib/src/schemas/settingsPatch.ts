@@ -327,7 +327,7 @@ export function requiredScopesForSettingsUpdate(
   input: ServerUpdateSettingsInput,
 ): readonly [AuthEnvironmentScope, ...AuthEnvironmentScope[]] {
   const keys = Object.entries(input.patch)
-    .filter(([key, value]) => value !== undefined && key in ServerSettingsPatch.shape)
+    .filter(([key, value]) => value !== undefined && Object.hasOwn(ServerSettingsPatch.shape, key))
     .map(([key]) => key);
   const changesProviders =
     input.providerInstanceMutation !== undefined ||
