@@ -146,11 +146,13 @@ it.skipIf(!agent)(
       });
     // A message sent while a run is active joins that run instead of starting one.
     const settled = Date.now() + 120_000;
-    while (Date.now() < settled) {
-      const shell = await client.threads.get(threadId(id));
-      if (shell?.latestRunId && !shell.activeRunId) break;
+    const ended = ["completed", "interrupted", "failed", "cancelled", "rolled_back"];
+    let first = await client.threads.get(threadId(id));
+    while (!ended.includes(first?.status ?? "") && Date.now() < settled) {
       await new Promise((resolve) => setTimeout(resolve, 250));
+      first = await client.threads.get(threadId(id));
     }
+    expect(ended).toContain(first?.status);
     const continued = await cli([
       ...runCommand,
       "Reply SAMPLE only.",
@@ -161,6 +163,7 @@ it.skipIf(!agent)(
     ]);
     expect(continued.exit, continued.stderr).toBe(0);
     const runId = JSON.parse(continued.stdout).runId as string;
+    expect(runId).not.toBe(first?.latestRunId);
     const after = await client.threads.projection(threadId(id));
     const run = after.runs.find((candidate) => candidate.id === runId);
     expect(run?.modelSelection.options ?? []).toEqual([]);

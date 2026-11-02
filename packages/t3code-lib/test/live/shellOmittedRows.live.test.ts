@@ -159,14 +159,16 @@ describe.skipIf(!baseUrl || !token)("live shell omitted rows", () => {
         observation["outcome"] = result.outcome;
         observation["sharedWithThreads"] = result.sharedWithThreadIds.length;
         expect(["killed", "released", "releasing"]).toContain(result.outcome);
+        const terminal = ["completed", "interrupted", "failed", "cancelled", "rolled_back"];
         const deadline = Date.now() + 60_000;
         let ended = await client.threads.get(thread.id);
-        while (ended?.activeRunId && Date.now() < deadline) {
+        while (!terminal.includes(ended?.status ?? "") && Date.now() < deadline) {
           await new Promise((resolve) => setTimeout(resolve, 500));
           ended = await client.threads.get(thread.id);
         }
         observation["activeRunAfter"] = ended?.activeRunId ?? null;
         observation["statusAfter"] = ended?.status;
+        expect(terminal).toContain(ended?.status);
         expect(ended?.activeRunId).toBeNull();
         const evidence = process.env["T3_LIVE_FORCE_STOP_EVIDENCE"];
         if (evidence)

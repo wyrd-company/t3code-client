@@ -6,6 +6,7 @@ import {
   makeShellThread,
 } from "../../test/support/threadFixtures.ts";
 import { T3PreconditionError } from "../errors.ts";
+import { schemas } from "../index.ts";
 import { RpcClient } from "../rpc/client.ts";
 import type { ThreadId } from "../schemas/common.ts";
 import { rpcMethods } from "../rpc/registry.ts";
@@ -94,6 +95,21 @@ describe("ShellApi", () => {
       { requestCompletionMarker: true, ...omit },
       { requestCompletionMarker: true, afterSequence: 7, ...omit },
     ]);
+  });
+
+  it("exposes the new runtime schemas through the public schema namespace", () => {
+    expect(
+      schemas.orchestrationShellOmittedRows.OrchestrationV2ThreadFamily.safeParse({
+        snapshotSequence: 1,
+        threads: [],
+      }).success,
+    ).toBe(true);
+    expect(
+      schemas.orchestrationThreadForceStop.OrchestrationV2ForceStopThreadResult.parse({
+        outcome: "released",
+        sharedWithThreadIds: [],
+      }).outcome,
+    ).toBe("released");
   });
 
   it("reads the rows a snapshot leaves out over RPC", async () => {
