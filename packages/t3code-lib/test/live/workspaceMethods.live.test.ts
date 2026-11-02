@@ -14,21 +14,19 @@ import * as NodePath from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { schemas } from "../../src/index.ts";
 import { connect, hasLiveServer, refusal, waitFor } from "./liveClient.ts";
+import { gitWith, initBareRepository, seedRepository } from "./localForge.ts";
 
 const { isUnknownVariant } = schemas.common;
 type TerminalEvent = schemas.terminal.TerminalAttachStreamEvent;
 type MetadataEvent = schemas.terminal.TerminalMetadataStreamEvent;
 type ProgressEvent = schemas.git.GitActionProgressEvent;
 
-const identity = ["-c", "user.name=Sample", "-c", "user.email=sample@example.invalid"];
-
 describe.skipIf(!hasLiveServer)("workspace methods", () => {
   const client = connect();
   let root: string;
   let bare: string;
   let cwd: string;
-  const git = (dir: string, ...args: string[]) =>
-    NodeCP.execFileSync("git", ["-C", dir, ...identity, ...args], { encoding: "utf8" }).trim();
+  const git = gitWith();
 
   beforeAll(async () => {
     root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-lib-workspace-"));
@@ -36,16 +34,8 @@ describe.skipIf(!hasLiveServer)("workspace methods", () => {
     // Review methods read only inside the server's workspace root.
     const config = await client.server.getConfig();
     cwd = await NodeFSP.mkdtemp(NodePath.join(config.cwd, "t3code-lib-workspace-"));
-    NodeCP.execFileSync("git", ["init", "--bare", "--initial-branch=main", bare]);
-    git(cwd, "init", "--initial-branch=main");
-    git(cwd, "remote", "add", "origin", bare);
-    // The server commits with the repository's identity.
-    git(cwd, "config", "user.name", "Sample");
-    git(cwd, "config", "user.email", "sample@example.invalid");
-    await NodeFSP.writeFile(NodePath.join(cwd, "sample.txt"), "first\n");
-    git(cwd, "add", "sample.txt");
-    git(cwd, "commit", "-m", "Initial");
-    git(cwd, "push", "--set-upstream", "origin", "main");
+    initBareRepository(bare);
+    await seedRepository(git, cwd, bare);
   });
 
   afterAll(async () => {

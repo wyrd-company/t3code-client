@@ -2,12 +2,7 @@
 // relationships:
 //   verifies: library-wire
 // ---
-/**
- * Pull request methods on a real stock server. The forge is a local stub: a
- * `glab` script answers the server's calls, and an `ssh` script serves a local
- * bare repository. The remote host is under `.invalid`, so that no call can
- * leave this machine.
- */
+/** Pull request methods on a real stock server, with a local forge. */
 import * as NodeCP from "node:child_process";
 import * as NodeCrypto from "node:crypto";
 import * as NodeFSP from "node:fs/promises";
@@ -19,19 +14,10 @@ import * as NodeUtil from "node:util";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { schemas, type T3Client } from "../../src/index.ts";
 import { hasAgent, hasLiveServer, modelSelection } from "./liveClient.ts";
+import { createLocalForge, isolatedGit, type Git } from "./localForge.ts";
 import { startPeerServer, type PeerServer } from "./peerServer.ts";
 
 const execFile = NodeUtil.promisify(NodeCP.execFile);
-const identity = ["-c", "user.name=Sample", "-c", "user.email=sample@example.invalid"];
-const remoteUrl = "git@gitlab.invalid:sample/repository.git";
-/** No inherited Git setting, such as a URL rewrite, can move the remote off the stub. */
-const isolatedGit = {
-  GIT_CONFIG_GLOBAL: "/dev/null",
-  GIT_CONFIG_NOSYSTEM: "1",
-  GIT_CONFIG_COUNT: "0",
-  GIT_CONFIG_PARAMETERS: "",
-};
-
 /** Answers for one merge request, with the fields the server's decoder requires. */
 const mergeRequest = (headSha: string, iid = 7, branch = "sample-change") => ({
   iid,
@@ -47,86 +33,45 @@ const mergeRequest = (headSha: string, iid = 7, branch = "sample-change") => ({
 
 describe.skipIf(!hasLiveServer)("pull request methods with a local forge stub", () => {
   let root: string;
-  let bare: string;
   let cwd: string;
   let answer: string;
   let created: string;
   let createCall: string;
   let peer: PeerServer;
   let client: T3Client;
-  const git = (dir: string, ...args: string[]) =>
-    NodeCP.execFileSync("git", ["-C", dir, ...identity, ...args], {
-      encoding: "utf8",
-      env: { ...process.env, ...isolatedGit, GIT_SSH_COMMAND: NodePath.join(root, "bin", "ssh") },
-    }).trim();
+  let git: Git;
+  let sshCommand: string;
 
   beforeAll(async () => {
     root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-lib-forge-"));
-    const bin = NodePath.join(root, "bin");
-    await NodeFSP.mkdir(bin);
-    bare = NodePath.join(root, "sample", "repository.git");
     answer = NodePath.join(root, "merge-request.json");
     created = NodePath.join(root, "created.json");
     createCall = NodePath.join(root, "create-call.txt");
-    await NodeFSP.writeFile(
-      NodePath.join(bin, "ssh"),
-      // Git calls this as `ssh [options] host command`. The command names the repository.
-      `#!/bin/sh\nfor last; do :; done\ncd '${root}' && exec sh -c "$last"\n`,
-      { mode: 0o755 },
-    );
-    await NodeFSP.writeFile(
-      NodePath.join(bin, "glab"),
-      [
-        "#!/bin/sh",
-        'case "$1 $2" in',
-        `  "mr view") cat '${answer}' ;;`,
-        `  "mr list")`,
-        // The server calls this as `mr list --source-branch <branch> ...`.
-        `    if [ "$4" = agent-change ]; then`,
-        `      if [ -f '${created}' ]; then printf '['; cat '${created}'; printf ']'; else echo '[]'; fi`,
-        `    else printf '['; cat '${answer}'; printf ']'; fi ;;`,
-        `  "api --method") printf '%s\n' "$*" > '${createCall}'; printf '{"iid":8}' ;;`,
-        `  "mr checkout") git fetch origin refs/merge-requests/7/head:sample-change && git switch sample-change ;;`,
-        `  "api "*) printf '{"default_branch":"main"}' ;;`,
-        `  "auth status") echo "Logged in to gitlab.invalid as sample" ;;`,
-        `  *) echo "unexpected glab call: $*" >&2; exit 64 ;;`,
-        "esac",
-        "",
-      ].join("\n"),
-      { mode: 0o755 },
-    );
-
-    NodeCP.execFileSync("git", ["init", "--bare", "--initial-branch=main", bare]);
-    cwd = NodePath.join(root, "work");
-    await NodeFSP.mkdir(cwd);
-    git(cwd, "init", "--initial-branch=main");
-    git(cwd, "remote", "add", "origin", remoteUrl);
-    expect(git(cwd, "remote", "get-url", "origin")).toBe(remoteUrl);
-    // The server commits with the repository's identity.
-    git(cwd, "config", "user.name", "Sample");
-    git(cwd, "config", "user.email", "sample@example.invalid");
-    await NodeFSP.writeFile(NodePath.join(cwd, "sample.txt"), "first\n");
-    git(cwd, "add", "sample.txt");
-    git(cwd, "commit", "-m", "Initial");
-    git(cwd, "push", "--set-upstream", "origin", "main");
+    const forge = await createLocalForge(root, [
+      `  "mr view") cat '${answer}' ;;`,
+      `  "mr list")`,
+      // The server calls this as `mr list --source-branch <branch> ...`.
+      `    if [ "$4" = agent-change ]; then`,
+      `      if [ -f '${created}' ]; then printf '['; cat '${created}'; printf ']'; else echo '[]'; fi`,
+      `    else printf '['; cat '${answer}'; printf ']'; fi ;;`,
+      `  "api --method") printf '%s\n' "$*" > '${createCall}'; printf '{"iid":8}' ;;`,
+      `  "mr checkout") git fetch origin refs/merge-requests/7/head:sample-change && git switch sample-change ;;`,
+      `  "api "*) printf '{"default_branch":"main"}' ;;`,
+      `  "auth status") echo "Logged in to gitlab.invalid as sample" ;;`,
+    ]);
+    ({ git, cwd, sshCommand } = forge);
     git(cwd, "switch", "--create", "sample-change");
     await NodeFSP.writeFile(NodePath.join(cwd, "sample.txt"), "second\n");
     git(cwd, "add", "sample.txt");
     git(cwd, "commit", "-m", "Sample change");
     git(cwd, "push", "--set-upstream", "origin", "sample-change");
     const headSha = git(cwd, "rev-parse", "HEAD");
-    git(bare, "update-ref", "refs/merge-requests/7/head", headSha);
+    git(forge.bare, "update-ref", "refs/merge-requests/7/head", headSha);
     git(cwd, "switch", "main");
     git(cwd, "branch", "--delete", "--force", "sample-change");
     await NodeFSP.writeFile(answer, JSON.stringify(mergeRequest(headSha)));
 
-    peer = await startPeerServer({
-      environment: {
-        ...isolatedGit,
-        PATH: `${bin}${NodePath.delimiter}${process.env["PATH"] ?? ""}`,
-        GIT_SSH_COMMAND: NodePath.join(bin, "ssh"),
-      },
-    });
+    peer = await startPeerServer({ environment: forge.environment });
     client = peer.client;
   });
 
@@ -160,7 +105,7 @@ describe.skipIf(!hasLiveServer)("pull request methods with a local forge stub", 
     };
     const lsRemote = (env: NodeJS.ProcessEnv) =>
       execFile("git", ["-C", cwd, "ls-remote", "origin", "refs/heads/main"], {
-        env: { ...env, GIT_SSH_COMMAND: NodePath.join(root, "bin", "ssh") },
+        env: { ...env, GIT_SSH_COMMAND: sshCommand },
       });
     try {
       // The rewrite takes effect when it is inherited, so the listener proves the check.

@@ -66,6 +66,10 @@ proposed-design:
     bootstrap document is a file on standard input, because the `t3` launcher
     passes only the standard descriptors to the server. Explicit flags name its
     mode, port and host, so that the environment of a parent T3 server cannot.
+    `test/live/localForge.ts` holds the Git fixtures: a repository seeded against
+    a local bare repository, and a forge that adds a `glab` script, an `ssh` script
+    and a remote host under `.invalid`. Its server environment clears inherited
+    Git configuration, so that no call can leave the machine.
     The `t3` version is the server build this library targets,
     so the live suite is the check that the client still matches it.
 

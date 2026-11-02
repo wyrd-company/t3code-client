@@ -7,7 +7,8 @@
  * the answer. `callRoute` is what the facades use; `HttpRouteClient` is the
  * public entry, by name, with the local scope check that `RpcClient` also does.
  */
-import { T3AuthError, T3PreconditionError } from "../errors.ts";
+import { ensureScopes } from "../auth/scopes.ts";
+import { T3PreconditionError } from "../errors.ts";
 import type { AuthGrantedScope, DpopPrivateJwk } from "../schemas/auth.ts";
 import type { HttpRequest, HttpTransport } from "../transport/http.ts";
 import type {
@@ -123,12 +124,10 @@ export class HttpRouteClient<Table extends HttpRouteTable> {
   #checkScopes(name: string, route: HttpRouteSpec, input: unknown): void {
     const granted = this.#getScopes?.();
     if (granted === undefined) return;
-    const required = [
-      ...(route.scope === undefined ? [] : [route.scope]),
-      ...(route.inputScopes?.(input) ?? []),
-    ];
-    for (const scope of required) {
-      if (!granted.includes(scope)) throw T3AuthError.insufficientScope(scope, name);
-    }
+    ensureScopes(
+      granted,
+      [...(route.scope === undefined ? [] : [route.scope]), ...(route.inputScopes?.(input) ?? [])],
+      name,
+    );
   }
 }

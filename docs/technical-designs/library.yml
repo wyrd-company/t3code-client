@@ -79,7 +79,7 @@ proposed-design:
         httpErrors.ts           Environment*Error records
         keybindings.ts          resolved keybinding rules: commands, shortcuts, when nodes
         rpcErrors.ts            RpcErrorRecord: every tagged error the registered RPC methods declare
-        rpcErrors/              orchestration, peer and guest link, MCP app, file, vcs, and terminal error records, shared tagged-error helpers
+        rpcErrors/              server, project, orchestration, peer and guest link, MCP app, file, vcs, and terminal error records, shared tagged-error helpers
         assets.ts               asset resources and URLs, attachment upload URLs, and the bytes of an asset
         editor.ts               editor ids and the editor launch input
         filesystem.ts           host path browsing and metadata

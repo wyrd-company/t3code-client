@@ -11,11 +11,10 @@
  */
 import * as NodeChildProcess from "node:child_process";
 import * as NodeFSP from "node:fs/promises";
-import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
 import { serverEnvironment } from "../support/serverEnvironment.ts";
-import { freePort, hasExited, serverBin, waitForReady } from "./globalSetup.ts";
+import { prepareServerHome, serverBin, stopServerProcess, waitForReady } from "./globalSetup.ts";
 
 export interface DesktopServer {
   readonly baseUrl: string;
@@ -27,12 +26,7 @@ export type DesktopCredential =
   | { readonly desktopBootstrapToken: string; readonly desktopBootstrapSecret: string };
 
 export async function startDesktopServer(credential: DesktopCredential): Promise<DesktopServer> {
-  const root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-lib-desktop-"));
-  const baseDir = NodePath.join(root, "home");
-  await NodeFSP.mkdir(baseDir, { recursive: true });
-  const port = await freePort();
-  const baseUrl = `http://127.0.0.1:${port}`;
-  const log = await NodeFSP.open(NodePath.join(root, "server.log"), "w");
+  const { root, baseDir, port, baseUrl, log } = await prepareServerHome("t3code-lib-desktop-");
   const bootstrapPath = NodePath.join(root, "bootstrap.json");
   await NodeFSP.writeFile(
     bootstrapPath,
@@ -71,11 +65,7 @@ export async function startDesktopServer(credential: DesktopCredential): Promise
     { stdio: [bootstrap.fd, log.fd, log.fd], env: serverEnvironment() },
   );
   const stop = async () => {
-    if (!hasExited(server)) {
-      const exited = new Promise((resolve) => server.once("exit", resolve));
-      server.kill("SIGTERM");
-      await exited;
-    }
+    await stopServerProcess(server);
     await log.close();
     await bootstrap.close();
     await NodeFSP.rm(root, { recursive: true, force: true });

@@ -82,45 +82,84 @@ export class HttpTransport {
     hasOverride: boolean,
   ): Promise<T> {
     const errorPath = request.errorPath ?? request.path;
-    // A URL or fetch failure can quote the URL, so a signed path's error keeps no cause.
-    const withCause = (cause: unknown) => (request.errorPath === undefined ? { cause } : {});
-    let url: URL;
+    const url = requestUrl(request, this.#baseUrl, errorPath);
+    const credential = hasOverride
+      ? { accessToken: accessTokenOverride, dpopKey: request.dpopKey }
+      : await this.#sessionCredential(request);
+    this.#requireCredential(request, credential.accessToken, errorPath);
+    const headers = this.#requestHeaders(request, url, credential);
+    const body = encodeBody(request, headers, errorPath);
+
+    let response: Response;
     try {
-      url = new URL(request.path, this.#baseUrl);
+      response = await this.#fetch(url, {
+        method: request.method,
+        headers,
+        ...(body === undefined ? {} : { body }),
+        ...(request.signal === undefined ? {} : { signal: request.signal }),
+      });
     } catch (cause) {
-      throw new T3PreconditionError(`Invalid HTTP URL for ${errorPath}.`, withCause(cause));
-    }
-    for (const [key, value] of Object.entries(request.query ?? {})) {
-      if (value !== undefined) url.searchParams.set(key, String(value));
+      throw new T3ConnectionError(
+        "open_failed",
+        `${request.method} ${errorPath} could not reach the server.`,
+        keptCause(request, cause),
+      );
     }
 
-    const auth = request.auth ?? "none";
-    let accessToken = accessTokenOverride;
-    let dpopKey = request.dpopKey;
-    if (!hasOverride && auth !== "none") {
-      try {
-        accessToken = await this.#getAccessToken();
-        if (accessToken !== undefined) dpopKey ??= await this.#getDpopKey?.();
-      } catch (cause) {
-        if (cause instanceof T3Error) throw cause;
-        throw new T3ConnectionError("open_failed", "Could not load the HTTP credential.", {
-          cause,
-        });
-      }
+    const raw = await readAnswer(request, response, errorPath);
+    if (!response.ok) throw httpError(response.status, request.method, errorPath, raw);
+    if (request.decode === "empty") return undefined as T;
+
+    const decoded = request.decode.safeParse(raw);
+    if (!decoded.success) {
+      throw new T3DecodeError(`${request.method} ${errorPath}`, decoded.error, raw);
     }
-    if (auth === "required" && accessToken === undefined && !this.#fetchAuthenticates) {
-      throw new T3AuthError("This request requires an access token.", {
-        code: "auth_invalid",
-        status: 401,
-        method: "LOCAL",
-        path: errorPath,
-        body: undefined,
-        reason: "missing_credential",
+    return decoded.data;
+  }
+
+  /** The stored token and key. A request with `auth: "none"` loads neither. */
+  async #sessionCredential(request: HttpRequest<unknown>): Promise<RequestCredential> {
+    if ((request.auth ?? "none") === "none") {
+      return { accessToken: undefined, dpopKey: request.dpopKey };
+    }
+    try {
+      const accessToken = await this.#getAccessToken();
+      const dpopKey =
+        request.dpopKey ?? (accessToken === undefined ? undefined : await this.#getDpopKey?.());
+      return { accessToken, dpopKey };
+    } catch (cause) {
+      if (cause instanceof T3Error) throw cause;
+      throw new T3ConnectionError("open_failed", "Could not load the HTTP credential.", {
+        cause,
       });
     }
+  }
 
+  #requireCredential(
+    request: HttpRequest<unknown>,
+    accessToken: string | undefined,
+    errorPath: string,
+  ): void {
+    if (request.auth !== "required" || accessToken !== undefined || this.#fetchAuthenticates) {
+      return;
+    }
+    throw new T3AuthError("This request requires an access token.", {
+      code: "auth_invalid",
+      status: 401,
+      method: "LOCAL",
+      path: errorPath,
+      body: undefined,
+      reason: "missing_credential",
+    });
+  }
+
+  #requestHeaders(
+    request: HttpRequest<unknown>,
+    url: URL,
+    { accessToken, dpopKey }: RequestCredential,
+  ): Headers {
     const headers = new Headers(request.headers);
-    const sentToken = auth === "none" ? undefined : accessToken;
+    const sentToken = (request.auth ?? "none") === "none" ? undefined : accessToken;
     if (sentToken !== undefined) {
       headers.set("authorization", `${dpopKey === undefined ? "Bearer" : "DPoP"} ${sentToken}`);
     }
@@ -136,62 +175,74 @@ export class HttpTransport {
       );
     }
     if (this.#userAgent !== undefined) headers.set("user-agent", this.#userAgent);
-    let body: BodyInit | undefined;
-    if (request.body instanceof URLSearchParams) {
-      headers.set("content-type", "application/x-www-form-urlencoded");
-      body = request.body;
-    } else if (request.body instanceof Uint8Array) {
-      headers.set("content-type", "application/octet-stream");
-      body = request.body as Uint8Array<ArrayBuffer>;
-    } else if (request.body !== undefined) {
-      headers.set("content-type", "application/json");
-      try {
-        body = JSON.stringify(request.body);
-      } catch (cause) {
-        throw new T3PreconditionError(
-          `${request.method} ${errorPath} could not encode its JSON body.`,
-          { cause },
-        );
-      }
-    }
+    return headers;
+  }
+}
 
-    let response: Response;
-    try {
-      response = await this.#fetch(url, {
-        method: request.method,
-        headers,
-        ...(body === undefined ? {} : { body }),
-        ...(request.signal === undefined ? {} : { signal: request.signal }),
-      });
-    } catch (cause) {
-      throw new T3ConnectionError(
-        "open_failed",
-        `${request.method} ${errorPath} could not reach the server.`,
-        withCause(cause),
-      );
-    }
+interface RequestCredential {
+  readonly accessToken: string | undefined;
+  readonly dpopKey: DpopPrivateJwk | undefined;
+}
 
-    let raw: unknown;
-    try {
-      raw =
-        response.ok && request.binaryResponse === true
-          ? binaryBody(new Uint8Array(await response.arrayBuffer()), response)
-          : parseBody(await response.text());
-    } catch (cause) {
-      throw new T3ConnectionError(
-        "open_failed",
-        `${request.method} ${errorPath} could not read the server response.`,
-        withCause(cause),
-      );
-    }
-    if (!response.ok) throw httpError(response.status, request.method, errorPath, raw);
-    if (request.decode === "empty") return undefined as T;
+/** A URL or fetch failure can quote the URL, so a signed path's error keeps no cause. */
+function keptCause(request: HttpRequest<unknown>, cause: unknown): { cause?: unknown } {
+  return request.errorPath === undefined ? { cause } : {};
+}
 
-    const decoded = request.decode.safeParse(raw);
-    if (!decoded.success) {
-      throw new T3DecodeError(`${request.method} ${errorPath}`, decoded.error, raw);
-    }
-    return decoded.data;
+function requestUrl(request: HttpRequest<unknown>, baseUrl: string, errorPath: string): URL {
+  let url: URL;
+  try {
+    url = new URL(request.path, baseUrl);
+  } catch (cause) {
+    throw new T3PreconditionError(`Invalid HTTP URL for ${errorPath}.`, keptCause(request, cause));
+  }
+  for (const [key, value] of Object.entries(request.query ?? {})) {
+    if (value !== undefined) url.searchParams.set(key, String(value));
+  }
+  return url;
+}
+
+/** The body to send; sets the `content-type` header that names its encoding. */
+function encodeBody(
+  request: HttpRequest<unknown>,
+  headers: Headers,
+  errorPath: string,
+): BodyInit | undefined {
+  if (request.body === undefined) return undefined;
+  if (request.body instanceof URLSearchParams) {
+    headers.set("content-type", "application/x-www-form-urlencoded");
+    return request.body;
+  }
+  if (request.body instanceof Uint8Array) {
+    headers.set("content-type", "application/octet-stream");
+    return request.body as Uint8Array<ArrayBuffer>;
+  }
+  headers.set("content-type", "application/json");
+  try {
+    return JSON.stringify(request.body);
+  } catch (cause) {
+    throw new T3PreconditionError(
+      `${request.method} ${errorPath} could not encode its JSON body.`,
+      { cause },
+    );
+  }
+}
+
+async function readAnswer(
+  request: HttpRequest<unknown>,
+  response: Response,
+  errorPath: string,
+): Promise<unknown> {
+  try {
+    return response.ok && request.binaryResponse === true
+      ? binaryBody(new Uint8Array(await response.arrayBuffer()), response)
+      : parseBody(await response.text());
+  } catch (cause) {
+    throw new T3ConnectionError(
+      "open_failed",
+      `${request.method} ${errorPath} could not read the server response.`,
+      keptCause(request, cause),
+    );
   }
 }
 

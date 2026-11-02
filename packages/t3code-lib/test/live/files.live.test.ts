@@ -17,7 +17,7 @@ import {
   projectId,
 } from "../../src/index.ts";
 import { connect, hasLiveServer, modelSelection, refusal, waitFor } from "./liveClient.ts";
-import { startPeerServer } from "./peerServer.ts";
+import { pathWith, startPeerServer } from "./peerServer.ts";
 
 /** A one-pixel PNG. */
 const png = Buffer.from(
@@ -184,9 +184,7 @@ describe.skipIf(!hasLiveServer)("file methods and routes", () => {
     const marker = NodePath.join(tools, "opened");
     const stub = NodePath.join(tools, "rubymine");
     await NodeFSP.writeFile(stub, `#!/bin/sh\nprintf '%s' "$*" > '${marker}'\n`, { mode: 0o755 });
-    const server = await startPeerServer({
-      environment: { PATH: `${tools}${NodePath.delimiter}${process.env["PATH"] ?? ""}` },
-    });
+    const server = await startPeerServer({ environment: pathWith(tools) });
     try {
       await server.client.rpc.call("shell.openInEditor", { cwd: tools, editor: "rubymine" });
       const opened = await waitFor(
