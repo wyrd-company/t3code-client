@@ -29,8 +29,8 @@ proposed-design:
   live-tests: |
     A live test that needs a forge uses a local stub: an owned server with a
     `glab` script on its `PATH` and `GIT_SSH_COMMAND` set to a script that serves
-    a local bare repository. The remote host is under `.invalid`, so no call can
-    leave the machine.
+    a local bare repository. The remote host is under `.invalid`, and the test
+    clears inherited Git configuration, so no call can leave the machine.
 
     The repository-origin live test waits up to ten seconds for asynchronous
     project enrichment before asserting the canonical and checkout remote URLs.

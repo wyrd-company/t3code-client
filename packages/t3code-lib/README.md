@@ -192,15 +192,16 @@ const { bytes, contentType } = await client.routes.call("assets.read", {
 `review.*` reads only inside the server's workspace root or a known workspace:
 
 ```ts
+import { schemas } from "@wyrd-company/t3code-lib";
+
 for await (const item of client.rpc.stream("git.runStackedAction", {
   actionId,
   cwd,
   action: "commit_push",
   commitMessage: "Update the notes",
 })) {
-  if (item.kind === "item" && item.value.kind === "action_finished") {
-    console.log(item.value.result.push.status);
-  }
+  if (item.kind !== "item" || schemas.common.isUnknownVariant<"kind">(item.value)) continue;
+  if (item.value.kind === "action_finished") console.log(item.value.result.push.status);
 }
 
 const { commits } = await client.rpc.call("review.getBranchCommits", { cwd, baseRef: "main" });

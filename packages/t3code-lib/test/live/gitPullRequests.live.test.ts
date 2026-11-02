@@ -11,15 +11,26 @@
 import * as NodeCP from "node:child_process";
 import * as NodeCrypto from "node:crypto";
 import * as NodeFSP from "node:fs/promises";
+import * as NodeHttp from "node:http";
+import type * as NodeNet from "node:net";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
+import * as NodeUtil from "node:util";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { schemas, type T3Client } from "../../src/index.ts";
 import { hasAgent, hasLiveServer, modelSelection } from "./liveClient.ts";
 import { startPeerServer, type PeerServer } from "./peerServer.ts";
 
+const execFile = NodeUtil.promisify(NodeCP.execFile);
 const identity = ["-c", "user.name=Sample", "-c", "user.email=sample@example.invalid"];
 const remoteUrl = "git@gitlab.invalid:sample/repository.git";
+/** No inherited Git setting, such as a URL rewrite, can move the remote off the stub. */
+const isolatedGit = {
+  GIT_CONFIG_GLOBAL: "/dev/null",
+  GIT_CONFIG_NOSYSTEM: "1",
+  GIT_CONFIG_COUNT: "0",
+  GIT_CONFIG_PARAMETERS: "",
+};
 
 /** Answers for one merge request, with the fields the server's decoder requires. */
 const mergeRequest = (headSha: string, iid = 7, branch = "sample-change") => ({
@@ -46,7 +57,7 @@ describe.skipIf(!hasLiveServer)("pull request methods with a local forge stub", 
   const git = (dir: string, ...args: string[]) =>
     NodeCP.execFileSync("git", ["-C", dir, ...identity, ...args], {
       encoding: "utf8",
-      env: { ...process.env, GIT_SSH_COMMAND: NodePath.join(root, "bin", "ssh") },
+      env: { ...process.env, ...isolatedGit, GIT_SSH_COMMAND: NodePath.join(root, "bin", "ssh") },
     }).trim();
 
   beforeAll(async () => {
@@ -90,6 +101,10 @@ describe.skipIf(!hasLiveServer)("pull request methods with a local forge stub", 
     await NodeFSP.mkdir(cwd);
     git(cwd, "init", "--initial-branch=main");
     git(cwd, "remote", "add", "origin", remoteUrl);
+    expect(git(cwd, "remote", "get-url", "origin")).toBe(remoteUrl);
+    // The server commits with the repository's identity.
+    git(cwd, "config", "user.name", "Sample");
+    git(cwd, "config", "user.email", "sample@example.invalid");
     await NodeFSP.writeFile(NodePath.join(cwd, "sample.txt"), "first\n");
     git(cwd, "add", "sample.txt");
     git(cwd, "commit", "-m", "Initial");
@@ -107,6 +122,7 @@ describe.skipIf(!hasLiveServer)("pull request methods with a local forge stub", 
 
     peer = await startPeerServer({
       environment: {
+        ...isolatedGit,
         PATH: `${bin}${NodePath.delimiter}${process.env["PATH"] ?? ""}`,
         GIT_SSH_COMMAND: NodePath.join(bin, "ssh"),
       },
@@ -126,6 +142,38 @@ describe.skipIf(!hasLiveServer)("pull request methods with a local forge stub", 
     headBranch: "sample-change",
     state: "open",
   };
+
+  it("keeps an inherited URL rewrite from moving the remote off the stub", async () => {
+    let requests = 0;
+    const listener = NodeHttp.createServer((_request, response) => {
+      requests += 1;
+      response.statusCode = 404;
+      response.end();
+    });
+    await new Promise<void>((resolve) => listener.listen(0, "127.0.0.1", resolve));
+    const { port } = listener.address() as NodeNet.AddressInfo;
+    const inherited = {
+      ...process.env,
+      GIT_CONFIG_COUNT: "1",
+      GIT_CONFIG_KEY_0: `url.http://127.0.0.1:${port}/.insteadOf`,
+      GIT_CONFIG_VALUE_0: "git@gitlab.invalid:",
+    };
+    const lsRemote = (env: NodeJS.ProcessEnv) =>
+      execFile("git", ["-C", cwd, "ls-remote", "origin", "refs/heads/main"], {
+        env: { ...env, GIT_SSH_COMMAND: NodePath.join(root, "bin", "ssh") },
+      });
+    try {
+      // The rewrite takes effect when it is inherited, so the listener proves the check.
+      await lsRemote(inherited).catch(() => undefined);
+      expect(requests).toBeGreaterThan(0);
+      requests = 0;
+      const { stdout } = await lsRemote({ ...inherited, ...isolatedGit });
+      expect(stdout).toContain("refs/heads/main");
+      expect(requests).toBe(0);
+    } finally {
+      await new Promise((resolve) => listener.close(resolve));
+    }
+  });
 
   it("resolves a pull request", async () => {
     const { pullRequest } = await client.rpc.call("git.resolvePullRequest", {

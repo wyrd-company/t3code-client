@@ -39,6 +39,9 @@ describe.skipIf(!hasLiveServer)("workspace methods", () => {
     NodeCP.execFileSync("git", ["init", "--bare", "--initial-branch=main", bare]);
     git(cwd, "init", "--initial-branch=main");
     git(cwd, "remote", "add", "origin", bare);
+    // The server commits with the repository's identity.
+    git(cwd, "config", "user.name", "Sample");
+    git(cwd, "config", "user.email", "sample@example.invalid");
     await NodeFSP.writeFile(NodePath.join(cwd, "sample.txt"), "first\n");
     git(cwd, "add", "sample.txt");
     git(cwd, "commit", "-m", "Initial");
