@@ -174,8 +174,9 @@ describe.skipIf(!ownsServer)("live peer links", () => {
         (await client.threads.projection(id)).turnItems.filter(
           (item) => isTurnItemOfType(item, "link_request") === true,
         );
-      // An agent can end its turn saying that the tool is not available, and later turns of that
-      // thread say the same. A turn that ended with nothing asks again, in `prepare`'s thread.
+      // An agent can complete a turn saying that the tool is not available, with no tool row, and
+      // later turns of that thread say the same. Only that outcome asks again, in `prepare`'s
+      // thread. A run that failed, or a tool call that went wrong, fails the test.
       const askUntil = async <T>(
         text: string,
         read: () => Promise<T | undefined>,
@@ -189,12 +190,22 @@ describe.skipIf(!ownsServer)("live peer links", () => {
             interactionMode: "default",
           });
           const seen = await waitFor(async () => {
-            const { runs } = await client.threads.projection(id);
+            const { runs, turnItems } = await client.threads.projection(id);
             const run = runs.find((entry) => entry.userMessageId === messageId);
-            const ended = run !== undefined && isRunTerminalStatus(run.status);
             const found = await read();
             if (found !== undefined) return { found };
-            return ended ? { found: undefined } : undefined;
+            if (run === undefined || !isRunTerminalStatus(run.status)) return undefined;
+            if (run.status !== "completed") throw new Error(`The run ended ${run.status}.`);
+            const called = turnItems.filter(
+              (item) =>
+                item.runId === run.id &&
+                ["dynamic_tool", "command_execution", "link_request", "error"].includes(item.type),
+            );
+            if (called.length > 0) {
+              const types = called.map((item) => item.type).join(", ");
+              throw new Error(`The turn made other calls than the requested one: ${types}.`);
+            }
+            return { found: undefined };
           }, "the requested tool call");
           if (seen.found !== undefined) return seen.found;
         }
@@ -231,7 +242,8 @@ describe.skipIf(!ownsServer)("live peer links", () => {
         }, "the turn to end");
 
       const first = await askLink("Sample decline", 1, openThread);
-      expect(first).toMatchObject({ reason: "Sample decline", url: peer.baseUrl });
+      // `reason` is optional in the tool input, and the server records its absence as empty text.
+      expect(first).toMatchObject({ reason: expect.any(String), url: peer.baseUrl });
       expect(first.environmentId).toBe(peerEnvironmentId);
       const decline = { threadId: id, turnItemId: first.id, answer: { type: "decline" } } as const;
       await client.peerLinks.answerRequest(decline);
