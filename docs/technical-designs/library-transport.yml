@@ -118,7 +118,8 @@ proposed-design:
     export interface HttpTransportOptions {
       baseUrl: string;
       fetch?: typeof fetch;
-      credentials: CredentialStore;
+      getAccessToken: () => Promise<string | undefined>;
+      getDpopKey?: () => Promise<DpopPrivateJwk | undefined>;
       userAgent?: string;
     }
     export interface HttpRequest<T> {
@@ -130,16 +131,50 @@ proposed-design:
       headers?: Record<string, string>; // the orchestration routes add the protocol header
       decode: z.ZodType<T> | "empty";
       signal?: AbortSignal;
+      dpopKey?: DpopPrivateJwk; // signs this request with this key, as a token exchange does
     }
     export class HttpTransport {
       request<T>(req: HttpRequest<T>): Promise<T>;
     }
     ```
 
-    `request` attaches `authorization: Bearer` when a token is present, maps
+    `request` attaches `authorization: Bearer` when a token is present, or
+    `authorization: DPoP` and a new `dpop` proof when the session has a key, maps
     non-2xx to `T3HttpError` subclasses using the tagged error body when present,
     decodes 2xx JSON through the schema, and treats 204 or an empty body as
     `undefined` when `decode` is `"empty"`.
+  http-route-registry: |
+    ```ts
+    export interface HttpRouteSpec<Input, Success> {
+      method: "GET" | "POST" | "PUT" | "DELETE";
+      path: string; // upstream's path; `:name` segments come from `input.params`
+      auth: "required" | "optional" | "none";
+      input: z.ZodType<Input>; // { params?, query?, body? }; `undefined` when the route takes none
+      success: z.ZodType<Success>;
+      scope?: AuthEnvironmentScope;
+      inputScopes?(input: Input): readonly AuthEnvironmentScope[];
+      headers?: Record<string, string>;
+      form?: true; // sends `input.body` form-encoded
+    }
+    export const httpRoutes: { [name: string]: HttpRouteSpec }; // assembled from http/routes/*.ts
+
+    export class HttpRouteClient<Table> {
+      call<N extends keyof Table>(name: N, input, signal?): Promise<HttpRouteSuccess<Table, N>>;
+    }
+    export function callRoute(http, route, input, options?): Promise<Success>; // what the facades use
+    ```
+
+    The table is to HTTP what the RPC registry is to the socket: every HTTP route
+    that the target build exposes to a client, one entry per route. Route names are
+    upstream's `HttpApi` group and endpoint names (`auth.browserSession`,
+    `projects.mutate`), so a reader can diff against `environmentHttp.ts`. Adding a
+    route is one entry in a family file.
+
+    `HttpRouteClient` validates the input and raises `T3PreconditionError` before it
+    sends a bad one. It checks the route's scope and `inputScopes` when the session's
+    scopes are known, and raises `T3AuthError("insufficient_scope")`. Query schemas
+    are strict, so an option the table does not offer fails locally. `/ws` is the
+    socket transport's and has no route entry.
   transport-socket-ts: |
     ```ts
     export type SocketState = "idle" | "connecting" | "open" | "closed";

@@ -171,7 +171,8 @@ export class FakeT3Server {
     if (this.token === undefined) return true;
     const ticket = url.searchParams.get("wsTicket");
     if (ticket && this.tickets.has(ticket)) return true;
-    return headers["authorization"] === `Bearer ${this.token}`;
+    const authorization = headers["authorization"];
+    return authorization === `Bearer ${this.token}` || authorization === `DPoP ${this.token}`;
   }
 
   async #onHttp(

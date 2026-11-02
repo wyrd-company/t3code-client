@@ -34,7 +34,26 @@ export {
   type CredentialStore,
   type StoredCredentials,
 } from "./auth/credentialStore.ts";
-export { AuthClient, type ExchangePairingTokenOptions } from "./auth/authClient.ts";
+export {
+  AuthClient,
+  type ExchangePairingTokenOptions,
+  type SetAccessTokenOptions,
+} from "./auth/authClient.ts";
+export { createDpopProof, generateDpopKey, type DpopProofInput } from "./auth/dpop.ts";
+export {
+  DESKTOP_BOOTSTRAP_TOKEN_WINDOW_MS,
+  currentDesktopBootstrapToken,
+} from "./auth/desktopBootstrap.ts";
+export { HttpRouteClient, type HttpRouteClientOptions } from "./http/client.ts";
+export { httpRoutes, type HttpRouteName, type HttpRoutes } from "./http/registry.ts";
+export type {
+  HttpRouteAuth,
+  HttpRouteInput,
+  HttpRouteMethod,
+  HttpRouteSpec,
+  HttpRouteSuccess,
+  HttpRouteTable,
+} from "./http/spec.ts";
 export * from "./auth/scopes.ts";
 export { watchAccess } from "./auth/watchAccess.ts";
 

@@ -49,7 +49,9 @@ proposed-design:
     | `GET /.well-known/t3/environment`                     | none                 | `ExecutionEnvironmentDescriptor`                                                           |
     | `GET /api/auth/session`                               | optional bearer      | `AuthSessionState`; `authenticated:false` without a credential                             |
     | `POST /oauth/token`                                   | none                 | form-encoded token exchange; pairing token is single use                                   |
-    | `POST /api/auth/websocket-ticket`                     | bearer               | `{ticket, expiresAt}`; ticket lives about five minutes                                     |
+    | `POST /api/auth/browser-session`                      | none                 | `{credential}` → session state; the session token is only in an HttpOnly cookie            |
+    | `POST /api/auth/websocket-ticket`                     | bearer               | `{ticket, expiresAt}`; ticket lives about five minutes; valid for either use               |
+    | `POST /api/auth/websocket-ticket/:use`                | bearer               | `use` is `rpc` or `media`; the other route refuses the ticket                              |
     | `POST /api/auth/pairing-token`                        | bearer, access:write | body `{label?, scopes?}`; the credential is returned once                                  |
     | `POST /api/auth/pairing-links/revoke`                 | bearer, access:write | `{id}` → `{revoked}`                                                                       |
     | `POST /api/auth/clients/revoke`                       | bearer, access:write | `{sessionId}` → `{revoked}`                                                                |
@@ -58,10 +60,33 @@ proposed-design:
     | `POST /api/projects/mutate`                           | bearer, orch:operate | `ProjectMutation` → `Project`                                                              |
     | `GET /api/orchestration/shell`                        | bearer, orch:read    | `OrchestrationV2ShellSnapshot` (protocol header)                                           |
     | `GET /api/orchestration/threads/:threadId`            | bearer, orch:read    | `OrchestrationV2ThreadDetailSnapshot`, the full projection; 404 `thread_not_found`         |
-    | `GET /api/orchestration/threads/:threadId/bounded`    | bearer, orch:read    | `OrchestrationV2ThreadBoundedSnapshot`: a recent window plus `historyCursor`               |
+    | `GET /api/orchestration/threads/:threadId/bounded`    | bearer, orch:read    | `OrchestrationV2ThreadBoundedSnapshot`: a recent window plus `historyCursor`; query flags  |
     | `GET /api/orchestration/threads/:threadId/history`    | bearer, orch:read    | query `cursor`; `OrchestrationV2ThreadHistoryPage`; 400 `invalid_history_cursor`           |
     | `GET /api/orchestration/threads/:threadId/transcript` | bearer, orch:read    | `OrchestrationV2ThreadTranscript`: the visible timeline; 400 `thread_transcript_too_large` |
     | `POST /api/pull-requests/diff`                        | bearer               | `PullRequestDiffInput` → `PullRequestDiffResult`                                                              |
+
+    In this table "bearer" is any access token. A proof-bound session sends
+    `authorization: DPoP <token>` and a `dpop` header in place of
+    `authorization: Bearer <token>`. `POST /oauth/token` with a `dpop` header binds
+    the session it issues to that key and answers with `token_type: "DPoP"`.
+
+    A DPoP proof (RFC 9449) is a compact ES256 JWT with the header
+    `{typ: "dpop+jwt", alg: "ES256", jwk}`, where `jwk` is the public P-256 key,
+    and the claims `htm`, `htu` (the URL without query and fragment), `jti`, `iat`
+    (within 300 seconds of the server clock) and, with a token, `ath` (the base64url
+    SHA-256 of that token). The server refuses a `jti` it has seen. A socket upgrade
+    names `http` or `https` in `htu`. Its ticket is bound to the key, and the proof
+    rides in the `dpop` query parameter with `ath` over the ticket. A refused proof
+    is a 401 `EnvironmentAuthInvalidError` with `dpopFailureReason` and a
+    `www-authenticate: DPoP` header.
+
+    The server refuses a bound token sent as a bearer token.
+
+    The orchestration query options take effect only with the value `1`: `deferWork`,
+    `compactTurnItems` and `dedupeBodies` on the bounded route, `deferWork` on the
+    history route, `omitIdleSubagents` and `omitOlderSettled` on the shell route.
+    The route table does not offer `compactIds`, an id table for the browser's
+    bytes: the snapshot schemas decode whole ids.
 
     HTTP errors are JSON tagged records: `EnvironmentRequestInvalidError` (400),
     `EnvironmentAuthInvalidError` (401), `EnvironmentScopeRequiredError` and
@@ -81,7 +106,8 @@ proposed-design:
     any grantable scope.
 
     WebSocket at `GET /ws`. Authentication on the upgrade is either
-    `?wsTicket=<ticket>` or an `authorization: Bearer` header. Optional query
+    `?wsTicket=<ticket>` (with `dpop=<proof>` for a bound ticket) or an
+    `authorization` header. Optional query
     parameters `clientSurface=cli` and `clientAppVersion` label the connection in
     the server's client list. Messages are JSON text, one envelope per frame (the
     server may also send a JSON array of envelopes). Envelopes:

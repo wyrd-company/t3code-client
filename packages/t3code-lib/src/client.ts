@@ -20,8 +20,11 @@ import { ThreadsApi } from "./api/threads.ts";
 import { VcsApi } from "./api/vcs.ts";
 import { CommandDispatcher } from "./api/dispatch.ts";
 import { AuthClient } from "./auth/authClient.ts";
+import { createDpopProof } from "./auth/dpop.ts";
 import { memoryCredentialStore, type CredentialStore } from "./auth/credentialStore.ts";
 import { T3AuthError, T3PreconditionError } from "./errors.ts";
+import { HttpRouteClient } from "./http/client.ts";
+import { httpRoutes, type HttpRoutes } from "./http/registry.ts";
 import type { BackoffPolicy } from "./internal/backoff.ts";
 import type { Logger } from "./internal/logger.ts";
 import type { WebSocketConstructor } from "./internal/websocket.ts";
@@ -72,6 +75,7 @@ export class T3Client {
   readonly peerLinks: PeerLinksApi;
   readonly guestShares: GuestSharesApi;
   readonly rpc: RpcClient<RpcMethods>;
+  readonly routes: HttpRouteClient<HttpRoutes>;
   readonly #socket: SocketTransport;
   readonly #connection: RpcConnection;
 
@@ -87,10 +91,14 @@ export class T3Client {
     const http = new HttpTransport({
       baseUrl: options.baseUrl,
       getAccessToken: () => this.auth.currentAccessToken(),
+      getDpopKey: () => this.auth.currentDpopKey(),
       userAgent: userAgent(options),
       ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
     });
     this.auth = new AuthClient(http, credentials);
+    this.routes = new HttpRouteClient(http, httpRoutes, {
+      getScopes: () => this.auth.scopesSync(),
+    });
 
     const socketAuth = options.socketAuth ?? "ticket";
     this.#socket = new SocketTransport({
@@ -100,10 +108,18 @@ export class T3Client {
         if (socketAuth === "ticket") {
           const { ticket } = await this.auth.websocketTicket();
           url.searchParams.set("wsTicket", ticket);
+          // A socket cannot set headers, so the proof of a proof-bound ticket rides in the query.
+          const key = await this.auth.currentDpopKey();
+          if (key !== undefined) {
+            const proof = createDpopProof({ key, method: "GET", url, accessToken: ticket });
+            url.searchParams.set("dpop", proof);
+          }
         }
         return url;
       },
-      ...(socketAuth === "bearer-header" ? { headers: () => this.#bearerHeaders() } : {}),
+      ...(socketAuth === "bearer-header"
+        ? { headers: () => this.#bearerHeaders(socketUrl(options)) }
+        : {}),
       ...(options.backoff === undefined ? {} : { backoff: options.backoff }),
       ...(options.pingIntervalMs === undefined ? {} : { pingIntervalMs: options.pingIntervalMs }),
       ...(options.missedPongLimit === undefined
@@ -159,7 +175,7 @@ export class T3Client {
    * which would retry forever; validating the token over HTTP first turns a
    * dead credential into a fatal `open_failed` instead.
    */
-  async #bearerHeaders(): Promise<Record<string, string>> {
+  async #bearerHeaders(url: URL): Promise<Record<string, string>> {
     const token = await this.auth.currentAccessToken();
     if (token === undefined) {
       throw socketAuthError("missing_credential", "The socket upgrade needs an access token.");
@@ -168,7 +184,12 @@ export class T3Client {
     if (!state.authenticated) {
       throw socketAuthError("invalid_credential", "The access token does not authenticate.");
     }
-    return { authorization: `Bearer ${token}` };
+    const key = await this.auth.currentDpopKey();
+    if (key === undefined) return { authorization: `Bearer ${token}` };
+    return {
+      authorization: `DPoP ${token}`,
+      dpop: createDpopProof({ key, method: "GET", url, accessToken: token }),
+    };
   }
 }
 

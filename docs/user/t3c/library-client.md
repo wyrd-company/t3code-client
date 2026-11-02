@@ -16,11 +16,22 @@ relationships:
 <dt><a href="#T3Client">T3Client</a></dt>
 <dd><p>Client composition root for HTTP, auth, RPC and server facades.</p>
 </dd>
+<dt><a href="#HttpRouteClient">HttpRouteClient</a></dt>
+<dd><p>Every HTTP route of the target build by name, with validated input and a decoded answer.</p>
+</dd>
 <dt><a href="#CommandDispatcher">CommandDispatcher</a></dt>
 <dd><p>Validated orchestration dispatch and bookkeeping ids.</p>
 </dd>
 <dt><a href="#RpcClient">RpcClient</a></dt>
 <dd><p>Typed RPC calls and streams with scope checks.</p>
+</dd>
+</dl>
+
+## Constants
+
+<dl>
+<dt><a href="#httpRoutes">httpRoutes</a></dt>
+<dd><p>Every HTTP route of the target build that has an entry, by upstream group and endpoint name.</p>
 </dd>
 </dl>
 
@@ -82,6 +93,29 @@ static create(options: T3ClientOptions): T3Client;
 ```
 
 **Kind**: static method of [<code>T3Client</code>](#T3Client)  
+<a name="HttpRouteClient"></a>
+
+## HttpRouteClient
+
+Every HTTP route of the target build by name, with validated input and a decoded answer.
+
+**Kind**: global class  
+<a name="HttpRouteClient+call"></a>
+
+### httpRouteClient.call()
+
+Validate the input, check the known scopes, send the request and decode the answer.
+
+```ts
+async call<N extends keyof Table & string>(
+    name: N,
+    ...args: undefined extends HttpRouteInput<Table, N>
+      ? [input?: HttpRouteInput<Table, N>, signal?: AbortSignal]
+      : [input: HttpRouteInput<Table, N>, signal?: AbortSignal]
+  ): Promise<HttpRouteSuccess<Table, N>>;
+```
+
+**Kind**: instance method of [<code>HttpRouteClient</code>](#HttpRouteClient)  
 <a name="CommandDispatcher"></a>
 
 ## CommandDispatcher
@@ -254,6 +288,13 @@ streamRaw(tag: string, payload: unknown, options?: RpcStreamOptions): AsyncItera
 ```
 
 **Kind**: instance method of [<code>RpcClient</code>](#RpcClient)  
+<a name="httpRoutes"></a>
+
+## httpRoutes
+
+Every HTTP route of the target build that has an entry, by upstream group and endpoint name.
+
+**Kind**: global constant  
 <a name="consoleLogger"></a>
 
 ## consoleLogger()

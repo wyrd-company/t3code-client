@@ -9,33 +9,35 @@
  * and the server-side Scratch, new-project and thread-folder creators.
  */
 import * as NodePath from "node:path";
+import { callRoute } from "../http/client.ts";
+import { httpRoutes } from "../http/registry.ts";
 import type { RpcClient } from "../rpc/client.ts";
 import type { RpcMethods } from "../rpc/registry.ts";
 import type { ProjectId } from "../schemas/common.ts";
 import type { ModelSelection } from "../schemas/orchestration/model.ts";
 import type { OrchestrationProjectShell } from "../schemas/orchestration/shell.ts";
-import {
+import type {
   ProjectSnapshot,
-  type Project,
-  type ProjectCreateFromThreadInput,
-  type ProjectCreateFromThreadResult,
-  type ProjectCreateNewInput,
-  type ProjectCreateNewResult,
-  type ProjectEnsureScratchResult,
-  type ProjectListEntriesInput,
-  type ProjectListEntriesResult,
-  type ProjectListIgnoredFilesInput,
-  type ProjectListIgnoredFilesResult,
-  type ProjectReadFileInput,
-  type ProjectReadFileResult,
-  type ProjectScript,
-  type ProjectSearchContentsInput,
-  type ProjectSearchContentsResult,
-  type ProjectSearchEntriesInput,
-  type ProjectSearchEntriesResult,
-  type ProjectUpdatePayload,
-  type ProjectWriteFileInput,
-  type ProjectWriteFileResult,
+  Project,
+  ProjectCreateFromThreadInput,
+  ProjectCreateFromThreadResult,
+  ProjectCreateNewInput,
+  ProjectCreateNewResult,
+  ProjectEnsureScratchResult,
+  ProjectListEntriesInput,
+  ProjectListEntriesResult,
+  ProjectListIgnoredFilesInput,
+  ProjectListIgnoredFilesResult,
+  ProjectReadFileInput,
+  ProjectReadFileResult,
+  ProjectScript,
+  ProjectSearchContentsInput,
+  ProjectSearchContentsResult,
+  ProjectSearchEntriesInput,
+  ProjectSearchEntriesResult,
+  ProjectUpdatePayload,
+  ProjectWriteFileInput,
+  ProjectWriteFileResult,
 } from "../schemas/projects.ts";
 import type { HttpTransport } from "../transport/http.ts";
 import { isMissingResourceError, type CommandDispatcher } from "./dispatch.ts";
@@ -143,13 +145,7 @@ export class ProjectsApi {
 
   /** The full project records over `GET /api/projects`. */
   snapshot(signal?: AbortSignal): Promise<ProjectSnapshot> {
-    return this.http.request({
-      method: "GET",
-      path: "/api/projects",
-      auth: "required",
-      decode: ProjectSnapshot,
-      ...(signal === undefined ? {} : { signal }),
-    });
+    return callRoute(this.http, httpRoutes["projects.snapshot"], undefined, { signal });
   }
 
   /** Find a project summary by id; return undefined when absent. */

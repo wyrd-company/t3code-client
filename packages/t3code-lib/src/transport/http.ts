@@ -10,11 +10,15 @@ import {
   T3PreconditionError,
   type T3HttpErrorDetails,
 } from "../errors.ts";
+import { createDpopProof } from "../auth/dpop.ts";
+import type { DpopPrivateJwk } from "../schemas/auth.ts";
 
 export interface HttpTransportOptions {
   baseUrl: string;
   fetch?: typeof fetch;
   getAccessToken: () => Promise<string | undefined>;
+  /** The key of a proof-bound session; its requests carry `Authorization: DPoP` and a proof. */
+  getDpopKey?: () => Promise<DpopPrivateJwk | undefined>;
   userAgent?: string;
 }
 
@@ -28,18 +32,22 @@ export interface HttpRequest<T> {
   headers?: Record<string, string>;
   decode: z.ZodType<T> | "empty";
   signal?: AbortSignal;
+  /** Signs this request with this key instead of the session's key, as a token exchange does. */
+  dpopKey?: DpopPrivateJwk;
 }
 
 export class HttpTransport {
   readonly #baseUrl: string;
   readonly #fetch: typeof fetch;
   readonly #getAccessToken: () => Promise<string | undefined>;
+  readonly #getDpopKey: (() => Promise<DpopPrivateJwk | undefined>) | undefined;
   readonly #userAgent: string | undefined;
 
   constructor(options: HttpTransportOptions) {
     this.#baseUrl = options.baseUrl;
     this.#fetch = options.fetch ?? globalThis.fetch;
     this.#getAccessToken = options.getAccessToken;
+    this.#getDpopKey = options.getDpopKey;
     this.#userAgent = options.userAgent;
   }
 
@@ -48,8 +56,16 @@ export class HttpTransport {
   }
 
   /** Auth control-plane hook for validating a candidate token before it is stored. */
-  requestWithAccessToken<T>(request: HttpRequest<T>, accessToken: string): Promise<T> {
-    return this.#request(request, accessToken, true);
+  requestWithAccessToken<T>(
+    request: HttpRequest<T>,
+    accessToken: string,
+    dpopKey?: DpopPrivateJwk,
+  ): Promise<T> {
+    return this.#request(
+      { ...request, ...(dpopKey === undefined ? {} : { dpopKey }) },
+      accessToken,
+      true,
+    );
   }
 
   async #request<T>(
@@ -71,9 +87,11 @@ export class HttpTransport {
 
     const auth = request.auth ?? "none";
     let accessToken = accessTokenOverride;
+    let dpopKey = request.dpopKey;
     if (!hasOverride && auth !== "none") {
       try {
         accessToken = await this.#getAccessToken();
+        if (accessToken !== undefined) dpopKey ??= await this.#getDpopKey?.();
       } catch (cause) {
         if (cause instanceof T3Error) throw cause;
         throw new T3ConnectionError("open_failed", "Could not load the HTTP credential.", {
@@ -93,8 +111,20 @@ export class HttpTransport {
     }
 
     const headers = new Headers(request.headers);
-    if (accessToken !== undefined && auth !== "none") {
-      headers.set("authorization", `Bearer ${accessToken}`);
+    const sentToken = auth === "none" ? undefined : accessToken;
+    if (sentToken !== undefined) {
+      headers.set("authorization", `${dpopKey === undefined ? "Bearer" : "DPoP"} ${sentToken}`);
+    }
+    if (dpopKey !== undefined) {
+      headers.set(
+        "dpop",
+        createDpopProof({
+          key: dpopKey,
+          method: request.method,
+          url,
+          ...(sentToken === undefined ? {} : { accessToken: sentToken }),
+        }),
+      );
     }
     if (this.#userAgent !== undefined) headers.set("user-agent", this.#userAgent);
     let body: BodyInit | undefined;

@@ -37,6 +37,7 @@ TypeScript declarations ship with the package.
 
 ## Constants
 
+- [Client and transport](https://wyrd.foo/docs/t3c/library-client)
 - [Authentication API](https://wyrd.foo/docs/t3c/library-authentication)
 - [Errors](https://wyrd.foo/docs/t3c/library-errors)
 - [Shared types and constants](https://wyrd.foo/docs/t3c/library-types)

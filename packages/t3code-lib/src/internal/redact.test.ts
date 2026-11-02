@@ -2,6 +2,13 @@ import { describe, expect, it } from "vite-plus/test";
 import { redactSecrets } from "./redact.ts";
 
 describe("redactSecrets", () => {
+  it("replaces the private part of a key and a proof, and keeps the public part", () => {
+    expect(redactSecrets({ dpopKey: { x: "kept", d: "private" }, dpop: "proof" })).toEqual({
+      dpopKey: { x: "kept", d: "[redacted]" },
+      dpop: "[redacted]",
+    });
+  });
+
   it("replaces string values under credential-like keys, at any depth", () => {
     const input = {
       access_token: "abc",

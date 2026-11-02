@@ -8,17 +8,15 @@
  * over RPC.
  */
 import { T3InterruptedError, type T3DecodeError } from "../errors.ts";
+import { callRoute } from "../http/client.ts";
+import { httpRoutes } from "../http/registry.ts";
 import type { RpcClient } from "../rpc/client.ts";
 import type { RpcMethods } from "../rpc/registry.ts";
 import type { ThreadId } from "../schemas/common.ts";
-import {
-  ORCHESTRATION_PROTOCOL_HEADER,
-  ORCHESTRATION_PROTOCOL_VERSION_TEXT,
-} from "../schemas/environment.ts";
-import {
+import type {
   OrchestrationV2ShellSnapshot,
-  type OrchestrationV2ArchivedShellSnapshot,
-  type OrchestrationV2ShellStreamItem,
+  OrchestrationV2ArchivedShellSnapshot,
+  OrchestrationV2ShellStreamItem,
 } from "../schemas/orchestration/shell.ts";
 import type {
   OrchestrationV2GetOlderSettledThreadsInput,
@@ -50,28 +48,16 @@ export interface ShellWatchOptions extends ShellOmitOptions {
   readonly signal?: AbortSignal;
 }
 
-/** Orchestration HTTP routes answer only a client that names the protocol it speaks. */
-export const orchestrationHttpHeaders = {
-  [ORCHESTRATION_PROTOCOL_HEADER]: ORCHESTRATION_PROTOCOL_VERSION_TEXT,
-} as const;
-
 export function loadShellSnapshot(
   http: HttpTransport,
   signal?: AbortSignal,
   options: ShellOmitOptions = {},
 ): Promise<OrchestrationV2ShellSnapshot> {
-  return http.request({
-    method: "GET",
-    path: "/api/orchestration/shell",
-    auth: "required",
-    headers: orchestrationHttpHeaders,
-    query: {
-      omitIdleSubagents: options.omitIdleSubagents === true ? "1" : undefined,
-      omitOlderSettled: options.omitOlderSettled === true ? "1" : undefined,
-    },
-    decode: OrchestrationV2ShellSnapshot,
-    ...(signal === undefined ? {} : { signal }),
-  });
+  const query = {
+    ...(options.omitIdleSubagents === true ? { omitIdleSubagents: "1" as const } : {}),
+    ...(options.omitOlderSettled === true ? { omitOlderSettled: "1" as const } : {}),
+  };
+  return callRoute(http, httpRoutes["orchestration.shellSnapshot"], { query }, { signal });
 }
 
 /**

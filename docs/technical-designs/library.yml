@@ -45,10 +45,10 @@ proposed-design:
       loose (unknown keys pass through), every growing literal set decodes an
       unknown member into an `unknown` variant instead of failing, and every
       stream keeps flowing when one item fails to decode.
-    - **One credential model.** A bearer access token is the only steady-state
-      credential. The library obtains one by exchanging a pairing token, or the
-      caller supplies one issued by `t3 auth session issue`. The library never
-      shells out.
+    - **One credential model.** An access token is the steady-state credential,
+      plain or bound to a DPoP key. The library obtains one by exchanging a pairing
+      token or a desktop bootstrap token, or the caller supplies one issued by
+      `t3 auth session issue`. The library never shells out.
     - **Small files, deep modules.** Each module has a small interface and hides
       its implementation. No file over roughly 300 lines. Callers compose the
       facade; tests cross the same seams callers do.
@@ -129,6 +129,11 @@ proposed-design:
         keepalive.ts            Ping/Pong liveness for one open socket
         socketClose.ts          classifies a close event: credential rejection (fatal) or drop (retry)
         rpcConnection.ts        RpcConnection: request ids, correlation, Chunk→AsyncIterable with Ack, Interrupt
+      http/
+        registry.ts             httpRoutes: route name → { method, path, input, success, auth, scope }
+        routes/*.ts             one file per family (auth, orchestration, projects)
+        spec.ts                 the shape of one route entry
+        client.ts               HttpRouteClient: typed call by route name; callRoute for the facades
       rpc/
         registry.ts             RpcMethodTable: method name → { payload, success, stream } zod schemas + scope
         methods/*.ts            one file per family (orchestration, server, vcs, projects, terminal, authAccess, peerLinks)
@@ -136,6 +141,8 @@ proposed-design:
       auth/
         credentialStore.ts      CredentialStore seam + memoryCredentialStore + fileCredentialStore
         authClient.ts           AuthClient: exchange, ticket, session state, pairing links, clients, scopes
+        dpop.ts                 generateDpopKey, createDpopProof
+        desktopBootstrap.ts     currentDesktopBootstrapToken
         scopes.ts               scope constants, hasScope, grantedScopes
       api/                      facades composed by T3Client
         server.ts               getConfig, probe, getNpmRelease, prepareTriage, watchConfig, watchLifecycle, watchDatabaseStorage
@@ -220,8 +227,10 @@ proposed-design:
     mutation. Commands that the server accepts only from itself are not client
     surface.
 
-    `rpc.callRaw` and `rpc.streamRaw` serve a method that a server newer than the
-    target build offers. They are not the path for a method of the target build.
+    `client.rpc` is the entry for an RPC method and `client.routes` for an HTTP
+    route. A facade composes them where the design calls for one. `rpc.callRaw` and
+    `rpc.streamRaw` serve a method that a server newer than the target build offers.
+    They are not the path for a method of the target build.
   profiles-and-target: >-
     TARGET_T3_CODE_VERSION exports the target version. ProfileManager owns shared
     named-server resolution and CredentialSource plugs in credential stores.

@@ -57,6 +57,10 @@ proposed-design:
     evidence log contains an explicit omission marker. Readiness, stopped-process
     and home-removal records remain available. `T3_LIVE_KEEP=1` preserves the
     owned home and raw log for explicit diagnosis without copying it to evidence.
+    `test/live/desktopServer.ts` starts an isolated server in desktop mode. Its
+    bootstrap document is a file on standard input, because the `t3` launcher
+    passes only the standard descriptors to the server. Explicit flags name its
+    mode, port and host, so that the environment of a parent T3 server cannot.
     The `t3` version is the server build this library targets,
     so the live suite is the check that the client still matches it.
 

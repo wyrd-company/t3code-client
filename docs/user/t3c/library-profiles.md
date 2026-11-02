@@ -192,6 +192,8 @@ export interface StoredCredentials {
   scopes?: AuthGrantedScopeType[];
   expiresAt?: string;
   sessionMethod?: ServerAuthSessionMethodType;
+  /** Present for a proof-bound session: every request signs a DPoP proof with this key. */
+  dpopKey?: DpopPrivateJwkType;
 }
 
 export interface ProfileManagerOptions {

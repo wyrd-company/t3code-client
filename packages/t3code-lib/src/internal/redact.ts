@@ -3,7 +3,8 @@
  * error. Errors travel into logs and bug reports; a token that rode along in
  * a body that failed to decode must not travel with them. No T3 knowledge.
  */
-const SECRET_KEY = /token|credential|secret|authorization|password|ticket/iu;
+// `d` is the private part of a JSON Web Key.
+const SECRET_KEY = /token|credential|secret|authorization|password|ticket|^dpop$|^d$/iu;
 
 export const REDACTED = "[redacted]";
 

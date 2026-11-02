@@ -54,6 +54,9 @@ TypeScript declarations ship with the package.
 <dt><a href="#AuthClient">AuthClient</a></dt>
 <dd><p>Auth control plane and the sole owner of credential-store access.</p>
 </dd>
+<dt><a href="#HttpRouteClient">HttpRouteClient</a></dt>
+<dd><p>Every HTTP route of the target build by name, with validated input and a decoded answer.</p>
+</dd>
 <dt><a href="#ProjectsApi">ProjectsApi</a></dt>
 <dd><p>Project discovery, creation, mutations and files.</p>
 <p><code>projects.update(id, { pinned, archived })</code> sets or clears <code>pinnedAt</code> and
@@ -631,6 +634,9 @@ transport failures retain connection and rejected credentials retain auth_invali
 ## Constants
 
 <dl>
+<dt><a href="#httpRoutes">httpRoutes</a></dt>
+<dd><p>Every HTTP route of the target build that has an entry, by upstream group and endpoint name.</p>
+</dd>
 <dt><a href="#THREAD_SEARCH_MAX_LIMIT">THREAD_SEARCH_MAX_LIMIT</a></dt>
 <dd><p>The server&#39;s default and maximum <code>orchestration.searchThreads</code> limit.</p>
 </dd>
@@ -640,6 +646,15 @@ transport failures retain connection and rejected credentials retain auth_invali
 <dt><a href="#AuthLegacyScopes">AuthLegacyScopes</a></dt>
 <dd><p>The scopes clients released before granular permissions knew. Servers
 report <code>scopes</code> filtered to these and the full grant as <code>permissions</code>.</p>
+</dd>
+<dt><a href="#AuthWebSocketTicketUse">AuthWebSocketTicketUse</a></dt>
+<dd><p>A ticket minted for one use is refused on the other route.</p>
+</dd>
+<dt><a href="#AuthBrowserSessionResult">AuthBrowserSessionResult</a></dt>
+<dd><p>The session token itself is only in the response&#39;s HttpOnly cookie.</p>
+</dd>
+<dt><a href="#DpopPrivateJwk">DpopPrivateJwk</a></dt>
+<dd><p>The P-256 key that a proof-bound session signs with. <code>d</code> is the private part.</p>
 </dd>
 <dt><a href="#TARGET_T3_CODE_VERSION">TARGET_T3_CODE_VERSION</a></dt>
 <dd><p>T3 Code release targeted by this library, independent of the library version.</p>
@@ -783,6 +798,21 @@ unrecognised <code>_tag</code> decodes as <code>{ unknown: true, raw }</code>. U
 <dt><a href="#fileCredentialStore">fileCredentialStore()</a></dt>
 <dd><p>Create an atomic JSON credential store with 0600 files; the parent directory must exist.</p>
 <pre><code class="language-ts">export function fileCredentialStore(path: string): CredentialStore;
+</code></pre>
+</dd>
+<dt><a href="#generateDpopKey">generateDpopKey()</a></dt>
+<dd><p>Generate a P-256 key. The caller owns it until a token exchange stores it.</p>
+<pre><code class="language-ts">export function generateDpopKey(): DpopPrivateJwk;
+</code></pre>
+</dd>
+<dt><a href="#createDpopProof">createDpopProof()</a></dt>
+<dd><p>Sign a proof for one request. A socket URL is named as the HTTP request the server sees.</p>
+<pre><code class="language-ts">export function createDpopProof(input: DpopProofInput): string;
+</code></pre>
+</dd>
+<dt><a href="#currentDesktopBootstrapToken">currentDesktopBootstrapToken()</a></dt>
+<dd><p>The token of the current window. The server also accepts the windows on each side.</p>
+<pre><code class="language-ts">export function currentDesktopBootstrapToken(secret: string, nowMs: number = Date.now()): string;
 </code></pre>
 </dd>
 <dt><a href="#watchAccess">watchAccess()</a></dt>
@@ -1141,6 +1171,7 @@ Auth control plane and the sole owner of credential-store access.
   - [.revokeClient()](#AuthClient+revokeClient)
   - [.revokeOtherClients()](#AuthClient+revokeOtherClients)
   - [.currentAccessToken()](#AuthClient+currentAccessToken)
+  - [.currentDpopKey()](#AuthClient+currentDpopKey)
   - [.currentScopes()](#AuthClient+currentScopes)
   - [.hasScope()](#AuthClient+hasScope)
   - [.ensureScopes()](#AuthClient+ensureScopes)
@@ -1204,7 +1235,8 @@ sessionState(signal?: AbortSignal): Promise<AuthSessionStateType>;
 
 ### authClient.exchangePairingToken()
 
-Exchange a single-use pairing token and save the resulting credential.
+Exchange a bootstrap credential and save the resulting session. A pairing
+token is single use; a desktop bootstrap token can be exchanged again.
 
 ```ts
 async exchangePairingToken(
@@ -1221,7 +1253,10 @@ async exchangePairingToken(
 Validate an issued token before saving its session metadata.
 
 ```ts
-async setAccessToken(token: string): Promise<AuthSessionStateType>;
+async setAccessToken(
+    token: string,
+    options: SetAccessTokenOptions = {},
+  ): Promise<AuthSessionStateType>;
 ```
 
 **Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
@@ -1304,6 +1339,17 @@ async currentAccessToken(): Promise<string | undefined>;
 ```
 
 **Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+currentDpopKey"></a>
+
+### authClient.currentDpopKey()
+
+The key of a proof-bound session; `undefined` for a bearer session.
+
+```ts
+async currentDpopKey(): Promise<DpopPrivateJwk | undefined>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
 <a name="AuthClient+currentScopes"></a>
 
 ### authClient.currentScopes()
@@ -1337,6 +1383,29 @@ async ensureScopes(required: AuthEnvironmentScopeType[]): Promise<void>;
 ```
 
 **Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="HttpRouteClient"></a>
+
+## HttpRouteClient
+
+Every HTTP route of the target build by name, with validated input and a decoded answer.
+
+**Kind**: global class  
+<a name="HttpRouteClient+call"></a>
+
+### httpRouteClient.call()
+
+Validate the input, check the known scopes, send the request and decode the answer.
+
+```ts
+async call<N extends keyof Table & string>(
+    name: N,
+    ...args: undefined extends HttpRouteInput<Table, N>
+      ? [input?: HttpRouteInput<Table, N>, signal?: AbortSignal]
+      : [input: HttpRouteInput<Table, N>, signal?: AbortSignal]
+  ): Promise<HttpRouteSuccess<Table, N>>;
+```
+
+**Kind**: instance method of [<code>HttpRouteClient</code>](#HttpRouteClient)  
 <a name="ProjectsApi"></a>
 
 ## ProjectsApi
@@ -3753,6 +3822,13 @@ The run that ignored Stop; the server refuses once a newer run has started.
 Omit or null to start a new thread per run.
 
 **Kind**: global variable  
+<a name="httpRoutes"></a>
+
+## httpRoutes
+
+Every HTTP route of the target build that has an entry, by upstream group and endpoint name.
+
+**Kind**: global constant  
 <a name="THREAD_SEARCH_MAX_LIMIT"></a>
 
 ## THREAD\_SEARCH\_MAX\_LIMIT
@@ -3773,6 +3849,27 @@ Strict: validates the scopes a caller asks for.
 
 The scopes clients released before granular permissions knew. Servers
 report `scopes` filtered to these and the full grant as `permissions`.
+
+**Kind**: global constant  
+<a name="AuthWebSocketTicketUse"></a>
+
+## AuthWebSocketTicketUse
+
+A ticket minted for one use is refused on the other route.
+
+**Kind**: global constant  
+<a name="AuthBrowserSessionResult"></a>
+
+## AuthBrowserSessionResult
+
+The session token itself is only in the response's HttpOnly cookie.
+
+**Kind**: global constant  
+<a name="DpopPrivateJwk"></a>
+
+## DpopPrivateJwk
+
+The P-256 key that a proof-bound session signs with. `d` is the private part.
 
 **Kind**: global constant  
 <a name="TARGET_T3_CODE_VERSION"></a>
@@ -4076,6 +4173,39 @@ export function fileCredentialStore(path: string): CredentialStore;
 ```
 
 **Kind**: global function  
+<a name="generateDpopKey"></a>
+
+## generateDpopKey()
+
+Generate a P-256 key. The caller owns it until a token exchange stores it.
+
+```ts
+export function generateDpopKey(): DpopPrivateJwk;
+```
+
+**Kind**: global function  
+<a name="createDpopProof"></a>
+
+## createDpopProof()
+
+Sign a proof for one request. A socket URL is named as the HTTP request the server sees.
+
+```ts
+export function createDpopProof(input: DpopProofInput): string;
+```
+
+**Kind**: global function  
+<a name="currentDesktopBootstrapToken"></a>
+
+## currentDesktopBootstrapToken()
+
+The token of the current window. The server also accepts the windows on each side.
+
+```ts
+export function currentDesktopBootstrapToken(secret: string, nowMs: number = Date.now()): string;
+```
+
+**Kind**: global function  
 <a name="watchAccess"></a>
 
 ## watchAccess()
@@ -4323,6 +4453,8 @@ export interface StoredCredentials {
   scopes?: AuthGrantedScopeType[];
   expiresAt?: string;
   sessionMethod?: ServerAuthSessionMethodType;
+  /** Present for a proof-bound session: every request signs a DPoP proof with this key. */
+  dpopKey?: DpopPrivateJwkType;
 }
 
 export interface ProfileManagerOptions {

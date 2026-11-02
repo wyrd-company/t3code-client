@@ -24,6 +24,9 @@ relationships:
 ## Constants
 
 <dl>
+<dt><a href="#DpopPrivateJwk">DpopPrivateJwk</a></dt>
+<dd><p>The P-256 key that a proof-bound session signs with. <code>d</code> is the private part.</p>
+</dd>
 <dt><a href="#TARGET_T3_CODE_VERSION">TARGET_T3_CODE_VERSION</a></dt>
 <dd><p>T3 Code release targeted by this library, independent of the library version.</p>
 </dd>
@@ -68,6 +71,13 @@ The message the snippet is from. Older servers omit it.
 The run that ignored Stop; the server refuses once a newer run has started.
 
 **Kind**: global variable  
+<a name="DpopPrivateJwk"></a>
+
+## DpopPrivateJwk
+
+The P-256 key that a proof-bound session signs with. `d` is the private part.
+
+**Kind**: global constant  
 <a name="TARGET_T3_CODE_VERSION"></a>
 
 ## TARGET\_T3\_CODE\_VERSION

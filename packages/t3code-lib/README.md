@@ -15,8 +15,9 @@ normal T3 Code client.
 - Forward compatible. Unknown keys pass through, unknown union members decode
   as `{ unknown: true, raw }`, and a stream keeps flowing when one item fails
   to decode.
-- One credential. A bearer access token, obtained by exchanging a pairing
-  token or issued by `t3 auth session issue`.
+- One credential. An access token, plain or bound to a DPoP key, obtained by
+  exchanging a pairing or desktop bootstrap token or issued by
+  `t3 auth session issue`.
 - Orchestration protocol 2. The socket upgrade and the orchestration HTTP
   routes name the protocol the server requires.
 
@@ -139,7 +140,40 @@ const launched = await client.threads.launch({
 | `client.scheduledTasks` | List, get, create, update, enable, delete, run, watch scheduled tasks; webhook endpoints, tokens, deliveries. |
 | `client.peerLinks`      | List, link, unlink peer environments; answer an agent's link request.                                         |
 | `client.guestShares`    | Create and close a thread's guest link; send or dismiss a guest's message.                                    |
-| `client.rpc`            | Typed `call` and `stream` for every registered method, plus `callRaw` and `streamRaw` for the rest.           |
+| `client.rpc`            | Typed `call` and `stream` for every registered method, plus `callRaw` and `streamRaw` for a newer server.     |
+| `client.routes`         | Typed `call` for every registered HTTP route, by name.                                                        |
+
+## HTTP routes
+
+`client.routes.call` validates the input, fills the path and decodes the answer:
+
+```ts
+const snapshot = await client.routes.call("orchestration.threadBoundedSnapshot", {
+  params: { threadId },
+  query: { deferWork: "1" },
+});
+const project = await client.routes.call("projects.mutate", { body: mutation });
+const ticket = await client.routes.call("auth.webSocketTicketFor", { params: { use: "media" } });
+```
+
+## Proof-bound sessions
+
+A session bound to a DPoP key is useless to someone who holds only its token.
+The credential store keeps the key with the token, and every request and socket
+upgrade then carries a proof:
+
+```ts
+import { T3Client, fileCredentialStore, generateDpopKey } from "@wyrd-company/t3code-lib";
+
+const client = T3Client.create({
+  baseUrl,
+  credentials: fileCredentialStore(credentialPath),
+});
+await client.auth.exchangePairingToken(pairingToken, { dpopKey: generateDpopKey() });
+```
+
+A program that starts the server in desktop mode exchanges the token that derives
+from its bootstrap secret with `currentDesktopBootstrapToken(secret)`.
 
 ## Vocabulary
 
