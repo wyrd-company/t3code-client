@@ -7,24 +7,11 @@
  * Scratch, project pinning and archiving, and the refusal of the internal adopt-folder command.
  */
 import * as NodeCrypto from "node:crypto";
-import { WebSocket as WsWebSocket } from "ws";
 import { describe, expect, it } from "vite-plus/test";
-import { T3Client } from "../../src/index.ts";
-import type { WebSocketConstructor } from "../../src/internal/websocket.ts";
-import { ProviderInstanceId, threadId, type ProjectId } from "../../src/schemas/common.ts";
+import { threadId, type ProjectId } from "../../src/schemas/common.ts";
+import { connect, hasLiveServer, modelSelection } from "./liveClient.ts";
 
-const baseUrl = process.env["T3_LIVE_URL"];
-const token = process.env["T3_LIVE_TOKEN"];
-const modelSelection = { instanceId: ProviderInstanceId.parse("codex"), model: "gpt-6-luna" };
-
-const connect = () =>
-  T3Client.create({
-    baseUrl: baseUrl ?? "",
-    accessToken: token ?? "",
-    webSocket: WsWebSocket as unknown as WebSocketConstructor,
-  });
-
-describe.skipIf(!baseUrl || !token)("live project from thread", () => {
+describe.skipIf(!hasLiveServer)("live project from thread", () => {
   it("turns a No project thread into a project in place, and repeats safely", async () => {
     const client = connect();
     const created: ProjectId[] = [];

@@ -8,40 +8,58 @@
  */
 import * as NodeCrypto from "node:crypto";
 import * as NodeFSP from "node:fs/promises";
-import { WebSocket as WsWebSocket } from "ws";
 import { describe, expect, it } from "vite-plus/test";
-import { T3Client, T3RpcError } from "../../src/index.ts";
-import type { WebSocketConstructor } from "../../src/internal/websocket.ts";
+import { T3RpcError, type OrchestrationV2ThreadShell, type T3Client } from "../../src/index.ts";
 import {
-  ProviderInstanceId,
   runId as toRunId,
   threadId,
+  type ProjectId,
   type RunId,
 } from "../../src/schemas/common.ts";
+import { connect, hasLiveServer, modelSelection } from "./liveClient.ts";
 
-const baseUrl = process.env["T3_LIVE_URL"];
-const token = process.env["T3_LIVE_TOKEN"];
 const agent = process.env["T3_LIVE_AGENT"] === "1";
-const modelSelection = { instanceId: ProviderInstanceId.parse("codex"), model: "gpt-6-luna" };
 
-const connect = () =>
-  T3Client.create({
-    baseUrl: baseUrl ?? "",
-    accessToken: token ?? "",
-    webSocket: WsWebSocket as unknown as WebSocketConstructor,
+interface SampleThread {
+  readonly name: string;
+  readonly title?: string;
+  readonly runtimeMode?: "full-access";
+}
+
+/** Runs `body` with a new thread in a new project, then removes both and closes the client. */
+async function withSampleThread(
+  { name, title = name, runtimeMode }: SampleThread,
+  body: (
+    client: T3Client,
+    thread: OrchestrationV2ThreadShell,
+    projectId: ProjectId,
+  ) => Promise<void>,
+): Promise<void> {
+  const client = connect();
+  const { projectId } = await client.projects.createNew({ name });
+  const thread = await client.threads.create({
+    projectId,
+    title,
+    modelSelection,
+    ...(runtimeMode === undefined ? {} : { runtimeMode }),
   });
-
-describe.skipIf(!baseUrl || !token)("live shell omitted rows", () => {
-  it("reads families, older settled pages and omitted snapshots from a stock server", async () => {
-    const client = connect();
-    const title = `Sample omitted ${NodeCrypto.randomUUID()}`;
-    const project = await client.projects.createNew({ name: "Sample omitted" });
-    const thread = await client.threads.create({
-      projectId: project.projectId,
-      title,
-      modelSelection,
-    });
+  try {
+    await body(client, thread, projectId);
+  } finally {
     try {
+      await client.threads.delete(thread.id);
+      await client.projects.delete(projectId, { force: true });
+    } finally {
+      await client.close();
+    }
+  }
+}
+
+describe.skipIf(!hasLiveServer)("live shell omitted rows", () => {
+  it("reads families, older settled pages and omitted snapshots from a stock server", async () => {
+    const title = `Sample omitted ${NodeCrypto.randomUUID()}`;
+    const sample = { name: "Sample omitted", title };
+    await withSampleThread(sample, async (client, thread, projectId) => {
       const config = await client.server.getConfig();
       expect(config.shellThreadFamilies).toBe(true);
       expect(config.shellOlderSettled).toBe(true);
@@ -55,12 +73,12 @@ describe.skipIf(!baseUrl || !token)("live shell omitted rows", () => {
       await client.threads.settle(thread.id);
       const future = new Date(Date.now() + 3_600_000).toISOString();
       const before = { settledAt: future };
-      const projectIds = [project.projectId];
+      const projectIds = [projectId];
       const page = await client.shell.olderSettledThreads({ before, projectIds, limit: 50 });
       expect(page.threads.map((row) => row.id)).toEqual([thread.id]);
       const counts = await client.shell.olderSettledThreads({ before, projectIds, limit: 0 });
       expect(counts.threads).toEqual([]);
-      expect(counts.counts).toEqual([{ projectId: project.projectId, count: 1 }]);
+      expect(counts.counts).toEqual([{ projectId, count: 1 }]);
 
       const omit = { omitIdleSubagents: true, omitOlderSettled: true };
       const full = await client.shell.snapshot();
@@ -84,25 +102,11 @@ describe.skipIf(!baseUrl || !token)("live shell omitted rows", () => {
       });
       expect(found.threads?.map((row) => row.id)).toEqual([thread.id]);
       expect(typeof found.snapshotSequence).toBe("number");
-    } finally {
-      try {
-        await client.threads.delete(thread.id);
-        await client.projects.delete(project.projectId, { force: true });
-      } finally {
-        await client.close();
-      }
-    }
+    });
   });
 
   it("refuses a force stop of a run that is not the latest", async () => {
-    const client = connect();
-    const project = await client.projects.createNew({ name: "Sample refuse" });
-    const thread = await client.threads.create({
-      projectId: project.projectId,
-      title: "Sample refuse",
-      modelSelection,
-    });
-    try {
+    await withSampleThread({ name: "Sample refuse" }, async (client, thread) => {
       const refused = await client.threads
         .forceStop(thread.id, { runId: toRunId(NodeCrypto.randomUUID()) })
         .catch((error: unknown) => error);
@@ -112,28 +116,14 @@ describe.skipIf(!baseUrl || !token)("live shell omitted rows", () => {
           refused.is("OrchestrationV2ForceStopThreadError") &&
           refused.record.reason,
       ).toBe("superseded");
-    } finally {
-      try {
-        await client.threads.delete(thread.id);
-        await client.projects.delete(project.projectId, { force: true });
-      } finally {
-        await client.close();
-      }
-    }
+    });
   });
 
   it.skipIf(!agent)(
     "force stops a real agent turn",
     async () => {
-      const client = connect();
-      const project = await client.projects.createNew({ name: "Sample force" });
-      const thread = await client.threads.create({
-        projectId: project.projectId,
-        title: "Sample force",
-        modelSelection,
-        runtimeMode: "full-access",
-      });
-      try {
+      const sample = { name: "Sample force", runtimeMode: "full-access" } as const;
+      await withSampleThread(sample, async (client, thread) => {
         await client.threads.startTurn({
           threadId: thread.id,
           text: "Run the shell command `sleep 600` now and wait for it. Do nothing else.",
@@ -173,14 +163,7 @@ describe.skipIf(!baseUrl || !token)("live shell omitted rows", () => {
         const evidence = process.env["T3_LIVE_FORCE_STOP_EVIDENCE"];
         if (evidence)
           await NodeFSP.writeFile(evidence, `${JSON.stringify(observation, null, 2)}\n`);
-      } finally {
-        try {
-          await client.threads.delete(thread.id);
-          await client.projects.delete(project.projectId, { force: true });
-        } finally {
-          await client.close();
-        }
-      }
+      });
     },
     240_000,
   );
