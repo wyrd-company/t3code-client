@@ -56,7 +56,6 @@ export const OrchestrationV2ThreadStreamItem = taggedUnionWithUnknown("kind", [
     historyCursor: TrimmedNonEmptyString.nullable().optional(),
     hasMoreHistory: z.boolean().optional(),
     latestLocalTurnOrdinal: NonNegativeInt.nullable().optional(),
-    payloadBudgetExceeded: z.boolean().optional(),
     turnItemsOmitLocalVisible: z.literal(true).optional(),
   }),
   z.looseObject({
@@ -118,6 +117,8 @@ export const OrchestrationV2ThreadLaunchResult = z.looseObject({
   threadId: ThreadId,
   projection: OrchestrationV2ThreadProjection,
   resumed: z.boolean(),
+  /** The initial message's commit sequence. Older servers omit it. */
+  sequence: NonNegativeInt.optional(),
 });
 export type OrchestrationV2ThreadLaunchResult = z.infer<typeof OrchestrationV2ThreadLaunchResult>;
 

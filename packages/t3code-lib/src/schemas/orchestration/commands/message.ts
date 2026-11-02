@@ -156,6 +156,8 @@ export const RuntimeRequestRespondCommand = z.looseObject({
   ...stamped,
   requestId: RuntimeRequestId,
   decision: ProviderApprovalDecision.optional(),
+  /** Text for the agent with a `decline`, when the request's capability has `supportsFeedback`. */
+  feedback: z.string().optional(),
   answers: ProviderUserInputAnswers.optional(),
   attachmentsByQuestionId: UserInputAttachments.optional(),
 });

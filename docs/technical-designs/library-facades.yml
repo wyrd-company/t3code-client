@@ -84,7 +84,7 @@ proposed-design:
       stopThread(threadId, options?: { reason?: string }, signal?): Promise<void>   // native thread.stop, including idle/background work
       resumeQueue(threadId, signal?): Promise<void>                               // release queue hold
       startQueuedRun(threadId, runId, signal?): Promise<void>                      // select queued run first and release queue hold
-      respondToApproval(input: { threadId; requestId; decision: ProviderApprovalDecision }): Promise<void>
+      respondToApproval(input: { threadId; requestId; decision: ProviderApprovalDecision; feedback? }): Promise<void>
       respondToUserInput(input: { threadId; requestId; answers: Record<string, unknown>; attachmentsByQuestionId? }): Promise<void>
       dismissUserInput(input: { threadId; requestId }): Promise<void>
       pendingRequests(threadId): Promise<PendingRequest[]>                         // pending runtime requests joined with their turn items

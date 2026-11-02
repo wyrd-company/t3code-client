@@ -62,6 +62,8 @@ const pendingBackgroundTask = z.looseObject({
   description: TrimmedNonEmptyString.optional(),
   /** The subagent task that started this work and waits on it. */
   parentTaskId: TrimmedNonEmptyString.optional(),
+  /** The agent declared that it resumes when this work ends, so the thread holds for it. */
+  awaited: z.literal(true).optional(),
   kind: z.string().optional(),
   childThreadId: ThreadId.optional(),
 });
@@ -206,7 +208,12 @@ export const OrchestrationV2RuntimeRequestStatus = forwardCompatibleLiteral([
   "cancelled",
 ]);
 export const OrchestrationV2RuntimeRequestResponseCapability = taggedUnionWithUnknown("type", [
-  z.looseObject({ type: z.literal("live"), providerSessionId: ProviderSessionId }),
+  z.looseObject({
+    type: z.literal("live"),
+    providerSessionId: ProviderSessionId,
+    /** A decline of this request can carry `feedback`. */
+    supportsFeedback: z.boolean().optional(),
+  }),
   z.looseObject({ type: z.literal("message") }),
   z.looseObject({ type: z.literal("not_resumable"), reason: z.string() }),
 ]);
@@ -222,6 +229,7 @@ export const OrchestrationV2RuntimeRequest = z.looseObject({
   createdAt: IsoDateTime,
   resolvedAt: IsoDateTime.nullable(),
   decision: ProviderApprovalDecision.optional(),
+  feedback: z.string().optional(),
   answers: ProviderUserInputAnswers.optional(),
 });
 export type OrchestrationV2RuntimeRequest = z.infer<typeof OrchestrationV2RuntimeRequest>;

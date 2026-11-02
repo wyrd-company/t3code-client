@@ -8,6 +8,7 @@ import {
   CheckpointId,
   CheckpointScopeId,
   ContextHandoffId,
+  IsoDateTime,
   MessageId,
   NodeId,
   NonNegativeInt,
@@ -34,10 +35,13 @@ import {
   UserInputAttachmentAnswerPayload,
 } from "./model.ts";
 import {
+  OrchestrationV2IdleCompaction,
   OrchestrationV2Notification,
   OrchestrationV2PlanStep,
   OrchestrationV2UserInputQuestion,
 } from "./messages.ts";
+import { OrchestrationV2CheckpointFileTotals } from "./runs.ts";
+import { OrchestrationV2RemoteTaskChild } from "./threadLink.ts";
 import {
   OrchestrationV2FileChangeDetail,
   OrchestrationV2FileSearchResult,
@@ -69,6 +73,7 @@ export const OrchestrationV2TurnItemMembers = [
     messageId: MessageId,
     scheduledTaskId: ScheduledTaskId.optional(),
     senderThreadId: ThreadId.optional(),
+    idleCompaction: OrchestrationV2IdleCompaction.optional(),
     workflowScript: z.boolean().optional(),
     inputIntent: OrchestrationV2UserMessageInputIntent,
     text: z.string(),
@@ -131,6 +136,8 @@ export const OrchestrationV2TurnItemMembers = [
     outputOmitted: z.boolean().optional(),
     outputIndicatesFailure: z.boolean().optional(),
     exitCode: z.number().int().optional(),
+    /** Set when the command is a monitor, so background work lists it as a monitor. */
+    monitor: z.boolean().optional(),
   }),
   z.looseObject({
     ...base,
@@ -168,8 +175,15 @@ export const OrchestrationV2TurnItemMembers = [
         deletions: NonNegativeInt,
       }),
     ),
+    filesTotal: OrchestrationV2CheckpointFileTotals.optional(),
   }),
-  z.looseObject({ ...base, type: z.literal("run_interrupt_request"), message: z.string() }),
+  z.looseObject({
+    ...base,
+    type: z.literal("run_interrupt_request"),
+    message: z.string(),
+    /** Set when the provider did not confirm the stop in time; a client can then force stop. */
+    unresponsiveAt: IsoDateTime.optional(),
+  }),
   z.looseObject({ ...base, type: z.literal("run_interrupt_result"), message: z.string() }),
   z.looseObject({ ...base, type: z.literal("system_notice"), message: z.string() }),
   z.looseObject({
@@ -227,6 +241,8 @@ export const OrchestrationV2TurnItemMembers = [
     reason: z.string(),
     placeholder: z.string().optional(),
     secretStatus: OrchestrationV2SecretRequestStatus,
+    /** The agent asked for the secret as a file. */
+    delivery: forwardCompatibleLiteral(["file"]).optional(),
   }),
   z.looseObject({ ...base, ...OrchestrationV2LinkRequestFields }),
   z.looseObject({
@@ -237,6 +253,7 @@ export const OrchestrationV2TurnItemMembers = [
     driver: ProviderDriverKind,
     providerInstanceId: ProviderInstanceId,
     childThreadId: ThreadId.nullable(),
+    remoteChild: OrchestrationV2RemoteTaskChild.optional(),
     prompt: z.string(),
     progress: z.string().nullable().optional(),
     result: z.string().nullable(),

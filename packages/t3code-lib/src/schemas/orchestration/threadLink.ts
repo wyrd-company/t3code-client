@@ -8,7 +8,13 @@
  */
 import { z } from "zod";
 import { AuthMcpClientGrantedAccess } from "../auth.ts";
-import { EnvironmentId, ThreadId, TrimmedNonEmptyString } from "../common.ts";
+import {
+  EnvironmentId,
+  NonNegativeInt,
+  RunId,
+  ThreadId,
+  TrimmedNonEmptyString,
+} from "../common.ts";
 
 /** The MCP client session of the linked environment whose agent started this work here. */
 export const OrchestrationV2LinkOrigin = z.looseObject({
@@ -26,3 +32,14 @@ export const OrchestrationV2DelegatedFrom = z.looseObject({
   title: z.string(),
 });
 export type OrchestrationV2DelegatedFrom = z.infer<typeof OrchestrationV2DelegatedFrom>;
+
+/** The thread in a linked environment that does the work of a delegated task. */
+export const OrchestrationV2RemoteTaskChild = z.looseObject({
+  environmentId: EnvironmentId,
+  threadId: ThreadId,
+  label: z.string(),
+  runId: RunId.optional(),
+  stoppedThere: z.boolean().optional(),
+  stopCount: NonNegativeInt.optional(),
+});
+export type OrchestrationV2RemoteTaskChild = z.infer<typeof OrchestrationV2RemoteTaskChild>;

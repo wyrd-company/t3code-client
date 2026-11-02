@@ -39,6 +39,7 @@ import { ThreadLinkedPullRequest, ThreadPullRequestLink } from "./pullRequest.ts
 import { OrchestrationV2DelegatedFrom, OrchestrationV2LinkOrigin } from "./threadLink.ts";
 import {
   OrchestrationV2AppThreadLineage,
+  OrchestrationV2LenientThreadOpens,
   OrchestrationV2LimitRecovery,
   OrchestrationV2ThreadForkedFrom,
   ThreadTitleRegeneration,
@@ -120,6 +121,7 @@ export const OrchestrationV2ThreadShell = z.looseObject({
   historyOrigin: OrchestrationV2ThreadHistoryOrigin.optional(),
   linkOrigin: OrchestrationV2LinkOrigin.optional(),
   delegatedFrom: OrchestrationV2DelegatedFrom.optional(),
+  opens: OrchestrationV2LenientThreadOpens.optional(),
   latestRunId: RunId.nullable(),
   latestRunRequestedAt: IsoDateTime.nullable().optional(),
   latestRunStartedAt: IsoDateTime.nullable().optional(),

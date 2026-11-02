@@ -28,6 +28,7 @@ import {
   taggedUnionWithUnknown,
 } from "../common.ts";
 import { ModelSelection, OrchestrationV2Actor, OrchestrationV2ProviderRef } from "./model.ts";
+import { OrchestrationV2RemoteTaskChild } from "./threadLink.ts";
 import { OrchestrationV2SubagentWorkflow } from "./workflow.ts";
 
 export const RUN_TERMINAL_STATUSES = [
@@ -94,6 +95,8 @@ export const OrchestrationV2RestartCancelledBackgroundWork = z.looseObject({
   kind: forwardCompatibleLiteral(["subagent", "shell", "monitor", "task"]),
   label: TrimmedNonEmptyString,
   id: TrimmedNonEmptyString.optional(),
+  /** The agent was waiting on this work, so its restart note wakes the agent. */
+  awaited: z.literal(true).optional(),
 });
 export type OrchestrationV2RestartCancelledBackgroundWork = z.infer<
   typeof OrchestrationV2RestartCancelledBackgroundWork
@@ -258,6 +261,7 @@ export const OrchestrationV2Subagent = z.looseObject({
   providerInstanceId: ProviderInstanceId,
   providerThreadId: ProviderThreadId.nullable(),
   childThreadId: ThreadId.nullable(),
+  remoteChild: OrchestrationV2RemoteTaskChild.optional(),
   nativeTaskRef: OrchestrationV2ProviderRef.nullable(),
   prompt: z.string(),
   title: z.string().nullable(),
@@ -310,6 +314,16 @@ export type OrchestrationV2CheckpointFileSummary = z.infer<
   typeof OrchestrationV2CheckpointFileSummary
 >;
 
+/** Sent only when the wire carries a prefix of `files`; the totals cover the full list. */
+export const OrchestrationV2CheckpointFileTotals = z.looseObject({
+  count: NonNegativeInt,
+  additions: NonNegativeInt,
+  deletions: NonNegativeInt,
+});
+export type OrchestrationV2CheckpointFileTotals = z.infer<
+  typeof OrchestrationV2CheckpointFileTotals
+>;
+
 export const OrchestrationV2Checkpoint = z.looseObject({
   id: CheckpointId,
   threadId: ThreadId,
@@ -322,6 +336,7 @@ export const OrchestrationV2Checkpoint = z.looseObject({
   ref: CheckpointRef,
   status: forwardCompatibleLiteral(["ready", "missing", "error", "stale"]),
   files: z.array(OrchestrationV2CheckpointFileSummary),
+  filesTotal: OrchestrationV2CheckpointFileTotals.optional(),
   capturedAt: IsoDateTime,
 });
 export type OrchestrationV2Checkpoint = z.infer<typeof OrchestrationV2Checkpoint>;

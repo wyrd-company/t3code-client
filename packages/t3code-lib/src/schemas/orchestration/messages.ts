@@ -85,10 +85,18 @@ export type OrchestrationV2Notification = z.infer<typeof OrchestrationV2Notifica
 export const OrchestrationV2MessageRole = forwardCompatibleLiteral(["user", "assistant", "system"]);
 export type OrchestrationV2MessageRole = z.infer<typeof OrchestrationV2MessageRole>;
 
+/** Why T3 Code compacted a thread on its own, on the `/compact` it sent. */
+export const OrchestrationV2IdleCompaction = forwardCompatibleLiteral([
+  "beforeCacheExpires",
+  "onReturn",
+]);
+export type OrchestrationV2IdleCompaction = z.infer<typeof OrchestrationV2IdleCompaction>;
+
 export const OrchestrationV2ConversationMessage = z.looseObject({
   notification: OrchestrationV2Notification.optional(),
   ...OrchestrationV2CreationFields,
   scheduledTaskId: ScheduledTaskId.optional(),
+  idleCompaction: OrchestrationV2IdleCompaction.optional(),
   /** The sending agent's thread in this environment, separate from the receiving thread. */
   senderThreadId: ThreadId.optional(),
   /** Whether the message contains a provider-native workflow script. */
