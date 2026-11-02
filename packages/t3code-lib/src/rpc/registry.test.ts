@@ -54,6 +54,7 @@ const expected = {
   "projects.searchContents": [false, "filesystem:read"],
   "projects.ensureScratch": [false, "orchestration:operate"],
   "projects.createNew": [false, "orchestration:operate"],
+  "projects.createFromThread": [false, "orchestration:operate"],
   "terminal.open": [false, "terminal:operate"],
   "terminal.attach": [true, "terminal:operate"],
   "terminal.write": [false, "terminal:operate"],

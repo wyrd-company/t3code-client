@@ -76,10 +76,15 @@ describe("ProjectMutation", () => {
       ],
     };
     expect(ProjectMutation.parse(update)).toEqual(update);
+    const organize = { type: "project.update", ...stamp, pinned: false, archived: true };
+    expect(ProjectMutation.parse(organize)).toEqual(organize);
     const remove = { type: "project.delete", ...stamp, force: true };
     expect(ProjectMutation.parse(remove)).toEqual(remove);
   });
   it("rejects an unknown type, a missing stamp, and a malformed payload", () => {
+    expect(
+      ProjectMutation.safeParse({ type: "project.update", ...stamp, pinned: "yes" }).success,
+    ).toBe(false);
     expect(ProjectMutation.safeParse({ type: "project.archive", ...stamp }).success).toBe(false);
     expect(
       ProjectMutation.safeParse({ type: "project.delete", projectId: "project-1" }).success,

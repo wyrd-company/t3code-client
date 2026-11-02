@@ -359,7 +359,20 @@ proposed-design:
     otherwise. `projects.createNew` makes a folder under
     `ServerConfig.newProjectsRoot` with a README, an icon and a first commit,
     then creates the project; a failed commit is reported in `commitError` and
-    keeps the project.
+    keeps the project. `projects.createFromThread` turns the own Scratch folder of
+    a No project thread into a project, in place, and moves every thread that works
+    in that folder; a repeated call finishes a partial move. A thread with no own
+    Scratch folder or a moved thread with unfinished work fails the call with
+    `OrchestrationDispatchCommandError`. The capability
+    `threadProjectFromScratch` advertises it. The command this method dispatches,
+    `thread.project.adopt-folder`, is internal to the server: it is not in
+    `OrchestrationV2Command` and the server refuses it from a client.
+
+    `project.update` accepts booleans `pinned` and `archived`. The server stores them
+    as `pinnedAt` and `archivedAt` on `Project` and `OrchestrationProjectShell`, both
+    optional and nullable. The capability `projectOrganization` advertises this, and
+    older servers drop the fields. An archived project stays in the shell, with its
+    threads and files.
 
   approval-full-access-override: >-
     Approval-request turn items expose optional fullAccessOverride metadata through

@@ -7,7 +7,7 @@ import { z } from "zod";
 import { CommandId, NodeId, ProjectId, ThreadId, forwardCompatibleLiteral } from "../common.ts";
 import { Defect, messageAndCause, taggedError } from "./shared.ts";
 
-/** Raised by `projects.ensureScratch` and `projects.createNew`. */
+/** Raised by `projects.ensureScratch`, `projects.createNew` and `projects.createFromThread`. */
 export const OrchestrationDispatchCommandError = taggedError("OrchestrationDispatchCommandError", {
   ...messageAndCause,
   bootstrapThreadDisposition: forwardCompatibleLiteral(["deleted", "not-created"]).optional(),

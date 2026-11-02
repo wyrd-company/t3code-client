@@ -56,6 +56,8 @@ export const OrchestrationProjectShell = z.looseObject({
   faviconPath: ProjectFaviconPath.nullable().optional(),
   projectIcon: ReceivedProjectIcon.nullable().optional(),
   scripts: z.array(ProjectScript),
+  pinnedAt: IsoDateTime.nullable().optional(),
+  archivedAt: IsoDateTime.nullable().optional(),
   createdAt: IsoDateTime,
   updatedAt: IsoDateTime,
 });

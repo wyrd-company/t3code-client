@@ -56,6 +56,10 @@ TypeScript declarations ship with the package.
 </dd>
 <dt><a href="#ProjectsApi">ProjectsApi</a></dt>
 <dd><p>Project discovery, creation, mutations and files.</p>
+<p><code>projects.update(id, { pinned, archived })</code> sets or clears <code>pinnedAt</code> and
+<code>archivedAt</code> on servers that advertise the <code>projectOrganization</code> environment
+capability; older servers drop both fields. Archiving keeps threads and files,
+and <code>projects.list</code> still returns an archived project with its <code>archivedAt</code>.</p>
 <p>Project repository identities can include <code>origin.remoteUrl</code>, an optional
 trimmed nonempty string naming the checkout remote when its repository differs
 from the canonical repository. Omission does not imply a missing remote.</p>
@@ -1315,6 +1319,11 @@ async ensureScopes(required: AuthEnvironmentScopeType[]): Promise<void>;
 
 Project discovery, creation, mutations and files.
 
+`projects.update(id, { pinned, archived })` sets or clears `pinnedAt` and
+`archivedAt` on servers that advertise the `projectOrganization` environment
+capability; older servers drop both fields. Archiving keeps threads and files,
+and `projects.list` still returns an archived project with its `archivedAt`.
+
 Project repository identities can include `origin.remoteUrl`, an optional
 trimmed nonempty string naming the checkout remote when its repository differs
 from the canonical repository. Omission does not imply a missing remote.
@@ -1344,6 +1353,7 @@ non-directory `cwd` fails with `ProjectListEntriesError`.
   - [.ensure()](#ProjectsApi+ensure)
   - [.ensureScratch()](#ProjectsApi+ensureScratch)
   - [.createNew()](#ProjectsApi+createNew)
+  - [.createFromThread()](#ProjectsApi+createFromThread)
   - [.update()](#ProjectsApi+update)
   - [.delete()](#ProjectsApi+delete)
 
@@ -1445,6 +1455,24 @@ Creates a project from just a name: the server makes a folder under
 
 ```ts
 createNew(input: ProjectCreateNewInput, signal?: AbortSignal): Promise<ProjectCreateNewResult>;
+```
+
+**Kind**: instance method of [<code>ProjectsApi</code>](#ProjectsApi)  
+<a name="ProjectsApi+createFromThread"></a>
+
+### projectsApi.createFromThread()
+
+Turns a No project thread's own folder into a project, in place, and moves every
+thread working in that folder into it. Calling it again finishes a partial move.
+Fails with `OrchestrationDispatchCommandError` when the thread has no own Scratch
+folder or a thread to move still has work in progress. Servers advertise this with
+the `threadProjectFromScratch` environment capability.
+
+```ts
+createFromThread(
+    input: ProjectCreateFromThreadInput,
+    signal?: AbortSignal,
+  ): Promise<ProjectCreateFromThreadResult>;
 ```
 
 **Kind**: instance method of [<code>ProjectsApi</code>](#ProjectsApi)  

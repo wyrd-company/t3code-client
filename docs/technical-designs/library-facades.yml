@@ -55,6 +55,7 @@ proposed-design:
       delete(projectId, options?: { force?: boolean }): Promise<void>  // idempotent: not found resolves
       ensureScratch(): Promise<ProjectEnsureScratchResult>             // server finds or creates the Scratch project
       createNew(input: { name: string }): Promise<ProjectCreateNewResult>  // server makes the folder, first commit, and project
+      createFromThread(input: { threadId }): Promise<ProjectCreateFromThreadResult>  // a No project thread's folder becomes a project in place
       files: { list, listIgnored, read, write, searchEntries, searchContents }  // thin typed RPC wrappers
     }
 
@@ -341,6 +342,15 @@ proposed-design:
     omission does not advertise support. Supplied non-boolean values fail decoding.
     Unknown capability fields remain intact. This metadata flag does not change
     provider settings.
+
+  optional-project-organization-capabilities: |
+    `ExecutionEnvironmentCapabilities.threadProjectFromScratch` and
+    `projectOrganization` are optional booleans available through `server.environment`,
+    `server.getConfig` and configuration stream snapshots. True advertises
+    `projects.createFromThread` and the `pinned` and `archived` fields of
+    `project.update`. False and omission are preserved; omission does not advertise
+    support. Supplied non-boolean values fail decoding. The library does not check them
+    before a call.
 
   optional-project-clone-tracking-capability: |
     `ExecutionEnvironmentCapabilities.projectCloneTracking` is an optional boolean

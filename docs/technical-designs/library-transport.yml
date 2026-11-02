@@ -250,7 +250,7 @@ proposed-design:
     `subscribeWorktreeSetup`, `worktreeSetup.cancel`; `projects.listEntries`,
     `projects.listIgnoredFiles`, `projects.readFile`, `projects.writeFile`,
     `projects.searchEntries`, `projects.searchContents`, `projects.ensureScratch`,
-    `projects.createNew`;
+    `projects.createNew`, `projects.createFromThread`;
     `scheduledTasks.subscribe`, `scheduledTasks.upsert`,
     `scheduledTasks.setEnabled`, `scheduledTasks.delete`, `scheduledTasks.runNow`,
     `scheduledTasks.rotateWebhookToken`, `scheduledTasks.listWebhookDeliveries`,

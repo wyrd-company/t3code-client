@@ -10,6 +10,7 @@ import {
   NonNegativeInt,
   PositiveInt,
   ProjectId,
+  ThreadId,
   TrimmedNonEmptyString,
   forwardCompatibleLiteral,
   isUnknownVariant,
@@ -122,6 +123,11 @@ export const ProjectCreateNewResult = z.looseObject({
   commitError: TrimmedNonEmptyString.optional(),
 });
 export type ProjectCreateNewResult = z.infer<typeof ProjectCreateNewResult>;
+/** A No project thread whose own folder becomes a project in place. */
+export const ProjectCreateFromThreadInput = z.looseObject({ threadId: ThreadId });
+export type ProjectCreateFromThreadInput = z.infer<typeof ProjectCreateFromThreadInput>;
+export const ProjectCreateFromThreadResult = z.looseObject({ projectId: ProjectId });
+export type ProjectCreateFromThreadResult = z.infer<typeof ProjectCreateFromThreadResult>;
 
 // project.ts: project records, icons, and mutations
 
@@ -237,6 +243,8 @@ export const Project = z.looseObject({
   defaultThreadEnvMode: ThreadEnvMode.nullable().optional(),
   autoPull: z.boolean().optional(),
   scripts: z.array(ProjectScript),
+  pinnedAt: IsoDateTime.nullable().optional(),
+  archivedAt: IsoDateTime.nullable().optional(),
   createdAt: IsoDateTime,
   updatedAt: IsoDateTime,
   deletedAt: IsoDateTime.nullable(),
@@ -266,6 +274,10 @@ export const ProjectUpdatePayload = z.looseObject({
   faviconPath: TrimmedNonEmptyString.nullable().optional(),
   defaultThreadEnvMode: ThreadEnvMode.nullable().optional(),
   scripts: z.array(ProjectScript).optional(),
+  /** Send only to servers that advertise `projectOrganization`; older servers drop it. */
+  pinned: z.boolean().optional(),
+  /** Keeps threads and files. Send only to servers that advertise `projectOrganization`. */
+  archived: z.boolean().optional(),
 });
 export type ProjectUpdatePayload = z.infer<typeof ProjectUpdatePayload>;
 

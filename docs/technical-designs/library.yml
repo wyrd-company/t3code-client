@@ -131,7 +131,7 @@ proposed-design:
         scopes.ts               scope constants, hasScope, grantedScopes
       api/                      facades composed by T3Client
         server.ts               getConfig, probe, watchConfig, watchLifecycle, watchDatabaseStorage
-        projects.ts             list, get, snapshot, create, update, delete, ensure, ensureScratch, createNew, files
+        projects.ts             list, get, snapshot, create, update, delete, ensure, ensureScratch, createNew, createFromThread, files
         threads.ts              list, get, detail, projection, historyPage, transcript, create, ensure, launch, update, archive, delete, startTurn, interrupt, stop, respond*, watch, watchCommandOutput
         commandOutput.ts        watchCommandOutput: one command row's output stream
         threadReads.ts          shell lookups with the archived fallback; detail, history page, transcript routes

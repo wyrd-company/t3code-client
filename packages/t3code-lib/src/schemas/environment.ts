@@ -56,6 +56,8 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   threadPinReorder: z.boolean().optional(),
   threadActiveReorder: z.boolean().optional(),
   threadAutoSettleOptOut: z.boolean().optional(),
+  /** Server answers `projects.createFromThread`. */
+  threadProjectFromScratch: z.boolean().optional(),
   threadTitleRegeneration: z.boolean().optional(),
   threadPullRequestLinking: z.boolean().optional(),
   threadPullRequests: z.boolean().optional(),
@@ -66,6 +68,8 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   projectSettingsOverrides: z.boolean().optional(),
   projectProviderInstanceOverrides: z.boolean().optional(),
   projectCloneTracking: z.boolean().optional(),
+  /** Server keeps `pinned` and `archived` from `project.update`. Older servers drop them. */
+  projectOrganization: z.boolean().optional(),
   environmentIcon: z.boolean().optional(),
   requiredWorktreeBootstrap: z.boolean().optional(),
   commandOutputStreaming: z.boolean().optional(),
