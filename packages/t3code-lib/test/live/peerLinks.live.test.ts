@@ -11,6 +11,7 @@ import * as NodeCrypto from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import type { T3Client, T3RpcError } from "../../src/index.ts";
 import { EnvironmentId, threadId, turnItemId, type ThreadId } from "../../src/schemas/common.ts";
+import { isRunTerminalStatus } from "../../src/schemas/orchestration/runs.ts";
 import { isTurnItemOfType } from "../../src/schemas/orchestration/turnItems.ts";
 import { isRpcErrorOfTag } from "../../src/schemas/rpcErrors.ts";
 import {
@@ -157,35 +158,61 @@ describe.skipIf(!ownsServer)("live peer links", () => {
     async () => {
       await setLinksEnabled(client, true);
       const project = await client.projects.createNew({ name: "Sample links" });
-      const id = threadId(NodeCrypto.randomUUID());
-      await client.threads.ensure({
-        threadId: id,
-        projectId: project.projectId,
-        title: "Sample link request",
-        modelSelection,
-        runtimeMode: "full-access",
-        interactionMode: "default",
-      });
+      let id = threadId(NodeCrypto.randomUUID());
+      const openThread = async () => {
+        id = threadId(NodeCrypto.randomUUID());
+        await client.threads.ensure({
+          threadId: id,
+          projectId: project.projectId,
+          title: "Sample link request",
+          modelSelection,
+          runtimeMode: "full-access",
+          interactionMode: "default",
+        });
+      };
       const linkRequests = async () =>
         (await client.threads.projection(id)).turnItems.filter(
           (item) => isTurnItemOfType(item, "link_request") === true,
         );
-      const ask = (reason: string) =>
-        client.threads.startTurn({
-          threadId: id,
-          text: `Call the MCP tool t3_environment_link now, with url "${peer.baseUrl}" and reason "${reason}". Use no other tool, then end your turn.`,
-          interactionMode: "default",
-        });
-      const pending = (count: number) =>
-        waitFor(async () => {
-          const rows = await linkRequests();
-          const row = rows[count - 1];
-          return row !== undefined &&
-            isTurnItemOfType(row, "link_request") &&
-            row.linkStatus === "pending"
-            ? row
-            : undefined;
-        }, "a pending link request");
+      // An agent can end its turn saying that the tool is not available, and later turns of that
+      // thread say the same. A turn that ended with nothing asks again, in `prepare`'s thread.
+      const askUntil = async <T>(
+        text: string,
+        read: () => Promise<T | undefined>,
+        prepare?: () => Promise<void>,
+      ): Promise<T> => {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          await prepare?.();
+          const { messageId } = await client.threads.startTurn({
+            threadId: id,
+            text,
+            interactionMode: "default",
+          });
+          const seen = await waitFor(async () => {
+            const { runs } = await client.threads.projection(id);
+            const run = runs.find((entry) => entry.userMessageId === messageId);
+            const ended = run !== undefined && isRunTerminalStatus(run.status);
+            const found = await read();
+            if (found !== undefined) return { found };
+            return ended ? { found: undefined } : undefined;
+          }, "the requested tool call");
+          if (seen.found !== undefined) return seen.found;
+        }
+        throw new Error("The agent did not make the requested tool call.");
+      };
+      const askLink = (reason: string, count: number, prepare?: () => Promise<void>) =>
+        askUntil(
+          `Call the MCP tool t3_environment_link now, with url "${peer.baseUrl}" and reason "${reason}". Use no other tool, then end your turn.`,
+          async () => {
+            const row = (await linkRequests())[count - 1];
+            return row !== undefined &&
+              isTurnItemOfType(row, "link_request") &&
+              row.linkStatus === "pending"
+              ? row
+              : undefined;
+          },
+          prepare,
+        );
       const ended = (itemId: string, status: string) =>
         waitFor(async () => {
           const row = (await linkRequests()).find((item) => item.id === itemId);
@@ -203,8 +230,7 @@ describe.skipIf(!ownsServer)("live peer links", () => {
             : undefined;
         }, "the turn to end");
 
-      await ask("Sample decline");
-      const first = await pending(1);
+      const first = await askLink("Sample decline", 1, openThread);
       expect(first).toMatchObject({ reason: "Sample decline", url: peer.baseUrl });
       expect(first.environmentId).toBe(peerEnvironmentId);
       const decline = { threadId: id, turnItemId: first.id, answer: { type: "decline" } } as const;
@@ -216,8 +242,7 @@ describe.skipIf(!ownsServer)("live peer links", () => {
       );
       await idle();
 
-      await ask("Sample link");
-      const second = await pending(2);
+      const second = await askLink("Sample link", 2);
       await client.peerLinks.answerRequest({
         threadId: id,
         turnItemId: second.id,
@@ -246,23 +271,19 @@ describe.skipIf(!ownsServer)("live peer links", () => {
         providerInstanceId: modelSelection.instanceId,
         model: modelSelection.model,
       });
-      await client.threads.startTurn({
-        threadId: id,
-        text: `Call the MCP tool t3_thread_launch now, with environmentId "${peerEnvironmentId}", projectId "${peerProject.projectId}", modelSelection ${peerModel} and title "Sample launched". Pass no message. Then call the MCP tool delegate_task with task "Reply with the word done", title "Sample delegated", target ${target}. Use no other tool, then end your turn.`,
-        interactionMode: "default",
-      });
-      const peerThreads = (title: string) =>
-        waitFor(async () => {
+      const delegated = await askUntil(
+        `Call the MCP tool t3_thread_launch now, with environmentId "${peerEnvironmentId}", projectId "${peerProject.projectId}", modelSelection ${peerModel} and title "Sample launched". Pass no message. Then call the MCP tool delegate_task with task "Reply with the word done", title "Sample delegated", target ${target}. Use no other tool, then end your turn.`,
+        async () => {
           const { threads } = await peer.client.shell.snapshot();
-          return threads.find((entry) => entry.title.includes(title));
-        }, `a ${title} thread in the peer`);
-      const launched = await peerThreads("Sample launched");
+          return threads.find((entry) => entry.delegatedFrom !== undefined);
+        },
+      );
+      const launched = await waitFor(async () => {
+        const { threads } = await peer.client.shell.snapshot();
+        return threads.find((entry) => entry.title.includes("Sample launched"));
+      }, "a launched thread in the peer");
       expect(launched.linkOrigin).toMatchObject({ access: "auto" });
       expect(launched.delegatedFrom).toBeUndefined();
-      const delegated = await waitFor(async () => {
-        const { threads } = await peer.client.shell.snapshot();
-        return threads.find((entry) => entry.delegatedFrom !== undefined);
-      }, "a delegated thread in the peer");
       expect(delegated.delegatedFrom).toMatchObject({
         environmentId: (await client.server.environment()).environmentId,
         threadId: id,
