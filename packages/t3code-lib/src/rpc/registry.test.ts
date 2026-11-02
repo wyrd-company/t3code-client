@@ -15,25 +15,34 @@ const expected = {
   "orchestration.getTurnItem": [false, "orchestration:read"],
   "orchestration.getWorkflowScript": [false, "orchestration:read"],
   "orchestration.stopWorkflow": [false, "orchestration:operate"],
+  "orchestration.forceStopThread": [false, "orchestration:operate"],
   "orchestration.getTurnDiff": [false, "orchestration:read"],
   "orchestration.getFullThreadDiff": [false, "orchestration:read"],
   "orchestration.searchThreads": [false, "orchestration:read"],
   "orchestration.searchThread": [false, "orchestration:read"],
   "orchestration.searchThreadStream": [true, "orchestration:read"],
   "orchestration.getArchivedShellSnapshot": [false, "orchestration:read"],
-  "orchestration.subscribeArchivedShell": [true, "orchestration:read"],
+  "orchestration.getThreadFamily": [false, "orchestration:read"],
+  "orchestration.getWorktreeThreadIds": [false, "orchestration:read"],
+  "orchestration.getOlderSettledThreads": [false, "orchestration:read"],
   "orchestration.subscribeShell": [true, "orchestration:read"],
   "orchestration.subscribeThread": [true, "orchestration:read"],
   "orchestration.subscribeCommandOutput": [true, "orchestration:read"],
   "server.probe": [false, "orchestration:read"],
   "server.getConfig": [false, "orchestration:read"],
-  "server.getSettings": [false, "orchestration:read"],
   "server.refreshProviders": [false, "orchestration:read"],
+  "server.getNpmRelease": [false, "orchestration:read"],
+  "server.prepareTriage": [false, "orchestration:operate"],
   "server.getDatabaseStorage": [true, "orchestration:read"],
   "server.getUsageSummary": [false, "diagnostics:read"],
   subscribeServerConfig: [true, "orchestration:read"],
   subscribeServerLifecycle: [true, "orchestration:read"],
   subscribeAuthAccess: [true, "access:read"],
+  "peerLinks.list": [false, "access:read"],
+  "peerLinks.link": [false, "access:write"],
+  "peerLinks.unlink": [false, "access:write"],
+  "peerLinks.answerRequest": [false, "access:write"],
+  "guestShare.create": [false, "access:write"],
   "vcs.listRefs": [false, "orchestration:read"],
   "vcs.refreshStatus": [false, "orchestration:read"],
   "vcs.createWorktree": [false, "source-control:write"],
@@ -52,17 +61,16 @@ const expected = {
   "projects.searchContents": [false, "filesystem:read"],
   "projects.ensureScratch": [false, "orchestration:operate"],
   "projects.createNew": [false, "orchestration:operate"],
+  "projects.createFromThread": [false, "orchestration:operate"],
   "terminal.open": [false, "terminal:operate"],
   "terminal.attach": [true, "terminal:operate"],
   "terminal.write": [false, "terminal:operate"],
   "terminal.resize": [false, "terminal:operate"],
   "terminal.close": [false, "terminal:operate"],
-  subscribeTerminalEvents: [true, "terminal:read"],
   "mcpApps.callTool": [false, "orchestration:operate"],
   "mcpApps.toolInfo": [false, "orchestration:read"],
   "mcpApps.readResource": [false, "orchestration:read"],
   "mcpApps.updateModelContext": [false, "orchestration:operate"],
-  "scheduledTasks.list": [false, "orchestration:read"],
   "scheduledTasks.subscribe": [true, "orchestration:read"],
   "scheduledTasks.upsert": [false, "orchestration:operate"],
   "scheduledTasks.setEnabled": [false, "orchestration:operate"],
@@ -100,7 +108,7 @@ describe("RPC contract registry", () => {
     expectTypeOf<
       RpcSuccess<RpcMethods, "orchestration.launchThread">["resumed"]
     >().toEqualTypeOf<boolean>();
-    expectTypeOf<"orchestration.subscribeArchivedShell">().toExtend<StreamMethodName<RpcMethods>>();
+    expectTypeOf<"orchestration.subscribeShell">().toExtend<StreamMethodName<RpcMethods>>();
   });
   it("validates orchestration read inputs before sending", () => {
     expect(
@@ -130,17 +138,36 @@ describe("RPC contract registry", () => {
     const schema = rpcMethods.subscribeServerConfig.payload;
     expect(schema.parse({})).toEqual({});
     expect(
-      schema.parse({ environmentThemes: true, usageLimitSources: true, usageLimitsCommand: false }),
-    ).toEqual({ environmentThemes: true, usageLimitSources: true, usageLimitsCommand: false });
+      schema.parse({
+        environmentThemes: true,
+        usageLimitSources: true,
+        usageLimitsCommand: false,
+        workspaceSnapshotsOnDemand: true,
+      }),
+    ).toEqual({
+      environmentThemes: true,
+      usageLimitSources: true,
+      usageLimitsCommand: false,
+      workspaceSnapshotsOnDemand: true,
+    });
     expect(schema.safeParse({ usageLimitsCommand: "yes" }).success).toBe(false);
+    expect(schema.safeParse({ workspaceSnapshotsOnDemand: "yes" }).success).toBe(false);
     expect(
       rpcMethods["server.refreshProviders"].payload.safeParse({
         instanceId: "example",
         cwd: "/tmp/example",
         fresh: true,
         refreshModels: true,
+        reloadSecrets: true,
+        workspaceSnapshotsOnDemand: true,
+        usageLimitsCommand: true,
       }).success,
     ).toBe(true);
+    for (const flag of ["reloadSecrets", "workspaceSnapshotsOnDemand", "usageLimitsCommand"]) {
+      expect(rpcMethods["server.refreshProviders"].payload.safeParse({ [flag]: 1 }).success).toBe(
+        false,
+      );
+    }
     expect(rpcMethods["server.refreshProviders"].payload.safeParse({ fresh: "yes" }).success).toBe(
       false,
     );

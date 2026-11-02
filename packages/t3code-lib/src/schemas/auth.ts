@@ -7,6 +7,7 @@ import { z } from "zod";
 import {
   AuthSessionId,
   ClientSurface,
+  ClientWebDeployment,
   IsoDateTime,
   TrimmedNonEmptyString,
   forwardCompatibleLiteral,
@@ -67,6 +68,22 @@ export type AuthGrantScope = z.infer<typeof AuthGrantScope>;
  */
 export const AuthGrantedScope = forwardCompatibleLiteral(authEnvironmentScopes);
 export type AuthGrantedScope = KnownOr<AuthEnvironmentScope>;
+
+const authMcpClientAccessLevels = [
+  "read-only",
+  "approval-required",
+  "auto-accept-edits",
+  "auto",
+  "full-access",
+] as const;
+
+/** Strict: validates the access a caller asks for. */
+export const AuthMcpClientAccess = z.enum(authMcpClientAccessLevels);
+export type AuthMcpClientAccess = z.infer<typeof AuthMcpClientAccess>;
+
+/** An access level as the server reports it; a newer level must decode. */
+export const AuthMcpClientGrantedAccess = forwardCompatibleLiteral(authMcpClientAccessLevels);
+export type AuthMcpClientGrantedAccess = KnownOr<AuthMcpClientAccess>;
 
 export const AuthStandardClientScopes = [
   "orchestration:read",
@@ -190,6 +207,20 @@ export const AuthClientMetadata = z.looseObject({
   browser: TrimmedNonEmptyString.optional(),
 });
 export type AuthClientMetadata = z.infer<typeof AuthClientMetadata>;
+
+/** What a client says about itself, for example to name it in a triage session. */
+export const AuthClientPresentationMetadata = z.looseObject({
+  label: TrimmedNonEmptyString.optional(),
+  deviceType: AuthClientMetadataDeviceType.optional(),
+  os: TrimmedNonEmptyString.optional(),
+  osMajorVersion: z.number().int().optional(),
+  deviceModel: TrimmedNonEmptyString.optional(),
+  surface: ClientSurface.optional(),
+  webDeployment: ClientWebDeployment.optional(),
+  browser: TrimmedNonEmptyString.optional(),
+  appVersion: TrimmedNonEmptyString.optional(),
+});
+export type AuthClientPresentationMetadata = z.infer<typeof AuthClientPresentationMetadata>;
 
 export const AuthClientSession = z.looseObject({
   sessionId: AuthSessionId,

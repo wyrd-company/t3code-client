@@ -51,8 +51,10 @@ survive; malformed values fail decoding. This metadata does not grant permission
 - [ShellApi](#ShellApi)
   - [.snapshot()](#ShellApi+snapshot)
   - [.archivedSnapshot()](#ShellApi+archivedSnapshot)
+  - [.threadFamily()](#ShellApi+threadFamily)
+  - [.worktreeThreadIds()](#ShellApi+worktreeThreadIds)
+  - [.olderSettledThreads()](#ShellApi+olderSettledThreads)
   - [.watch()](#ShellApi+watch)
-  - [.watchArchived()](#ShellApi+watchArchived)
 
 <a name="ShellApi+snapshot"></a>
 
@@ -61,7 +63,10 @@ survive; malformed values fail decoding. This metadata does not grant permission
 Projects plus active and archived thread shells, over HTTP.
 
 ```ts
-snapshot(signal?: AbortSignal): Promise<OrchestrationV2ShellSnapshot>;
+snapshot(
+    signal?: AbortSignal,
+    options?: ShellOmitOptions,
+  ): Promise<OrchestrationV2ShellSnapshot>;
 ```
 
 **Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
@@ -69,10 +74,47 @@ snapshot(signal?: AbortSignal): Promise<OrchestrationV2ShellSnapshot>;
 
 ### shellApi.archivedSnapshot()
 
-Archived thread shells and projects, over RPC.
+Archived thread shells and projects, over RPC. The server has no live archived stream.
 
 ```ts
 archivedSnapshot(signal?: AbortSignal): Promise<OrchestrationV2ArchivedShellSnapshot>;
+```
+
+**Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
+<a name="ShellApi+threadFamily"></a>
+
+### shellApi.threadFamily()
+
+The active threads that share this thread's root, in any run state: the root, its forks and
+their subagent trees. An unknown thread has an empty family.
+
+```ts
+threadFamily(threadId: ThreadId, signal?: AbortSignal): Promise<OrchestrationV2ThreadFamily>;
+```
+
+**Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
+<a name="ShellApi+worktreeThreadIds"></a>
+
+### shellApi.worktreeThreadIds()
+
+Active threads on a worktree path, including subagent children a snapshot can leave out.
+
+```ts
+async worktreeThreadIds(worktreePath: string, signal?: AbortSignal): Promise<ThreadId[]>;
+```
+
+**Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
+<a name="ShellApi+olderSettledThreads"></a>
+
+### shellApi.olderSettledThreads()
+
+A page of older settled threads below the cursor; `limit: 0` fills only `counts`.
+
+```ts
+olderSettledThreads(
+    input: OrchestrationV2GetOlderSettledThreadsInput,
+    signal?: AbortSignal,
+  ): Promise<OrchestrationV2OlderSettledThreadsPage>;
 ```
 
 **Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
@@ -84,19 +126,6 @@ Subscribes with `orchestration.subscribeShell`; resubscribes after a dropped soc
 
 ```ts
 watch(options: ShellWatchOptions = {}): AsyncIterable<ShellWatchItem>;
-```
-
-**Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
-<a name="ShellApi+watchArchived"></a>
-
-### shellApi.watchArchived()
-
-Archived threads as they change; a snapshot first, then updates. Not resumable: a drop restarts it.
-
-```ts
-watchArchived(
-    options: { readonly signal?: AbortSignal } = {},
-  ): AsyncIterable<ArchivedShellWatchItem>;
 ```
 
 **Kind**: instance method of [<code>ShellApi</code>](#ShellApi)

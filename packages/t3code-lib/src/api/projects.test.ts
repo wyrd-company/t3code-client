@@ -3,7 +3,7 @@ import { FakeT3Server } from "../../test/support/fakeServer.ts";
 import { at, makeShellProject, makeShellSnapshot } from "../../test/support/threadFixtures.ts";
 import { RpcClient } from "../rpc/client.ts";
 import { rpcMethods } from "../rpc/registry.ts";
-import { projectId } from "../schemas/common.ts";
+import { projectId, threadId } from "../schemas/common.ts";
 import type { OrchestrationProjectShell } from "../schemas/orchestration/shell.ts";
 import { HttpTransport } from "../transport/http.ts";
 import { RpcConnection } from "../transport/rpcConnection.ts";
@@ -232,6 +232,45 @@ describe("ProjectsApi", () => {
     expect(payloads).toEqual([{ name: "Sample" }]);
     await expect(projects.createNew({ name: " " })).rejects.toMatchObject({ code: "precondition" });
     expect(payloads).toHaveLength(1);
+  });
+
+  it("createFromThread sends the thread id and keeps the server refusal", async () => {
+    const payloads: unknown[] = [];
+    server.handle("projects.createFromThread", (payload) => {
+      payloads.push(payload);
+      return { kind: "value", value: { projectId: "project-promoted" } };
+    });
+    const input = { threadId: threadId("thread-1") };
+    await expect(projects.createFromThread(input)).resolves.toEqual({
+      projectId: "project-promoted",
+    });
+    expect(payloads).toEqual([input]);
+    server.handle("projects.createFromThread", () => ({
+      kind: "fail",
+      error: { _tag: "OrchestrationDispatchCommandError", message: "Sample refusal." },
+    }));
+    await expect(projects.createFromThread(input)).rejects.toMatchObject({
+      code: "rpc_failed",
+      tag: "OrchestrationDispatchCommandError",
+    });
+    await expect(
+      projects.createFromThread({ threadId: "" } as unknown as typeof input),
+    ).rejects.toMatchObject({ code: "precondition" });
+    expect(payloads).toHaveLength(1);
+  });
+
+  it("update sends pinned and archived and returns their timestamps", async () => {
+    const at = "2026-01-01T00:00:00.000Z";
+    server.handle("projects.mutate", (payload) => ({
+      kind: "value",
+      value: { ...projectRecord(), pinnedAt: at, archivedAt: at, sent: payload },
+    }));
+    const updated = await projects.update(projectId("project-1"), { pinned: true, archived: true });
+    expect(updated).toMatchObject({
+      pinnedAt: at,
+      archivedAt: at,
+      sent: { type: "project.update", pinned: true, archived: true },
+    });
   });
 
   it("rejects an invalid mutation before sending", async () => {

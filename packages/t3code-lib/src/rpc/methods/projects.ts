@@ -7,6 +7,8 @@ import { defineMethod } from "../spec.ts";
 import {
   Project,
   ProjectMutation,
+  ProjectCreateFromThreadInput,
+  ProjectCreateFromThreadResult,
   ProjectCreateNewInput,
   ProjectCreateNewResult,
   ProjectEnsureScratchResult,
@@ -81,6 +83,12 @@ export const projectsMethods = {
   "projects.createNew": defineMethod({
     payload: ProjectCreateNewInput,
     success: ProjectCreateNewResult,
+    stream: false,
+    scope: "orchestration:operate",
+  }),
+  "projects.createFromThread": defineMethod({
+    payload: ProjectCreateFromThreadInput,
+    success: ProjectCreateFromThreadResult,
     stream: false,
     scope: "orchestration:operate",
   }),

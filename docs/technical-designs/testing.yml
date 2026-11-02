@@ -91,6 +91,25 @@ proposed-design:
     sessions outside the bounded RPC projection window, duplicate matches,
     deleted threads and failed reads. CLI unit tests
     verify argument validation, text and JSON null results, and error mapping.
+    `shellOmittedRows.live.test.ts` reads thread families, older settled pages and
+    omitted snapshots from stock T3 Code, checks the force stop refusal and, with
+    `T3_LIVE_AGENT=1`, force stops a `gpt-6-luna` subject that runs a command.
+    `projectFromThread.live.test.ts` promotes a No project thread twice, checks the
+    refusals, pins and archives a project, and checks that stock T3 Code refuses the
+    internal adopt-folder command from a client.
+    `serverRelease.live.test.ts` reads a stock T3 Code npm release, starts a triage
+    session, compares on-demand provider snapshots with the full stream, and reads a
+    local-only VCS status.
+    `peerLinks.live.test.ts` starts a second isolated stock server, checks the
+    refusals, and links, lists and removes it. With `T3_LIVE_AGENT=1` a `gpt-6-luna`
+    subject asks for the link twice: the test declines once and links once, then the
+    subject starts a thread and a delegated task in the peer, which carry `linkOrigin`
+    and `delegatedFrom`. It runs only on the server that the harness owns.
+    `guestShares.live.test.ts` starts a second isolated stock server and checks the
+    `create` refusals, and that it refuses the internal guest commands. A link needs a
+    T3 Connect tunnel, so the test writes a share into the stopped server's thread
+    record, restarts it, and reads, dismisses and closes the share over the wire. With
+    `T3_LIVE_AGENT=1`, a `gpt-6-luna` subject receives a sent guest message.
     `threadFind.live.test.ts` checks no-match output against stock T3 Code; its
     `T3_LIVE_AGENT=1` case resolves a real Luna session before and after archiving
     the owning T3 thread, and checks provider separation.

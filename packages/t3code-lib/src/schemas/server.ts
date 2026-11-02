@@ -7,9 +7,7 @@ import { ServerAuthDescriptor } from "./auth.ts";
 import {
   IsoDateTime,
   NonNegativeInt,
-  ProjectId,
   PositiveInt,
-  ThreadId,
   TrimmedNonEmptyString,
   forwardCompatibleArray,
   forwardCompatibleLiteral,
@@ -77,6 +75,12 @@ export const ServerConfigIssue = taggedUnionWithUnknown("kind", [
 export type ServerConfigIssue = z.infer<typeof ServerConfigIssue>;
 export const ServerConfigIssues = forwardCompatibleArray(ServerConfigIssue);
 export type ServerConfigIssues = z.infer<typeof ServerConfigIssues>;
+export const OtlpEndpointSource = forwardCompatibleLiteral([
+  "environment",
+  "bootstrap",
+  "settings",
+]);
+export type OtlpEndpointSource = z.infer<typeof OtlpEndpointSource>;
 export const ServerObservability = z.looseObject({
   logsDirectoryPath: TrimmedNonEmptyString.optional(),
   localTracingEnabled: z.boolean().optional(),
@@ -86,6 +90,13 @@ export const ServerObservability = z.looseObject({
   otlpTracesUrl: TrimmedNonEmptyString.optional(),
   otlpMetricsUrl: TrimmedNonEmptyString.optional(),
   otlpLogsUrl: TrimmedNonEmptyString.optional(),
+  /** Where each endpoint comes from. A 0.1.6 server sends a null variable for a settings endpoint. */
+  otlpTracesSource: OtlpEndpointSource.optional(),
+  otlpTracesVariable: TrimmedNonEmptyString.nullable().optional(),
+  otlpMetricsSource: OtlpEndpointSource.optional(),
+  otlpMetricsVariable: TrimmedNonEmptyString.nullable().optional(),
+  otlpLogsSource: OtlpEndpointSource.optional(),
+  otlpLogsVariable: TrimmedNonEmptyString.nullable().optional(),
 });
 export type ServerObservability = z.infer<typeof ServerObservability>;
 export const ServerSettings = z.looseObject({
@@ -140,15 +151,27 @@ export const ServerConfig = z.looseObject({
   observability: ServerObservability,
   settings: ServerSettings,
   shellResumeCompletionMarker: z.boolean().optional(),
+  /**
+   * The shell can leave idle subagent children out of snapshots, and
+   * `orchestration.getThreadFamily` and `orchestration.getWorktreeThreadIds` serve those rows.
+   */
+  shellThreadFamilies: z.boolean().optional(),
+  /**
+   * The shell can leave older settled threads out of snapshots, and
+   * `orchestration.getOlderSettledThreads` serves them.
+   */
+  shellOlderSettled: z.boolean().optional(),
   shellRevealInFileManager: z.boolean().optional(),
   shellRevealInFileManagerKind: FileManagerRevealKind.optional(),
   threadResumeCompletionMarker: z.boolean().optional(),
   threadSnapshotPagination: z.boolean().optional(),
-  /** Thread reads accept the `reasoningMessages` opt-in. */
-  reasoningMessages: z.boolean().optional(),
   /** The server answers `orchestration.searchThread`; progressive adds its streaming form. */
   threadFind: z.boolean().optional(),
   threadFindProgressive: z.boolean().optional(),
+  /** Settings patches may carry `secretProviders`. Older servers drop the key without an error. */
+  secretProviderSettings: z.boolean().optional(),
+  /** Secret settings may point at a secret provider. Older servers drop the reference. */
+  secretReferences: z.boolean().optional(),
   /**
    * Folder behind the environment's Scratch project. Present only when the
    * server answers `projects.ensureScratch` and its data directory is outside
@@ -242,70 +265,9 @@ export const ServerConfigStreamEvent = taggedUnionWithUnknown("type", [
   ServerConfigStreamUsageLimitSourcesUpdatedEvent,
 ]);
 export type ServerConfigStreamEvent = z.infer<typeof ServerConfigStreamEvent>;
-export const ServerSelfUpdateOutcome = z.looseObject({
-  id: TrimmedNonEmptyString,
-  fromVersion: TrimmedNonEmptyString,
-  targetVersion: TrimmedNonEmptyString,
-  status: forwardCompatibleLiteral(["committed", "rolled-back", "failed"]),
-  reason: TrimmedNonEmptyString.optional(),
-});
-export type ServerSelfUpdateOutcome = z.infer<typeof ServerSelfUpdateOutcome>;
-export const ServerLifecycleReadyPayload = z.looseObject({
-  at: IsoDateTime,
-  environment: ExecutionEnvironmentDescriptor,
-  updateOutcome: ServerSelfUpdateOutcome.optional(),
-});
-export type ServerLifecycleReadyPayload = z.infer<typeof ServerLifecycleReadyPayload>;
-export const ServerLifecycleStreamReadyEvent = z.looseObject({
-  version: z.literal(1),
-  sequence: NonNegativeInt,
-  type: z.literal("ready"),
-  payload: ServerLifecycleReadyPayload,
-});
-export type ServerLifecycleStreamReadyEvent = z.infer<typeof ServerLifecycleStreamReadyEvent>;
-export const ServerLifecycleWelcomePayload = z.looseObject({
-  environment: ExecutionEnvironmentDescriptor,
-  cwd: TrimmedNonEmptyString,
-  projectName: TrimmedNonEmptyString,
-  bootstrapStatus: forwardCompatibleLiteral(["pending", "complete"]).optional(),
-  bootstrapProjectId: ProjectId.optional(),
-  bootstrapThreadId: ThreadId.optional(),
-  bootstrapProjectCreated: z.boolean().optional(),
-  bootstrapThreadCreated: z.boolean().optional(),
-});
-export type ServerLifecycleWelcomePayload = z.infer<typeof ServerLifecycleWelcomePayload>;
-export const ServerLifecycleStreamWelcomeEvent = z.looseObject({
-  version: z.literal(1),
-  sequence: NonNegativeInt,
-  type: z.literal("welcome"),
-  payload: ServerLifecycleWelcomePayload,
-});
-export type ServerLifecycleStreamWelcomeEvent = z.infer<typeof ServerLifecycleStreamWelcomeEvent>;
-export const ServerLifecycleLegacyThreadMigrationPayload = z.looseObject({
-  status: forwardCompatibleLiteral(["running", "complete"]),
-  totalThreadCount: NonNegativeInt,
-});
-export type ServerLifecycleLegacyThreadMigrationPayload = z.infer<
-  typeof ServerLifecycleLegacyThreadMigrationPayload
->;
-/** Progress of importing threads recorded by a pre-V2 server. */
-export const ServerLifecycleStreamLegacyThreadMigrationEvent = z.looseObject({
-  version: z.literal(1),
-  sequence: NonNegativeInt,
-  type: z.literal("legacyThreadMigration"),
-  payload: ServerLifecycleLegacyThreadMigrationPayload,
-});
-export type ServerLifecycleStreamLegacyThreadMigrationEvent = z.infer<
-  typeof ServerLifecycleStreamLegacyThreadMigrationEvent
->;
-export const ServerLifecycleStreamEvent = taggedUnionWithUnknown("type", [
-  ServerLifecycleStreamWelcomeEvent,
-  ServerLifecycleStreamReadyEvent,
-  ServerLifecycleStreamLegacyThreadMigrationEvent,
-]);
-export type ServerLifecycleStreamEvent = z.infer<typeof ServerLifecycleStreamEvent>;
 export const ServerProviderUpdatedPayload = z.looseObject({ providers: ServerProviders });
 export type ServerProviderUpdatedPayload = z.infer<typeof ServerProviderUpdatedPayload>;
 
 export { ServerProvider, ServerProviders } from "./provider.ts";
 export * from "./databaseStorage.ts";
+export * from "./serverLifecycle.ts";

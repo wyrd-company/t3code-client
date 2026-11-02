@@ -3,7 +3,7 @@
 //   implements: library
 // ---
 import { z } from "zod";
-import { defineMethod } from "../spec.ts";
+import { VoidSuccess, defineMethod } from "../spec.ts";
 import {
   OrchestrationV2CommandOutputFrame,
   OrchestrationV2SubscribeCommandOutputInput,
@@ -12,10 +12,17 @@ import { OrchestrationV2Command } from "../../schemas/orchestration/commands.ts"
 import { OrchestrationV2ThreadProjection } from "../../schemas/orchestration/projection.ts";
 import {
   OrchestrationV2ArchivedShellSnapshot,
-  OrchestrationV2ArchivedShellStreamItem,
   OrchestrationV2ShellStreamItem,
   OrchestrationV2SubscribeShellInput,
 } from "../../schemas/orchestration/shell.ts";
+import {
+  OrchestrationV2GetOlderSettledThreadsInput,
+  OrchestrationV2GetThreadFamilyInput,
+  OrchestrationV2GetWorktreeThreadIdsInput,
+  OrchestrationV2OlderSettledThreadsPage,
+  OrchestrationV2ThreadFamily,
+  OrchestrationV2WorktreeThreadIds,
+} from "../../schemas/orchestration/shellOmittedRows.ts";
 import {
   OrchestrationGetFullThreadDiffInput,
   OrchestrationGetFullThreadDiffResult,
@@ -39,6 +46,10 @@ import {
   OrchestrationV2SearchThreadInput,
   OrchestrationV2SearchThreadResult,
 } from "../../schemas/orchestration/threadFind.ts";
+import {
+  OrchestrationV2ForceStopThreadInput,
+  OrchestrationV2ForceStopThreadResult,
+} from "../../schemas/orchestration/threadForceStop.ts";
 
 const read = "orchestration:read";
 const operate = "orchestration:operate";
@@ -76,11 +87,13 @@ export const orchestrationMethods = {
   }),
   "orchestration.stopWorkflow": defineMethod({
     payload: OrchestrationV2StopWorkflowInput,
-    // Effect's JSON codec encodes Schema.Void as null; callers still receive void.
-    success: z
-      .null()
-      .or(z.void())
-      .transform((): void => undefined),
+    success: VoidSuccess,
+    stream: false,
+    scope: operate,
+  }),
+  "orchestration.forceStopThread": defineMethod({
+    payload: OrchestrationV2ForceStopThreadInput,
+    success: OrchestrationV2ForceStopThreadResult,
     stream: false,
     scope: operate,
   }),
@@ -121,10 +134,22 @@ export const orchestrationMethods = {
     stream: false,
     scope: read,
   }),
-  "orchestration.subscribeArchivedShell": defineMethod({
-    payload: z.looseObject({}),
-    success: OrchestrationV2ArchivedShellStreamItem,
-    stream: true,
+  "orchestration.getThreadFamily": defineMethod({
+    payload: OrchestrationV2GetThreadFamilyInput,
+    success: OrchestrationV2ThreadFamily,
+    stream: false,
+    scope: read,
+  }),
+  "orchestration.getWorktreeThreadIds": defineMethod({
+    payload: OrchestrationV2GetWorktreeThreadIdsInput,
+    success: OrchestrationV2WorktreeThreadIds,
+    stream: false,
+    scope: read,
+  }),
+  "orchestration.getOlderSettledThreads": defineMethod({
+    payload: OrchestrationV2GetOlderSettledThreadsInput,
+    success: OrchestrationV2OlderSettledThreadsPage,
+    stream: false,
     scope: read,
   }),
   "orchestration.subscribeShell": defineMethod({

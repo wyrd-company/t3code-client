@@ -185,4 +185,26 @@ describe("OrchestrationV2ThreadProjection", () => {
   it("passes unknown top-level keys through", () => {
     expect(makeProjection({ futureCollection: [] })).toMatchObject({ futureCollection: [] });
   });
+
+  it("decodes a link request, and keeps a newer status and access", () => {
+    const asked = makeTurnItem("link_request", {
+      reason: "Run the sample on the other machine.",
+      url: "https://peer.example.test",
+      hint: "sample",
+      requestedAccess: "auto",
+      linkStatus: "pending",
+    });
+    const item = OrchestrationV2TurnItem.parse(asked);
+    expect(isTurnItemOfType(item, "link_request") && item.linkStatus).toBe("pending");
+    const ended = OrchestrationV2TurnItem.parse({
+      ...asked,
+      linkStatus: "future-status",
+      linkedEnvironmentId: "environment-peer",
+      linkedLabel: "Sample peer",
+      linkedAccess: "future-access",
+    });
+    expect(isUnknownVariant(ended)).toBe(false);
+    expect(ended).toMatchObject({ linkStatus: "future-status", linkedAccess: "future-access" });
+    expect(OrchestrationV2TurnItem.safeParse({ ...asked, reason: 1 }).success).toBe(false);
+  });
 });

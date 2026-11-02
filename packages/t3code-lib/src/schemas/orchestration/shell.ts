@@ -36,8 +36,10 @@ import {
   OrchestrationV2RuntimeRequestKind,
 } from "./providerState.ts";
 import { ThreadLinkedPullRequest, ThreadPullRequestLink } from "./pullRequest.ts";
+import { OrchestrationV2DelegatedFrom, OrchestrationV2LinkOrigin } from "./threadLink.ts";
 import {
   OrchestrationV2AppThreadLineage,
+  OrchestrationV2LenientThreadOpens,
   OrchestrationV2LimitRecovery,
   OrchestrationV2ThreadForkedFrom,
   ThreadTitleRegeneration,
@@ -56,6 +58,8 @@ export const OrchestrationProjectShell = z.looseObject({
   faviconPath: ProjectFaviconPath.nullable().optional(),
   projectIcon: ReceivedProjectIcon.nullable().optional(),
   scripts: z.array(ProjectScript),
+  pinnedAt: IsoDateTime.nullable().optional(),
+  archivedAt: IsoDateTime.nullable().optional(),
   createdAt: IsoDateTime,
   updatedAt: IsoDateTime,
 });
@@ -115,6 +119,9 @@ export const OrchestrationV2ThreadShell = z.looseObject({
   forkedFrom: OrchestrationV2ThreadForkedFrom.nullable(),
   activeProviderThreadId: ProviderThreadId.nullable(),
   historyOrigin: OrchestrationV2ThreadHistoryOrigin.optional(),
+  linkOrigin: OrchestrationV2LinkOrigin.optional(),
+  delegatedFrom: OrchestrationV2DelegatedFrom.optional(),
+  opens: OrchestrationV2LenientThreadOpens.optional(),
   latestRunId: RunId.nullable(),
   latestRunRequestedAt: IsoDateTime.nullable().optional(),
   latestRunStartedAt: IsoDateTime.nullable().optional(),
@@ -132,6 +139,8 @@ export const OrchestrationV2ThreadShell = z.looseObject({
   lastErrorCode: z.string().nullable().optional(),
   usageLimitResetAt: IsoDateTime.nullable().optional(),
   pendingRuntimeRequest: OrchestrationV2PendingRuntimeRequestSummary.nullable(),
+  /** Guest messages waiting for the owner to send or dismiss. */
+  pendingGuestMessageCount: NonNegativeInt.optional(),
   latestVisibleMessage: OrchestrationV2LatestVisibleMessageSummary.nullable(),
   latestUserMessageAt: IsoDateTime.nullable(),
   latestUserAuthoredMessageAt: IsoDateTime.nullable().optional(),
@@ -162,6 +171,23 @@ export const OrchestrationV2ThreadShell = z.looseObject({
 });
 export type OrchestrationV2ThreadShell = z.infer<typeof OrchestrationV2ThreadShell>;
 
+export const OrchestrationV2OlderSettledCount = z.looseObject({
+  projectId: ProjectId,
+  count: NonNegativeInt,
+});
+export type OrchestrationV2OlderSettledCount = z.infer<typeof OrchestrationV2OlderSettledCount>;
+
+/**
+ * Snapshots that leave out older settled threads name the cut and count them per project.
+ * `asOfSequence` is the snapshot's own sequence: the counts are exact until a later change.
+ */
+export const OrchestrationV2OlderSettledThreads = z.looseObject({
+  before: IsoDateTime,
+  asOfSequence: NonNegativeInt,
+  counts: z.array(OrchestrationV2OlderSettledCount),
+});
+export type OrchestrationV2OlderSettledThreads = z.infer<typeof OrchestrationV2OlderSettledThreads>;
+
 export const OrchestrationV2ThreadShellSnapshot = z.looseObject({
   schemaVersion: PositiveInt,
   snapshotSequence: NonNegativeInt,
@@ -171,6 +197,7 @@ export const OrchestrationV2ThreadShellSnapshot = z.looseObject({
 export const OrchestrationV2ShellSnapshot = z.looseObject({
   ...OrchestrationV2ThreadShellSnapshot.shape,
   projects: z.array(OrchestrationProjectShell),
+  olderSettled: OrchestrationV2OlderSettledThreads.optional(),
 });
 export type OrchestrationV2ShellSnapshot = z.infer<typeof OrchestrationV2ShellSnapshot>;
 
@@ -211,6 +238,16 @@ export const OrchestrationV2SubscribeShellInput = z.looseObject({
   afterSequence: NonNegativeInt.optional(),
   /** Requests a `synchronized` marker between catch-up and live delivery. */
   requestCompletionMarker: z.boolean().optional(),
+  /**
+   * Snapshots leave out idle subagent children; read them with `orchestration.getThreadFamily`.
+   * Send only to servers that advertise `shellThreadFamilies`.
+   */
+  omitIdleSubagents: z.boolean().optional(),
+  /**
+   * Snapshots leave out older settled threads and count them in `olderSettled`; read them with
+   * `orchestration.getOlderSettledThreads`. Send only to servers that advertise `shellOlderSettled`.
+   */
+  omitOlderSettled: z.boolean().optional(),
 });
 export type OrchestrationV2SubscribeShellInput = z.infer<typeof OrchestrationV2SubscribeShellInput>;
 
@@ -223,22 +260,5 @@ export const OrchestrationV2ArchivedShellSnapshot = z.looseObject({
 export type OrchestrationV2ArchivedShellSnapshot = z.infer<
   typeof OrchestrationV2ArchivedShellSnapshot
 >;
-export const OrchestrationV2ArchivedShellStreamItem = taggedUnionWithUnknown("kind", [
-  z.looseObject({ kind: z.literal("snapshot"), snapshot: OrchestrationV2ArchivedShellSnapshot }),
-  z.looseObject({
-    kind: z.literal("thread.updated"),
-    sequence: NonNegativeInt,
-    thread: OrchestrationV2ThreadShell,
-  }),
-  z.looseObject({
-    kind: z.literal("thread.removed"),
-    sequence: NonNegativeInt,
-    threadId: ThreadId,
-  }),
-]);
-export type OrchestrationV2ArchivedShellStreamItem = z.infer<
-  typeof OrchestrationV2ArchivedShellStreamItem
->;
-
 /** The `commandId` stamp on a `thread.visit` and the like; re-exported for facades. */
 export type { CommandId };

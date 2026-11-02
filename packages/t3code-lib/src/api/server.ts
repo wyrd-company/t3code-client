@@ -10,6 +10,7 @@ import {
   type ExecutionEnvironmentDescriptor as ExecutionEnvironmentDescriptorType,
 } from "../schemas/environment.ts";
 import type { ServerProvider, ServerProviderModel } from "../schemas/provider.ts";
+import type { ServerSettings } from "../schemas/server.ts";
 import type { UsageSummary, UsageSummaryInput } from "../schemas/usage.ts";
 import type { HttpTransport } from "../transport/http.ts";
 import { unwrapStreamItems, type DecodedStreamItem } from "./streamItems.ts";
@@ -17,6 +18,14 @@ import { unwrapStreamItems, type DecodedStreamItem } from "./streamItems.ts";
 export interface WatchServerConfigOptions {
   readonly environmentThemes?: boolean;
   readonly usageLimitSources?: boolean;
+  /** Advertise that this client handles /usage-limits, so that the server offers it. */
+  readonly usageLimitsCommand?: boolean;
+  /**
+   * Omit per-cwd provider snapshots from the stream. `refreshProviders` with
+   * `workspaceSnapshotsOnDemand` then supplies them. Servers that advertise the
+   * `providerWorkspaceSnapshotsOnDemand` capability honor it.
+   */
+  readonly workspaceSnapshotsOnDemand?: boolean;
   readonly signal?: AbortSignal;
 }
 
@@ -380,6 +389,14 @@ export interface WatchDatabaseStorageOptions {
  * A malformed item is delivered as a decode error and later items continue.
  * Returning early or aborting the signal ends the subscription. Watching does not
  * reclaim space or run the compact command.
+ *
+ * Environment capabilities also include optional booleans `sideChats`,
+ * `threadForceStop`, `localServerStop` and `desktopAppChannelSwitch`. Omission is
+ * preserved and advertises no support. The descriptor exposes optional
+ * `databaseMigration`, the highest migration that the server database holds.
+ * Configuration reads expose optional `secretProviderSettings` and `secretReferences`,
+ * and `observability` exposes the optional source and variable of each OTLP endpoint.
+ * A settings endpoint has a null variable. These flags and fields do not change a setting.
  */
 export class ServerApi {
   readonly rpc: RpcClient<RpcMethods>;
@@ -400,12 +417,18 @@ export class ServerApi {
     return this.rpc.call("server.getConfig", {}, signal);
   }
 
-  /** Read server settings. */
-  getSettings(signal?: AbortSignal): Promise<RpcSuccess<RpcMethods, "server.getSettings">> {
-    return this.rpc.call("server.getSettings", {}, signal);
+  /** Read server settings, which the server serves as part of its configuration. */
+  async getSettings(signal?: AbortSignal): Promise<ServerSettings> {
+    return (await this.getConfig(signal)).settings;
   }
 
-  /** Refresh the selected provider instances. */
+  /**
+   * Refresh the selected provider instances. `reloadSecrets` reads secret
+   * references again and can prompt on the host. `workspaceSnapshotsOnDemand`
+   * replies without snapshots or, with `instanceId` and `cwd`, with only that
+   * instance's snapshot of that folder and empty `models`, `slashCommands` and
+   * `skills`. `usageLimitsCommand` adds /usage-limits to that reply.
+   */
   refreshProviders(
     input: RpcPayload<RpcMethods, "server.refreshProviders"> = {},
     signal?: AbortSignal,
@@ -413,17 +436,51 @@ export class ServerApi {
     return this.rpc.call("server.refreshProviders", input, signal);
   }
 
+  /**
+   * Find a `t3` release in the npm registry that the server is configured to use.
+   * `spec` is `latest`, `nightly` or an exact version. Resolves to `null` when
+   * there is no such release, and fails with `ServerNpmReleaseError` when the
+   * lookup cannot complete. Servers that advertise `npmReleaseLookup` answer it.
+   */
+  getNpmRelease(
+    input: RpcPayload<RpcMethods, "server.getNpmRelease">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "server.getNpmRelease">> {
+    return this.rpc.call("server.getNpmRelease", input, signal);
+  }
+
+  /**
+   * Write triage session files on the server and get composer text that links
+   * them, for a new thread. The server also starts to clone the T3 Code source in
+   * its own folder when it can. `client` names this client in the session.
+   * Servers that advertise `triage` answer it.
+   */
+  prepareTriage(
+    input: RpcPayload<RpcMethods, "server.prepareTriage">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "server.prepareTriage">> {
+    return this.rpc.call("server.prepareTriage", input, signal);
+  }
+
   /** Subscribe to configuration changes; decode failures remain stream items. */
   watchConfig(
     options: WatchServerConfigOptions = {},
   ): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "subscribeServerConfig">>> {
-    const { signal, environmentThemes, usageLimitSources } = options;
+    const {
+      signal,
+      environmentThemes,
+      usageLimitSources,
+      usageLimitsCommand,
+      workspaceSnapshotsOnDemand,
+    } = options;
     return unwrapStreamItems(
       this.rpc.stream(
         "subscribeServerConfig",
         {
           ...(environmentThemes === undefined ? {} : { environmentThemes }),
           ...(usageLimitSources === undefined ? {} : { usageLimitSources }),
+          ...(usageLimitsCommand === undefined ? {} : { usageLimitsCommand }),
+          ...(workspaceSnapshotsOnDemand === undefined ? {} : { workspaceSnapshotsOnDemand }),
         },
         signal === undefined ? undefined : { signal },
       ),

@@ -30,6 +30,12 @@ export const VcsWorktree = z.looseObject({
 export type VcsWorktree = z.infer<typeof VcsWorktree>;
 export const VcsStatusInput = z.looseObject({ cwd: TrimmedNonEmptyString });
 export type VcsStatusInput = z.infer<typeof VcsStatusInput>;
+export const VcsRefreshStatusInput = z.looseObject({
+  cwd: TrimmedNonEmptyString,
+  /** Refresh only the local state and keep the remote state the server already has. */
+  localOnly: z.boolean().optional(),
+});
+export type VcsRefreshStatusInput = z.infer<typeof VcsRefreshStatusInput>;
 export const GIT_LIST_BRANCHES_MAX_LIMIT = 200;
 export const VcsListRefsInput = z.looseObject({
   cwd: TrimmedNonEmptyString,

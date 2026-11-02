@@ -30,6 +30,10 @@ export const CommandId = entityId("CommandId");
 export type CommandId = z.infer<typeof CommandId>;
 export const EventId = entityId("EventId");
 export type EventId = z.infer<typeof EventId>;
+export const GuestShareId = entityId("GuestShareId");
+export type GuestShareId = z.infer<typeof GuestShareId>;
+export const GuestMessageId = entityId("GuestMessageId");
+export type GuestMessageId = z.infer<typeof GuestMessageId>;
 export const MessageId = entityId("MessageId");
 export type MessageId = z.infer<typeof MessageId>;
 /** Provider-session turn id; the V2 orchestration model speaks of runs instead. */
@@ -96,6 +100,9 @@ export const providerInstanceId = (value: string): ProviderInstanceId =>
 
 export const ClientSurface = z.enum(["web", "desktop", "mobile", "cli"]);
 export type ClientSurface = z.infer<typeof ClientSurface>;
+
+export const ClientWebDeployment = z.enum(["hosted", "server"]);
+export type ClientWebDeployment = z.infer<typeof ClientWebDeployment>;
 
 /**
  * A literal set the server may extend. Known members keep their literal type;

@@ -29,6 +29,8 @@ export const OrchestrationV2WorkflowAgent = z.looseObject({
   phaseIndex: NonNegativeInt.optional(),
   phaseTitle: TrimmedNonEmptyString.optional(),
   model: TrimmedNonEmptyString.optional(),
+  effort: TrimmedNonEmptyString.optional(),
+  speed: TrimmedNonEmptyString.optional(),
   /** Retry counter; above 1 means the agent restarted after a provider error. */
   attempt: NonNegativeInt.optional(),
   totalTokens: NonNegativeInt.optional(),

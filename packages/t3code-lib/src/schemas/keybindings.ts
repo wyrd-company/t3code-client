@@ -44,6 +44,8 @@ const MODEL_PICKER_JUMP_KEYBINDING_COMMANDS = [
 
 /** Commands the server knows by name. Script commands (`script.<id>.run`) are open strings. */
 export const STATIC_KEYBINDING_COMMANDS = [
+  "workspace.focusNext",
+  "workspace.focusPrevious",
   "sidebar.toggle",
   "navigation.back",
   "navigation.forward",

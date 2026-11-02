@@ -36,10 +36,10 @@ getConfig(signal?: AbortSignal): Promise<RpcSuccess<RpcMethods, "server.getConfi
 
 ### serverApi.getSettings()
 
-Read server settings.
+Read server settings, which the server serves as part of its configuration.
 
 ```ts
-getSettings(signal?: AbortSignal): Promise<RpcSuccess<RpcMethods, "server.getSettings">>;
+async getSettings(signal?: AbortSignal): Promise<ServerSettings>;
 ```
 
 **Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)  
@@ -47,13 +47,51 @@ getSettings(signal?: AbortSignal): Promise<RpcSuccess<RpcMethods, "server.getSet
 
 ### serverApi.refreshProviders()
 
-Refresh the selected provider instances.
+Refresh the selected provider instances. `reloadSecrets` reads secret
+references again and can prompt on the host. `workspaceSnapshotsOnDemand`
+replies without snapshots or, with `instanceId` and `cwd`, with only that
+instance's snapshot of that folder and empty `models`, `slashCommands` and
+`skills`. `usageLimitsCommand` adds /usage-limits to that reply.
 
 ```ts
 refreshProviders(
     input: RpcPayload<RpcMethods, "server.refreshProviders"> = {},
     signal?: AbortSignal,
   ): Promise<RpcSuccess<RpcMethods, "server.refreshProviders">>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)  
+<a name="ServerApi+getNpmRelease"></a>
+
+### serverApi.getNpmRelease()
+
+Find a `t3` release in the npm registry that the server is configured to use.
+`spec` is `latest`, `nightly` or an exact version. Resolves to `null` when
+there is no such release, and fails with `ServerNpmReleaseError` when the
+lookup cannot complete. Servers that advertise `npmReleaseLookup` answer it.
+
+```ts
+getNpmRelease(
+    input: RpcPayload<RpcMethods, "server.getNpmRelease">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "server.getNpmRelease">>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)  
+<a name="ServerApi+prepareTriage"></a>
+
+### serverApi.prepareTriage()
+
+Write triage session files on the server and get composer text that links
+them, for a new thread. The server also starts to clone the T3 Code source in
+its own folder when it can. `client` names this client in the session.
+Servers that advertise `triage` answer it.
+
+```ts
+prepareTriage(
+    input: RpcPayload<RpcMethods, "server.prepareTriage">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "server.prepareTriage">>;
 ```
 
 **Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)  

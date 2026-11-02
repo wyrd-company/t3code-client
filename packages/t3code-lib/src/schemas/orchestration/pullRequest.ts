@@ -99,10 +99,14 @@ export const ThreadPullRequestWatch = z.looseObject({
   failedChecks: z.array(TrimmedNonEmptyString),
   passed: z.boolean(),
   passedChecks: z.array(TrimmedNonEmptyString).default([]),
+  /** Checks still pending when required ones passed early, owed one wake once all settle. */
+  owedChecks: z.array(TrimmedNonEmptyString).optional(),
   remarksThrough: IsoDateTime,
   remarkIds: z.array(TrimmedNonEmptyString),
   conflicting: z.boolean(),
   wakes: NonNegativeInt,
+  /** When the head was first read without any check. Null once a check showed up or the agent was told. */
+  checksAwaitedSince: IsoDateTime.nullable().optional(),
 });
 export type ThreadPullRequestWatch = z.infer<typeof ThreadPullRequestWatch>;
 export const ThreadPullRequestLink = z.looseObject({

@@ -26,6 +26,7 @@ describe("public thread.stop command", () => {
       commandId: CommandId;
       threadId: ThreadId;
       reason?: string | undefined;
+      stopDelegatedTasks?: boolean | undefined;
     };
     expectTypeOf<ThreadStopCommand>().toEqualTypeOf<Expected>();
     expectTypeOf<OrchestrationV2CommandOfType<"thread.stop">>().toEqualTypeOf<Expected>();

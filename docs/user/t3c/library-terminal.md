@@ -1,7 +1,7 @@
 ---
 product: t3c
 title: "Terminal API"
-order: 23
+order: 25
 relationships:
   references: [library, api]
 ---
@@ -42,7 +42,6 @@ retain ordinary attach behavior; unknown IDs without `cwd` fail lookup.
   - [.write()](#TerminalApi+write)
   - [.resize()](#TerminalApi+resize)
   - [.close()](#TerminalApi+close)
-  - [.watchEvents()](#TerminalApi+watchEvents)
 
 <a name="TerminalApi+open"></a>
 
@@ -111,19 +110,6 @@ close(
     input: RpcPayload<RpcMethods, "terminal.close">,
     signal?: AbortSignal,
   ): Promise<RpcSuccess<RpcMethods, "terminal.close">>;
-```
-
-**Kind**: instance method of [<code>TerminalApi</code>](#TerminalApi)  
-<a name="TerminalApi+watchEvents"></a>
-
-### terminalApi.watchEvents()
-
-Subscribe to terminal lifecycle events.
-
-```ts
-watchEvents(options?: {
-    readonly signal?: AbortSignal;
-  }): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "subscribeTerminalEvents">>>;
 ```
 
 **Kind**: instance method of [<code>TerminalApi</code>](#TerminalApi)

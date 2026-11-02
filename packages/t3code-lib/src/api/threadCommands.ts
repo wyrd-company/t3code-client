@@ -17,6 +17,8 @@ export interface ApprovalResponseInput {
   readonly threadId: ThreadId;
   readonly requestId: RuntimeRequestId;
   readonly decision: NonNullable<RuntimeRequestRespondCommand["decision"]>;
+  /** Text for the agent with a `decline`, when the request's capability has `supportsFeedback`. */
+  readonly feedback?: string;
 }
 
 export interface UserInputResponseInput {
@@ -39,6 +41,11 @@ export interface InterruptOptions {
   readonly reason?: string;
   /** The Stop button: also hold the queue, end pull request watches, and stop delegated tasks. */
   readonly holdQueue?: boolean;
+}
+
+export interface ForceStopThreadOptions {
+  /** The run that ignored Stop; the server refuses once another run is the latest. */
+  readonly runId?: RunId;
 }
 
 export class ThreadCommands {
@@ -139,6 +146,7 @@ export class ThreadCommands {
       threadId: input.threadId,
       requestId: input.requestId,
       decision: input.decision,
+      ...(input.feedback === undefined ? {} : { feedback: input.feedback }),
     };
   }
 

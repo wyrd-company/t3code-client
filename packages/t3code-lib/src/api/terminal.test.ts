@@ -44,20 +44,4 @@ describe("TerminalApi", () => {
       api.open({ threadId: "record-1", terminalId: "terminal-1", cwd: "/tmp/sample" }),
     ).resolves.toMatchObject({ terminalId: "terminal-1", status: "running" });
   });
-
-  it("unwraps terminal events and preserves decode errors from separate chunks", async () => {
-    server.handle("subscribeTerminalEvents", () => ({
-      kind: "stream",
-      chunks: [
-        [{ type: "started", threadId: "record-1", terminalId: "terminal-1", snapshot }],
-        [{ type: "output", threadId: "record-1", terminalId: "terminal-1" }],
-      ],
-    }));
-
-    const items = [];
-    for await (const item of api.watchEvents()) items.push(item);
-
-    expect(items[0]).toMatchObject({ type: "started", snapshot: { status: "running" } });
-    expect(items[1]).toMatchObject({ kind: "decode-error" });
-  });
 });

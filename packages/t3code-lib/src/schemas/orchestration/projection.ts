@@ -58,7 +58,6 @@ const historyWindowFields = {
   historyCursor: TrimmedNonEmptyString.nullable().optional(),
   hasMoreHistory: z.boolean().optional(),
   latestLocalTurnOrdinal: NonNegativeInt.nullable().optional(),
-  payloadBudgetExceeded: z.boolean().optional(),
   /** `projection.turnItems` omits the local visible rows' items; see `boundedSnapshotProjection`. */
   turnItemsOmitLocalVisible: z.literal(true).optional(),
 } as const;
@@ -79,7 +78,6 @@ export const OrchestrationV2ThreadBoundedSnapshot = z.looseObject({
   historyCursor: TrimmedNonEmptyString.nullable(),
   hasMoreHistory: z.boolean(),
   latestLocalTurnOrdinal: NonNegativeInt.nullable(),
-  payloadBudgetExceeded: z.boolean().optional(),
   turnItemsOmitLocalVisible: z.literal(true).optional(),
 });
 export type OrchestrationV2ThreadBoundedSnapshot = z.infer<

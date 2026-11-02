@@ -6,13 +6,11 @@
 import { z } from "zod";
 import {
   CheckpointId,
-  CheckpointRef,
   CheckpointScopeId,
   ContextHandoffId,
   IsoDateTime,
   MessageId,
   NodeId,
-  NonNegativeInt,
   PlanId,
   PositiveInt,
   ProviderDriverKind,
@@ -28,7 +26,10 @@ import {
   taggedUnionWithUnknown,
 } from "../common.ts";
 import { ModelSelection, OrchestrationV2Actor, OrchestrationV2ProviderRef } from "./model.ts";
+import { OrchestrationV2RemoteTaskChild } from "./threadLink.ts";
 import { OrchestrationV2SubagentWorkflow } from "./workflow.ts";
+
+export * from "./checkpoints.ts";
 
 export const RUN_TERMINAL_STATUSES = [
   "completed",
@@ -94,6 +95,8 @@ export const OrchestrationV2RestartCancelledBackgroundWork = z.looseObject({
   kind: forwardCompatibleLiteral(["subagent", "shell", "monitor", "task"]),
   label: TrimmedNonEmptyString,
   id: TrimmedNonEmptyString.optional(),
+  /** The agent was waiting on this work, so its restart note wakes the agent. */
+  awaited: z.literal(true).optional(),
 });
 export type OrchestrationV2RestartCancelledBackgroundWork = z.infer<
   typeof OrchestrationV2RestartCancelledBackgroundWork
@@ -258,6 +261,7 @@ export const OrchestrationV2Subagent = z.looseObject({
   providerInstanceId: ProviderInstanceId,
   providerThreadId: ProviderThreadId.nullable(),
   childThreadId: ThreadId.nullable(),
+  remoteChild: OrchestrationV2RemoteTaskChild.optional(),
   nativeTaskRef: OrchestrationV2ProviderRef.nullable(),
   prompt: z.string(),
   title: z.string().nullable(),
@@ -284,53 +288,3 @@ export const OrchestrationV2Subagent = z.looseObject({
   updatedAt: IsoDateTime,
 });
 export type OrchestrationV2Subagent = z.infer<typeof OrchestrationV2Subagent>;
-
-export const OrchestrationV2CheckpointScope = z.looseObject({
-  id: CheckpointScopeId,
-  threadId: ThreadId,
-  runId: RunId.nullable(),
-  nodeId: NodeId,
-  parentScopeId: CheckpointScopeId.nullable(),
-  providerThreadId: ProviderThreadId.nullable(),
-  kind: forwardCompatibleLiteral(["root_run", "subagent", "tool", "provider_thread", "manual"]),
-  ordinalWithinParent: NonNegativeInt,
-  advancesAppRunCount: z.boolean(),
-  cwd: TrimmedNonEmptyString,
-  createdAt: IsoDateTime,
-});
-export type OrchestrationV2CheckpointScope = z.infer<typeof OrchestrationV2CheckpointScope>;
-
-export const OrchestrationV2CheckpointFileSummary = z.looseObject({
-  path: TrimmedNonEmptyString,
-  kind: TrimmedNonEmptyString,
-  additions: NonNegativeInt,
-  deletions: NonNegativeInt,
-});
-export type OrchestrationV2CheckpointFileSummary = z.infer<
-  typeof OrchestrationV2CheckpointFileSummary
->;
-
-export const OrchestrationV2Checkpoint = z.looseObject({
-  id: CheckpointId,
-  threadId: ThreadId,
-  scopeId: CheckpointScopeId,
-  runId: RunId.nullable(),
-  nodeId: NodeId,
-  parentCheckpointId: CheckpointId.nullable(),
-  ordinalWithinScope: NonNegativeInt,
-  appRunOrdinal: PositiveInt.nullable(),
-  ref: CheckpointRef,
-  status: forwardCompatibleLiteral(["ready", "missing", "error", "stale"]),
-  files: z.array(OrchestrationV2CheckpointFileSummary),
-  capturedAt: IsoDateTime,
-});
-export type OrchestrationV2Checkpoint = z.infer<typeof OrchestrationV2Checkpoint>;
-
-export const OrchestrationV2CheckpointRollbackRequest = z.looseObject({
-  scopeId: CheckpointScopeId,
-  checkpointId: CheckpointId,
-  requestedAt: IsoDateTime,
-});
-export type OrchestrationV2CheckpointRollbackRequest = z.infer<
-  typeof OrchestrationV2CheckpointRollbackRequest
->;

@@ -16,21 +16,17 @@ import type { Clock } from "../internal/clock.ts";
 import { systemClock } from "../internal/clock.ts";
 import {
   AuthAccessTokenResult,
-  AuthClientSession,
   AuthCreatePairingCredentialInput,
   AuthPairingCredentialResult,
-  AuthPairingLink,
   AuthSessionState,
   AuthWebSocketTicketResult,
   grantedScopes,
   type AuthAccessTokenResult as AuthAccessTokenResultType,
   type AuthClientMetadataDeviceType as AuthClientMetadataDeviceTypeType,
-  type AuthClientSession as AuthClientSessionType,
   type AuthCreatePairingCredentialInput as AuthCreatePairingCredentialInputType,
   type AuthEnvironmentScope as AuthEnvironmentScopeType,
   type AuthGrantedScope as AuthGrantedScopeType,
   type AuthPairingCredentialResult as AuthPairingCredentialResultType,
-  type AuthPairingLink as AuthPairingLinkType,
   type AuthSessionState as AuthSessionStateType,
   type AuthWebSocketTicketResult as AuthWebSocketTicketResultType,
 } from "../schemas/auth.ts";
@@ -202,16 +198,6 @@ export class AuthClient {
     });
   }
 
-  /** List pairing links visible to this session. */
-  listPairingLinks(): Promise<AuthPairingLinkType[]> {
-    return this.http.request({
-      method: "GET",
-      path: "/api/auth/pairing-links",
-      auth: "required",
-      decode: z.array(AuthPairingLink),
-    });
-  }
-
   /** Revoke a pairing link; return whether it was revoked. */
   async revokePairingLink(id: string): Promise<boolean> {
     const result = await this.http.request({
@@ -222,16 +208,6 @@ export class AuthClient {
       decode: BooleanRevoked,
     });
     return result.revoked;
-  }
-
-  /** List authenticated client sessions. */
-  listClients(): Promise<AuthClientSessionType[]> {
-    return this.http.request({
-      method: "GET",
-      path: "/api/auth/clients",
-      auth: "required",
-      decode: z.array(AuthClientSession),
-    });
   }
 
   /** Revoke the selected client session. */

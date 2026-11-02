@@ -2,7 +2,7 @@
 // relationships:
 //   implements: library
 // ---
-import { T3AuthError, T3NotFoundError, T3PreconditionError } from "../errors.ts";
+import { T3AuthError, T3ConnectionError, T3NotFoundError, T3PreconditionError } from "../errors.ts";
 import type { RpcClient } from "../rpc/client.ts";
 import type { RpcMethods } from "../rpc/registry.ts";
 import { isUnknownVariant, type ScheduledTaskId } from "../schemas/common.ts";
@@ -67,7 +67,16 @@ export class ScheduledTasksApi {
 
   /** Every task this client can decode; a task with an unfamiliar shape is left out. */
   async list(signal?: AbortSignal): Promise<ScheduledTask[]> {
-    return (await this.rpc.call("scheduledTasks.list", {}, signal)).tasks;
+    const options = signal === undefined ? undefined : { signal };
+    // The server has no list call; a subscription starts with the full list.
+    for await (const item of this.rpc.stream("scheduledTasks.subscribe", {}, options)) {
+      if (item.kind === "decode-error") throw item.error;
+      return item.value.tasks;
+    }
+    throw new T3ConnectionError(
+      "protocol",
+      "The scheduled task subscription ended before it sent a list.",
+    );
   }
 
   /** One task, or undefined when no task has `id`. */

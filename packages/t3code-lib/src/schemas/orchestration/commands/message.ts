@@ -8,6 +8,7 @@ import {
   CheckpointId,
   CheckpointScopeId,
   CommandId,
+  GuestMessageId,
   MessageId,
   NodeId,
   PlanId,
@@ -21,7 +22,7 @@ import {
 } from "../../common.ts";
 import { ChatAttachment } from "../attachments.ts";
 import { OrchestrationMessageContext } from "../messageContext.ts";
-import { OrchestrationV2Notification } from "../messages.ts";
+import { OrchestrationV2IdleCompaction, OrchestrationV2Notification } from "../messages.ts";
 import {
   ModelSelection,
   OrchestrationV2CreationFields,
@@ -51,9 +52,12 @@ export type MessageDeliveryIntent = z.infer<typeof MessageDeliveryIntent>;
 export const MessageDispatchCommand = z.looseObject({
   type: z.literal("message.dispatch"),
   notification: OrchestrationV2Notification.optional(),
+  /** Sends this pending guest message; the server uses the guest's text, not `text`. */
+  guestMessageId: GuestMessageId.optional(),
   ...OrchestrationV2CreationFields,
   scheduledTaskId: ScheduledTaskId.optional(),
   senderThreadId: ThreadId.optional(),
+  idleCompaction: OrchestrationV2IdleCompaction.optional(),
   ...stamped,
   messageId: MessageId,
   text: z.string(),
@@ -153,6 +157,8 @@ export const RuntimeRequestRespondCommand = z.looseObject({
   ...stamped,
   requestId: RuntimeRequestId,
   decision: ProviderApprovalDecision.optional(),
+  /** Text for the agent with a `decline`, when the request's capability has `supportsFeedback`. */
+  feedback: z.string().optional(),
   answers: ProviderUserInputAnswers.optional(),
   attachmentsByQuestionId: UserInputAttachments.optional(),
 });

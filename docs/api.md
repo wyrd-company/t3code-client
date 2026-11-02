@@ -56,6 +56,10 @@ TypeScript declarations ship with the package.
 </dd>
 <dt><a href="#ProjectsApi">ProjectsApi</a></dt>
 <dd><p>Project discovery, creation, mutations and files.</p>
+<p><code>projects.update(id, { pinned, archived })</code> sets or clears <code>pinnedAt</code> and
+<code>archivedAt</code> on servers that advertise the <code>projectOrganization</code> environment
+capability; older servers drop both fields. Archiving keeps threads and files,
+and <code>projects.list</code> still returns an archived project with its <code>archivedAt</code>.</p>
 <p>Project repository identities can include <code>origin.remoteUrl</code>, an optional
 trimmed nonempty string naming the checkout remote when its repository differs
 from the canonical repository. Omission does not imply a missing remote.</p>
@@ -551,6 +555,13 @@ plain string; all four fields are required and unknown fields are preserved.
 A malformed item is delivered as a decode error and later items continue.
 Returning early or aborting the signal ends the subscription. Watching does not
 reclaim space or run the compact command.</p>
+<p>Environment capabilities also include optional booleans <code>sideChats</code>,
+<code>threadForceStop</code>, <code>localServerStop</code> and <code>desktopAppChannelSwitch</code>. Omission is
+preserved and advertises no support. The descriptor exposes optional
+<code>databaseMigration</code>, the highest migration that the server database holds.
+Configuration reads expose optional <code>secretProviderSettings</code> and <code>secretReferences</code>,
+and <code>observability</code> exposes the optional source and variable of each OTLP endpoint.
+A settings endpoint has a null variable. These flags and fields do not change a setting.</p>
 </dd>
 <dt><a href="#VcsApi">VcsApi</a></dt>
 <dd><p>Repository references, worktrees and status. A failed Git command rejects
@@ -573,6 +584,23 @@ even when <code>restartIfNotRunning: true</code>. Unknown terminal IDs can recov
 <code>cwd</code> is supplied, including after a server restart. Omission and <code>false</code>
 retain ordinary attach behavior; unknown IDs without <code>cwd</code> fail lookup.</p>
 </dd>
+<dt><a href="#PeerLinksApi">PeerLinksApi</a></dt>
+<dd><p>Links from this environment to other T3 Code environments (peers), so that
+its agents can work there. <code>capabilities.peerLinks</code> advertises them. A
+refusal rejects with a <code>T3RpcError</code> whose <code>PeerLinkError</code> record has a
+<code>reason</code> such as <code>disabled</code>, <code>pairing_rejected</code>, <code>self</code> or <code>unreachable</code>.
+The server setting <code>linkedEnvironmentsEnabled</code> is off by default and is needed
+on both sides: off here, a new link rejects with <code>disabled</code>; off on the peer,
+with <code>pairing_rejected</code>.</p>
+</dd>
+<dt><a href="#GuestSharesApi">GuestSharesApi</a></dt>
+<dd><p>Guest links to a thread: one unauthenticated browser watches the thread over
+T3 Connect and proposes messages that the owner sends or dismisses. The thread
+record&#39;s <code>guestShare</code> holds the share, and a shell row&#39;s
+<code>pendingGuestMessageCount</code> counts the waiting messages. The server setting
+<code>guestSharingEnabled</code> is off by default. Off, <code>create</code> rejects with <code>disabled</code>
+and existing links pause.</p>
+</dd>
 <dt><a href="#CommandDispatcher">CommandDispatcher</a></dt>
 <dd><p>Validated orchestration dispatch and bookkeeping ids.</p>
 </dd>
@@ -589,6 +617,12 @@ transport failures retain connection and rejected credentials retain auth_invali
 ## Members
 
 <dl>
+<dt><a href="#messageId">messageId</a></dt>
+<dd><p>The message the snippet is from. Older servers omit it.</p>
+</dd>
+<dt><a href="#runId">runId</a></dt>
+<dd><p>The run that ignored Stop; the server refuses once a newer run has started.</p>
+</dd>
 <dt><a href="#threadId">threadId</a></dt>
 <dd><p>Omit or null to start a new thread per run.</p>
 </dd>
@@ -606,6 +640,12 @@ transport failures retain connection and rejected credentials retain auth_invali
 <dt><a href="#AuthLegacyScopes">AuthLegacyScopes</a></dt>
 <dd><p>The scopes clients released before granular permissions knew. Servers
 report <code>scopes</code> filtered to these and the full grant as <code>permissions</code>.</p>
+</dd>
+<dt><a href="#TARGET_T3_CODE_VERSION">TARGET_T3_CODE_VERSION</a></dt>
+<dd><p>T3 Code release targeted by this library, independent of the library version.</p>
+</dd>
+<dt><a href="#AuthReviewWriteScope">AuthReviewWriteScope</a></dt>
+<dd><p>Retained for decoding existing credentials; grants no current RPC access.</p>
 </dd>
 <dt><a href="#SecretRef">SecretRef</a></dt>
 <dd><p>A one-use handle to a secret the user entered for an agent; the agent never sees the value.</p>
@@ -651,6 +691,21 @@ count is valid but the full total is not known.</p>
 </dd>
 <dt><a href="#OrchestrationProjectShell">OrchestrationProjectShell</a></dt>
 <dd><p>Project summary shared by the shell and the application project APIs.</p>
+</dd>
+<dt><a href="#OrchestrationV2OlderSettledThreads">OrchestrationV2OlderSettledThreads</a></dt>
+<dd><p>Snapshots that leave out older settled threads name the cut and count them per project.
+<code>asOfSequence</code> is the snapshot&#39;s own sequence: the counts are exact until a later change.</p>
+</dd>
+<dt><a href="#OrchestrationV2ThreadFamily">OrchestrationV2ThreadFamily</a></dt>
+<dd><p>The active threads that share the requested thread&#39;s <code>lineage.rootThreadId</code>, in any run state.
+An unknown thread has an empty family; a deleted one still names its root.</p>
+</dd>
+<dt><a href="#OrchestrationV2OlderSettledCursor">OrchestrationV2OlderSettledCursor</a></dt>
+<dd><p>Where a page of older settled threads starts: below this settle time, then after this id.</p>
+</dd>
+<dt><a href="#OrchestrationV2OlderSettledThreadsPage">OrchestrationV2OlderSettledThreadsPage</a></dt>
+<dd><p>Older settled threads below the cursor, newest settle first. A <code>limit: 0</code> read fills <code>counts</code>
+instead, per project. A cursor without an id is strict.</p>
 </dd>
 <dt><a href="#ProjectMutation">ProjectMutation</a></dt>
 <dd><p>What <code>projects.mutate</code> and <code>POST /api/projects/mutate</code> accept.</p>
@@ -709,12 +764,6 @@ tokens. <code>reasoningTokens</code> is a subset of <code>outputTokens</code>; n
 <dd><p>Every tagged failure a registered RPC method declares. A failure with an
 unrecognised <code>_tag</code> decodes as <code>{ unknown: true, raw }</code>. Use
 <code>decodeRpcErrorRecord</code> to decode without ever failing.</p>
-</dd>
-<dt><a href="#TARGET_T3_CODE_VERSION">TARGET_T3_CODE_VERSION</a></dt>
-<dd><p>T3 Code release targeted by this library, independent of the library version.</p>
-</dd>
-<dt><a href="#AuthReviewWriteScope">AuthReviewWriteScope</a></dt>
-<dd><p>Retained for decoding existing credentials; grants no current RPC access.</p>
 </dd>
 </dl>
 
@@ -819,6 +868,23 @@ the active run.</p>
 <pre><code class="language-ts">export function consoleLogger(prefix = &quot;t3code-client&quot;): Logger;
 </code></pre>
 </dd>
+<dt><a href="#hasScope">hasScope()</a></dt>
+<dd><p><code>granted</code> is what the server reported and may hold scopes this client does not know.</p>
+<pre><code class="language-ts">export function hasScope(
+  granted: readonly AuthGrantedScope[] | undefined,
+  required: AuthEnvironmentScope,
+): boolean;
+</code></pre>
+</dd>
+<dt><a href="#ensureScopes">ensureScopes()</a></dt>
+<dd><p>Require every named scope; throw T3AuthError for the first missing scope.</p>
+<pre><code class="language-ts">export function ensureScopes(
+  granted: readonly AuthGrantedScope[] | undefined,
+  required: readonly AuthEnvironmentScope[],
+  context = &quot;operation&quot;,
+): void;
+</code></pre>
+</dd>
 <dt><a href="#isRunTerminalStatus">isRunTerminalStatus()</a></dt>
 <dd><p>Narrow a run status to a terminal status.</p>
 <pre><code class="language-ts">export function isRunTerminalStatus(status: string): status is OrchestrationV2RunTerminalStatus;
@@ -843,23 +909,6 @@ the active run.</p>
   record: RpcErrorRecord,
   tag: Tag,
 ): record is RpcErrorOfTag&lt;Tag&gt;;
-</code></pre>
-</dd>
-<dt><a href="#hasScope">hasScope()</a></dt>
-<dd><p><code>granted</code> is what the server reported and may hold scopes this client does not know.</p>
-<pre><code class="language-ts">export function hasScope(
-  granted: readonly AuthGrantedScope[] | undefined,
-  required: AuthEnvironmentScope,
-): boolean;
-</code></pre>
-</dd>
-<dt><a href="#ensureScopes">ensureScopes()</a></dt>
-<dd><p>Require every named scope; throw T3AuthError for the first missing scope.</p>
-<pre><code class="language-ts">export function ensureScopes(
-  granted: readonly AuthGrantedScope[] | undefined,
-  required: readonly AuthEnvironmentScope[],
-  context = &quot;operation&quot;,
-): void;
 </code></pre>
 </dd>
 </dl>
@@ -1088,9 +1137,7 @@ Auth control plane and the sole owner of credential-store access.
   - [.clearCredentials()](#AuthClient+clearCredentials)
   - [.websocketTicket()](#AuthClient+websocketTicket)
   - [.createPairingCredential()](#AuthClient+createPairingCredential)
-  - [.listPairingLinks()](#AuthClient+listPairingLinks)
   - [.revokePairingLink()](#AuthClient+revokePairingLink)
-  - [.listClients()](#AuthClient+listClients)
   - [.revokeClient()](#AuthClient+revokeClient)
   - [.revokeOtherClients()](#AuthClient+revokeOtherClients)
   - [.currentAccessToken()](#AuthClient+currentAccessToken)
@@ -1213,17 +1260,6 @@ createPairingCredential(
 ```
 
 **Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
-<a name="AuthClient+listPairingLinks"></a>
-
-### authClient.listPairingLinks()
-
-List pairing links visible to this session.
-
-```ts
-listPairingLinks(): Promise<AuthPairingLinkType[]>;
-```
-
-**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
 <a name="AuthClient+revokePairingLink"></a>
 
 ### authClient.revokePairingLink()
@@ -1232,17 +1268,6 @@ Revoke a pairing link; return whether it was revoked.
 
 ```ts
 async revokePairingLink(id: string): Promise<boolean>;
-```
-
-**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
-<a name="AuthClient+listClients"></a>
-
-### authClient.listClients()
-
-List authenticated client sessions.
-
-```ts
-listClients(): Promise<AuthClientSessionType[]>;
 ```
 
 **Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
@@ -1318,6 +1343,11 @@ async ensureScopes(required: AuthEnvironmentScopeType[]): Promise<void>;
 
 Project discovery, creation, mutations and files.
 
+`projects.update(id, { pinned, archived })` sets or clears `pinnedAt` and
+`archivedAt` on servers that advertise the `projectOrganization` environment
+capability; older servers drop both fields. Archiving keeps threads and files,
+and `projects.list` still returns an archived project with its `archivedAt`.
+
 Project repository identities can include `origin.remoteUrl`, an optional
 trimmed nonempty string naming the checkout remote when its repository differs
 from the canonical repository. Omission does not imply a missing remote.
@@ -1347,6 +1377,7 @@ non-directory `cwd` fails with `ProjectListEntriesError`.
   - [.ensure()](#ProjectsApi+ensure)
   - [.ensureScratch()](#ProjectsApi+ensureScratch)
   - [.createNew()](#ProjectsApi+createNew)
+  - [.createFromThread()](#ProjectsApi+createFromThread)
   - [.update()](#ProjectsApi+update)
   - [.delete()](#ProjectsApi+delete)
 
@@ -1448,6 +1479,24 @@ Creates a project from just a name: the server makes a folder under
 
 ```ts
 createNew(input: ProjectCreateNewInput, signal?: AbortSignal): Promise<ProjectCreateNewResult>;
+```
+
+**Kind**: instance method of [<code>ProjectsApi</code>](#ProjectsApi)  
+<a name="ProjectsApi+createFromThread"></a>
+
+### projectsApi.createFromThread()
+
+Turns a No project thread's own folder into a project, in place, and moves every
+thread working in that folder into it. Calling it again finishes a partial move.
+Fails with `OrchestrationDispatchCommandError` when the thread has no own Scratch
+folder or a thread to move still has work in progress. Servers advertise this with
+the `threadProjectFromScratch` environment capability.
+
+```ts
+createFromThread(
+    input: ProjectCreateFromThreadInput,
+    signal?: AbortSignal,
+  ): Promise<ProjectCreateFromThreadResult>;
 ```
 
 **Kind**: instance method of [<code>ProjectsApi</code>](#ProjectsApi)  
@@ -1628,6 +1677,7 @@ older server. The library does not render terminal output.
   - [.setModelSelection()](#ThreadsApi+setModelSelection)
   - [.startTurn()](#ThreadsApi+startTurn)
   - [.interrupt()](#ThreadsApi+interrupt)
+  - [.forceStop()](#ThreadsApi+forceStop)
   - [.stop()](#ThreadsApi+stop)
   - [.stopThread()](#ThreadsApi+stopThread)
   - [.resumeQueue()](#ThreadsApi+resumeQueue)
@@ -1924,6 +1974,23 @@ async interrupt(
 ```
 
 **Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+forceStop"></a>
+
+### threadsApi.forceStop()
+
+Force stop for an agent that ignored Stop: ends the turn and kills or releases its agent
+process. With `runId`, fails `OrchestrationV2ForceStopThreadError` with reason `superseded`
+and stops nothing once another run is the latest.
+
+```ts
+forceStop(
+    threadId: ThreadId,
+    options: ForceStopThreadOptions = {},
+    signal?: AbortSignal,
+  ): Promise<OrchestrationV2ForceStopThreadResult>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
 <a name="ThreadsApi+stop"></a>
 
 ### threadsApi.stop()
@@ -2066,7 +2133,11 @@ async diff(
 ### threadsApi.search()
 
 Substring search of active threads' finished user and assistant messages: one
-match per thread, at most `limit` (default and maximum 50).
+match per thread, at most `limit` (default and maximum 50). `titlesOnly` skips
+message search. `olderSettledBefore` also returns in `threads` the rows of the
+best matching threads settled before it; send it, `projectIds`,
+`environmentLabel` and `titlesOnly` only to servers that advertise
+`shellOlderSettled`.
 
 ```ts
 search(input: ThreadSearchInput, signal?: AbortSignal): Promise<ThreadSearchResult>;
@@ -2156,8 +2227,10 @@ survive; malformed values fail decoding. This metadata does not grant permission
 - [ShellApi](#ShellApi)
   - [.snapshot()](#ShellApi+snapshot)
   - [.archivedSnapshot()](#ShellApi+archivedSnapshot)
+  - [.threadFamily()](#ShellApi+threadFamily)
+  - [.worktreeThreadIds()](#ShellApi+worktreeThreadIds)
+  - [.olderSettledThreads()](#ShellApi+olderSettledThreads)
   - [.watch()](#ShellApi+watch)
-  - [.watchArchived()](#ShellApi+watchArchived)
 
 <a name="ShellApi+snapshot"></a>
 
@@ -2166,7 +2239,10 @@ survive; malformed values fail decoding. This metadata does not grant permission
 Projects plus active and archived thread shells, over HTTP.
 
 ```ts
-snapshot(signal?: AbortSignal): Promise<OrchestrationV2ShellSnapshot>;
+snapshot(
+    signal?: AbortSignal,
+    options?: ShellOmitOptions,
+  ): Promise<OrchestrationV2ShellSnapshot>;
 ```
 
 **Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
@@ -2174,10 +2250,47 @@ snapshot(signal?: AbortSignal): Promise<OrchestrationV2ShellSnapshot>;
 
 ### shellApi.archivedSnapshot()
 
-Archived thread shells and projects, over RPC.
+Archived thread shells and projects, over RPC. The server has no live archived stream.
 
 ```ts
 archivedSnapshot(signal?: AbortSignal): Promise<OrchestrationV2ArchivedShellSnapshot>;
+```
+
+**Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
+<a name="ShellApi+threadFamily"></a>
+
+### shellApi.threadFamily()
+
+The active threads that share this thread's root, in any run state: the root, its forks and
+their subagent trees. An unknown thread has an empty family.
+
+```ts
+threadFamily(threadId: ThreadId, signal?: AbortSignal): Promise<OrchestrationV2ThreadFamily>;
+```
+
+**Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
+<a name="ShellApi+worktreeThreadIds"></a>
+
+### shellApi.worktreeThreadIds()
+
+Active threads on a worktree path, including subagent children a snapshot can leave out.
+
+```ts
+async worktreeThreadIds(worktreePath: string, signal?: AbortSignal): Promise<ThreadId[]>;
+```
+
+**Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
+<a name="ShellApi+olderSettledThreads"></a>
+
+### shellApi.olderSettledThreads()
+
+A page of older settled threads below the cursor; `limit: 0` fills only `counts`.
+
+```ts
+olderSettledThreads(
+    input: OrchestrationV2GetOlderSettledThreadsInput,
+    signal?: AbortSignal,
+  ): Promise<OrchestrationV2OlderSettledThreadsPage>;
 ```
 
 **Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
@@ -2189,19 +2302,6 @@ Subscribes with `orchestration.subscribeShell`; resubscribes after a dropped soc
 
 ```ts
 watch(options: ShellWatchOptions = {}): AsyncIterable<ShellWatchItem>;
-```
-
-**Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
-<a name="ShellApi+watchArchived"></a>
-
-### shellApi.watchArchived()
-
-Archived threads as they change; a snapshot first, then updates. Not resumable: a drop restarts it.
-
-```ts
-watchArchived(
-    options: { readonly signal?: AbortSignal } = {},
-  ): AsyncIterable<ArchivedShellWatchItem>;
 ```
 
 **Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
@@ -2561,6 +2661,14 @@ A malformed item is delivered as a decode error and later items continue.
 Returning early or aborting the signal ends the subscription. Watching does not
 reclaim space or run the compact command.
 
+Environment capabilities also include optional booleans `sideChats`,
+`threadForceStop`, `localServerStop` and `desktopAppChannelSwitch`. Omission is
+preserved and advertises no support. The descriptor exposes optional
+`databaseMigration`, the highest migration that the server database holds.
+Configuration reads expose optional `secretProviderSettings` and `secretReferences`,
+and `observability` exposes the optional source and variable of each OTLP endpoint.
+A settings endpoint has a null variable. These flags and fields do not change a setting.
+
 **Kind**: global class
 
 - [ServerApi](#ServerApi)
@@ -2568,6 +2676,8 @@ reclaim space or run the compact command.
   - [.getConfig()](#ServerApi+getConfig)
   - [.getSettings()](#ServerApi+getSettings)
   - [.refreshProviders()](#ServerApi+refreshProviders)
+  - [.getNpmRelease()](#ServerApi+getNpmRelease)
+  - [.prepareTriage()](#ServerApi+prepareTriage)
   - [.watchConfig()](#ServerApi+watchConfig)
   - [.watchLifecycle()](#ServerApi+watchLifecycle)
   - [.watchDatabaseStorage()](#ServerApi+watchDatabaseStorage)
@@ -2603,10 +2713,10 @@ getConfig(signal?: AbortSignal): Promise<RpcSuccess<RpcMethods, "server.getConfi
 
 ### serverApi.getSettings()
 
-Read server settings.
+Read server settings, which the server serves as part of its configuration.
 
 ```ts
-getSettings(signal?: AbortSignal): Promise<RpcSuccess<RpcMethods, "server.getSettings">>;
+async getSettings(signal?: AbortSignal): Promise<ServerSettings>;
 ```
 
 **Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
@@ -2614,13 +2724,51 @@ getSettings(signal?: AbortSignal): Promise<RpcSuccess<RpcMethods, "server.getSet
 
 ### serverApi.refreshProviders()
 
-Refresh the selected provider instances.
+Refresh the selected provider instances. `reloadSecrets` reads secret
+references again and can prompt on the host. `workspaceSnapshotsOnDemand`
+replies without snapshots or, with `instanceId` and `cwd`, with only that
+instance's snapshot of that folder and empty `models`, `slashCommands` and
+`skills`. `usageLimitsCommand` adds /usage-limits to that reply.
 
 ```ts
 refreshProviders(
     input: RpcPayload<RpcMethods, "server.refreshProviders"> = {},
     signal?: AbortSignal,
   ): Promise<RpcSuccess<RpcMethods, "server.refreshProviders">>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
+<a name="ServerApi+getNpmRelease"></a>
+
+### serverApi.getNpmRelease()
+
+Find a `t3` release in the npm registry that the server is configured to use.
+`spec` is `latest`, `nightly` or an exact version. Resolves to `null` when
+there is no such release, and fails with `ServerNpmReleaseError` when the
+lookup cannot complete. Servers that advertise `npmReleaseLookup` answer it.
+
+```ts
+getNpmRelease(
+    input: RpcPayload<RpcMethods, "server.getNpmRelease">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "server.getNpmRelease">>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
+<a name="ServerApi+prepareTriage"></a>
+
+### serverApi.prepareTriage()
+
+Write triage session files on the server and get composer text that links
+them, for a new thread. The server also starts to clone the T3 Code source in
+its own folder when it can. `client` names this client in the session.
+Servers that advertise `triage` answer it.
+
+```ts
+prepareTriage(
+    input: RpcPayload<RpcMethods, "server.prepareTriage">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "server.prepareTriage">>;
 ```
 
 **Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
@@ -2776,6 +2924,7 @@ Refresh repository status. `workingTree.rootPath` is an optional nonempty
 string containing the absolute worktree root on the server environment.
 Each `workingTree.files[].path` is relative to that root. Paths preserve
 whitespace; the root is omitted when the server cannot resolve it.
+`localOnly` refreshes only the local state and does not contact the remote.
 
 ```ts
 status(
@@ -3072,7 +3221,6 @@ retain ordinary attach behavior; unknown IDs without `cwd` fail lookup.
   - [.write()](#TerminalApi+write)
   - [.resize()](#TerminalApi+resize)
   - [.close()](#TerminalApi+close)
-  - [.watchEvents()](#TerminalApi+watchEvents)
 
 <a name="TerminalApi+open"></a>
 
@@ -3144,19 +3292,158 @@ close(
 ```
 
 **Kind**: instance method of [<code>TerminalApi</code>](#TerminalApi)  
-<a name="TerminalApi+watchEvents"></a>
+<a name="PeerLinksApi"></a>
 
-### terminalApi.watchEvents()
+## PeerLinksApi
 
-Subscribe to terminal lifecycle events.
+Links from this environment to other T3 Code environments (peers), so that
+its agents can work there. `capabilities.peerLinks` advertises them. A
+refusal rejects with a `T3RpcError` whose `PeerLinkError` record has a
+`reason` such as `disabled`, `pairing_rejected`, `self` or `unreachable`.
+The server setting `linkedEnvironmentsEnabled` is off by default and is needed
+on both sides: off here, a new link rejects with `disabled`; off on the peer,
+with `pairing_rejected`.
+
+**Kind**: global class
+
+- [PeerLinksApi](#PeerLinksApi)
+  - [.list()](#PeerLinksApi+list)
+  - [.link()](#PeerLinksApi+link)
+  - [.unlink()](#PeerLinksApi+unlink)
+  - [.answerRequest()](#PeerLinksApi+answerRequest)
+
+<a name="PeerLinksApi+list"></a>
+
+### peerLinksApi.list()
+
+List the links with their current status. The server checks each peer. Needs `access:read`.
 
 ```ts
-watchEvents(options?: {
-    readonly signal?: AbortSignal;
-  }): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "subscribeTerminalEvents">>>;
+async list(signal?: AbortSignal): Promise<readonly PeerLinkSummary[]>;
 ```
 
-**Kind**: instance method of [<code>TerminalApi</code>](#TerminalApi)  
+**Kind**: instance method of [<code>PeerLinksApi</code>](#PeerLinksApi)  
+<a name="PeerLinksApi+link"></a>
+
+### peerLinksApi.link()
+
+Link a peer with a pairing code from that peer. The code must carry the
+scopes of `access`. Linking a peer again replaces its link. Needs `access:write`.
+
+```ts
+link(
+    input: RpcPayload<RpcMethods, "peerLinks.link">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "peerLinks.link">>;
+```
+
+**Kind**: instance method of [<code>PeerLinksApi</code>](#PeerLinksApi)  
+<a name="PeerLinksApi+unlink"></a>
+
+### peerLinksApi.unlink()
+
+Remove a link; return whether one was removed. Needs `access:write`.
+
+```ts
+async unlink(environmentId: EnvironmentId, signal?: AbortSignal): Promise<boolean>;
+```
+
+**Kind**: instance method of [<code>PeerLinksApi</code>](#PeerLinksApi)  
+<a name="PeerLinksApi+answerRequest"></a>
+
+### peerLinksApi.answerRequest()
+
+Answer an agent's `link_request` turn item: `link`, `use-existing` or
+`decline`. A link that the peer refuses resolves, and the turn item records
+it as `failed`. A request that is gone or already answered rejects with a
+`PeerLinkRequestError` record. Its reason `record_failed` can come after the
+link was made, so check `list` after it. Needs `access:write`.
+
+```ts
+answerRequest(
+    input: RpcPayload<RpcMethods, "peerLinks.answerRequest">,
+    signal?: AbortSignal,
+  ): Promise<void>;
+```
+
+**Kind**: instance method of [<code>PeerLinksApi</code>](#PeerLinksApi)  
+<a name="GuestSharesApi"></a>
+
+## GuestSharesApi
+
+Guest links to a thread: one unauthenticated browser watches the thread over
+T3 Connect and proposes messages that the owner sends or dismisses. The thread
+record's `guestShare` holds the share, and a shell row's
+`pendingGuestMessageCount` counts the waiting messages. The server setting
+`guestSharingEnabled` is off by default. Off, `create` rejects with `disabled`
+and existing links pause.
+
+**Kind**: global class
+
+- [GuestSharesApi](#GuestSharesApi)
+  - [.create()](#GuestSharesApi+create)
+  - [.close()](#GuestSharesApi+close)
+  - [.sendMessage()](#GuestSharesApi+sendMessage)
+  - [.dismissMessage()](#GuestSharesApi+dismissMessage)
+
+<a name="GuestSharesApi+create"></a>
+
+### guestSharesApi.create()
+
+Open a 24 hour guest link. It replaces the thread's earlier link. The `url`
+holds the guest's credential, so treat it as a secret. A refusal rejects with
+a `T3RpcError` whose `GuestShareCreateError` record has a `reason`, such as
+`disabled` or `connect_unavailable`. Needs `access:write`.
+
+```ts
+create(threadId: ThreadId, signal?: AbortSignal): Promise<GuestShareCreateResult>;
+```
+
+**Kind**: instance method of [<code>GuestSharesApi</code>](#GuestSharesApi)  
+<a name="GuestSharesApi+close"></a>
+
+### guestSharesApi.close()
+
+Revoke the thread's link. Resolves when the thread has no link.
+
+```ts
+async close(threadId: ThreadId, signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>GuestSharesApi</code>](#GuestSharesApi)  
+<a name="GuestSharesApi+sendMessage"></a>
+
+### guestSharesApi.sendMessage()
+
+Send a pending guest message to the agent, after any active run. The server
+uses the guest's text and files, and names the guest in the text that the
+agent reads. Returns the id of the new user message. A message that is not
+pending rejects.
+
+```ts
+async sendMessage(
+    threadId: ThreadId,
+    guestMessageId: GuestMessageId,
+    signal?: AbortSignal,
+  ): Promise<MessageId>;
+```
+
+**Kind**: instance method of [<code>GuestSharesApi</code>](#GuestSharesApi)  
+<a name="GuestSharesApi+dismissMessage"></a>
+
+### guestSharesApi.dismissMessage()
+
+Dismiss a pending guest message. A message that is not pending rejects.
+
+```ts
+async dismissMessage(
+    threadId: ThreadId,
+    guestMessageId: GuestMessageId,
+    signal?: AbortSignal,
+  ): Promise<void>;
+```
+
+**Kind**: instance method of [<code>GuestSharesApi</code>](#GuestSharesApi)  
 <a name="CommandDispatcher"></a>
 
 ## CommandDispatcher
@@ -3445,6 +3732,20 @@ async logout(name?: string): Promise<void>;
 ```
 
 **Kind**: instance method of [<code>ProfileManager</code>](#ProfileManager)  
+<a name="messageId"></a>
+
+## messageId
+
+The message the snippet is from. Older servers omit it.
+
+**Kind**: global variable  
+<a name="runId"></a>
+
+## runId
+
+The run that ignored Stop; the server refuses once a newer run has started.
+
+**Kind**: global variable  
 <a name="threadId"></a>
 
 ## threadId
@@ -3472,6 +3773,20 @@ Strict: validates the scopes a caller asks for.
 
 The scopes clients released before granular permissions knew. Servers
 report `scopes` filtered to these and the full grant as `permissions`.
+
+**Kind**: global constant  
+<a name="TARGET_T3_CODE_VERSION"></a>
+
+## TARGET\_T3\_CODE\_VERSION
+
+T3 Code release targeted by this library, independent of the library version.
+
+**Kind**: global constant  
+<a name="AuthReviewWriteScope"></a>
+
+## AuthReviewWriteScope
+
+Retained for decoding existing credentials; grants no current RPC access.
 
 **Kind**: global constant  
 <a name="SecretRef"></a>
@@ -3573,6 +3888,37 @@ A turn item of any type, including a type this build does not know.
 ## OrchestrationProjectShell
 
 Project summary shared by the shell and the application project APIs.
+
+**Kind**: global constant  
+<a name="OrchestrationV2OlderSettledThreads"></a>
+
+## OrchestrationV2OlderSettledThreads
+
+Snapshots that leave out older settled threads name the cut and count them per project.
+`asOfSequence` is the snapshot's own sequence: the counts are exact until a later change.
+
+**Kind**: global constant  
+<a name="OrchestrationV2ThreadFamily"></a>
+
+## OrchestrationV2ThreadFamily
+
+The active threads that share the requested thread's `lineage.rootThreadId`, in any run state.
+An unknown thread has an empty family; a deleted one still names its root.
+
+**Kind**: global constant  
+<a name="OrchestrationV2OlderSettledCursor"></a>
+
+## OrchestrationV2OlderSettledCursor
+
+Where a page of older settled threads starts: below this settle time, then after this id.
+
+**Kind**: global constant  
+<a name="OrchestrationV2OlderSettledThreadsPage"></a>
+
+## OrchestrationV2OlderSettledThreadsPage
+
+Older settled threads below the cursor, newest settle first. A `limit: 0` read fills `counts`
+instead, per project. A cursor without an id is strict.
 
 **Kind**: global constant  
 <a name="ProjectMutation"></a>
@@ -3695,20 +4041,6 @@ tokens. `reasoningTokens` is a subset of `outputTokens`; never add it on top.
 Every tagged failure a registered RPC method declares. A failure with an
 unrecognised `_tag` decodes as `{ unknown: true, raw }`. Use
 `decodeRpcErrorRecord` to decode without ever failing.
-
-**Kind**: global constant  
-<a name="TARGET_T3_CODE_VERSION"></a>
-
-## TARGET\_T3\_CODE\_VERSION
-
-T3 Code release targeted by this library, independent of the library version.
-
-**Kind**: global constant  
-<a name="AuthReviewWriteScope"></a>
-
-## AuthReviewWriteScope
-
-Retained for decoding existing credentials; grants no current RPC access.
 
 **Kind**: global constant  
 <a name="isT3Error"></a>
@@ -3893,6 +4225,35 @@ export function consoleLogger(prefix = "t3code-client"): Logger;
 ```
 
 **Kind**: global function  
+<a name="hasScope"></a>
+
+## hasScope()
+
+`granted` is what the server reported and may hold scopes this client does not know.
+
+```ts
+export function hasScope(
+  granted: readonly AuthGrantedScope[] | undefined,
+  required: AuthEnvironmentScope,
+): boolean;
+```
+
+**Kind**: global function  
+<a name="ensureScopes"></a>
+
+## ensureScopes()
+
+Require every named scope; throw T3AuthError for the first missing scope.
+
+```ts
+export function ensureScopes(
+  granted: readonly AuthGrantedScope[] | undefined,
+  required: readonly AuthEnvironmentScope[],
+  context = "operation",
+): void;
+```
+
+**Kind**: global function  
 <a name="isRunTerminalStatus"></a>
 
 ## isRunTerminalStatus()
@@ -3940,35 +4301,6 @@ export function isRpcErrorOfTag<const Tag extends RpcErrorTag>(
   record: RpcErrorRecord,
   tag: Tag,
 ): record is RpcErrorOfTag<Tag>;
-```
-
-**Kind**: global function  
-<a name="hasScope"></a>
-
-## hasScope()
-
-`granted` is what the server reported and may hold scopes this client does not know.
-
-```ts
-export function hasScope(
-  granted: readonly AuthGrantedScope[] | undefined,
-  required: AuthEnvironmentScope,
-): boolean;
-```
-
-**Kind**: global function  
-<a name="ensureScopes"></a>
-
-## ensureScopes()
-
-Require every named scope; throw T3AuthError for the first missing scope.
-
-```ts
-export function ensureScopes(
-  granted: readonly AuthGrantedScope[] | undefined,
-  required: readonly AuthEnvironmentScope[],
-  context = "operation",
-): void;
 ```
 
 **Kind**: global function

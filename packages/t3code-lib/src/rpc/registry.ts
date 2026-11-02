@@ -8,6 +8,8 @@ import { vcsMethods } from "./methods/vcs.ts";
 import { projectsMethods } from "./methods/projects.ts";
 import { terminalMethods } from "./methods/terminal.ts";
 import { authAccessMethods } from "./methods/authAccess.ts";
+import { peerLinksMethods } from "./methods/peerLinks.ts";
+import { guestShareMethods } from "./methods/guestShare.ts";
 import { mcpAppsMethods } from "./methods/mcpApps.ts";
 import { scheduledTasksMethods } from "./methods/scheduledTasks.ts";
 
@@ -18,6 +20,8 @@ export const rpcMethods = {
   ...projectsMethods,
   ...terminalMethods,
   ...authAccessMethods,
+  ...peerLinksMethods,
+  ...guestShareMethods,
   ...mcpAppsMethods,
   ...scheduledTasksMethods,
 };

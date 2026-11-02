@@ -1,7 +1,7 @@
 ---
 product: t3c
 title: "Version control API"
-order: 22
+order: 24
 relationships:
   references: [library, api]
 ---
@@ -69,6 +69,7 @@ Refresh repository status. `workingTree.rootPath` is an optional nonempty
 string containing the absolute worktree root on the server environment.
 Each `workingTree.files[].path` is relative to that root. Paths preserve
 whitespace; the root is omitted when the server cannot resolve it.
+`localOnly` refreshes only the local state and does not contact the remote.
 
 ```ts
 status(

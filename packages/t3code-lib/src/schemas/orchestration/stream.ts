@@ -29,6 +29,7 @@ import {
 } from "./model.ts";
 import { OrchestrationV2ThreadProjection } from "./projection.ts";
 import { OrchestrationV2ThreadLaunchWorkspaceStrategy } from "./runs.ts";
+import { OrchestrationV2ThreadShell } from "./shell.ts";
 import { OrchestrationV2TurnItem } from "./turnItems.ts";
 
 export const OrchestrationV2SubscribeThreadInput = z.looseObject({
@@ -55,7 +56,6 @@ export const OrchestrationV2ThreadStreamItem = taggedUnionWithUnknown("kind", [
     historyCursor: TrimmedNonEmptyString.nullable().optional(),
     hasMoreHistory: z.boolean().optional(),
     latestLocalTurnOrdinal: NonNegativeInt.nullable().optional(),
-    payloadBudgetExceeded: z.boolean().optional(),
     turnItemsOmitLocalVisible: z.literal(true).optional(),
   }),
   z.looseObject({
@@ -117,6 +117,8 @@ export const OrchestrationV2ThreadLaunchResult = z.looseObject({
   threadId: ThreadId,
   projection: OrchestrationV2ThreadProjection,
   resumed: z.boolean(),
+  /** The initial message's commit sequence. Older servers omit it. */
+  sequence: NonNegativeInt.optional(),
 });
 export type OrchestrationV2ThreadLaunchResult = z.infer<typeof OrchestrationV2ThreadLaunchResult>;
 
@@ -152,6 +154,16 @@ export type OrchestrationGetFullThreadDiffResult = z.infer<
 export const OrchestrationSearchThreadsInput = z.looseObject({
   query: TrimmedString.min(2).max(200),
   limit: z.number().int().min(1).max(50).optional(),
+  /**
+   * The result also carries the rows of the best matching threads settled before this time.
+   * Send this and the keys below only to servers that advertise `shellOlderSettled`.
+   */
+  olderSettledBefore: IsoDateTime.optional(),
+  projectIds: z.array(ProjectId).optional(),
+  /** The client's name for this environment, which the server's ranking also matches. */
+  environmentLabel: z.string().optional(),
+  /** Skips message search, for pickers that match titles only. */
+  titlesOnly: z.boolean().optional(),
 });
 export type OrchestrationSearchThreadsInput = z.infer<typeof OrchestrationSearchThreadsInput>;
 export const OrchestrationThreadSearchSource = forwardCompatibleLiteral(["user", "assistant"]);
@@ -161,10 +173,19 @@ export const OrchestrationThreadSearchMatch = z.looseObject({
   source: OrchestrationThreadSearchSource,
   snippet: z.string().max(240),
   messageCreatedAt: IsoDateTime.nullable(),
+  /** How well the message matches. Older servers omit it. */
+  quality: z.number().optional(),
+  /** How many of the thread's newest messages match. Older servers omit it. */
+  hits: z.number().int().optional(),
+  /** The message the snippet is from. Older servers omit it. */
+  messageId: MessageId.optional(),
 });
 export type OrchestrationThreadSearchMatch = z.infer<typeof OrchestrationThreadSearchMatch>;
 export const OrchestrationSearchThreadsResult = z.looseObject({
   matches: z.array(OrchestrationThreadSearchMatch),
+  snapshotSequence: NonNegativeInt.optional(),
+  /** Rows of matching older settled threads, with `olderSettledBefore`. */
+  threads: z.array(OrchestrationV2ThreadShell).optional(),
 });
 export type OrchestrationSearchThreadsResult = z.infer<typeof OrchestrationSearchThreadsResult>;
 

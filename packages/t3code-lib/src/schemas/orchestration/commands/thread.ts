@@ -6,6 +6,7 @@
 import { z } from "zod";
 import {
   CommandId,
+  GuestMessageId,
   IsoDateTime,
   ProjectId,
   ProviderDriverKind,
@@ -34,6 +35,8 @@ export const ThreadStopCommand = z.looseObject({
   type: z.literal("thread.stop"),
   ...stamped,
   reason: z.string().optional(),
+  /** False when the caller stops the delegated tasks itself. Otherwise stop also stops them. */
+  stopDelegatedTasks: z.boolean().optional(),
 });
 export type ThreadStopCommand = z.infer<typeof ThreadStopCommand>;
 
@@ -64,9 +67,20 @@ export type ThreadCreateCommand = z.infer<typeof ThreadCreateCommand>;
 const simple = <T extends string>(type: T) => z.looseObject({ type: z.literal(type), ...stamped });
 export const ThreadArchiveCommand = simple("thread.archive");
 export const ThreadUnarchiveCommand = simple("thread.unarchive");
-export const ThreadDeleteCommand = simple("thread.delete");
+export const ThreadDeleteCommand = z.looseObject({
+  type: z.literal("thread.delete"),
+  ...stamped,
+  /** Delete only a thread with no runs and no messages; otherwise succeed without a change. */
+  onlyIfUnused: z.boolean().optional(),
+});
 export const ThreadUnpinCommand = simple("thread.unpin");
 export const ThreadMarkUnreadCommand = simple("thread.mark-unread");
+export const ThreadGuestShareCloseCommand = simple("thread.guest-share.close");
+export const ThreadGuestMessageDismissCommand = z.looseObject({
+  type: z.literal("thread.guest-message.dismiss"),
+  ...stamped,
+  guestMessageId: GuestMessageId,
+});
 export const ThreadSettleCommand = z.looseObject({
   type: z.literal("thread.settle"),
   ...stamped,
@@ -119,6 +133,10 @@ export const ThreadVisitCommand = z.looseObject({
   ...stamped,
   /** Watermark of the thread state the viewer has seen; the server keeps the maximum. */
   visitedAt: IsoDateTime,
+  /** The user opened the thread, as opposed to new activity on an open one. */
+  opened: z.boolean().optional(),
+  /** The search that led to the open. Used only with `opened`. */
+  searchQuery: z.string().max(200).optional(),
 });
 /** The fields of `thread.metadata.update` a caller chooses; absent fields leave the thread unchanged. */
 export const ThreadMetadataUpdatePayload = z.looseObject({
@@ -193,6 +211,8 @@ export const threadCommandMembers = [
   ThreadActiveReorderCommand,
   ThreadVisitCommand,
   ThreadMarkUnreadCommand,
+  ThreadGuestShareCloseCommand,
+  ThreadGuestMessageDismissCommand,
   ThreadMetadataUpdateCommand,
   ThreadTitleRegenerationCompleteCommand,
   ThreadRuntimeModeSetCommand,

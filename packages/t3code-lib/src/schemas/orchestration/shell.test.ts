@@ -4,7 +4,6 @@
 // ---
 import { describe, expect, it } from "vite-plus/test";
 import {
-  OrchestrationV2ArchivedShellStreamItem,
   OrchestrationV2ShellSnapshot,
   OrchestrationV2ShellStreamItem,
   OrchestrationV2ThreadShell,
@@ -138,40 +137,5 @@ describe("OrchestrationV2ShellStreamItem", () => {
         thread: {},
       }).success,
     ).toBe(false);
-  });
-});
-
-describe("OrchestrationV2ArchivedShellStreamItem", () => {
-  it("decodes its snapshot and thread items, and unknown kinds", () => {
-    const archived = {
-      schemaVersion: 1,
-      snapshotSequence: 1,
-      projects: [],
-      threads: [makeShellThread()],
-    };
-    expect(
-      OrchestrationV2ArchivedShellStreamItem.parse({ kind: "snapshot", snapshot: archived }),
-    ).toMatchObject({
-      kind: "snapshot",
-      snapshot: { threads: [{ id: ids.threadId }] },
-    });
-    expect(
-      OrchestrationV2ArchivedShellStreamItem.parse({
-        kind: "thread.updated",
-        sequence: 2,
-        thread: makeShellThread(),
-      }),
-    ).toMatchObject({ kind: "thread.updated" });
-    expect(
-      OrchestrationV2ArchivedShellStreamItem.parse({
-        kind: "thread.removed",
-        sequence: 3,
-        threadId: ids.threadId,
-      }),
-    ).toMatchObject({ kind: "thread.removed" });
-    expect(OrchestrationV2ArchivedShellStreamItem.parse({ kind: "future" })).toEqual({
-      unknown: true,
-      raw: { kind: "future" },
-    });
   });
 });

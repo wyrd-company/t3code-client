@@ -30,6 +30,8 @@ export const ThreadForkCommand = z.looseObject({
   targetThreadId: ThreadId,
   sourcePoint: OrchestrationV2ThreadForkSourcePoint,
   title: TrimmedNonEmptyString.optional(),
+  /** Make the fork a side chat of the source thread. */
+  sideChat: z.boolean().optional(),
   createdAt: IsoDateTime.optional(),
 });
 export const ThreadMergeBackCommand = z.looseObject({

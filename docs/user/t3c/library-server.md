@@ -366,6 +366,14 @@ A malformed item is delivered as a decode error and later items continue.
 Returning early or aborting the signal ends the subscription. Watching does not
 reclaim space or run the compact command.
 
+Environment capabilities also include optional booleans `sideChats`,
+`threadForceStop`, `localServerStop` and `desktopAppChannelSwitch`. Omission is
+preserved and advertises no support. The descriptor exposes optional
+`databaseMigration`, the highest migration that the server database holds.
+Configuration reads expose optional `secretProviderSettings` and `secretReferences`,
+and `observability` exposes the optional source and variable of each OTLP endpoint.
+A settings endpoint has a null variable. These flags and fields do not change a setting.
+
 **Kind**: global class
 
 - [ServerApi](#ServerApi)
@@ -373,6 +381,8 @@ reclaim space or run the compact command.
   - [.getConfig()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+getConfig)
   - [.getSettings()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+getSettings)
   - [.refreshProviders()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+refreshProviders)
+  - [.getNpmRelease()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+getNpmRelease)
+  - [.prepareTriage()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+prepareTriage)
   - [.watchConfig()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+watchConfig)
   - [.watchLifecycle()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+watchLifecycle)
   - [.watchDatabaseStorage()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+watchDatabaseStorage)

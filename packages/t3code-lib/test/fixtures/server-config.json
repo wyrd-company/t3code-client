@@ -1,14 +1,15 @@
 {
   "environment": {
-    "environmentId": "f5eae31b-b450-4c1c-9c75-49afe3e64951",
+    "environmentId": "1b197b35-3b30-43f4-99ca-55f7fac631f8",
     "label": "sample-environment",
     "platform": {
       "os": "linux",
       "arch": "x64",
       "machine": "desktop"
     },
-    "serverVersion": "0.1.2",
+    "serverVersion": "0.1.6",
     "orchestrationProtocolVersion": 2,
+    "databaseMigration": 76,
     "capabilities": {
       "repositoryIdentity": true,
       "connectionProbe": true,
@@ -19,6 +20,7 @@
       },
       "pullRequests": true,
       "pullRequestChecks": true,
+      "sideChats": true,
       "inlineMessageContext": true,
       "requiredWorktreeBootstrap": true,
       "threadSettlement": true,
@@ -35,35 +37,45 @@
       "projectSettingsOverrides": true,
       "projectProviderInstanceOverrides": true,
       "threadSnooze": true,
+      "threadForceStop": true,
       "environmentThemes": true,
       "usageLimitSources": true,
+      "providerWorkspaceSnapshotsOnDemand": true,
       "usagePriceOverrides": true,
       "usageModelAliases": true,
       "threadPinning": true,
       "threadPinReorder": true,
       "threadActiveReorder": true,
       "threadAutoSettleOptOut": true,
+      "threadProjectFromScratch": true,
       "threadTitleRegeneration": true,
       "threadVisitedTracking": true,
       "threadPullRequestLinking": true,
       "serverResolvedCommandContext": true,
       "threadStop": true,
+      "localServerStop": true,
       "threadPullRequests": true,
       "threadPullRequestWatch": true,
       "pullRequestStackActions": true,
+      "npmReleaseLookup": true,
       "agentActivityPublishing": false,
       "projectCloneTracking": true,
+      "projectOrganization": true,
       "ignoredFileListing": true,
       "environmentIcon": true,
       "commandOutputStreaming": true,
-      "serverBrowser": true
+      "serverBrowser": true,
+      "peerLinks": true,
+      "mcpModeLimitHeader": true,
+      "linkFence": true,
+      "triage": true
     }
   },
   "auth": {
     "policy": "loopback-browser",
     "bootstrapMethods": ["one-time-token"],
     "sessionMethods": ["browser-session-cookie", "bearer-access-token", "dpop-access-token"],
-    "sessionCookieName": "t3_session_37681_03c202072f77",
+    "sessionCookieName": "t3_session_41219_91a123809998",
     "serverUpdateScope": "environment:maintain"
   },
   "cwd": "/srv/sample",
@@ -76,6 +88,50 @@
         "metaKey": false,
         "ctrlKey": false,
         "shiftKey": false,
+        "altKey": false,
+        "modKey": true
+      }
+    },
+    {
+      "command": "workspace.focusNext",
+      "shortcut": {
+        "key": "f6",
+        "metaKey": false,
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "modKey": false
+      }
+    },
+    {
+      "command": "workspace.focusPrevious",
+      "shortcut": {
+        "key": "f6",
+        "metaKey": false,
+        "ctrlKey": false,
+        "shiftKey": true,
+        "altKey": false,
+        "modKey": false
+      }
+    },
+    {
+      "command": "workspace.focusNext",
+      "shortcut": {
+        "key": "f6",
+        "metaKey": false,
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "modKey": true
+      }
+    },
+    {
+      "command": "workspace.focusPrevious",
+      "shortcut": {
+        "key": "f6",
+        "metaKey": false,
+        "ctrlKey": false,
+        "shiftKey": true,
         "altKey": false,
         "modKey": true
       }
@@ -1585,16 +1641,16 @@
       },
       "enabled": true,
       "installed": true,
-      "version": "0.164.0",
+      "version": "0.166.0",
       "status": "ready",
       "auth": {
         "status": "authenticated",
         "type": "chatgpt",
-        "label": "ChatGPT Pro 20x Subscription",
+        "label": "ChatGPT Pro 200 Subscription",
         "email": "user@example.test",
         "workspaceId": "00000000-0000-4000-8000-000000000001"
       },
-      "checkedAt": "2026-10-25T03:46:56.292Z",
+      "checkedAt": "2026-11-02T10:46:52.363Z",
       "models": [
         {
           "slug": "gpt-6.1-sol",
@@ -1710,6 +1766,66 @@
                     "id": "priority",
                     "label": "Fast",
                     "description": "2x speed, increased usage"
+                  }
+                ],
+                "currentValue": "default"
+              }
+            ]
+          }
+        },
+        {
+          "slug": "gpt-6.1-terra",
+          "name": "GPT-6.1 Terra",
+          "isCustom": false,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "id": "reasoningEffort",
+                "label": "Reasoning",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "low",
+                    "label": "Low",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "medium",
+                    "label": "Medium"
+                  },
+                  {
+                    "id": "high",
+                    "label": "High"
+                  },
+                  {
+                    "id": "xhigh",
+                    "label": "Extra High"
+                  },
+                  {
+                    "id": "max",
+                    "label": "Max"
+                  },
+                  {
+                    "id": "ultra",
+                    "label": "Ultra"
+                  }
+                ],
+                "currentValue": "low"
+              },
+              {
+                "id": "serviceTier",
+                "label": "Service Tier",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "default",
+                    "label": "Standard",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "priority",
+                    "label": "Fast",
+                    "description": "1.5x speed"
                   }
                 ],
                 "currentValue": "default"
@@ -2017,30 +2133,30 @@
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-10-25T03:46:56.292Z",
+        "checkedAt": "2026-11-02T10:46:52.363Z",
         "windows": [
           {
             "id": "primary",
             "kind": "weekly",
             "label": "Weekly",
-            "usedPercent": 15,
-            "resetsAt": "2026-10-30T20:08:26.000Z",
+            "usedPercent": 33,
+            "resetsAt": "2026-11-04T11:35:37.000Z",
             "windowDurationMins": 10080
           }
         ],
         "resetCredits": {
-          "availableCount": 2,
-          "nextExpiresAt": "2026-10-29T19:04:26.000Z"
+          "availableCount": 3,
+          "nextExpiresAt": "2026-11-06T23:34:17.000Z"
         }
       },
       "versionAdvisory": {
         "status": "current",
-        "currentVersion": "0.164.0",
-        "latestVersion": "0.164.0",
+        "currentVersion": "0.166.0",
+        "latestVersion": "0.166.0",
         "updateCommand": "/home/sample/.local/bin/codex update",
         "canUpdate": true,
         "canInstallVersion": false,
-        "checkedAt": "2026-10-25T03:46:57.165Z",
+        "checkedAt": "2026-11-02T10:46:53.618Z",
         "message": null
       },
       "compatibilityAdvisory": {
@@ -2066,22 +2182,23 @@
       },
       "enabled": true,
       "installed": true,
-      "version": "2.1.310",
+      "version": "2.1.316",
       "status": "ready",
       "auth": {
         "status": "authenticated",
-        "type": "Claude Max",
-        "label": "Claude Max Subscription",
+        "type": "Claude Ultra",
+        "label": "Claude Ultra Subscription",
         "email": "user@example.test",
         "workspaceId": "00000000-0000-4000-8000-000000000001"
       },
-      "checkedAt": "2026-10-25T03:46:56.293Z",
+      "checkedAt": "2026-11-02T10:46:52.364Z",
       "models": [
         {
           "slug": "claude-opus-5-5",
           "name": "Claude Opus 5.5",
           "aliases": ["opus", "opus-5.5", "claude-opus-5.5"],
           "isCustom": false,
+          "isDefault": true,
           "capabilities": {
             "optionDescriptors": [
               {
@@ -2178,7 +2295,6 @@
           "name": "Claude Fable 5.1",
           "aliases": ["fable", "fable-5.1", "claude-fable-5.1"],
           "isCustom": false,
-          "isDefault": true,
           "capabilities": {
             "optionDescriptors": [
               {
@@ -2631,7 +2747,6 @@
           "slug": "claude-haiku-5-5",
           "name": "Claude Haiku 5.5",
           "aliases": ["haiku", "haiku-5.5", "claude-haiku-5.5"],
-          "badge": "new",
           "isCustom": false,
           "capabilities": {
             "optionDescriptors": [
@@ -2692,42 +2807,34 @@
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-10-25T03:46:56.779Z",
+        "checkedAt": "2026-11-02T10:46:52.706Z",
         "windows": [
-          {
-            "id": "five_hour",
-            "kind": "session",
-            "label": "Session",
-            "usedPercent": 9,
-            "resetsAt": "2026-10-25T06:09:59.869Z",
-            "windowDurationMins": 300
-          },
           {
             "id": "seven_day",
             "kind": "weekly",
             "label": "Weekly",
-            "usedPercent": 41,
-            "resetsAt": "2026-10-28T16:59:59.869Z",
+            "usedPercent": 27,
+            "resetsAt": "2026-11-04T16:59:59.841Z",
             "windowDurationMins": 10080
           },
           {
             "id": "seven_day_fable",
             "kind": "weekly",
             "label": "Weekly · Fable",
-            "usedPercent": 1,
-            "resetsAt": "2026-10-28T16:59:59.869Z",
+            "usedPercent": 7,
+            "resetsAt": "2026-11-04T16:59:59.841Z",
             "windowDurationMins": 10080
           }
         ]
       },
       "versionAdvisory": {
         "status": "current",
-        "currentVersion": "2.1.310",
-        "latestVersion": "2.1.310",
+        "currentVersion": "2.1.316",
+        "latestVersion": "2.1.316",
         "updateCommand": "/home/sample/.local/bin/claude update",
         "canUpdate": true,
         "canInstallVersion": false,
-        "checkedAt": "2026-10-25T03:46:57.318Z",
+        "checkedAt": "2026-11-02T10:46:53.453Z",
         "message": null
       },
       "compatibilityAdvisory": {
@@ -2759,7 +2866,7 @@
         "status": "unknown",
         "canLogout": true
       },
-      "checkedAt": "2026-10-25T03:46:56.320Z",
+      "checkedAt": "2026-11-02T10:46:52.398Z",
       "message": "Cursor is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -2786,7 +2893,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-25T03:46:56.319Z",
+      "checkedAt": "2026-11-02T10:46:52.394Z",
       "message": "Grok is disabled in T3 Code settings.",
       "models": [
         {
@@ -2820,13 +2927,13 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-25T03:46:56.320Z",
+      "checkedAt": "2026-11-02T10:46:52.396Z",
       "message": "OpenCode is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-10-25T03:46:56.320Z",
+        "checkedAt": "2026-11-02T10:46:52.397Z",
         "windows": [],
         "unavailable": {
           "reason": "unsupported"
@@ -2855,12 +2962,92 @@
         "status": "unknown",
         "type": "oauth-personal"
       },
-      "checkedAt": "2026-10-25T03:46:56.335Z",
+      "checkedAt": "2026-11-02T10:46:52.411Z",
       "message": "Antigravity is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
       "skills": [],
       "workspaceSnapshots": []
+    },
+    {
+      "instanceId": "fx",
+      "driver": "fx",
+      "displayName": "fx",
+      "continuation": {
+        "groupKey": "fx:instance:fx"
+      },
+      "showInteractionModeToggle": false,
+      "supportedRuntimeModes": ["approval-required", "auto"],
+      "supportsTextGeneration": false,
+      "setup": {
+        "canAuthenticate": false,
+        "canInstall": false
+      },
+      "enabled": false,
+      "installed": false,
+      "version": null,
+      "status": "disabled",
+      "auth": {
+        "status": "unknown"
+      },
+      "checkedAt": "2026-11-02T10:46:52.395Z",
+      "message": "fx is disabled in T3 Code settings.",
+      "models": [
+        {
+          "slug": "default",
+          "name": "Default",
+          "isCustom": false,
+          "isDefault": true,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "id": "effort",
+                "label": "Effort",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "auto",
+                    "label": "Auto"
+                  },
+                  {
+                    "id": "low",
+                    "label": "Low"
+                  },
+                  {
+                    "id": "medium",
+                    "label": "Medium",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "high",
+                    "label": "High"
+                  },
+                  {
+                    "id": "xhigh",
+                    "label": "Extra High"
+                  },
+                  {
+                    "id": "max",
+                    "label": "Max"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "slashCommands": [],
+      "skills": [],
+      "versionAdvisory": {
+        "status": "unknown",
+        "currentVersion": null,
+        "latestVersion": null,
+        "updateCommand": null,
+        "canUpdate": false,
+        "canInstallVersion": false,
+        "checkedAt": "2026-11-02T10:46:52.395Z",
+        "message": null
+      }
     },
     {
       "instanceId": "muse",
@@ -2883,7 +3070,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-25T03:46:56.340Z",
+      "checkedAt": "2026-11-02T10:46:52.417Z",
       "message": "Muse Code is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -2899,7 +3086,6 @@
       "showInteractionModeToggle": false,
       "reportsContextWindow": true,
       "supportedRuntimeModes": ["approval-required", "auto-accept-edits", "full-access"],
-      "requiresNewThreadForModelChange": false,
       "setup": {
         "canAuthenticate": false,
         "canInstall": false
@@ -2911,7 +3097,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-10-25T03:46:56.339Z",
+      "checkedAt": "2026-11-02T10:46:52.417Z",
       "message": "Pi is disabled in T3 Code settings.",
       "models": [
         {
@@ -2963,6 +3149,7 @@
     "projectScriptOverrides": {},
     "projectAutoPullOverrides": {},
     "defaultModelSelection": null,
+    "fallbackModelSelection": null,
     "defaultRuntimeMode": "full-access",
     "projectSettingsOverrides": {},
     "projectSettingsFolded": false,
@@ -2971,11 +3158,40 @@
     "deviceOnboardingCompleted": false,
     "deviceHosts": [],
     "easDeviceHosts": [],
+    "simlockDeviceHosts": [],
+    "simlockDeviceHostsEnabled": false,
     "sidebarAutoSettleAfterDays": 3,
     "compactIdleThreads": false,
     "idleCompaction": "onReturn",
     "snoozeLimitedThreads": false,
     "autoResumeLimitedThreads": false,
+    "snoozePresets": [
+      {
+        "kind": "after",
+        "minutes": 60
+      },
+      {
+        "kind": "after",
+        "minutes": 180
+      },
+      {
+        "kind": "at",
+        "day": "today",
+        "time": "18:00"
+      },
+      {
+        "kind": "at",
+        "day": "tomorrow",
+        "time": "09:00"
+      },
+      {
+        "kind": "at",
+        "day": "monday",
+        "time": "09:00"
+      }
+    ],
+    "guestSharingEnabled": false,
+    "linkedEnvironmentsEnabled": false,
     "sidebarAutoSettleKeepPullRequests": false,
     "sidebarAutoSettleOnMerge": true,
     "backgroundActivity": {
@@ -3002,6 +3218,7 @@
         }
       ]
     },
+    "threadTitleInstructions": "",
     "branchNamingMode": "static",
     "branchNamePrefix": "t3",
     "branchNameInstructions": "",
@@ -3024,15 +3241,20 @@
     },
     "sourceControlHosts": {},
     "usageLimitSources": {},
+    "secretProviders": {},
     "cursorKeychainUsageEnabled": false,
     "usagePriceOverrides": {},
     "usageModelAliases": {}
   },
   "shellResumeCompletionMarker": true,
+  "shellThreadFamilies": true,
+  "shellOlderSettled": true,
   "threadResumeCompletionMarker": true,
   "threadSnapshotPagination": true,
   "threadFind": true,
   "threadFindProgressive": true,
+  "secretProviderSettings": true,
+  "secretReferences": true,
   "scratchWorkspaceRoot": "/home/sample/.t3/scratch",
   "newProjectsRoot": "/home/sample/.t3/projects"
 }

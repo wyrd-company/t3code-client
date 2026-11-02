@@ -56,6 +56,8 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   threadPinReorder: z.boolean().optional(),
   threadActiveReorder: z.boolean().optional(),
   threadAutoSettleOptOut: z.boolean().optional(),
+  /** Server answers `projects.createFromThread`. */
+  threadProjectFromScratch: z.boolean().optional(),
   threadTitleRegeneration: z.boolean().optional(),
   threadPullRequestLinking: z.boolean().optional(),
   threadPullRequests: z.boolean().optional(),
@@ -66,6 +68,8 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   projectSettingsOverrides: z.boolean().optional(),
   projectProviderInstanceOverrides: z.boolean().optional(),
   projectCloneTracking: z.boolean().optional(),
+  /** Server keeps `pinned` and `archived` from `project.update`. Older servers drop them. */
+  projectOrganization: z.boolean().optional(),
   environmentIcon: z.boolean().optional(),
   requiredWorktreeBootstrap: z.boolean().optional(),
   commandOutputStreaming: z.boolean().optional(),
@@ -98,6 +102,26 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   /** Server can exclude pull-request-linked threads from inactivity settlement. */
   threadAutoSettlementScope: z.boolean().optional(),
   serverInstallation: ServerInstallation.optional().catch(undefined),
+  /** Server answers `server.getNpmRelease` from its configured npm registry. */
+  npmReleaseLookup: z.boolean().optional(),
+  /** Server answers `server.prepareTriage`. */
+  triage: z.boolean().optional(),
+  /** Server honors `workspaceSnapshotsOnDemand`. Older servers still send every snapshot. */
+  providerWorkspaceSnapshotsOnDemand: z.boolean().optional(),
+  /** Server links to other environments, and its agents can work in them. */
+  peerLinks: z.boolean().optional(),
+  /** Server's `/mcp` narrows an OAuth client's modes from `T3-Mode-Limit`. A peer needs it to link. */
+  mcpModeLimitHeader: z.boolean().optional(),
+  /** Work a linked environment starts here stays within its link. A peer needs it to link. */
+  linkFence: z.boolean().optional(),
+  /** Side chats: hidden `lineage.sideChat` forks. Older servers ignore the fork flag. */
+  sideChats: z.boolean().optional(),
+  /** Server answers `orchestration.forceStopThread`. */
+  threadForceStop: z.boolean().optional(),
+  /** Absent on older servers and on Windows hosts, which cannot stop a discovered server. */
+  localServerStop: z.boolean().optional(),
+  /** The desktop app switches update tracks when a server update request names one. */
+  desktopAppChannelSwitch: z.boolean().optional(),
 });
 export type ExecutionEnvironmentCapabilities = z.infer<typeof ExecutionEnvironmentCapabilities>;
 
@@ -108,6 +132,8 @@ export const ExecutionEnvironmentDescriptor = z.looseObject({
   serverVersion: TrimmedNonEmptyString,
   /** Orchestration wire version; absent on hosts from before explicit negotiation. */
   orchestrationProtocolVersion: z.number().int().optional(),
+  /** Highest migration this server's database holds; absent on older servers. */
+  databaseMigration: z.number().int().optional(),
   capabilities: ExecutionEnvironmentCapabilities,
 });
 export type ExecutionEnvironmentDescriptor = z.infer<typeof ExecutionEnvironmentDescriptor>;

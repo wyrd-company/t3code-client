@@ -2,8 +2,7 @@
 // relationships:
 //   implements: library
 // ---
-import { z } from "zod";
-import { defineMethod } from "../spec.ts";
+import { VoidSuccess, defineMethod } from "../spec.ts";
 import {
   VcsCreateRefInput,
   VcsCreateRefResult,
@@ -12,6 +11,7 @@ import {
   VcsListRefsInput,
   VcsListRefsResult,
   VcsRemoveWorktreeInput,
+  VcsRefreshStatusInput,
   VcsStatusInput,
   VcsStatusResult,
   VcsStatusStreamEvent,
@@ -52,16 +52,12 @@ export const vcsMethods = {
   }),
   "vcs.removeWorktree": defineMethod({
     payload: VcsRemoveWorktreeInput,
-    // Effect's JSON codec encodes Schema.Void as null; callers still receive void.
-    success: z
-      .null()
-      .or(z.void())
-      .transform((): void => undefined),
+    success: VoidSuccess,
     stream: false,
     scope: "source-control:write",
   }),
   "vcs.refreshStatus": defineMethod({
-    payload: VcsStatusInput,
+    payload: VcsRefreshStatusInput,
     success: VcsStatusResult,
     stream: false,
     scope: "orchestration:read",

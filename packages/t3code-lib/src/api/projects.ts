@@ -6,7 +6,7 @@
  * ProjectsApi: projects as the shell snapshot sees them, idempotent `ensure`
  * keyed by the normalised workspace root, mutations through
  * `projects.mutate`, thin typed wrappers over the `projects.*` file RPCs,
- * and the server-side Scratch and new-project creators.
+ * and the server-side Scratch, new-project and thread-folder creators.
  */
 import * as NodePath from "node:path";
 import type { RpcClient } from "../rpc/client.ts";
@@ -17,6 +17,8 @@ import type { OrchestrationProjectShell } from "../schemas/orchestration/shell.t
 import {
   ProjectSnapshot,
   type Project,
+  type ProjectCreateFromThreadInput,
+  type ProjectCreateFromThreadResult,
   type ProjectCreateNewInput,
   type ProjectCreateNewResult,
   type ProjectEnsureScratchResult,
@@ -89,6 +91,11 @@ export function normalizeWorkspaceRoot(workspaceRoot: string): string {
 
 /**
  * Project discovery, creation, mutations and files.
+ *
+ * `projects.update(id, { pinned, archived })` sets or clears `pinnedAt` and
+ * `archivedAt` on servers that advertise the `projectOrganization` environment
+ * capability; older servers drop both fields. Archiving keeps threads and files,
+ * and `projects.list` still returns an archived project with its `archivedAt`.
  *
  * Project repository identities can include `origin.remoteUrl`, an optional
  * trimmed nonempty string naming the checkout remote when its repository differs
@@ -213,6 +220,20 @@ export class ProjectsApi {
    */
   createNew(input: ProjectCreateNewInput, signal?: AbortSignal): Promise<ProjectCreateNewResult> {
     return this.rpc.call("projects.createNew", input, signal);
+  }
+
+  /**
+   * Turns a No project thread's own folder into a project, in place, and moves every
+   * thread working in that folder into it. Calling it again finishes a partial move.
+   * Fails with `OrchestrationDispatchCommandError` when the thread has no own Scratch
+   * folder or a thread to move still has work in progress. Servers advertise this with
+   * the `threadProjectFromScratch` environment capability.
+   */
+  createFromThread(
+    input: ProjectCreateFromThreadInput,
+    signal?: AbortSignal,
+  ): Promise<ProjectCreateFromThreadResult> {
+    return this.rpc.call("projects.createFromThread", input, signal);
   }
 
   /** Update the selected project metadata. */

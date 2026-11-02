@@ -26,13 +26,27 @@ import {
   RuntimeMode,
 } from "./model.ts";
 import { ThreadLinkedPullRequest, ThreadPullRequestLink } from "./pullRequest.ts";
+import { ThreadGuestShare } from "./guestShare.ts";
+import { OrchestrationV2DelegatedFrom, OrchestrationV2LinkOrigin } from "./threadLink.ts";
 
 export const OrchestrationV2AppThreadLineage = z.looseObject({
   parentThreadId: ThreadId.nullable(),
   relationshipToParent: forwardCompatibleLiteral(["fork", "subagent"]).nullable(),
   rootThreadId: ThreadId,
+  /** A side chat lives inside its parent's view and stays out of thread lists. */
+  sideChat: z.boolean().optional(),
 });
 export type OrchestrationV2AppThreadLineage = z.infer<typeof OrchestrationV2AppThreadLineage>;
+
+/** How often and how recently the user opened a thread. `openedAt` is epoch milliseconds. */
+export const OrchestrationV2ThreadOpens = z.looseObject({
+  openedAt: z.number(),
+  score: z.number().min(0),
+  picks: z.array(z.looseObject({ query: z.string().max(32), at: z.number() })).max(3),
+});
+export type OrchestrationV2ThreadOpens = z.infer<typeof OrchestrationV2ThreadOpens>;
+/** Opens that do not decode load as null, as upstream does, so that they never fail a thread. */
+export const OrchestrationV2LenientThreadOpens = OrchestrationV2ThreadOpens.nullable().catch(null);
 
 export const OrchestrationV2ThreadForkedFrom = taggedUnionWithUnknown("type", [
   z.looseObject({ type: z.literal("run"), threadId: ThreadId, runId: RunId }),
@@ -90,6 +104,8 @@ export const OrchestrationV2AppThread = z.looseObject({
   branchPullRequest: ThreadLinkedPullRequest.nullable().optional(),
   activeProviderThreadId: ProviderThreadId.nullable(),
   historyOrigin: OrchestrationV2ThreadHistoryOrigin.optional(),
+  linkOrigin: OrchestrationV2LinkOrigin.optional(),
+  delegatedFrom: OrchestrationV2DelegatedFrom.optional(),
   lineage: OrchestrationV2AppThreadLineage,
   forkedFrom: OrchestrationV2ThreadForkedFrom.nullable(),
   createdAt: IsoDateTime,
@@ -102,6 +118,8 @@ export const OrchestrationV2AppThread = z.looseObject({
   snoozedAt: IsoDateTime.nullable().optional(),
   lastSnoozeWakeAt: IsoDateTime.nullable().optional(),
   limitRecovery: OrchestrationV2LimitRecovery.nullable().optional(),
+  guestShare: ThreadGuestShare.nullable().optional(),
+  opens: OrchestrationV2LenientThreadOpens.optional(),
   pinnedAt: IsoDateTime.nullable().optional(),
   autoSettleDisabledAt: IsoDateTime.nullable().optional(),
   pinOrderKey: TrimmedNonEmptyString.nullable().optional(),

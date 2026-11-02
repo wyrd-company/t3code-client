@@ -34,12 +34,14 @@ import type {
   DispatchResult,
   OrchestrationV2ThreadLaunchResult,
 } from "../schemas/orchestration/stream.ts";
+import type { OrchestrationV2ForceStopThreadResult } from "../schemas/orchestration/threadForceStop.ts";
 import type { HttpTransport } from "../transport/http.ts";
 import { watchCommandOutput, type WatchCommandOutputOptions } from "./commandOutput.ts";
 import { isMissingResourceError, type CommandDispatcher } from "./dispatch.ts";
 import {
   ThreadCommands,
   type ApprovalResponseInput,
+  type ForceStopThreadOptions,
   type InterruptOptions,
   type StopThreadOptions,
   type UserInputDismissInput,
@@ -452,6 +454,20 @@ export class ThreadsApi {
     await this.dispatch(this.#commands.interrupt(threadId, target, options), signal);
   }
 
+  /**
+   * Force stop for an agent that ignored Stop: ends the turn and kills or releases its agent
+   * process. With `runId`, fails `OrchestrationV2ForceStopThreadError` with reason `superseded`
+   * and stops nothing once another run is the latest.
+   */
+  forceStop(
+    threadId: ThreadId,
+    options: ForceStopThreadOptions = {},
+    signal?: AbortSignal,
+  ): Promise<OrchestrationV2ForceStopThreadResult> {
+    const input = { threadId, ...(options.runId === undefined ? {} : { runId: options.runId }) };
+    return this.rpc.call("orchestration.forceStopThread", input, signal);
+  }
+
   /** Legacy stop: interrupts the active run and holds the queue. Nothing active is a no-op. */
   stop(threadId: ThreadId, signal?: AbortSignal): Promise<void> {
     return this.interrupt(threadId, undefined, { holdQueue: true }, signal);
@@ -539,7 +555,11 @@ export class ThreadsApi {
 
   /**
    * Substring search of active threads' finished user and assistant messages: one
-   * match per thread, at most `limit` (default and maximum 50).
+   * match per thread, at most `limit` (default and maximum 50). `titlesOnly` skips
+   * message search. `olderSettledBefore` also returns in `threads` the rows of the
+   * best matching threads settled before it; send it, `projectIds`,
+   * `environmentLabel` and `titlesOnly` only to servers that advertise
+   * `shellOlderSettled`.
    */
   search(input: ThreadSearchInput, signal?: AbortSignal): Promise<ThreadSearchResult> {
     return searchThreads(this.rpc, input, signal);

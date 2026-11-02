@@ -40,6 +40,7 @@ export class VcsApi {
    * string containing the absolute worktree root on the server environment.
    * Each `workingTree.files[].path` is relative to that root. Paths preserve
    * whitespace; the root is omitted when the server cannot resolve it.
+   * `localOnly` refreshes only the local state and does not contact the remote.
    */
   status(
     input: RpcPayload<RpcMethods, "vcs.refreshStatus">,

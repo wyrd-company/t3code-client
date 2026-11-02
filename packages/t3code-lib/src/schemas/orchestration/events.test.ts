@@ -112,7 +112,6 @@ describe("OrchestrationV2ThreadStreamItem", () => {
         historyCursor: "cursor-1",
         hasMoreHistory: true,
         latestLocalTurnOrdinal: 4,
-        payloadBudgetExceeded: false,
       }),
     ).toMatchObject({ kind: "snapshot", historyCursor: "cursor-1", hasMoreHistory: true });
   });

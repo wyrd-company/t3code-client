@@ -1,7 +1,7 @@
 $schema: https://refinery.systems/ontology/technical-design
 title: T3 Code HTTP and WebSocket protocol
 objective: >-
-  Implement library authentication, requests, responses and event handling against the verified protocol 2 interfaces of stock T3 Code 0.1.2.
+  Implement library authentication, requests, responses and event handling against the verified protocol 2 interfaces of stock T3 Code 0.1.6.
 relationships:
   related-to:
     - library
@@ -11,7 +11,7 @@ relationships:
     - releasing
 proposed-design:
   high-level-overview: >-
-    The library implements stock T3 Code 0.1.2 and orchestration protocol 2.
+    The library implements stock T3 Code 0.1.6 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade
     contracts. The library architecture links the canonical design family.
   wire-facts-verified-against-t-code: |
@@ -51,9 +51,7 @@ proposed-design:
     | `POST /oauth/token`                                   | none                 | form-encoded token exchange; pairing token is single use                                   |
     | `POST /api/auth/websocket-ticket`                     | bearer               | `{ticket, expiresAt}`; ticket lives about five minutes                                     |
     | `POST /api/auth/pairing-token`                        | bearer, access:write | body `{label?, scopes?}`; the credential is returned once                                  |
-    | `GET /api/auth/pairing-links`                         | bearer, access:read  |                                                                                            |
     | `POST /api/auth/pairing-links/revoke`                 | bearer, access:write | `{id}` → `{revoked}`                                                                       |
-    | `GET /api/auth/clients`                               | bearer, access:read  | `AuthClientSession[]`                                                                      |
     | `POST /api/auth/clients/revoke`                       | bearer, access:write | `{sessionId}` → `{revoked}`                                                                |
     | `POST /api/auth/clients/revoke-others`                | bearer, access:write | `{revokedCount}`                                                                           |
     | `GET /api/projects`                                   | bearer, orch:read    | `ProjectSnapshot`: every project record                                                    |
@@ -124,14 +122,17 @@ proposed-design:
     | `orchestration.getTurnItem`              | orch:read    | `{threadId, itemId}` → `{item}` with the full, size-bounded input and output                                                                          |
     | `orchestration.getWorkflowScript`        | orch:read    | unchanged                                                                                                                                             |
     | `orchestration.stopWorkflow`             | orch:operate | `{threadId, subagentId}` → nothing; fails `OrchestrationV2StopWorkflowError` with a `reason`                                                          |
+    | `orchestration.forceStopThread`          | orch:operate | `{threadId, runId?}` → `{outcome, sharedWithThreadIds}`; fails `OrchestrationV2ForceStopThreadError`, `reason: "superseded"`                          |
     | `orchestration.getTurnDiff`              | orch:read    | unchanged                                                                                                                                             |
     | `orchestration.getFullThreadDiff`        | orch:read    | unchanged                                                                                                                                             |
-    | `orchestration.searchThreads`            | orch:read    | unchanged                                                                                                                                             |
+    | `orchestration.searchThreads`            | orch:read    | `{query, limit?, olderSettledBefore?, projectIds?, environmentLabel?, titlesOnly?}` → `{matches, snapshotSequence?, threads?}`                        |
     | `orchestration.searchThread`             | orch:read    | `OrchestrationV2SearchThreadInput` → `OrchestrationV2SearchThreadResult`: one match and the navigation around it                                      |
     | `orchestration.searchThreadStream`       | orch:read    | the same input → stream of results that converge; the last has `complete: true`                                                                       |
     | `orchestration.getArchivedShellSnapshot` | orch:read    | `{}` → `OrchestrationV2ArchivedShellSnapshot`                                                                                                         |
-    | `orchestration.subscribeArchivedShell`   | orch:read    | stream of `OrchestrationV2ArchivedShellStreamItem`                                                                                                    |
-    | `orchestration.subscribeShell`           | orch:read    | `{afterSequence?, requestCompletionMarker?}` → stream of `OrchestrationV2ShellStreamItem`                                                             |
+    | `orchestration.getThreadFamily`          | orch:read    | `{threadId}` → `{snapshotSequence, threads}`: active threads with the same root                                                                       |
+    | `orchestration.getWorktreeThreadIds`     | orch:read    | `{worktreePath}` → `{threadIds}`                                                                                                                      |
+    | `orchestration.getOlderSettledThreads`   | orch:read    | `{before: {settledAt, threadId?}, projectIds?, limit}` → `{snapshotSequence, threads, counts}`; `limit: 0` fills only `counts`                        |
+    | `orchestration.subscribeShell`           | orch:read    | `{afterSequence?, requestCompletionMarker?, omitIdleSubagents?, omitOlderSettled?}` → stream of `OrchestrationV2ShellStreamItem`                      |
     | `orchestration.subscribeThread`          | orch:read    | `{threadId, afterSequence?, requestCompletionMarker?, acceptBoundedSnapshot?, acceptCompactTurnItems?}` → stream of `OrchestrationV2ThreadStreamItem` |
     | `orchestration.subscribeCommandOutput`   | orch:read    | `{threadId, itemId}` → stream of `{kind, text, truncated, running}` frames, ending after `running: false`; fails `OrchestrationV2CommandOutputError`    |
 
@@ -329,8 +330,20 @@ proposed-design:
     The shell snapshot has `threads` and
     `archivedThreads`, but the server fills `archivedThreads` only on the socket
     snapshot; archived threads are read with
-    `orchestration.getArchivedShellSnapshot`, and `thread.updated` items for
-    them arrive on `orchestration.subscribeArchivedShell`.
+    `orchestration.getArchivedShellSnapshot`. The server has no live archived
+    stream.
+
+    A shell reader can ask for fewer rows, on the socket with the booleans
+    `omitIdleSubagents` and `omitOlderSettled` and over HTTP with the query value
+    `1` for the same names. `ServerConfig.shellThreadFamilies` and
+    `ServerConfig.shellOlderSettled` advertise them; the client sends them only when
+    its caller asks. `omitIdleSubagents` rows are read with
+    `orchestration.getThreadFamily` and `orchestration.getWorktreeThreadIds`.
+    `omitOlderSettled` adds `olderSettled` (`before`, `asOfSequence`, `counts`) to
+    the snapshot, and those rows are read with
+    `orchestration.getOlderSettledThreads` or with `olderSettledBefore` on
+    `orchestration.searchThreads`. Search matches carry optional `quality`, `hits`
+    and `messageId`.
 
     `ServerConfig.lastEventLoopStall` is optional recent server event-loop stall
     metadata in configuration reads and configuration stream snapshots. Its
@@ -346,7 +359,20 @@ proposed-design:
     otherwise. `projects.createNew` makes a folder under
     `ServerConfig.newProjectsRoot` with a README, an icon and a first commit,
     then creates the project; a failed commit is reported in `commitError` and
-    keeps the project.
+    keeps the project. `projects.createFromThread` turns the own Scratch folder of
+    a No project thread into a project, in place, and moves every thread that works
+    in that folder; a repeated call finishes a partial move. A thread with no own
+    Scratch folder or a moved thread with unfinished work fails the call with
+    `OrchestrationDispatchCommandError`. The capability
+    `threadProjectFromScratch` advertises it. The command this method dispatches,
+    `thread.project.adopt-folder`, is internal to the server: it is not in
+    `OrchestrationV2Command` and the server refuses it from a client.
+
+    `project.update` accepts booleans `pinned` and `archived`. The server stores them
+    as `pinnedAt` and `archivedAt` on `Project` and `OrchestrationProjectShell`, both
+    optional and nullable. The capability `projectOrganization` advertises this, and
+    older servers drop the fields. An archived project stays in the shell, with its
+    threads and files.
 
   approval-full-access-override: >-
     Approval-request turn items expose optional fullAccessOverride metadata through

@@ -6,7 +6,7 @@
       "createdBy": "user",
       "creationSource": "web",
       "id": "11111111-2222-4333-8444-555555555555",
-      "projectId": "9fd48526-08b8-4ed6-8e65-a69599198109",
+      "projectId": "db70818c-e164-4aea-9606-4333f95e87e4",
       "title": "Example thread",
       "providerInstanceId": "codex",
       "modelSelection": {
@@ -40,6 +40,7 @@
       "lastErrorCode": null,
       "usageLimitResetAt": null,
       "pendingRuntimeRequest": null,
+      "pendingGuestMessageCount": 0,
       "latestVisibleMessage": null,
       "latestUserMessageAt": null,
       "latestUserAuthoredMessageAt": null,
@@ -49,8 +50,8 @@
       "goal": null,
       "itemCount": 0,
       "visibleItemCount": 0,
-      "createdAt": "2026-10-25T03:46:57.330Z",
-      "updatedAt": "2026-10-25T03:46:57.330Z",
+      "createdAt": "2026-11-02T10:46:53.888Z",
+      "updatedAt": "2026-11-02T10:46:53.888Z",
       "archivedAt": null,
       "settledOverride": null,
       "settledAt": null,
@@ -62,6 +63,7 @@
       "autoSettleDisabledAt": null,
       "pinOrderKey": null,
       "lastVisitedAt": null,
+      "opens": null,
       "titleRegeneration": null,
       "deletedAt": null
     }
@@ -69,7 +71,7 @@
   "archivedThreads": [],
   "projects": [
     {
-      "id": "9fd48526-08b8-4ed6-8e65-a69599198109",
+      "id": "db70818c-e164-4aea-9606-4333f95e87e4",
       "title": "Example project",
       "workspaceRoot": "/srv/sample",
       "repositoryIdentity": null,
@@ -79,8 +81,10 @@
       "faviconPath": null,
       "projectIcon": null,
       "scripts": [],
-      "createdAt": "2026-10-25T03:46:57.300Z",
-      "updatedAt": "2026-10-25T03:46:57.300Z"
+      "pinnedAt": null,
+      "archivedAt": null,
+      "createdAt": "2026-11-02T10:46:53.844Z",
+      "updatedAt": "2026-11-02T10:46:53.844Z"
     }
   ]
 }

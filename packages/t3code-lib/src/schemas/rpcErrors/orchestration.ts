@@ -7,7 +7,7 @@ import { z } from "zod";
 import { CommandId, NodeId, ProjectId, ThreadId, forwardCompatibleLiteral } from "../common.ts";
 import { Defect, messageAndCause, taggedError } from "./shared.ts";
 
-/** Raised by `projects.ensureScratch` and `projects.createNew`. */
+/** Raised by `projects.ensureScratch`, `projects.createNew` and `projects.createFromThread`. */
 export const OrchestrationDispatchCommandError = taggedError("OrchestrationDispatchCommandError", {
   ...messageAndCause,
   bootstrapThreadDisposition: forwardCompatibleLiteral(["deleted", "not-created"]).optional(),
@@ -71,6 +71,15 @@ export const OrchestrationV2StopWorkflowError = taggedError("OrchestrationV2Stop
   reason: forwardCompatibleLiteral(["not-running", "unsupported", "unavailable", "stop-failed"]),
   cause: Defect.optional(),
 });
+/** `reason: "superseded"`: a newer run started since the request, so nothing was stopped. */
+export const OrchestrationV2ForceStopThreadError = taggedError(
+  "OrchestrationV2ForceStopThreadError",
+  {
+    threadId: ThreadId,
+    reason: forwardCompatibleLiteral(["superseded"]).optional(),
+    cause: Defect.optional(),
+  },
+);
 /** Raised by `orchestration.subscribeCommandOutput`, for example when the row is not a command. */
 export const OrchestrationV2CommandOutputError = taggedError("OrchestrationV2CommandOutputError", {
   threadId: ThreadId,
