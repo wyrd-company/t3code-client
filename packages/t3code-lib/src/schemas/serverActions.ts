@@ -17,12 +17,12 @@ import {
   TrimmedNonEmptyString,
   TurnItemId,
 } from "./common.ts";
-import { KeybindingCommand, ResolvedKeybindingsConfig } from "./keybindings.ts";
+import { KeybindingCommandInput, ResolvedKeybindingsConfig } from "./keybindings.ts";
 import { ServerConfigIssues } from "./server.ts";
 
 const KeybindingRule = {
   key: TrimmedNonEmptyString.max(64),
-  command: KeybindingCommand,
+  command: KeybindingCommandInput,
   when: TrimmedNonEmptyString.max(256).optional(),
 };
 

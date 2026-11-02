@@ -121,6 +121,13 @@ export type StaticKeybindingCommand = (typeof STATIC_KEYBINDING_COMMANDS)[number
 export const KeybindingCommand = forwardCompatibleLiteral(STATIC_KEYBINDING_COMMANDS);
 export type KeybindingCommand = KnownOr<StaticKeybindingCommand>;
 
+/** What the server accepts in a write: a known command or a script command. */
+export const KeybindingCommandInput = z.union([
+  z.enum(STATIC_KEYBINDING_COMMANDS),
+  z.string().regex(/^script\.[a-z0-9][a-z0-9-]{0,23}\.run$/),
+]);
+export type KeybindingCommandInput = z.infer<typeof KeybindingCommandInput>;
+
 export const KeybindingShortcut = z.looseObject({
   key: TrimmedNonEmptyString.max(MAX_KEYBINDING_VALUE_LENGTH),
   metaKey: z.boolean(),

@@ -55,7 +55,7 @@ const EnvironmentMachineKind = z.enum([
 
 const StorageRetentionDays = int(1, 3650).nullable();
 const SettledWorktreeRetentionDays = int(0, 3650).nullable();
-const SidebarAutoSettleAfterDays = int(1, 90);
+const SidebarAutoSettleAfterDays = z.number().min(1).max(90);
 
 const ModelFavorite = z.looseObject({
   provider: ProviderInstanceId,
@@ -91,6 +91,23 @@ const WorktreeCleanupPatch = z
     z.looseObject({
       mode: z.literal("custom"),
       rules: z.looseObject(WORKTREE_RULE_FIELDS).partial(),
+    }),
+  ])
+  .nullable();
+/** A project's override replaces the whole setting, so its rules are whole. */
+const WorktreeCleanupOverride = z
+  .discriminatedUnion("mode", [
+    z.looseObject({ mode: z.literal("off") }),
+    z.looseObject({
+      mode: z.literal("custom"),
+      rules: z.looseObject({
+        worktreeKeepWhen: WorktreeKeepWhen.optional(),
+        worktreeAfterDays: StorageRetentionDays,
+        worktreeSettledAfterDays: SettledWorktreeRetentionDays.optional(),
+        worktreeOnMerge: z.boolean(),
+        worktreeOnDelete: z.boolean(),
+        worktreeUnchanged: z.boolean(),
+      }),
     }),
   ])
   .nullable();
@@ -145,7 +162,7 @@ const WritingStylePatch = z
 /** Absent keys inherit; null is a value for nullable settings. */
 const ProjectSettingsOverride = z
   .looseObject({
-    worktreeCleanup: WorktreeCleanupPatch,
+    worktreeCleanup: WorktreeCleanupOverride,
     defaultModelSelection: ModelSelection.nullable(),
     defaultRuntimeMode: RuntimeMode,
     defaultThreadEnvMode: ThreadEnvMode,

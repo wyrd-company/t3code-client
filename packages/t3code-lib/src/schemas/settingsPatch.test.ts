@@ -29,6 +29,28 @@ describe("ServerSettingsPatch", () => {
       }).easDeviceHosts?.[0],
     ).toEqual({ kind: "eas", id: "sample", label: "Sample" });
   });
+  it("takes a fractional auto-settle time", () => {
+    expect(ServerSettingsPatch.safeParse({ sidebarAutoSettleAfterDays: 1.5 }).success).toBe(true);
+  });
+  it("takes partial cleanup rules in the patch, and only whole rules in a project override", () => {
+    const partial = { mode: "custom", rules: { worktreeOnMerge: true, worktreeAfterDays: 30 } };
+    const whole = {
+      mode: "custom",
+      rules: {
+        worktreeAfterDays: 30,
+        worktreeOnMerge: true,
+        worktreeOnDelete: false,
+        worktreeUnchanged: false,
+      },
+    };
+    const override = (worktreeCleanup: unknown) =>
+      ServerSettingsPatch.safeParse({
+        projectSettingsOverrides: { "project-1": { worktreeCleanup } },
+      }).success;
+    expect(ServerSettingsPatch.safeParse({ worktreeCleanup: partial }).success).toBe(true);
+    expect(override(partial)).toBe(false);
+    expect(override(whole)).toBe(true);
+  });
   it("keeps a key of a newer server", () => {
     expect(ServerSettingsPatch.parse({ futureSetting: 1 })).toEqual({
       futureSetting: 1,
@@ -164,4 +186,27 @@ describe("requiredScopesForSettingsUpdate", () => {
     expect(spec.scopeForPayload?.(both)).toBe("settings:write");
     expect(spec.payloadScopes?.(both)).toEqual(["providers:manage"]);
   });
+});
+
+describe("a keybinding write", () => {
+  const spec = rpcMethods["server.upsertKeybinding"].payload;
+  const key = "mod+shift+u";
+  it.each(["usage.open", "script.sample-1.run"])("takes %s", (command) => {
+    expect(spec.safeParse({ key, command }).success).toBe(true);
+    expect(spec.safeParse({ key, command: "usage.open", replace: { key, command } }).success).toBe(
+      true,
+    );
+    expect(rpcMethods["server.removeKeybinding"].payload.safeParse({ key, command }).success).toBe(
+      true,
+    );
+  });
+  it.each(["sample.invalid", "script.run", "script..run", "script.Sample.run", "script.-a.run"])(
+    "refuses %s",
+    (command) => {
+      expect(spec.safeParse({ key, command }).success).toBe(false);
+      expect(
+        rpcMethods["server.removeKeybinding"].payload.safeParse({ key, command }).success,
+      ).toBe(false);
+    },
+  );
 });

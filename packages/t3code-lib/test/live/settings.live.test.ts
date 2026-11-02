@@ -50,7 +50,7 @@ const everyShape: schemas.settingsPatch.ServerSettingsPatch = {
   fallbackModelSelection: null,
   defaultThreadEnvMode: "worktree",
   worktreeSubmodules: "none",
-  sidebarAutoSettleAfterDays: 7,
+  sidebarAutoSettleAfterDays: 1.5,
   idleCompaction: "off",
   snoozePresets: [
     { kind: "after", minutes: 30 },
@@ -122,6 +122,25 @@ describe.skipIf(!hasLiveServer)("settings methods", () => {
     }
   });
 
+  it("takes a project's override with whole cleanup rules", async () => {
+    const { projectId } = await client.projects.createNew({ name: "Sample override" });
+    const worktreeCleanup = {
+      mode: "custom",
+      rules: {
+        worktreeAfterDays: 30,
+        worktreeOnMerge: true,
+        worktreeOnDelete: false,
+        worktreeUnchanged: false,
+      },
+    } as const;
+    const updated = await client.rpc.call("server.updateSettings", {
+      patch: { projectSettingsOverrides: { [projectId]: { worktreeCleanup } } },
+    });
+    expect(updated).toMatchObject({
+      projectSettingsOverrides: { [projectId]: { worktreeCleanup } },
+    });
+  });
+
   it("changes one provider instance and redacts a sensitive value", async () => {
     const instanceId = ProviderInstanceId.parse("sample_codex");
     const instance = {
@@ -190,6 +209,14 @@ describe.skipIf(!hasLiveServer)("settings methods", () => {
       when: "terminalFocus",
     });
     expect(shortcuts(removed).map((rule) => rule.shortcut.key)).not.toContain("f10");
+  });
+
+  it("adds and removes a script command", async () => {
+    const rule = { key: "mod+shift+f8", command: "script.sample-1.run" } as const;
+    const added = await client.rpc.call("server.upsertKeybinding", rule);
+    expect(added.keybindings.map((entry) => entry.command)).toContain(rule.command);
+    const removed = await client.rpc.call("server.removeKeybinding", rule);
+    expect(removed.keybindings.map((entry) => entry.command)).not.toContain(rule.command);
   });
 
   it("refuses to change a malformed keybindings file", async () => {
