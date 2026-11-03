@@ -138,6 +138,36 @@ it("keeps the code of an approval's redirect out of a decode error", async () =>
   expect(NodeUtil.inspect((error as T3DecodeError).raw)).not.toContain("sample-code");
 });
 
+it("keeps OAuth values out of a refusal and a decode error, and a good answer keeps them", async () => {
+  const leaked = {
+    code_verifier: "sample-verifier",
+    access_token: "sample-token",
+    redirectTo: "/connect-agent?state=sample-state",
+    location: "https://app.invalid/back?error=access_denied&state=sample-state",
+  };
+  const body = { authorization: {}, decision: { _tag: "deny" as const } };
+
+  const refused = setup(() => Response.json(leaked, { status: 400 }));
+  const refusal = await failure(refused.routes.call("mcpOAuth.decision", { body }));
+  expect(refusal).toBeInstanceOf(T3HttpError);
+
+  const malformed = setup(() => Response.json({ ...leaked, redirectTo: 1 }));
+  const decode = await failure(malformed.routes.call("mcpOAuth.decision", { body }));
+  expect(decode).toBeInstanceOf(T3DecodeError);
+
+  for (const shown of [(refusal as T3HttpError).body, (decode as T3DecodeError).raw]) {
+    const text = NodeUtil.inspect(shown, { depth: 8 });
+    for (const value of ["sample-verifier", "sample-token", "sample-state"]) {
+      expect(text).not.toContain(value);
+    }
+  }
+
+  const good = setup(() => Response.json({ redirectTo: leaked.redirectTo }));
+  await expect(good.routes.call("mcpOAuth.decision", { body })).resolves.toEqual({
+    redirectTo: leaked.redirectTo,
+  });
+});
+
 it("decodes either answer of an approval", () => {
   const details = { clientName: "Sample", redirectHost: "a.invalid", environmentHost: "b.invalid" };
   expect(AuthMcpApprovalResult.parse(details)).toEqual(details);

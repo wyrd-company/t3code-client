@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vite-plus/test";
-import { redactSecrets } from "./redact.ts";
+import { REDACTED, redactSecrets } from "./redact.ts";
 
 describe("redactSecrets", () => {
   it("replaces the private part of a key and a proof, and keeps the public part", () => {
@@ -107,5 +107,23 @@ describe("redactSecrets", () => {
     const input: Record<string, unknown> = { token: "x" };
     input["self"] = input;
     expect(redactSecrets(input)).toEqual({ token: "[redacted]", self: undefined });
+  });
+});
+
+it("redacts an OAuth verifier and a URL's state, and keeps an error's code and a status", () => {
+  expect(
+    redactSecrets({
+      code: "not_found",
+      state: "open",
+      code_verifier: "sample-verifier",
+      url: "https://app.invalid/back?state=sample-state",
+      link: "/sample?code_verifier=sample-verifier",
+    }),
+  ).toEqual({
+    code: "not_found",
+    state: "open",
+    code_verifier: REDACTED,
+    url: REDACTED,
+    link: REDACTED,
   });
 });

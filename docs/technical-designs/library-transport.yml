@@ -36,10 +36,11 @@ proposed-design:
     `body`, `raw`, an RPC failure's `detail` and `record`, and `defect` pass through
     `redactSecrets` (`internal/redact.ts`): string
     values whose key looks like a credential (`token`, `credential`, `secret`,
-    `authorization`, `password`, `ticket`, `usercode`) become `"[redacted]"`, so an
+    `authorization`, `password`, `ticket`, `usercode`, `verifier`) become `"[redacted]"`, so an
     error that carries a badly shaped `/oauth/token` response never carries the
-    token. So do string values with a `code` or `id_token_hint` query parameter, so
-    an error that carries a sign-in state never carries its URLs. A whole `headers`
+    token. So do string values with a `code`, `code_verifier`, `state` or `id_token_hint`
+    query parameter, so an error that carries a sign-in state never carries its URLs.
+    The bare keys `code` and `state` stay, since they name an error's code and a status. A whole `headers`
     map becomes `"[redacted]"`, since a header with any name can hold a credential.
   schemas: |
     Conventions:

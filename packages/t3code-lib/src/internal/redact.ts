@@ -4,10 +4,13 @@
  * a body that failed to decode must not travel with them. No T3 knowledge.
  */
 // `d` is the private part of a JSON Web Key.
-const SECRET_KEY = /token|credential|secret|authorization|password|ticket|usercode|^dpop$|^d$/iu;
-// A URL can carry a one-use code or a token in its query. A query name can be percent-encoded.
+const SECRET_KEY =
+  /token|credential|secret|authorization|password|ticket|usercode|verifier|^dpop$|^d$/iu;
+// A URL can carry a one-use code, a token, or an OAuth client's state or verifier in its query. A
+// query name can be percent-encoded. The bare keys `code` and `state` are not secret names: the
+// first is an error's code, and the second is a status.
 const QUERY_NAME = /[?&]([^=&\s]+)=/gu;
-const SECRET_QUERY_NAME = /^(?:code|id_token_hint|\w*token)$/iu;
+const SECRET_QUERY_NAME = /^(?:code|code_verifier|state|id_token_hint|\w*token)$/iu;
 // A URL's user information can hold a password or a token, up to the last `@` of its authority.
 const URL_USERINFO = /\b([a-z][a-z0-9+.-]*):\/\/([^\s/?#]*)@/giu;
 // Each value of a request's header map can be a credential, under any name.
