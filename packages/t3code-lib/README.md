@@ -234,6 +234,32 @@ listeners that the environment finds, which include other processes on that host
 server stops only a listener that it attributes to a thread's terminal or agent, and
 `preview.stopLocalServer` signals its whole process group, so it needs `terminal:operate`.
 
+## Devices
+
+`device.*` keeps the simulators and emulators of a server's device hosts. Device support
+is off until `device.configure` turns it on. A host in settings can be this machine, an
+SSH host, an EAS account or a Simlock pool, and `state.hosts` holds them all:
+
+```ts
+const state = await client.rpc.call("device.configure", { enabled: true });
+const device = state.devices.find((item) => item.platform === "android");
+if (device) {
+  const target = { hostId: device.hostId, deviceId: device.id };
+  await client.rpc.call("device.open", { ...target, threadId, platform: "android" });
+  await client.rpc.call("device.action", { ...target, type: "setAppearance", value: "dark" });
+  const { settings, foregroundApp } = await client.rpc.call("device.detail", target);
+  await client.rpc.call("device.close", { ...target, threadId });
+}
+```
+
+`subscribeDeviceState` sends the state, then each change. A reader can read it, and
+`device.list` with `inspectOnly` reads what each host has installed. `retryHostId` and
+`updateTool` can start or install tools, so they need `orchestration:operate`.
+`device.testHost`, `device.easAccount` and `device.simlockIdentity` check a host or a
+credential before settings hold it, and need `settings:write`. A failure has a tag from
+`schemas.rpcErrors`, such as `DeviceHostUnavailableError`. `/api/device-hub/*` is the
+server's proxy to a host's device hub. The library has no entry for it.
+
 ## Repositories and terminals
 
 `git.runStackedAction` streams progress until the action finishes or fails.

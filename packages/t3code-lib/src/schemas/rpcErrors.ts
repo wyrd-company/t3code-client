@@ -74,6 +74,7 @@ import {
 import { GuestShareCreateError, PeerLinkError, PeerLinkRequestError } from "./rpcErrors/links.ts";
 import { fileRpcErrors } from "./rpcErrors/files.ts";
 import { McpAppRequestError } from "./rpcErrors/mcpApps.ts";
+import { deviceRpcErrors } from "./rpcErrors/device.ts";
 import { previewRpcErrors } from "./rpcErrors/preview.ts";
 import { pullRequestRpcErrors } from "./rpcErrors/pullRequests.ts";
 import { sourceControlRpcErrors } from "./rpcErrors/sourceControl.ts";
@@ -87,6 +88,7 @@ export * from "./rpcErrors/orchestration.ts";
 export * from "./rpcErrors/links.ts";
 export * from "./rpcErrors/files.ts";
 export * from "./rpcErrors/mcpApps.ts";
+export * from "./rpcErrors/device.ts";
 export * from "./rpcErrors/preview.ts";
 export * from "./rpcErrors/pullRequests.ts";
 export * from "./rpcErrors/sourceControl.ts";
@@ -105,6 +107,7 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   GitPullRequestMaterializationError,
   SourceControlProviderError,
   ...previewRpcErrors,
+  ...deviceRpcErrors,
   ...pullRequestRpcErrors,
   ...sourceControlRpcErrors,
   TextGenerationError,

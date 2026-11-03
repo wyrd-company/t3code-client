@@ -16,7 +16,7 @@ const uniqueHostIds = <Host extends { readonly id: string }>(hosts: readonly Hos
   new Set(hosts.map((host) => host.id)).size === hosts.length;
 const UNIQUE_HOSTS = "Device host ids must be unique.";
 
-const SshDeviceHost = z.looseObject({
+export const SshDeviceHost = z.looseObject({
   kind: z.literal("ssh").optional(),
   id: DeviceHostId,
   label: TrimmedNonEmptyString,

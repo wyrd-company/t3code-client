@@ -79,11 +79,12 @@ proposed-design:
         httpErrors.ts           Environment*Error records
         keybindings.ts          resolved keybinding rules: commands, shortcuts, when nodes
         rpcErrors.ts            RpcErrorRecord: every tagged error the registered RPC methods declare
-        rpcErrors/              server, project, orchestration, peer and guest link, MCP app, file, vcs, and terminal error records, shared tagged-error helpers
+        rpcErrors/              server, project, orchestration, peer and guest link, MCP app, file, preview, device, vcs, and terminal error records, shared tagged-error helpers
         assets.ts               asset resources and URLs, attachment upload URLs, and the bytes of an asset
         editor.ts               editor ids and the editor launch input
         preview.ts              browser tabs, browser profiles and discovered local servers
         previewViewer.ts        viewer socket messages, and the bodies of the two routes beside it
+        device.ts               device hosts, simulators and emulators, their sessions and actions
         filesystem.ts           host path browsing and metadata
         git.ts                  stacked Git actions and their progress events, pull request resolution and preparation
         review.ts               a branch's commits, diff previews and the contents of a changed file
@@ -157,7 +158,7 @@ proposed-design:
         client.ts               HttpRouteClient: typed call by route name; callRoute for the facades
       rpc/
         registry.ts             RpcMethodTable: method name → { payload, success, stream } zod schemas + scope
-        methods/*.ts            one file per family (orchestration, server, vcs, git, projects, terminal, authAccess, peerLinks, files, diagnostics, providerAuth, providerInstall, acpRegistry, sourceControl, agentSessions, pullRequests)
+        methods/*.ts            one file per family (orchestration, server, vcs, git, projects, terminal, authAccess, peerLinks, files, diagnostics, providerAuth, providerInstall, acpRegistry, sourceControl, agentSessions, pullRequests, preview, device)
         client.ts               RpcClient: typed call/stream over RpcConnection using the registry
       auth/
         credentialStore.ts      CredentialStore seam + memoryCredentialStore + fileCredentialStore

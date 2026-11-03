@@ -26,6 +26,7 @@ export * as rpcErrors from "./rpcErrors.ts";
 export * as scheduledTask from "./scheduledTask.ts";
 export * as provider from "./provider.ts";
 export * as providerInstance from "./providerInstance.ts";
+export * as device from "./device.ts";
 export * as deviceHosts from "./deviceHosts.ts";
 export * as server from "./server.ts";
 export * as serverActions from "./serverActions.ts";

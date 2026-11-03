@@ -11,6 +11,7 @@ import { authAccessMethods } from "./methods/authAccess.ts";
 import { peerLinksMethods } from "./methods/peerLinks.ts";
 import { guestShareMethods } from "./methods/guestShare.ts";
 import { mcpAppsMethods } from "./methods/mcpApps.ts";
+import { deviceMethods } from "./methods/device.ts";
 import { previewMethods } from "./methods/preview.ts";
 import { scheduledTasksMethods } from "./methods/scheduledTasks.ts";
 import { filesMethods } from "./methods/files.ts";
@@ -34,6 +35,7 @@ export const rpcMethods = {
   ...guestShareMethods,
   ...mcpAppsMethods,
   ...previewMethods,
+  ...deviceMethods,
   ...scheduledTasksMethods,
   ...filesMethods,
   ...gitMethods,
