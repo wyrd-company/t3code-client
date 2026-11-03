@@ -16,6 +16,7 @@ import {
   forwardCompatibleLiteral,
 } from "./common.ts";
 import { PullRequestActor } from "./orchestration/pullRequest.ts";
+import { PULL_REQUEST_ACTIONS, PULL_REQUEST_REACTIONS } from "./pullRequestValues.ts";
 
 export {
   PullRequestActor,
@@ -28,19 +29,7 @@ export {
 export const PullRequestMergeMethod = forwardCompatibleLiteral(["merge", "squash", "rebase"]);
 export type PullRequestMergeMethod = z.infer<typeof PullRequestMergeMethod>;
 
-export const PullRequestAction = forwardCompatibleLiteral([
-  "merge",
-  "ready",
-  "draft",
-  "close",
-  "reopen",
-  "delete-branch",
-  "update-branch",
-  "enable-auto-merge",
-  "disable-auto-merge",
-  "revert",
-  "approve-workflows",
-]);
+export const PullRequestAction = forwardCompatibleLiteral(PULL_REQUEST_ACTIONS);
 export type PullRequestAction = z.infer<typeof PullRequestAction>;
 
 export const PullRequestUpdateMethod = forwardCompatibleLiteral(["merge", "rebase"]);
@@ -77,16 +66,7 @@ export const PullRequestCheck = z.looseObject({
 export type PullRequestCheck = z.infer<typeof PullRequestCheck>;
 
 export const PullRequestReaction = z.looseObject({
-  content: forwardCompatibleLiteral([
-    "thumbs-up",
-    "thumbs-down",
-    "laugh",
-    "hooray",
-    "confused",
-    "heart",
-    "rocket",
-    "eyes",
-  ]),
+  content: forwardCompatibleLiteral(PULL_REQUEST_REACTIONS),
   count: PositiveInt,
   /** Excludes the viewer's login when `viewerHasReacted`. `count` still includes the viewer. */
   actors: z.array(TrimmedNonEmptyString),

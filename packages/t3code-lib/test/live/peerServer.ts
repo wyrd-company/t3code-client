@@ -13,6 +13,7 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import type { T3Client } from "../../src/index.ts";
+import { clearedMachineAccess } from "../support/serverEnvironment.ts";
 import {
   issueToken,
   prepareServerHome,
@@ -91,8 +92,9 @@ export async function startPeerServer(
 
 /**
  * A peer server whose `HOME` and `CODEX_HOME` are in a new folder, with the prefix
- * `name`. `prepare` fills that folder, before the server starts, and returns more
- * of the server's environment. `stop` also removes the folder.
+ * `name`, and that inherits no value in `clearedMachineAccess`. `prepare` fills that
+ * folder, before the server starts, and returns more of the server's environment.
+ * `stop` also removes the folder.
  */
 export async function startScratchServer(
   name: string,
@@ -103,6 +105,7 @@ export async function startScratchServer(
   try {
     const peer = await startPeerServer({
       environment: {
+        ...clearedMachineAccess(),
         ...(await prepare(home)),
         HOME: home,
         CODEX_HOME: NodePath.join(home, ".codex"),

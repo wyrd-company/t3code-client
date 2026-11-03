@@ -3,8 +3,7 @@
 //   verifies: library
 // ---
 /** The page that a server browser tab loads in a live test, on a local server of the test. */
-import * as NodeHttp from "node:http";
-import type { AddressInfo } from "node:net";
+import { startLocalHttp } from "./localHttp.ts";
 
 export const SAVED_FILE_BODY = "sample download body";
 
@@ -35,7 +34,7 @@ export interface PreviewPage {
 
 export async function startPreviewPage(): Promise<PreviewPage> {
   const reports = new Map<string, string>();
-  const server = NodeHttp.createServer(async (request, response) => {
+  const server = await startLocalHttp(async (request, response) => {
     if (request.method === "POST") {
       const chunks: Buffer[] = [];
       for await (const chunk of request) chunks.push(chunk as Buffer);
@@ -54,14 +53,9 @@ export async function startPreviewPage(): Promise<PreviewPage> {
     response.writeHead(200, { "content-type": "text/html" });
     response.end(PAGE);
   });
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const { port } = server.address() as AddressInfo;
   return {
-    url: `http://127.0.0.1:${port}/`,
+    url: `${server.url}/`,
     reported: (path) => reports.get(path),
-    stop: () => {
-      server.closeAllConnections();
-      return new Promise((resolve) => server.close(() => resolve()));
-    },
+    stop: server.close,
   };
 }

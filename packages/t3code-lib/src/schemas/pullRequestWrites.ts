@@ -10,6 +10,7 @@
 import { z } from "zod";
 import { PositiveInt, TrimmedNonEmptyString } from "./common.ts";
 import { PullRequestRef } from "./pullRequestInputs.ts";
+import { PULL_REQUEST_ACTIONS, PULL_REQUEST_REACTIONS } from "./pullRequestValues.ts";
 
 /** Whitespace stays, since it can be part of Markdown or a file name. */
 const CommentBody = z.string().min(1).max(65_536);
@@ -47,19 +48,7 @@ export type PullRequestStackHead = z.infer<typeof PullRequestStackHead>;
 
 export const PullRequestActionInput = z.looseObject({
   ...refFields,
-  action: z.enum([
-    "merge",
-    "ready",
-    "draft",
-    "close",
-    "reopen",
-    "delete-branch",
-    "update-branch",
-    "enable-auto-merge",
-    "disable-auto-merge",
-    "revert",
-    "approve-workflows",
-  ]),
+  action: z.enum(PULL_REQUEST_ACTIONS),
   mergeMethod: z.enum(["merge", "squash", "rebase"]).optional(),
   updateMethod: z.enum(["merge", "rebase"]).optional(),
   /** Acts on a native stack. Send it only when `pullRequestStackActions` is on. */
@@ -137,16 +126,7 @@ export const PullRequestReactionInput = z.looseObject({
   ...refFields,
   /** The comment to react to. Without it, the reaction is on the pull request. */
   subjectId: TrimmedNonEmptyString.optional(),
-  content: z.enum([
-    "thumbs-up",
-    "thumbs-down",
-    "laugh",
-    "hooray",
-    "confused",
-    "heart",
-    "rocket",
-    "eyes",
-  ]),
+  content: z.enum(PULL_REQUEST_REACTIONS),
   reacted: z.boolean(),
 });
 export type PullRequestReactionInput = z.infer<typeof PullRequestReactionInput>;

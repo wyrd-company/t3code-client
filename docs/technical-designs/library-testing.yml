@@ -88,8 +88,10 @@ proposed-design:
     and a remote host under `.invalid`. Its server environment clears inherited
     Git configuration, so that no call can leave the machine.
     `test/live/peerServer.ts` starts a second isolated server. Its scratch form also
-    has its own `HOME` and `CODEX_HOME`, so that a method that can reach a login or
-    an installed provider finds none of this machine's.
+    has its own `HOME` and `CODEX_HOME`, and inherits no value that names a forge
+    token, provider key, device tool or relay of the machine, so that a method that
+    can reach a login or an installed provider finds none of this machine's.
+    `test/live/localHttp.ts` is the loopback server for a stub that a test's server calls.
     The `t3` version is the server build this library targets,
     so the live suite is the check that the client still matches it.
 

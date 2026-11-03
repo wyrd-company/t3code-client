@@ -96,7 +96,7 @@ proposed-design:
         sourceControl.ts        version control systems and source control hosts the server can use, repository lookup, clone and publish, forge sign-in
         projectClone.ts         the tracked clone of a new project and its progress
         agentSessions.ts        the scan and import of another agent's sessions on the host
-        pullRequests.ts         the pull request reads and writes, from pullRequestInputs.ts, pullRequestWrites.ts, pullRequestParts.ts, pullRequestList.ts, pullRequestDetail.ts and pullRequestDiff.ts
+        pullRequests.ts         the pull request reads and writes, from pullRequestInputs.ts, pullRequestWrites.ts, pullRequestParts.ts, pullRequestList.ts, pullRequestDetail.ts and pullRequestDiff.ts; pullRequestValues.ts holds the value lists that a result leaves open and a write closes, and is not exported
         diagnostics.ts          trace and process diagnostics, process resource history, the process signal and the OTLP endpoint check
         resourceTelemetry.ts    host resources and the server's process telemetry, as a client reads them
         storageCleanup.ts       the storage cleanup report

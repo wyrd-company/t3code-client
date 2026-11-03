@@ -6,8 +6,6 @@
 import * as NodeCP from "node:child_process";
 import * as NodeCrypto from "node:crypto";
 import * as NodeFSP from "node:fs/promises";
-import * as NodeHttp from "node:http";
-import type * as NodeNet from "node:net";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import * as NodeUtil from "node:util";
@@ -15,6 +13,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { schemas, type T3Client } from "../../src/index.ts";
 import { hasAgent, hasLiveServer, modelSelection } from "./liveClient.ts";
 import { createLocalForge, isolatedGit, type Git } from "./localForge.ts";
+import { startLocalHttp } from "./localHttp.ts";
 import { startPeerServer, type PeerServer } from "./peerServer.ts";
 
 const execFile = NodeUtil.promisify(NodeCP.execFile);
@@ -90,17 +89,15 @@ describe.skipIf(!hasLiveServer)("pull request methods with a local forge stub", 
 
   it("keeps an inherited URL rewrite from moving the remote off the stub", async () => {
     let requests = 0;
-    const listener = NodeHttp.createServer((_request, response) => {
+    const listener = await startLocalHttp((_request, response) => {
       requests += 1;
       response.statusCode = 404;
       response.end();
     });
-    await new Promise<void>((resolve) => listener.listen(0, "127.0.0.1", resolve));
-    const { port } = listener.address() as NodeNet.AddressInfo;
     const inherited = {
       ...process.env,
       GIT_CONFIG_COUNT: "1",
-      GIT_CONFIG_KEY_0: `url.http://127.0.0.1:${port}/.insteadOf`,
+      GIT_CONFIG_KEY_0: `url.${listener.url}/.insteadOf`,
       GIT_CONFIG_VALUE_0: "git@gitlab.invalid:",
     };
     const lsRemote = (env: NodeJS.ProcessEnv) =>
@@ -116,7 +113,7 @@ describe.skipIf(!hasLiveServer)("pull request methods with a local forge stub", 
       expect(stdout).toContain("refs/heads/main");
       expect(requests).toBe(0);
     } finally {
-      await new Promise((resolve) => listener.close(resolve));
+      await listener.close();
     }
   });
 

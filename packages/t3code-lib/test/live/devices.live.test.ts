@@ -9,82 +9,23 @@
  * npm on first use, in its scratch home.
  */
 import * as NodeFS from "node:fs";
-import * as NodeFSP from "node:fs/promises";
-import * as NodeHttp from "node:http";
-import type { AddressInfo } from "node:net";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { threadId, type T3Client } from "../../src/index.ts";
+import {
+  pathWithoutDeviceTools,
+  SAMPLE_MODEL,
+  SAMPLE_TOKEN,
+  startGateway,
+  withInherited,
+  writeStubSsh,
+} from "./deviceStubs.ts";
 import { firstItem, hasLiveServer, refusal, waitFor } from "./liveClient.ts";
 import { startScratchServer, withScopes, type PeerServer } from "./peerServer.ts";
 
 const SAMPLE_THREAD = threadId("sample-thread");
-const SAMPLE_TOKEN = "sample-agent-token";
 const SAMPLE_HOST = "sample-pool";
-const SAMPLE_MODEL = "Sample Phone";
-
-const DEVICE_TOOLS = ["adb", "emulator", "avdmanager", "xcrun", "simctl"];
-
-/**
- * What a scratch server's environment must change, so that this machine's device tools and
- * credentials stay out of the test. `undefined` removes a value that the server inherits.
- */
-function deviceSandbox(parent: NodeJS.ProcessEnv, bin: string): NodeJS.ProcessEnv {
-  const cleared = Object.keys(parent).filter((name) =>
-    /^(?:AGENT_DEVICE_|EXPO_|ANDROID_(?:HOME|SDK_ROOT)$)/u.test(name),
-  );
-  const path = (parent["PATH"] ?? "")
-    .split(NodePath.delimiter)
-    .filter((dir) => !DEVICE_TOOLS.some((tool) => NodeFS.existsSync(NodePath.join(dir, tool))));
-  return {
-    ...Object.fromEntries(cleared.map((name) => [name, undefined])),
-    PATH: [bin, ...path].join(NodePath.delimiter),
-  };
-}
-
-const probeOutput = JSON.stringify({
-  nodePath: "/usr/bin/node",
-  platforms: [{ platform: "android", available: true }],
-});
-
-/** Sets `values` in this process, and returns what restores them. */
-function withInherited(values: Readonly<Record<string, string>>): () => void {
-  const saved = Object.keys(values).map((name) => [name, process.env[name]] as const);
-  Object.assign(process.env, values);
-  return () => {
-    for (const [name, value] of saved) {
-      if (value === undefined) delete process.env[name];
-      else process.env[name] = value;
-    }
-  };
-}
-
-/** Answers the two read routes of a Simlock gateway, and refuses any other credential. */
-function startGateway(): Promise<{ readonly url: string; close(): Promise<void> }> {
-  const answers: Record<string, unknown> = {
-    "/v1/identity": { name: "sample-agent", role: "agent" },
-    "/v1/catalog": {
-      platforms: [{ platform: "android", modelRuntimes: { [SAMPLE_MODEL]: ["android-35"] } }],
-    },
-  };
-  const server = NodeHttp.createServer((request, response) => {
-    const answer = answers[request.url ?? ""];
-    const allowed = request.headers.authorization === `Bearer ${SAMPLE_TOKEN}`;
-    response.writeHead(!allowed ? 401 : answer === undefined ? 404 : 200, {
-      "content-type": "application/json",
-    });
-    response.end(JSON.stringify(allowed && answer !== undefined ? answer : {}));
-  });
-  return new Promise((resolve) => {
-    server.listen(0, "127.0.0.1", () =>
-      resolve({
-        url: `http://127.0.0.1:${(server.address() as AddressInfo).port}`,
-        close: () => new Promise((done) => server.close(() => done())),
-      }),
-    );
-  });
-}
 
 // On macOS, Xcode's tools are in a folder that the server also needs, so real simulators are in reach.
 describe.skipIf(!hasLiveServer || process.platform === "darwin")("devices", () => {
@@ -101,13 +42,8 @@ describe.skipIf(!hasLiveServer || process.platform === "darwin")("devices", () =
     });
     server = await startScratchServer("t3code-lib-device-", async (home) => {
       const bin = NodePath.join(home, "bin");
-      await NodeFSP.mkdir(bin);
-      await NodeFSP.writeFile(
-        NodePath.join(bin, "ssh"),
-        `#!/bin/sh\ncat >/dev/null\nprintf '%s\\n' '${probeOutput}'\n`,
-        { mode: 0o755 },
-      );
-      return deviceSandbox(process.env, bin);
+      await writeStubSsh(bin);
+      return { PATH: pathWithoutDeviceTools(process.env["PATH"] ?? "", bin) };
     }).finally(inherited);
     client = server.client;
   }, 120_000);
@@ -117,29 +53,13 @@ describe.skipIf(!hasLiveServer || process.platform === "darwin")("devices", () =
     await gateway?.close();
   });
 
-  it("removes what a server would inherit from this machine", () => {
+  it("keeps this machine's device tools off the server's path", () => {
     const dir = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3code-lib-tools-"));
     try {
       NodeFS.writeFileSync(NodePath.join(dir, "adb"), "");
       expect(
-        deviceSandbox(
-          {
-            EXPO_TOKEN: "sample",
-            AGENT_DEVICE_SPEC: "sample",
-            ANDROID_HOME: "/sample",
-            ANDROID_SDK_ROOT: "/sample",
-            SAMPLE_VALUE: "sample",
-            PATH: [dir, "/sample-bin"].join(NodePath.delimiter),
-          },
-          "/sample-stubs",
-        ),
-      ).toEqual({
-        EXPO_TOKEN: undefined,
-        AGENT_DEVICE_SPEC: undefined,
-        ANDROID_HOME: undefined,
-        ANDROID_SDK_ROOT: undefined,
-        PATH: ["/sample-stubs", "/sample-bin"].join(NodePath.delimiter),
-      });
+        pathWithoutDeviceTools([dir, "/sample-bin"].join(NodePath.delimiter), "/sample-stubs"),
+      ).toBe(["/sample-stubs", "/sample-bin"].join(NodePath.delimiter));
     } finally {
       NodeFS.rmSync(dir, { recursive: true, force: true });
     }

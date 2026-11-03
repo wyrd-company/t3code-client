@@ -10,28 +10,21 @@
 import * as NodeCrypto from "node:crypto";
 import * as NodeFS from "node:fs";
 import * as NodeFSP from "node:fs/promises";
-import * as NodeHttp from "node:http";
-import type { AddressInfo } from "node:net";
 import * as NodePath from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { T3AuthError, type T3Client } from "../../src/index.ts";
 import { connectWithScopes, firstItem, hasLiveServer, waitFor } from "./liveClient.ts";
+import { startLocalHttp } from "./localHttp.ts";
 import { startPeerServer, type PeerServer } from "./peerServer.ts";
 
 const statusStub = async (status: number) => {
   const received: string[] = [];
-  const server = NodeHttp.createServer((request, response) => {
+  const server = await startLocalHttp((request, response) => {
     received.push(`${request.method} ${request.url}`);
     request.resume();
     request.on("end", () => response.writeHead(status).end());
   });
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const { port } = server.address() as AddressInfo;
-  return {
-    url: `http://127.0.0.1:${port}/v1/traces`,
-    received,
-    close: () => new Promise<void>((resolve) => server.close(() => resolve())),
-  };
+  return { url: `${server.url}/v1/traces`, received, close: server.close };
 };
 
 describe.skipIf(!hasLiveServer)("diagnostics methods", () => {
