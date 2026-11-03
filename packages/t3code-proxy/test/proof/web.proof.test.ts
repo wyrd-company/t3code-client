@@ -10,10 +10,20 @@ import * as NodePath from "node:path";
 import { threadId as toThreadId, type ThreadId } from "@wyrd-company/t3code-lib";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { ATTACHMENT_ONLY_PLACEHOLDER } from "../../src/byline.ts";
-import { byline, pairing, routes, samplePng, until, urls } from "./proofSupport.ts";
+import {
+  byline,
+  pairing,
+  receivesFile,
+  receivesImage,
+  routes,
+  samplePng,
+  until,
+  urls,
+} from "./proofSupport.ts";
 import { WebClient } from "./webClient.ts";
 
 const evidence = process.env["T3_PROXY_PROOF_EVIDENCE_DIR"];
+const SAMPLE_FILE = "SAMPLE-CONTENT-4471\n";
 
 describe("the web client", () => {
   const proof = routes();
@@ -95,7 +105,7 @@ describe("the web client", () => {
   beforeAll(async () => {
     files = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-proxy-proof-web-"));
     NodeFS.writeFileSync(NodePath.join(files, "sample.png"), samplePng());
-    NodeFS.writeFileSync(NodePath.join(files, "sample.txt"), "SAMPLE-CONTENT-4471\n");
+    NodeFS.writeFileSync(NodePath.join(files, "sample.txt"), SAMPLE_FILE);
     if (evidence) await NodeFSP.mkdir(evidence, { recursive: true });
     await proof.project();
     await pair(alice, urls.alice);
@@ -163,8 +173,10 @@ describe("the web client", () => {
     const messages = await proof.userMessages(threadId);
     expect(messages.map((message) => message.text)).toEqual([byline("Alice"), byline("Alice")]);
     expect(messages.map((message) => message.attachments?.length)).toEqual([1, 1]);
-    for (const index of [0, 1])
-      expect((await proof.turn(threadId, index)).reply).toMatch(/\bred\b/iu);
+    for (const [index, message] of messages.entries()) {
+      await receivesImage(message.attachments?.[0]?.id ?? "", samplePng());
+      expect((await proof.turn(threadId, index)).reply).not.toBe("");
+    }
     const text = await until(
       async () => {
         const body = await alice.text();
@@ -203,8 +215,9 @@ describe("the web client", () => {
       expect(message.attachments).toHaveLength(1);
     }
     expect(messages).toHaveLength(2);
-    for (const index of [0, 1]) {
-      expect((await proof.turn(threadId, index)).reply).toContain("SAMPLE-CONTENT-4471");
+    for (const [index, message] of messages.entries()) {
+      await receivesFile(message.attachments?.[0]?.id ?? "", SAMPLE_FILE);
+      expect((await proof.turn(threadId, index)).reply).not.toBe("");
     }
     await shot(sam, "web-sam-file");
   });

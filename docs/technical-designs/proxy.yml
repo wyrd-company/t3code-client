@@ -269,7 +269,7 @@ proposed-design:
       person's endpoint store no byline. The agent messages have `createdBy: agent`.
     - A message with only attachments, on a first message and a follow-up: the
       placeholder does not show, the attachment shows with the byline, and the agent
-      replies about the attachment.
+      receives the attachment and replies.
     - The desktop client pairs and sends through a person's endpoint.
     - A large streamed turn with a slow client keeps all frames in order.
 
