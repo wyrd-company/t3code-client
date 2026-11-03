@@ -9,6 +9,7 @@ relationships:
     - library
     - command-line
     - mcp
+    - proxy
 proposed-design:
   high-level-overview: Intentional owns independent package versions and release records. Release
     validates and applies one saved plan; Publish verifies the selected record and distributes the
@@ -23,6 +24,7 @@ proposed-design:
     | `t3code-lib` | `packages/t3code-lib/package.json` | `@wyrd-company/t3code-lib` | `t3code-lib@X.Y.Z` |
     | `t3code-cli` | `packages/t3code-cli/package.json` | `@wyrd-company/t3code-cli` | `t3code-cli@X.Y.Z` |
     | `t3code-mcp` | `packages/t3code-mcp/package.json` | `@wyrd-company/t3code-mcp` | `t3code-mcp@X.Y.Z` |
+    | `t3code-proxy` | `packages/t3code-proxy/package.json` | `@wyrd-company/t3code-proxy` | `t3code-proxy@X.Y.Z` |
     | `t3c-docs`   | `docs/user/docs.yml`               | none (tag-only)            | `t3c-docs@X.Y.Z`   |
     | `t3mcp-docs` | `docs/user/docs.yml`               | none (tag-only)            | `t3mcp-docs@X.Y.Z` |
 
@@ -208,7 +210,7 @@ proposed-design:
 
     The App needs Contents write. Publish requires an Intentional release record
     whose commit is on main. A tag ruleset allowing only the App to create
-    `t3code-lib@*`, `t3code-cli@*`, `t3code-mcp@*`, `t3c-docs@*` and `t3mcp-docs@*` records enforces that release
+    `t3code-lib@*`, `t3code-cli@*`, `t3code-mcp@*`, `t3code-proxy@*`, `t3c-docs@*` and `t3mcp-docs@*` records enforces that release
     authority.
   documentation-and-homebrew-finalization: |
     The CLI/MCP code records, product docs records and manual runs publish `docs/user` to wyrd.foo

@@ -69,7 +69,10 @@ proposed-design:
     `--user` flag replaces the full `users` list. A name is not empty and is on one
     line, and a name and a port occur only once. An unknown key or an invalid value
     stops the service before it listens. The service reads the file when it starts,
-    so a change needs a restart.
+    so a change needs a restart. `upstream` is an `http` or `https` URL with no path,
+    query or credentials.
+
+    `--version` prints the package version and `--help` prints the usage.
   message-rewrite: |
     The proxy changes these commands in client text frames on `/ws`:
 
@@ -97,7 +100,8 @@ proposed-design:
     A queue edit starts from the stored text, with the cursor after the byline. The
     proxy finds the last byline at the start of a line that has a configured name,
     using the longest name that matches. It removes only that byline and its leading
-    line breaks, keeps all other text, and then applies the rules above. The editor's
+    line breaks, keeps all other text, removes white space at the end of the result, and
+    then applies the rules above. The editor's
     name replaces the earlier name. A queue edit that sends the placeholder follows
     the placeholder rule. A new message keeps a byline that the sender
     quotes.
@@ -106,6 +110,9 @@ proposed-design:
     responses are not buffered. This includes `/mcp`, OAuth and web assets, so an
     outside agent on a person's endpoint stays clean. `httpxy` does this forwarding.
     `ws` bridges `/ws`, because the proxy must read frames.
+
+    The bridge has no compression of its own and passes the subprotocol that the server
+    selects. Pings and pongs pass end to end.
 
     The proxy keeps the `Host` and `X-Forwarded-*` headers, so that the server's
     origin checks and its issuer URLs use the person's hostname.
@@ -127,11 +134,17 @@ proposed-design:
     either side of a bridged socket closes the other, and close codes pass through
     when they are valid to send. The bridge sets no frame size limit, so that the
     server's limit applies. The bridge respects backpressure. SIGTERM and SIGINT
-    close the listeners and all connections.
+    close the listeners and all connections. A WebSocket peer receives close code 1001
+    and has one second to complete the close before its connection ends.
+
+    The proxy sets no limit on the time to receive a request, so that a slow upload
+    behaves as it does on the direct route. Each forwarded HTTP request has its own
+    upstream connection, so that a pooled connection that the server closed cannot
+    cause a 502.
   diagnostics: |
-    Logs go to stderr. They name the person, the RPC tag and the command type. They
-    never hold message text, tokens, cookies or WebSocket tickets, and URLs are logged
-    with no query.
+    Logs go to stderr. They name the person, the RPC tag and the command type. A
+    failure names the person and the error code. Logs never hold message text, tokens,
+    cookies, WebSocket tickets or URLs, because a path can hold a token.
   accepted-limits: |
     - Generated thread titles can name the sender, because the byline is in the text.
     - The sender's browser shows the message with no byline until the server's copy
@@ -150,6 +163,7 @@ proposed-design:
     - If an upstream release changes the placeholder, the match fails until the proxy
       changes too. People then see the placeholder with a byline, and the message is
       not lost.
+    - An upgrade to a protocol other than WebSocket closes. Stock T3 Code has none.
     - A new upstream command that carries text passes with no byline and no warning.
       Each upstream release is evaluated before adoption.
   devcontainer-feature: |
@@ -193,7 +207,8 @@ proposed-design:
 
     The installer adds `serviceUser` to the `caddy-config` group when the group exists,
     so that the service needs no root step. `t3c-proxy --list-users` validates the
-    config and prints each name and port, so that the launcher parses no YAML.
+    config and prints one line for each person: the port, a tab and the name. The
+    launcher then parses no YAML, and a name can hold spaces.
 
     Each person's hostname comes from the server's hostname. The first label receives
     a suffix with the person's name in lowercase. With the server at
@@ -262,7 +277,8 @@ proposed-design:
 
     Unit tests also cover the config file, flag overrides, and invalid values.
 
-    A consumer installs the local tarball and runs the executable. The pinned `t3`
+    A consumer installs the local tarball and runs the executable, which forwards a request
+    and stops on SIGTERM. The pinned `t3`
     update reruns the live proof, and its review checks for new commands that carry
     text and for a change to `ATTACHMENT_ONLY_BOOTSTRAP_PROMPT`.
   documentation: |

@@ -11,6 +11,7 @@ relationships:
     - releasing
     - library-testing
     - mcp
+    - proxy
     - automation-capabilities
 proposed-design:
   high-level-overview:
@@ -22,6 +23,7 @@ proposed-design:
     typechecks, unit tests, pinned-server live tests and local pack/consumer checks.
     `task lib:check` runs library gates; `task cli:check` runs the CLI build, lint, typecheck, unit, live and package gates.
     `task mcp:check` runs MCP build, static, protocol, live and package gates.
+    `task proxy:check` runs proxy build, static, unit, live and package gates.
     Registered placeholder commands do not count as implementation evidence.
 
     Library source, colocated tests, fixture data, fake server and live harness

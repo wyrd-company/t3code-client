@@ -1,0 +1,4 @@
+{
+  "extends": "../t3code-lib/tsconfig.json",
+  "include": ["src", "test", "vite.config.ts", "vitest.live.config.ts"]
+}
