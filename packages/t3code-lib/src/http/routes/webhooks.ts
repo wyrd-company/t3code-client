@@ -67,9 +67,15 @@ export function webhookUrlParams(path: string): { hookId: string; token: string 
   const [hookId, token, ...rest] = path.startsWith(WEBHOOK_PREFIX)
     ? path.slice(WEBHOOK_PREFIX.length).split("/")
     : [];
-  if (hookId === undefined || token === undefined || rest.length > 0) {
-    // The path holds the token, so this message does not quote it.
-    throw new T3PreconditionError("The value is not a webhook endpoint path.");
+  if (hookId === undefined || token === undefined || rest.length > 0) throw notEndpointPath();
+  try {
+    return { hookId: decodeURIComponent(hookId), token: decodeURIComponent(token) };
+  } catch {
+    throw notEndpointPath();
   }
-  return { hookId: decodeURIComponent(hookId), token: decodeURIComponent(token) };
+}
+
+/** The path holds the token, so this message does not quote it, and it keeps no cause. */
+function notEndpointPath(): T3PreconditionError {
+  return new T3PreconditionError("The value is not a webhook endpoint path.");
 }

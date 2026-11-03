@@ -95,6 +95,17 @@ describe("HttpRouteClient.stream", () => {
     ).rejects.toSatisfy((error) => error instanceof T3ConnectionError && error.reason === "closed");
   });
 
+  it("delivers no more events after an abort, with more in the same chunk", async () => {
+    const abort = new AbortController();
+    const { routes } = streamSetup(() =>
+      eventBody('data: {"type":"ended"}\n\ndata: {"type":"ended"}\n\n'),
+    );
+    const events = routes.stream("guest.stream", { query: { share } }, abort.signal);
+    await events.next();
+    abort.abort();
+    await expect(events.next()).rejects.toBeInstanceOf(T3InterruptedError);
+  });
+
   it("keeps event stream routes and the other routes apart", async () => {
     const { requests, routes } = streamSetup(() => eventBody(""));
     await expect(routes.call("guest.stream", { query: { share } })).rejects.toBeInstanceOf(
@@ -160,12 +171,31 @@ describe("guest and webhook requests", () => {
     expect(NodeUtil.inspect(error)).not.toContain(params.token);
   });
 
+  it("refuses a header that is not valid, and does not quote its value", async () => {
+    const { requests, routes } = streamSetup(() => Response.json({ deliveryId: "sample" }));
+    const error = await routes
+      .call("webhooks.webhookPost", {
+        params: { hookId: "sample-hook", token: "sample-secret-token" },
+        headers: { "x-sample-signature": "sample-secret-value\r\nx-other: 1" },
+      })
+      .catch((reason: unknown) => reason);
+    expect(error).toBeInstanceOf(T3PreconditionError);
+    expect(NodeUtil.inspect(error, { depth: null })).not.toContain("sample-secret");
+    expect(requests).toHaveLength(0);
+  });
+
   it("reads the params of a webhook endpoint path", () => {
     expect(webhookUrlParams("/api/hooks/sample%2Fhook/sample-token")).toEqual({
       hookId: "sample/hook",
       token: "sample-token",
     });
-    for (const path of ["/api/assets/a/b", "/api/hooks/a", "/api/hooks/a/b/c"]) {
+    for (const path of [
+      "/api/assets/a/b",
+      "/api/hooks/a",
+      "/api/hooks/a/b/c",
+      "/api/hooks/%invalid/b",
+      "/api/hooks/a/%invalid",
+    ]) {
       expect(() => webhookUrlParams(path)).toThrow(T3PreconditionError);
     }
   });

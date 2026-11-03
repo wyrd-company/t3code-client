@@ -139,6 +139,8 @@ async function* routeEvents<Input, Success>(
     });
     if (response.body === null) return;
     for await (const data of serverSentEventData(response.body)) {
+      // The reader can hold more events after an abort.
+      signal?.throwIfAborted();
       const raw = parseBody(data);
       const decoded = route.success.safeParse(raw);
       yield decoded.success

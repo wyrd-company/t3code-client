@@ -175,7 +175,7 @@ export class HttpTransport {
     url: URL,
     { accessToken, dpopKey }: RequestCredential,
   ): Headers {
-    const headers = new Headers(request.headers);
+    const headers = checkedHeaders(request.headers, errorPathOf(request));
     const sentToken = (request.auth ?? "none") === "none" ? undefined : accessToken;
     if (sentToken !== undefined) {
       headers.set("authorization", `${dpopKey === undefined ? "Bearer" : "DPoP"} ${sentToken}`);
@@ -193,6 +193,19 @@ export class HttpTransport {
     }
     if (this.#userAgent !== undefined) headers.set("user-agent", this.#userAgent);
     return headers;
+  }
+}
+
+function errorPathOf(request: HttpRequest<unknown>): string {
+  return request.errorPath ?? request.path;
+}
+
+/** A native failure quotes the value, which can be a signature, so this error keeps no cause. */
+function checkedHeaders(values: Record<string, string> | undefined, errorPath: string): Headers {
+  try {
+    return new Headers(values);
+  } catch {
+    throw new T3PreconditionError(`${errorPath} has a request header that is not valid.`);
   }
 }
 
