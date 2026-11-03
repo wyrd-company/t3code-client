@@ -71,9 +71,20 @@ proposed-design:
     | `attachments.proof.test.ts` | Image-only first message and follow-up, `Ultrathink:` form, queue edit |
     | `stream.proof.test.ts` | A client that stops reading during a large turn gets every event of the run, in order |
     | `web.proof.test.ts` | Pairing, both bylines, image and file in the stock web client in a real browser |
+    | `lifetime.proof.test.ts` | A completed or stopped run leaves no daemon, browser, namespace folder or temporary root |
 
     The proof clears `T3CODE_PORT`, `T3CODE_HOST` and `T3CODE_HOME` before it starts a process, so
     that a run inside another T3 Code process does not reach that server.
+
+    `agent-browser` keeps its sockets and state inside the proof's temporary root. A completed run
+    and a run stopped by SIGTERM or SIGINT stop their processes and browsers and remove the root.
+    `vp` does not forward a signal to Vitest, so the end of Vitest's parent process is also a stop.
+    A test worker ends with Vitest, because Vitest can start one after a signal to the group.
+    `lifetime.proof.test.ts` starts the proof's setup in a separate Vitest and proves this for a
+    completed run, a signal to the process group and a signal to the top process only. `pnpm` does
+    not forward a signal, so a signal to `task` alone does not stop the run, and it ends through its
+    normal teardown. SIGKILL of Vitest skips this: the daemon and its browser end at their idle
+    limit of 10 minutes.
 
     The desktop client is a manual step on each `t3` update. Run the upstream desktop release of
     that version under a display server, with a clean environment and its own home, `T3CODE_PORT`,

@@ -9,7 +9,7 @@ export default defineConfig({
     environment: "node",
     include: ["test/proof/**/*.proof.test.ts"],
     globalSetup: ["test/proof/proofSetup.ts"],
-    setupFiles: ["test/proof/exampleNames.ts"],
+    setupFiles: ["test/proof/exitWithVitest.ts", "test/proof/exampleNames.ts"],
     testTimeout: 420_000,
     hookTimeout: 120_000,
     fileParallelism: false,

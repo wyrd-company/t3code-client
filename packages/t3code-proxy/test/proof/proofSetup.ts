@@ -13,6 +13,7 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodeHttps from "node:https";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
+import { promisify } from "node:util";
 import {
   freePort,
   hasExited,
@@ -27,7 +28,13 @@ const PEOPLE = ["Alice", "Sam"] as const;
 const DOMAIN = "dev.example.test";
 const READY_TIMEOUT_MS = 30_000;
 const STOP_GRACE_MS = 10_000;
+const PARENT_WATCH_MS = 1_000;
+const BROWSER_CLOSE_TIMEOUT_MS = 30_000;
+// Longer than any test, so that it cannot end a browser that a test waits on. It ends a daemon that
+// no stop can reach, for example after SIGKILL.
+const BROWSER_IDLE_TIMEOUT_MS = 600_000;
 const packageRoot = NodePath.resolve(import.meta.dirname, "../..");
+const execFile = promisify(NodeChildProcess.execFile);
 
 const run = (command: string, args: readonly string[], cwd: string) =>
   NodeChildProcess.execFileSync(command, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
@@ -109,6 +116,28 @@ const answers = (host: string, port: number, ca: string) =>
     request.on("timeout", () => request.destroy());
   });
 
+/**
+ * Vitest answers these signals by exiting, without teardown. The proof answers instead, so that a
+ * stopped run also stops what it started. A second signal has the default effect. `vp` does not
+ * forward a signal to Vitest, so the end of the parent process is a stop too.
+ */
+function stopWhenStopped(stop: () => Promise<void>) {
+  for (const [signal, number] of [
+    ["SIGTERM", 15],
+    ["SIGINT", 2],
+  ] as const) {
+    process.removeAllListeners(signal);
+    process.once(signal, () => void stop().finally(() => process.exit(128 + number)));
+  }
+  const parent = process.ppid;
+  const watch = setInterval(() => {
+    if (process.ppid === parent) return;
+    clearInterval(watch);
+    void stop().finally(() => process.exit(1));
+  }, PARENT_WATCH_MS);
+  watch.unref();
+}
+
 export default async function setup() {
   requireTools();
   // An inherited value can name another T3 Code server. Each process below inherits this.
@@ -119,6 +148,10 @@ export default async function setup() {
   const caddyHome = NodePath.join(root, "caddy");
   await NodeFSP.mkdir(workspace, { recursive: true });
   await NodeFSP.mkdir(caddyHome, { recursive: true });
+  // Every `agent-browser` process inherits these, so that its sockets and state stay in the root.
+  process.env["AGENT_BROWSER_SOCKET_DIR"] = NodePath.join(root, "browser");
+  process.env["AGENT_BROWSER_NAMESPACE"] = `t3code-proxy-proof-${process.pid}`;
+  process.env["AGENT_BROWSER_IDLE_TIMEOUT_MS"] = String(BROWSER_IDLE_TIMEOUT_MS);
   await NodeFSP.writeFile(NodePath.join(workspace, "README.md"), "Sample workspace.\n");
   // A message with only an attachment has no request in it. This makes each reply show what the
   // agent received, and it names no colour or file content.
@@ -130,15 +163,22 @@ export default async function setup() {
 
   const log = (name: string) => NodeFS.openSync(NodePath.join(root, name), "w");
   const children: NodeChildProcess.ChildProcess[] = [];
-  const stop = async () => {
-    try {
-      await stopAllOwned(children, STOP_GRACE_MS);
-    } finally {
-      if (process.env["T3_LIVE_KEEP"] !== "1") {
-        await NodeFSP.rm(root, { recursive: true, force: true });
+  let stopping: Promise<void> | undefined;
+  const stop = () =>
+    (stopping ??= (async () => {
+      try {
+        await stopAllOwned(children, STOP_GRACE_MS);
+      } finally {
+        // Last, because a test that still runs during a stop can start a browser again.
+        await execFile("agent-browser", ["close", "--all"], {
+          timeout: BROWSER_CLOSE_TIMEOUT_MS,
+        }).catch(() => undefined);
+        if (process.env["T3_LIVE_KEEP"] !== "1") {
+          await NodeFSP.rm(root, { recursive: true, force: true });
+        }
       }
-    }
-  };
+    })());
+  stopWhenStopped(stop);
 
   try {
     const bin = serverBin();
