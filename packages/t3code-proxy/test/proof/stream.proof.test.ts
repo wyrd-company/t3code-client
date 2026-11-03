@@ -22,22 +22,32 @@ class SlowWebSocket extends WebSocket {
   }
 }
 
-/** Every event of a thread, as it arrives. */
+/** Every event of a thread, as it arrives. An ending that the test did not ask for is a failure. */
 const follow = (client: ReturnType<typeof connect>, threadId: ThreadId, stop: AbortSignal) => {
   const watch = {
-    events: [] as { sequence: number; body: string }[],
+    events: [] as { sequence: number; body: string; ended: string | undefined }[],
     synchronized: false,
     reconnected: false,
+    failure: undefined as unknown,
   };
   void (async () => {
     for await (const item of client.threads.watch(threadId, { signal: stop })) {
       if (item.kind === "synchronized") watch.synchronized = true;
       if (item.kind === "reconnected") watch.reconnected = true;
+      if (item.kind === "decode-error") watch.failure = item.error;
       if (item.kind === "event") {
-        watch.events.push({ sequence: item.sequence, body: JSON.stringify(item.event) });
+        const event = item.event as { type?: string; payload?: { id?: string; status?: string } };
+        const run = event.type === "run.updated" ? event.payload : undefined;
+        watch.events.push({
+          sequence: item.sequence,
+          body: JSON.stringify(event),
+          ended: run?.status === "completed" ? run.id : undefined,
+        });
       }
     }
-  })().catch(() => undefined);
+  })().catch((error: unknown) => {
+    if (!stop.aborted) watch.failure = error;
+  });
   return watch;
 };
 
@@ -56,7 +66,8 @@ describe("a large streamed turn", () => {
     const reference = follow(proof.direct, threadId, stop.signal);
     const slowed = Array.from({ length: SUBSCRIPTIONS }, () => follow(slow, threadId, stop.signal));
     await until(
-      async () => (slowed.every((watch) => watch.synchronized) ? true : undefined),
+      async () =>
+        reference.synchronized && slowed.every((watch) => watch.synchronized) ? true : undefined,
       "the subscriptions",
       30_000,
     );
@@ -70,14 +81,22 @@ describe("a large streamed turn", () => {
       text: "Reply with the whole numbers from 1 to 3000, one on each line, in order, and nothing else. Use no tools.",
     });
     await proof.settled(threadId);
-    const last = await until(async () => reference.events.at(-1), "the events", 30_000);
+    const { latestRun } = await proof.direct.threads.status(threadId);
+    // The turn's last event is the boundary, so that the comparison cannot stop at a prefix.
+    const boundary = await until(
+      async () => reference.events.find((event) => event.ended === latestRun?.id)?.sequence,
+      "the end of the run on the direct route",
+      30_000,
+    );
     // Nothing that the turn produced reached the slow client while it did not read.
     expect(slowed.map((watch) => watch.events.length)).toEqual(before);
     socket.resume();
 
     await Promise.all(
       slowed.map((watch) =>
-        expect.poll(() => watch.events.at(-1)?.sequence, { timeout: 120_000 }).toBe(last.sequence),
+        expect
+          .poll(() => watch.events.at(-1)?.sequence ?? 0, { timeout: 120_000 })
+          .toBeGreaterThanOrEqual(boundary),
       ),
     );
     const received = socket.received;
@@ -91,12 +110,18 @@ describe("a large streamed turn", () => {
         JSON.stringify({ events: reference.events.length, received }),
       );
     }
-    const expected = reference.events.map((event) => [event.sequence, event.body]);
+    const upToBoundary = (watch: ReturnType<typeof follow>) =>
+      watch.events
+        .filter((event) => event.sequence <= boundary)
+        .map((event) => [event.sequence, event.body]);
+    const expected = upToBoundary(reference);
+    expect(reference.failure).toBeUndefined();
     expect(expected.length).toBeGreaterThan(20);
     expect(received).toBeGreaterThan(1_000_000);
     for (const watch of slowed) {
       expect(watch.reconnected).toBe(false);
-      expect(watch.events.map((event) => [event.sequence, event.body])).toEqual(expected);
+      expect(watch.failure).toBeUndefined();
+      expect(upToBoundary(watch)).toEqual(expected);
     }
   });
 });

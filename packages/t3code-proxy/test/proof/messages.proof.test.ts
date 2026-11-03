@@ -22,8 +22,9 @@ describe("messages through a person's hostname", () => {
   it("stores each byline on a first message and a follow-up, and the agent receives them", async () => {
     const threadId = await proof.launch(proof.alice, ASK_NAME);
     await proof.settled(threadId);
-    expect((await proof.userMessages(threadId))[0]?.text).toBe(`${ASK_NAME}\n\n${byline("Alice")}`);
-    expect((await proof.replies(threadId)).at(-1)).toMatch(/Alice/u);
+    const first = await proof.turn(threadId, 0);
+    expect(first.message.text).toBe(`${ASK_NAME}\n\n${byline("Alice")}`);
+    expect(first.reply).toMatch(/Alice/u);
 
     await proof.sam.threads.startTurn({ threadId, text: ASK_NAME });
     await until(
@@ -31,8 +32,9 @@ describe("messages through a person's hostname", () => {
       "Sam's message",
     );
     await proof.settled(threadId);
-    expect((await proof.userMessages(threadId))[1]?.text).toBe(`${ASK_NAME}\n\n${byline("Sam")}`);
-    expect((await proof.replies(threadId)).at(-1)).toMatch(/Sam/u);
+    const followUp = await proof.turn(threadId, 1);
+    expect(followUp.message.text).toBe(`${ASK_NAME}\n\n${byline("Sam")}`);
+    expect(followUp.reply).toMatch(/Sam/u);
   });
 
   it("stores no byline on the direct route", async () => {
@@ -63,10 +65,11 @@ describe("messages through a person's hostname", () => {
   });
 
   it("stores the byline of a queued message, and of a queue edit with the editor's name", async () => {
-    const threadId = await proof.launch(proof.alice, SLOW);
+    // The first message has no byline. Each queued run must report the name of its own message.
+    const threadId = await proof.launch(proof.direct, SLOW);
     await proof.running(threadId);
-    await proof.sam.threads.startTurn({ threadId, text: ASK_NAME, delivery: "queue" });
-    await proof.alice.threads.startTurn({ threadId, text: "First queued text", delivery: "queue" });
+    await proof.alice.threads.startTurn({ threadId, text: ASK_NAME, delivery: "queue" });
+    await proof.alice.threads.startTurn({ threadId, text: ASK_NAME, delivery: "queue" });
     const runId = await until(async () => {
       const { queuedRuns } = await proof.direct.threads.status(threadId);
       return queuedRuns.length === 2 ? queuedRuns[1]?.id : undefined;
@@ -77,13 +80,17 @@ describe("messages through a person's hostname", () => {
       commandId: proof.sam.threads.dispatcher.newCommandId(),
       threadId,
       runId,
-      text: `First queued text\n\n${byline("Alice")} and more`,
+      text: `${ASK_NAME}\n\n${byline("Alice")} Use one word.`,
     });
     await proof.settled(threadId);
-    const texts = (await proof.userMessages(threadId)).map((message) => message.text);
-    expect(texts).toContain(`${ASK_NAME}\n\n${byline("Sam")}`);
-    expect(texts).toContain(`First queued text and more\n\n${byline("Sam")}`);
-    expect((await proof.replies(threadId)).join("\n")).toMatch(/Sam/u);
+
+    const queued = await proof.turn(threadId, 1);
+    expect(queued.message.text).toBe(`${ASK_NAME}\n\n${byline("Alice")}`);
+    expect(queued.reply).toMatch(/Alice/u);
+    const edited = await proof.turn(threadId, 2);
+    expect(edited.message.text).toBe(`${ASK_NAME} Use one word.\n\n${byline("Sam")}`);
+    expect(edited.reply).toMatch(/Sam/u);
+    expect(edited.reply).not.toMatch(/Alice/u);
   });
 
   it("compacts the thread with /compact, with no byline", async () => {

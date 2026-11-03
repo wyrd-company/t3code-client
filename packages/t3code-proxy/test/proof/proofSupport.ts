@@ -137,6 +137,17 @@ export function routes() {
       item.type === "assistant_message" ? [item.text] : [],
     );
 
+  /** The stored message at `index`, and only the replies of the run that took it. */
+  const turn = async (threadId: ThreadId, index: number) => {
+    const all = await items(threadId);
+    const message = all.flatMap((item) => (item.type === "user_message" ? [item] : []))[index];
+    if (!message) throw new Error(`The thread has no message ${index}.`);
+    const replies = all.flatMap((item) =>
+      item.type === "assistant_message" && item.runId === message.runId ? [item.text] : [],
+    );
+    return { message, reply: replies.join("\n") };
+  };
+
   const running = (threadId: ThreadId) =>
     until(async () => {
       const row = await direct.threads.get(threadId);
@@ -174,6 +185,7 @@ export function routes() {
     items,
     userMessages,
     replies,
+    turn,
     running,
     settled,
     close,

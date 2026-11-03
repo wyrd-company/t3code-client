@@ -95,7 +95,7 @@ describe("the web client", () => {
   beforeAll(async () => {
     files = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-proxy-proof-web-"));
     NodeFS.writeFileSync(NodePath.join(files, "sample.png"), samplePng());
-    NodeFS.writeFileSync(NodePath.join(files, "sample.txt"), "A short sample note.\n");
+    NodeFS.writeFileSync(NodePath.join(files, "sample.txt"), "SAMPLE-CONTENT-4471\n");
     if (evidence) await NodeFSP.mkdir(evidence, { recursive: true });
     await proof.project();
     await pair(alice, urls.alice);
@@ -163,7 +163,8 @@ describe("the web client", () => {
     const messages = await proof.userMessages(threadId);
     expect(messages.map((message) => message.text)).toEqual([byline("Alice"), byline("Alice")]);
     expect(messages.map((message) => message.attachments?.length)).toEqual([1, 1]);
-    expect((await proof.replies(threadId)).length).toBeGreaterThanOrEqual(2);
+    for (const index of [0, 1])
+      expect((await proof.turn(threadId, index)).reply).toMatch(/\bred\b/iu);
     const text = await until(
       async () => {
         const body = await alice.text();
@@ -202,7 +203,9 @@ describe("the web client", () => {
       expect(message.attachments).toHaveLength(1);
     }
     expect(messages).toHaveLength(2);
-    expect((await proof.replies(threadId)).length).toBeGreaterThanOrEqual(2);
+    for (const index of [0, 1]) {
+      expect((await proof.turn(threadId, index)).reply).toContain("SAMPLE-CONTENT-4471");
+    }
     await shot(sam, "web-sam-file");
   });
 });

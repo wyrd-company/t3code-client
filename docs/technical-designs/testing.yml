@@ -59,7 +59,8 @@ proposed-design:
     home, the built `t3c-proxy` executable and Caddy with a test CA, with one HTTPS hostname per
     person. Tests resolve `example.test` names in their own process and change no host file.
     It needs `CODEX_HOME` set to a test profile, and Caddy, `openssl` and `agent-browser` on
-    `PATH`. A missing one fails the proof. `T3_PROXY_PROOF_EVIDENCE_DIR` keeps the screenshots
+    `PATH`. A missing one fails the proof. Its workspace `AGENTS.md` tells the agent to report the
+    main colour of an image or the text of a file, so that a reply shows what the agent received. `T3_PROXY_PROOF_EVIDENCE_DIR` keeps the screenshots
     and the stream totals. Screenshots show the machine name in the sidebar and right panel, so
     crop them before they leave the machine. Each `t3` update runs the proof.
 
@@ -68,7 +69,7 @@ proposed-design:
     | `messages.proof.test.ts` | First message, follow-up, steer, queue, queue edit, `/compact`, direct route |
     | `agents.proof.test.ts` | `t3_thread_send`, outside-agent OAuth and `/mcp`, cookie session and origin refusal |
     | `attachments.proof.test.ts` | Image-only first message and follow-up, `Ultrathink:` form, queue edit |
-    | `stream.proof.test.ts` | A client that stops reading during a large turn gets every event in order |
+    | `stream.proof.test.ts` | A client that stops reading during a large turn gets every event of the run, in order |
     | `web.proof.test.ts` | Pairing, both bylines, image and file in the stock web client in a real browser |
 
     The proof clears `T3CODE_PORT`, `T3CODE_HOST` and `T3CODE_HOME` before it starts a process, so
