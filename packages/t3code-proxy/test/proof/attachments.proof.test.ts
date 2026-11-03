@@ -9,6 +9,8 @@ import { ATTACHMENT_ONLY_PLACEHOLDER } from "../../src/byline.ts";
 import { byline, routes, samplePng, until, urls } from "./proofSupport.ts";
 
 const SAMPLE_PNG = samplePng();
+/** The sample image is a red square, so that a reply can show that the agent received it. */
+const RED = /\bred\b/iu;
 
 /** Uploads an image through one person's hostname, as a client does. */
 async function image(client: T3Client, base: string) {
@@ -42,10 +44,10 @@ describe("messages with only attachments", () => {
       await image(proof.alice, urls.alice),
     ]);
     await proof.settled(threadId);
-    const [first] = await proof.userMessages(threadId);
-    expect(first?.text).toBe(byline("Alice"));
-    expect(first?.attachments).toHaveLength(1);
-    expect((await proof.replies(threadId)).join("\n")).not.toBe("");
+    const first = await proof.turn(threadId, 0);
+    expect(first.message.text).toBe(byline("Alice"));
+    expect(first.message.attachments).toHaveLength(1);
+    expect(first.reply).toMatch(RED);
 
     await proof.sam.threads.startTurn({
       threadId,
@@ -57,10 +59,10 @@ describe("messages with only attachments", () => {
       "the follow-up",
     );
     await proof.settled(threadId);
-    const second = (await proof.userMessages(threadId))[1];
-    expect(second?.text).toBe(byline("Sam"));
-    expect(second?.attachments).toHaveLength(1);
-    expect((await proof.replies(threadId)).length).toBeGreaterThanOrEqual(2);
+    const second = await proof.turn(threadId, 1);
+    expect(second.message.text).toBe(byline("Sam"));
+    expect(second.message.attachments).toHaveLength(1);
+    expect(second.reply).toMatch(RED);
   });
 
   it("keeps the Ultrathink prefix and replaces only the placeholder", async () => {
@@ -95,8 +97,9 @@ describe("messages with only attachments", () => {
       text: ATTACHMENT_ONLY_PLACEHOLDER,
     });
     await proof.settled(threadId);
-    const edited = (await proof.userMessages(threadId))[1];
-    expect(edited?.text).toBe(byline("Sam"));
-    expect(edited?.attachments).toHaveLength(1);
+    const edited = await proof.turn(threadId, 1);
+    expect(edited.message.text).toBe(byline("Sam"));
+    expect(edited.message.attachments).toHaveLength(1);
+    expect(edited.reply).toMatch(RED);
   });
 });

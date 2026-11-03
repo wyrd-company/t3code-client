@@ -21,10 +21,12 @@ import {
   spawnServer,
   waitForReady,
 } from "../../../t3code-lib/test/live/globalSetup.ts";
+import { stopAllOwned } from "../support/ownedProcesses.ts";
 
 const PEOPLE = ["Alice", "Sam"] as const;
 const DOMAIN = "dev.example.test";
 const READY_TIMEOUT_MS = 30_000;
+const STOP_GRACE_MS = 10_000;
 const packageRoot = NodePath.resolve(import.meta.dirname, "../..");
 
 const run = (command: string, args: readonly string[], cwd: string) =>
@@ -118,19 +120,23 @@ export default async function setup() {
   await NodeFSP.mkdir(workspace, { recursive: true });
   await NodeFSP.mkdir(caddyHome, { recursive: true });
   await NodeFSP.writeFile(NodePath.join(workspace, "README.md"), "Sample workspace.\n");
+  // A message with only an attachment has no request in it. This makes each reply show what the
+  // agent received, and it names no colour or file content.
+  await NodeFSP.writeFile(
+    NodePath.join(workspace, "AGENTS.md"),
+    "When a message has an attachment and no request, do not ask a question. Reply with the main colour of an attached image, or read an attached file with a tool and reply with its exact text.\n",
+  );
   makeCertificates(root);
 
   const log = (name: string) => NodeFS.openSync(NodePath.join(root, name), "w");
   const children: NodeChildProcess.ChildProcess[] = [];
   const stop = async () => {
-    for (const child of children.toReversed()) {
-      if (hasExited(child)) continue;
-      const exited = new Promise((resolve) => child.once("exit", resolve));
-      child.kill("SIGTERM");
-      await exited;
-    }
-    if (process.env["T3_LIVE_KEEP"] !== "1") {
-      await NodeFSP.rm(root, { recursive: true, force: true });
+    try {
+      await stopAllOwned(children, STOP_GRACE_MS);
+    } finally {
+      if (process.env["T3_LIVE_KEEP"] !== "1") {
+        await NodeFSP.rm(root, { recursive: true, force: true });
+      }
     }
   };
 
