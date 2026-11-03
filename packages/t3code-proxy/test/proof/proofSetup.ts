@@ -142,42 +142,21 @@ export default async function setup() {
   requireTools();
   // An inherited value can name another T3 Code server. Each process below inherits this.
   for (const name of ["T3CODE_PORT", "T3CODE_HOST", "T3CODE_HOME"]) delete process.env[name];
-  const root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-proxy-proof-"));
-  const baseDir = NodePath.join(root, "home");
-  const workspace = NodePath.join(root, "workspace");
-  const caddyHome = NodePath.join(root, "caddy");
-  await NodeFSP.mkdir(workspace, { recursive: true });
-  await NodeFSP.mkdir(caddyHome, { recursive: true });
-  // Every `agent-browser` process inherits these, so that its sockets and state stay in the root.
-  process.env["AGENT_BROWSER_SOCKET_DIR"] = NodePath.join(root, "browser");
-  process.env["AGENT_BROWSER_NAMESPACE"] = `t3code-proxy-proof-${process.pid}`;
-  process.env["AGENT_BROWSER_IDLE_TIMEOUT_MS"] = String(BROWSER_IDLE_TIMEOUT_MS);
-  const browsers = await startBrowserBroker((args) =>
-    runInOwnGroup("agent-browser", args, BROWSER_COMMAND_TIMEOUT_MS),
-  );
-  process.env["T3_PROOF_BROWSER_BROKER"] = browsers.url;
-  await NodeFSP.writeFile(NodePath.join(workspace, "README.md"), "Sample workspace.\n");
-  // A message with only an attachment has no request in it. This makes each reply show what the
-  // agent received, and it names no colour or file content.
-  await NodeFSP.writeFile(
-    NodePath.join(workspace, "AGENTS.md"),
-    "When a message has an attachment and no request, do not ask a question. Reply with the main colour of an attached image, or read an attached file with a tool and reply with its exact text.\n",
-  );
-  makeCertificates(root);
-
-  const log = (name: string) => NodeFS.openSync(NodePath.join(root, name), "w");
+  // No await separates the root from the handlers, so that no signal can leave the root.
+  const root = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3code-proxy-proof-"));
   const owned = ownedProcesses(STOP_GRACE_MS);
+  let browsers: Awaited<ReturnType<typeof startBrowserBroker>> | undefined;
   let stopping: Promise<void> | undefined;
   const stop = () =>
     (stopping ??= (async () => {
       try {
-        await browsers.drain();
+        await browsers?.drain();
         await runInOwnGroup("agent-browser", ["close", "--all"], BROWSER_CLOSE_TIMEOUT_MS).catch(
           () => undefined,
         );
         await owned.stop();
       } finally {
-        browsers.close();
+        browsers?.close();
         if (process.env["T3_LIVE_KEEP"] !== "1") {
           await NodeFSP.rm(root, { recursive: true, force: true });
         }
@@ -185,7 +164,31 @@ export default async function setup() {
     })());
   stopWhenStopped(stop);
 
+  // Every `agent-browser` process inherits these, so that its sockets and state stay in the root.
+  process.env["AGENT_BROWSER_SOCKET_DIR"] = NodePath.join(root, "browser");
+  process.env["AGENT_BROWSER_NAMESPACE"] = `t3code-proxy-proof-${process.pid}`;
+  process.env["AGENT_BROWSER_IDLE_TIMEOUT_MS"] = String(BROWSER_IDLE_TIMEOUT_MS);
+
   try {
+    const baseDir = NodePath.join(root, "home");
+    const workspace = NodePath.join(root, "workspace");
+    const caddyHome = NodePath.join(root, "caddy");
+    await NodeFSP.mkdir(workspace, { recursive: true });
+    await NodeFSP.mkdir(caddyHome, { recursive: true });
+    browsers = await startBrowserBroker((args) =>
+      runInOwnGroup("agent-browser", args, BROWSER_COMMAND_TIMEOUT_MS),
+    );
+    process.env["T3_PROOF_BROWSER_BROKER"] = browsers.url;
+    await NodeFSP.writeFile(NodePath.join(workspace, "README.md"), "Sample workspace.\n");
+    // A message with only an attachment has no request in it. This makes each reply show what the
+    // agent received, and it names no colour or file content.
+    await NodeFSP.writeFile(
+      NodePath.join(workspace, "AGENTS.md"),
+      "When a message has an attachment and no request, do not ask a question. Reply with the main colour of an attached image, or read an attached file with a tool and reply with its exact text.\n",
+    );
+    makeCertificates(root);
+
+    const log = (name: string) => NodeFS.openSync(NodePath.join(root, name), "w");
     const bin = serverBin();
     const serverPort = await freePort();
     const direct = `http://127.0.0.1:${serverPort}`;
