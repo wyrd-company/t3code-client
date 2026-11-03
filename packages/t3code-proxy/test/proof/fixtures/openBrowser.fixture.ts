@@ -2,10 +2,22 @@
 // relationships:
 //   verifies: proxy
 // ---
-/** Opens a browser, reports it, and holds if `lifetime.proof.test.ts` will stop this run. */
+/**
+ * Opens a browser and reports it. If `lifetime.proof.test.ts` will stop this run, it then sends
+ * browser commands, as a test that polls a page does, for as long as the owner process lives.
+ */
 import * as NodeFSP from "node:fs/promises";
 import { it } from "vite-plus/test";
 import { WebClient } from "../webClient.ts";
+
+const ownerLives = (pid: number) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 it("opens a browser", async () => {
   const client = new WebClient("lifetime");
@@ -26,9 +38,16 @@ it("opens a browser", async () => {
     }),
   );
   await NodeFSP.rename(`${reportPath}.partial`, reportPath);
-  // The timer keeps this worker busy, as a test that polls a server is.
   if (process.env["T3_PROOF_LIFETIME_HOLD"] === "1") {
-    await new Promise(() => setInterval(() => undefined, 1_000));
+    const owner = Number(process.env["T3_PROOF_LIFETIME_OWNER"]);
+    while (ownerLives(owner)) {
+      await client.run("get", "url").catch(async (error: Error) => {
+        if (error.message.includes("is stopping")) {
+          await NodeFSP.writeFile(`${reportPath}.refused`, "");
+        }
+      });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
   }
   await client.close();
 });

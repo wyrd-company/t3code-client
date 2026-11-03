@@ -11,7 +11,7 @@ import * as NodeFS from "node:fs";
 import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vite-plus/test";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vite-plus/test";
 
 const packageRoot = NodePath.resolve(import.meta.dirname, "../..");
 const vp = NodePath.resolve(packageRoot, "../../node_modules/.bin/vp");
@@ -51,7 +51,26 @@ describe("what a proof run leaves", () => {
   });
   afterAll(() => NodeFSP.rm(scratch, { recursive: true, force: true }));
 
-  const start = (name: string, hold: boolean) => {
+  // A case that fails before its stop still stops its run. A second signal to a stopping run would
+  // end it before its stop finishes.
+  let current: { signalled: boolean; pid: number; closed: Promise<void> } | undefined;
+  afterEach(async () => {
+    if (!current) return;
+    if (!current.signalled) {
+      try {
+        process.kill(-current.pid, "SIGTERM");
+      } catch {
+        // A run that ended has no process group left.
+      }
+    }
+    await Promise.race([
+      current.closed,
+      new Promise((resolve) => setTimeout(resolve, SETTLE.timeout)),
+    ]);
+    current = undefined;
+  });
+
+  const start = (name: string, hold: boolean, owner = process.pid) => {
     const reportPath = NodePath.join(scratch, `${name}.json`);
     const run = NodeChildProcess.spawn(
       vp,
@@ -65,6 +84,7 @@ describe("what a proof run leaves", () => {
           ...process.env,
           T3_PROOF_LIFETIME_REPORT: reportPath,
           T3_PROOF_LIFETIME_HOLD: hold ? "1" : "0",
+          T3_PROOF_LIFETIME_OWNER: String(owner),
         },
       },
     );
@@ -72,6 +92,9 @@ describe("what a proof run leaves", () => {
     run.stdout.on("data", (chunk) => (output += String(chunk)));
     run.stderr.on("data", (chunk) => (output += String(chunk)));
     const ended = new Promise<number | null>((resolve) => run.once("exit", resolve));
+    // The output stays open until Vitest and its workers end, also after `vp` ends.
+    const closed = new Promise<void>((resolve) => run.once("close", () => resolve()));
+    current = { signalled: false, pid: run.pid as number, closed };
     const report = async () => {
       await vi.waitFor(() => expect(NodeFS.existsSync(reportPath), output).toBe(true), {
         timeout: 120_000,
@@ -107,13 +130,37 @@ describe("what a proof run leaves", () => {
     const report = await proof.report();
     expect(alive(report.daemonPid)).toBe(true);
     expect(await browserAnswers(report.cdpUrl)).toBe(true);
+    (current as { signalled: boolean }).signalled = true;
     signal(proof.run.pid as number);
+    await expectNothingLeft(report);
+    // A worker that sent a command after the browser closed would start it again here.
+    await new Promise((resolve) => setTimeout(resolve, 3_000));
     await expectNothingLeft(report);
   };
 
   it("a run stopped by SIGTERM to its process group leaves no daemon or browser", () =>
     expectStopLeavesNothing("group", (pid) => process.kill(-pid, "SIGTERM")));
 
-  it("a run stopped by SIGTERM to its top process leaves no daemon or browser", () =>
-    expectStopLeavesNothing("top", (pid) => process.kill(pid, "SIGTERM")));
+  it("a run stopped by SIGTERM to its top process leaves no daemon or browser", async () => {
+    await expectStopLeavesNothing("top", (pid) => process.kill(pid, "SIGTERM"));
+    // Vitest and its worker outlast the start of this stop, so the worker tried another command.
+    expect(NodeFS.existsSync(NodePath.join(scratch, "top.json.refused")), "refused").toBe(true);
+  });
+
+  it("a held run ends when its owner ends, as when this proof is stopped", async () => {
+    const owner = NodeChildProcess.spawn(process.execPath, ["-e", "setInterval(()=>{},1000)"], {
+      stdio: "ignore",
+    });
+    try {
+      const proof = start("owner", true, owner.pid as number);
+      const report = await proof.report();
+      const exited = new Promise((resolve) => owner.once("exit", resolve));
+      owner.kill("SIGKILL");
+      await exited;
+      expect(await proof.ended, proof.output()).toBe(0);
+      await expectNothingLeft(report);
+    } finally {
+      owner.kill("SIGKILL");
+    }
+  });
 });

@@ -79,9 +79,12 @@ proposed-design:
     `agent-browser` keeps its sockets and state inside the proof's temporary root. A completed run
     and a run stopped by SIGTERM or SIGINT stop their processes and browsers and remove the root.
     `vp` does not forward a signal to Vitest, so the end of Vitest's parent process is also a stop.
-    A test worker ends with Vitest, because Vitest can start one after a signal to the group.
+    A test worker ends with Vitest, because Vitest can start one after a signal to the group. A
+    stop first removes a marker file, so that a worker starts no further browser command, and it
+    closes the browsers twice, so that a command from before the stop leaves no browser.
     `lifetime.proof.test.ts` starts the proof's setup in a separate Vitest and proves this for a
-    completed run, a signal to the process group and a signal to the top process only. `pnpm` does
+    completed run, a signal to the process group, a signal to the top process only and the end of
+    the run's owner, with a worker that sends browser commands during the stop. `pnpm` does
     not forward a signal, so a signal to `task` alone does not stop the run, and it ends through its
     normal teardown. SIGKILL of Vitest skips this: the daemon and its browser end at their idle
     limit of 10 minutes.

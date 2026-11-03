@@ -4,6 +4,7 @@
 // ---
 /** One person's real browser, through `agent-browser`. The proof's setup sets its environment. */
 import * as NodeChildProcess from "node:child_process";
+import * as NodeFS from "node:fs";
 import { promisify } from "node:util";
 
 const execFile = promisify(NodeChildProcess.execFile);
@@ -16,6 +17,9 @@ export class WebClient {
   }
 
   async run(...args: string[]) {
+    if (!NodeFS.existsSync(process.env["T3_PROOF_RUNNING"] as string)) {
+      throw new Error("The proof is stopping, so it starts no browser command.");
+    }
     const { stdout } = await execFile(
       "agent-browser",
       ["--session", this.#session, "--ignore-https-errors"]
