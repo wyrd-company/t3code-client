@@ -109,3 +109,26 @@ export async function createLocalForge(
     environment: { ...isolatedGit, ...pathWith(bin), GIT_SSH_COMMAND: sshCommand },
   };
 }
+
+/**
+ * The `glab` arms that read and create projects under `sample/`, which exist as
+ * bare repositories under `root`. A creation request goes to `createCalls`.
+ */
+export function gitLabProjectCases(root: string, createCalls: string): readonly string[] {
+  const project = (name: string) =>
+    `printf '{"path_with_namespace":"sample/%s","web_url":"https://gitlab.invalid/sample/%s","http_url_to_repo":"https://gitlab.invalid/sample/%s.git","ssh_url_to_repo":"git@gitlab.invalid:sample/%s.git"}' "${name}" "${name}" "${name}" "${name}"`;
+  return [
+    `  "api projects/sample%2F"*)`,
+    `    name="\${2#projects/sample%2F}"`,
+    `    [ -d '${root}/sample/'"$name.git" ] || { echo "404 Not Found" >&2; exit 1; }`,
+    `    ${project("$name")} ;;`,
+    `  "api namespaces/sample") echo '{"id":7}' ;;`,
+    // The server calls this as `api --method POST projects --raw-field path=<name> ...`.
+    `  "api --method")`,
+    `    printf '%s\\n' "$*" >> '${createCalls}'`,
+    `    name="\${6#path=}"`,
+    `    git init --quiet --bare --initial-branch=main '${root}/sample/'"$name.git"`,
+    `    ${project("$name")} ;;`,
+    `  "auth status") echo "Logged in to gitlab.invalid as sample" ;;`,
+  ];
+}

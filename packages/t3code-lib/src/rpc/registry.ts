@@ -18,6 +18,8 @@ import { diagnosticsMethods } from "./methods/diagnostics.ts";
 import { providerAuthMethods } from "./methods/providerAuth.ts";
 import { providerInstallMethods } from "./methods/providerInstall.ts";
 import { acpRegistryMethods } from "./methods/acpRegistry.ts";
+import { sourceControlMethods } from "./methods/sourceControl.ts";
+import { agentSessionsMethods } from "./methods/agentSessions.ts";
 
 export const rpcMethods = {
   ...orchestrationMethods,
@@ -36,6 +38,8 @@ export const rpcMethods = {
   ...providerAuthMethods,
   ...providerInstallMethods,
   ...acpRegistryMethods,
+  ...sourceControlMethods,
+  ...agentSessionsMethods,
 };
 export type RpcMethods = typeof rpcMethods;
 export type RpcMethodName = keyof RpcMethods;

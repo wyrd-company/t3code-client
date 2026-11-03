@@ -30,6 +30,8 @@ export * as serverActions from "./serverActions.ts";
 export * as serverRelease from "./serverRelease.ts";
 export * as settingsPatch from "./settingsPatch.ts";
 export * as sourceControl from "./sourceControl.ts";
+export * as projectClone from "./projectClone.ts";
+export * as agentSessions from "./agentSessions.ts";
 export * as storageCleanup from "./storageCleanup.ts";
 export * as terminal from "./terminal.ts";
 export * as usage from "./usage.ts";

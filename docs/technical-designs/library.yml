@@ -90,7 +90,9 @@ proposed-design:
         providerInstance.ts     provider instances, usage limit sources and secret providers as a settings write sends them
         deviceHosts.ts          the device hosts a settings patch can write
         serverActions.ts        keybinding, provider update, client activity and secret request inputs and results
-        sourceControl.ts        version control systems and source control hosts the server can use
+        sourceControl.ts        version control systems and source control hosts the server can use, repository lookup, clone and publish, forge sign-in
+        projectClone.ts         the tracked clone of a new project and its progress
+        agentSessions.ts        the scan and import of another agent's sessions on the host
         diagnostics.ts          trace and process diagnostics, process resource history, the process signal and the OTLP endpoint check
         resourceTelemetry.ts    host resources and the server's process telemetry, as a client reads them
         storageCleanup.ts       the storage cleanup report
@@ -151,7 +153,7 @@ proposed-design:
         client.ts               HttpRouteClient: typed call by route name; callRoute for the facades
       rpc/
         registry.ts             RpcMethodTable: method name → { payload, success, stream } zod schemas + scope
-        methods/*.ts            one file per family (orchestration, server, vcs, git, projects, terminal, authAccess, peerLinks, files, diagnostics, providerAuth, providerInstall, acpRegistry)
+        methods/*.ts            one file per family (orchestration, server, vcs, git, projects, terminal, authAccess, peerLinks, files, diagnostics, providerAuth, providerInstall, acpRegistry, sourceControl, agentSessions)
         client.ts               RpcClient: typed call/stream over RpcConnection using the registry
       auth/
         credentialStore.ts      CredentialStore seam + memoryCredentialStore + fileCredentialStore

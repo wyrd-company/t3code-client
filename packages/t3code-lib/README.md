@@ -326,6 +326,50 @@ instance's snapshot reports the capability. A session with an imported thread re
 `server.setAcpRegistryProvider` sends `headers` to the agent, and no method returns
 them. A failure is an `AcpRegistryOperationError`, whose `reason` names the cause.
 
+## Source control repositories and clones
+
+`sourceControl.lookupRepository` reads a repository's URLs from the forge.
+`sourceControl.publishRepository` creates the repository on the forge, adds it as a
+remote and pushes the current branch. With no commit to push, its `status` is
+`remote_added`. `sourceControl.cloneRepository` waits for the clone.
+
+`projectClone.start` creates the project at once and clones in the background, so a
+client can show progress and cancel:
+
+```ts
+const projectId = schemas.common.ProjectId.parse(crypto.randomUUID());
+await client.rpc.call("projectClone.start", {
+  projectId,
+  title: "Sample",
+  createdAt: new Date().toISOString(),
+  provider: "gitlab",
+  repository: "sample/repository",
+  destinationPath: "/srv/sample",
+});
+
+for await (const item of client.rpc.stream("subscribeProjectClones", {})) {
+  if (item.kind !== "item") continue;
+  const clone = item.value.find((entry) => entry.projectId === projectId);
+  if (clone && clone.phase !== "running") break;
+}
+```
+
+Each stream item lists every clone that the server tracks. `projectClone.cancel` and
+`projectClone.retry` answer `applied: false` when the clone is not in a phase that they
+can change. A clone source is `provider` with `repository`, or `remoteUrl`. A credential
+in a URL reaches Git, and the server removes it from what it reports.
+
+`sourceControl.signInStart` starts a forge's device flow and needs `settings:write`,
+since a sign-in replaces the server's credential for that forge. `signInWait` resolves
+when the sign-in ends, and `signInCancel` ends it. A server with no app for the forge
+refuses with `reason: "unsupported"`. `sourceControl.appAccess` and
+`sourceControl.starred` read what the server's forge account can reach.
+
+`agentSessions.scan` reads the transcripts of the server's enabled providers on its host
+and lists the folders that they ran in. `agentSessions.import` makes threads from the
+recent transcripts of a project's folder. `expectedWorkspaceRoot` refuses the import
+when the project has moved since the scan.
+
 ## Proof-bound sessions
 
 A session bound to a DPoP key is useless to someone who holds only its token.
