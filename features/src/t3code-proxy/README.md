@@ -25,13 +25,14 @@ The Feature requires a Debian/Ubuntu image with s6-overlay 3, such as `ghcr.io/w
     "ghcr.io/wyrd-company/t3code-client/t3code-proxy:0": {}
   },
   "overrideCommand": false,
+  "appPort": ["80:80", "443:443"],
   "mounts": [
     "source=${localWorkspaceFolder}/.devcontainer/t3code-proxy.yml,target=/etc/t3code-proxy/config.yml,type=bind,readonly"
   ]
 }
 ```
 
-`overrideCommand` is `false` so that the image starts s6-overlay, which runs the services.
+`overrideCommand` is `false` so that the image starts s6-overlay, which runs the services. `appPort` publishes the ports of Caddy, as [Reach the hostnames](#reach-the-hostnames) explains.
 
 ## Supply the config file
 
@@ -60,7 +61,7 @@ A bind mount makes one file from your computer show in the container. The `mount
 The file must exist before the container starts, and the service user must be able to read it. The service reads the file when it starts. After a change, run this as root in the container:
 
 ```bash
-s6-svc -r /run/service/t3code-proxy
+/command/s6-svc -r /run/service/t3code-proxy
 ```
 
 An edit that replaces the file, as many editors do, does not reach a running container, because the bind mount holds the old file. Restart the container in that case.
@@ -80,6 +81,14 @@ The hostname is the server's hostname with the person's name in lowercase added 
 - The service stops with an error when a name does not make a valid DNS label, for example a name with a space, or when two names make the same label.
 - The files are `/etc/caddy/conf.d/t3code-proxy.caddy` and `/etc/caddy/required-hosts.d/t3code-proxy.host`. The service replaces them at each start, so a removed person loses their site.
 - The sites connect to `127.0.0.1`, so keep `host` at its default or use an address that includes loopback.
+
+### Reach the hostnames
+
+A container has its own network, so a browser cannot reach Caddy until something connects the two. The Feature does not do this for you.
+
+- Publish ports 80 and 443 of the container on the Docker host, with `appPort` as in the example, or put another HTTPS entry point in front of the container.
+- Point the wildcard DNS record at the Docker host or at that entry point, not at the container.
+- Caddy gets certificates with ACME, and the public certificate authorities connect back to these ports and hostnames. For a private network, set the Caddy Feature's `acmeCa` option to a certificate authority that can reach them.
 
 Without a `dnsName` or without the t3code-server Feature, the service writes no Caddy file and the listeners stay on `host`. Supply your own HTTPS reverse proxy, with one hostname for each person.
 

@@ -51,6 +51,9 @@ write_config() {
 write_config Alice=4101 Sam=4102
 chmod 0644 "${config}"
 
+# A high host port, because the host may use 443.
+published_port="$((20000 + RANDOM % 20000))"
+
 # The config follows the Feature README, with a test network and the test CA added.
 cat >"${project}/.devcontainer/devcontainer.json" <<JSON
 {
@@ -67,6 +70,7 @@ cat >"${project}/.devcontainer/devcontainer.json" <<JSON
     "./t3code-proxy": {}
   },
   "overrideCommand": false,
+  "appPort": ["${published_port}:443"],
   "runArgs": [
     "--network=${network}",
     "--network-alias=t3.dev.example.test",
@@ -122,6 +126,13 @@ address="$(docker inspect --format "{{(index .NetworkSettings.Networks \"${netwo
     NODE_EXTRA_CA_CERTS="${project}/.devcontainer/acme-root.crt" \
     pnpm --filter @wyrd-company/t3code-proxy exec vp test run --config vitest.feature.config.ts
 )
+
+# The README's `appPort` reaches a person's hostname from the Docker host.
+published_status="$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 20 \
+  --cacert "${project}/.devcontainer/acme-root.crt" \
+  --resolve "t3-alice.dev.example.test:${published_port}:127.0.0.1" \
+  "https://t3-alice.dev.example.test:${published_port}/")" || true
+[ "${published_status}" = 200 ] || fail "The published port answered ${published_status}."
 
 # A restart reads the file again, and a removed person loses their site.
 write_config Alice=4101

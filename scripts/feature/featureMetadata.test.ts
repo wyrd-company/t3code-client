@@ -47,6 +47,17 @@ describe("Feature metadata", () => {
       expect(readme).toMatch(new RegExp(`\\| \`${name}\`\\s*\\| string \\| \`${option.default}\``));
     }
   });
+  it("documents the restart command that the runtime scenario runs", () => {
+    const command = "/command/s6-svc -r /run/service/t3code-proxy";
+    expect(read("scripts/feature/test-feature-runtime.sh")).toContain(command);
+    expect(readme).toContain(command);
+    expect(read("features/src/t3code-proxy/NOTES.md")).toContain(command);
+    expect(readme).not.toMatch(/^s6-svc/m);
+  });
+  it("publishes the ports of Caddy in the README example", () => {
+    expect(readme).toContain('"appPort": ["80:80", "443:443"]');
+    expect(read("scripts/feature/test-feature-runtime.sh")).toContain("--resolve");
+  });
   it("has the files of a Feature", () => {
     for (const file of ["install.sh", "README.md", "NOTES.md", "CHANGELOG.md", "logo.svg"]) {
       expect(read(`features/src/t3code-proxy/${file}`)).not.toBe("");
