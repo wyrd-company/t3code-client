@@ -167,6 +167,8 @@ proposed-design:
     - An upgrade to a protocol other than WebSocket closes. Stock T3 Code has none.
     - A new upstream command that carries text passes with no byline and no warning.
       Each upstream release is evaluated before adoption.
+    - Mobile clients are not proven through a person's endpoint. Upstream does not distribute
+      them. By code reading only, they send the same placeholder for a message with only images.
   devcontainer-feature: |
     `features/src/t3code-proxy` is a devcontainer Feature published as
     `ghcr.io/wyrd-company/t3code-client/t3code-proxy`. It follows the conventions of
@@ -263,7 +265,7 @@ proposed-design:
     - A message with only attachments, on a first message and a follow-up: the
       placeholder does not show, the attachment shows with the byline, and the agent
       replies about the attachment.
-    - The mobile and desktop clients pair and send through a person's endpoint.
+    - The desktop client pairs and sends through a person's endpoint.
     - A large streamed turn with a slow client keeps all frames in order.
 
     `/logout` is covered by the unit tests for the slash rule. The live proof does not
