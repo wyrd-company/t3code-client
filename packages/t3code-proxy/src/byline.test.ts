@@ -57,6 +57,9 @@ describe("withoutByline", () => {
     ["hi\r\n\r\n— Sent by Sam", "hi"],
     ["— Sent by Sam", ""],
     ["— Sent by Sam more", "more"],
+    ["— Sent by Sam\n    code()", "    code()"],
+    ["— Sent by Sam\r\n\r\n\tcode()\n", "\tcode()"],
+    ["— Sent by Sam  \n  code()", "  code()"],
   ])("makes %j into %j", (text, expected) => {
     expect(withoutByline(text, names)).toBe(expected);
   });

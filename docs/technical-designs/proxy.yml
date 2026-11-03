@@ -100,7 +100,8 @@ proposed-design:
     A queue edit starts from the stored text, with the cursor after the byline. The
     proxy finds the last byline at the start of a line that has a configured name,
     using the longest name that matches. It removes only that byline and its leading
-    line breaks, keeps all other text, removes white space at the end of the result, and
+    line breaks, keeps all other text, removes white space at the end of the result and, when no text
+    comes before the byline, the rest of its line and the line breaks after it, and
     then applies the rules above. The editor's
     name replaces the earlier name. A queue edit that sends the placeholder follows
     the placeholder rule. A new message keeps a byline that the sender
