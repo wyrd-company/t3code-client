@@ -9,6 +9,7 @@ const BYLINE_START = "— Sent by ";
 export const ATTACHMENT_ONLY_PLACEHOLDER =
   "[User attached one or more files without additional text. Respond using the conversation context and the attached files.]";
 
+const BYLINE_LINE_END = /^[ \t]*(?:\r?\n)*/u;
 const ULTRATHINK_PREFIX = /^Ultrathink:\s*$/iu;
 
 /** Applies the byline rules to one message. */
@@ -43,7 +44,10 @@ export function withoutByline(text: string, names: readonly string[]): string {
       while (start > 0 && isLineBreak(text[start - 1])) start -= 1;
       const before = text.slice(0, start);
       const after = text.slice(at + BYLINE_START.length + name.length);
-      return before === "" ? after.trim() : `${before}${after}`.trimEnd();
+      // With no text before it, only the rest of the byline's own line goes, so that the indent of
+      // a line below stays.
+      const rest = before === "" ? after.replace(BYLINE_LINE_END, "") : `${before}${after}`;
+      return rest.trimEnd();
     }
     at = at === 0 ? -1 : text.lastIndexOf(BYLINE_START, at - 1);
   }
