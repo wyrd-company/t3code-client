@@ -29,6 +29,7 @@ export * as server from "./server.ts";
 export * as serverActions from "./serverActions.ts";
 export * as serverRelease from "./serverRelease.ts";
 export * as settingsPatch from "./settingsPatch.ts";
+export * as pullRequests from "./pullRequests.ts";
 export * as sourceControl from "./sourceControl.ts";
 export * as projectClone from "./projectClone.ts";
 export * as agentSessions from "./agentSessions.ts";

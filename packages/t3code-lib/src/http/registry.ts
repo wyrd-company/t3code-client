@@ -7,6 +7,7 @@ import { assetRoutes } from "./routes/assets.ts";
 import { authRoutes } from "./routes/auth.ts";
 import { orchestrationRoutes } from "./routes/orchestration.ts";
 import { projectRoutes } from "./routes/projects.ts";
+import { pullRequestRoutes } from "./routes/pullRequests.ts";
 
 /** Every HTTP route of the target build that has an entry, by upstream group and endpoint name. */
 export const httpRoutes = {
@@ -14,6 +15,7 @@ export const httpRoutes = {
   ...authRoutes,
   ...orchestrationRoutes,
   ...projectRoutes,
+  ...pullRequestRoutes,
 };
 
 export type HttpRoutes = typeof httpRoutes;

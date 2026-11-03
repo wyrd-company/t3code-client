@@ -57,6 +57,7 @@ const expected: Record<string, [string, string, string, string | undefined]> = {
   ],
   "projects.snapshot": ["GET", "/api/projects", "required", "orchestration:read"],
   "projects.mutate": ["POST", "/api/projects/mutate", "required", "orchestration:operate"],
+  "pullRequests.diff": ["POST", "/api/pull-requests/diff", "required", "orchestration:read"],
 };
 
 it("has one entry for each route of the table, with the server's scope", () => {

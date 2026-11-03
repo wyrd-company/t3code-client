@@ -371,6 +371,46 @@ and lists the folders that they ran in. `agentSessions.import` makes threads fro
 recent transcripts of a project's folder. `expectedWorkspaceRoot` refuses the import
 when the project has moved since the scan.
 
+## Pull request reads
+
+The server reads the forge with its own credential, through one form for all of its
+forge drivers. A `PullRequestRef` names a project and a pull request of that project's
+repository:
+
+```ts
+const { entries, errors, nextCursors } = await client.rpc.call("pullRequests.list", {
+  state: "open",
+  involvement: "reviewing",
+  limit: 50,
+});
+
+for (const { projectId, repository, number } of entries) {
+  const ref = { projectId, repository, number };
+  const detail = await client.rpc.call("pullRequests.detail", ref);
+  const { patch } = await client.routes.call("pullRequests.diff", { body: ref });
+}
+```
+
+`errors` lists each project that could not be read, and the other rows still arrive.
+Pass `nextCursors` back as `cursors` for the next page. A row has zero line counts until
+`pullRequests.listStats` reads them. `pullRequests.detail` has `capabilities`, which say
+what the host can do, and `viewerPermissions`, which say what the viewer can do.
+The diff is a route, not an RPC method, and it pages with `cursor`.
+
+`pullRequests.summary`, `preview`, `checks`, `activity`, `stack`, `filesViewed` and
+`changeBreakdown` read one part of a pull request. `threadComments` reads the next
+comments of a review thread from its `nextCommentsCursor`, and `diffFileContents` reads
+the two sides of one file. `reviewGuide` reads the stored guide and generates nothing.
+`linkedThreads` lists the threads linked to a pull request. `filterOptions`,
+`reviewerCandidates` and `labelCandidates` list the values that a client can offer.
+`pullRequests.subscribeRefreshes` sends a new revision after which a client reads again.
+
+A driver can lack a part: GitLab has no routing identity, stacks or paged thread
+comments. A failure is a `PullRequestUnavailableError`, whose `reason` says that the tool
+or credential is missing or the host is not supported, or a `PullRequestOperationError`.
+The diff route sends the same two failures as HTTP 503 and 502. `expectedAccountId`,
+with `host`, refuses a read unless the server's credential for the host is that account.
+
 ## Proof-bound sessions
 
 A session bound to a DPoP key is useless to someone who holds only its token.

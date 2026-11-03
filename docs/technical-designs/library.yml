@@ -93,6 +93,7 @@ proposed-design:
         sourceControl.ts        version control systems and source control hosts the server can use, repository lookup, clone and publish, forge sign-in
         projectClone.ts         the tracked clone of a new project and its progress
         agentSessions.ts        the scan and import of another agent's sessions on the host
+        pullRequests.ts         the pull request reads, from pullRequestInputs.ts, pullRequestParts.ts, pullRequestList.ts, pullRequestDetail.ts and pullRequestDiff.ts
         diagnostics.ts          trace and process diagnostics, process resource history, the process signal and the OTLP endpoint check
         resourceTelemetry.ts    host resources and the server's process telemetry, as a client reads them
         storageCleanup.ts       the storage cleanup report
@@ -148,12 +149,12 @@ proposed-design:
         rpcConnection.ts        RpcConnection: request ids, correlation, Chunk→AsyncIterable with Ack, Interrupt
       http/
         registry.ts             httpRoutes: route name → { method, path, input, success, auth, scope }
-        routes/*.ts             one file per family (assets, auth, orchestration, projects)
+        routes/*.ts             one file per family (assets, auth, orchestration, projects, pullRequests)
         spec.ts                 the shape of one route entry
         client.ts               HttpRouteClient: typed call by route name; callRoute for the facades
       rpc/
         registry.ts             RpcMethodTable: method name → { payload, success, stream } zod schemas + scope
-        methods/*.ts            one file per family (orchestration, server, vcs, git, projects, terminal, authAccess, peerLinks, files, diagnostics, providerAuth, providerInstall, acpRegistry, sourceControl, agentSessions)
+        methods/*.ts            one file per family (orchestration, server, vcs, git, projects, terminal, authAccess, peerLinks, files, diagnostics, providerAuth, providerInstall, acpRegistry, sourceControl, agentSessions, pullRequests)
         client.ts               RpcClient: typed call/stream over RpcConnection using the registry
       auth/
         credentialStore.ts      CredentialStore seam + memoryCredentialStore + fileCredentialStore

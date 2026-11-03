@@ -20,6 +20,7 @@ import { providerInstallMethods } from "./methods/providerInstall.ts";
 import { acpRegistryMethods } from "./methods/acpRegistry.ts";
 import { sourceControlMethods } from "./methods/sourceControl.ts";
 import { agentSessionsMethods } from "./methods/agentSessions.ts";
+import { pullRequestsMethods } from "./methods/pullRequests.ts";
 
 export const rpcMethods = {
   ...orchestrationMethods,
@@ -40,6 +41,7 @@ export const rpcMethods = {
   ...acpRegistryMethods,
   ...sourceControlMethods,
   ...agentSessionsMethods,
+  ...pullRequestsMethods,
 };
 export type RpcMethods = typeof rpcMethods;
 export type RpcMethodName = keyof RpcMethods;
