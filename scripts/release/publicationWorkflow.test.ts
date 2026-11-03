@@ -105,6 +105,32 @@ it.each([false, true])(
   },
 );
 
+it("publishes the Feature record alone on a manual Feature run", () => {
+  const root = fixture();
+  roots.push(root);
+  const record = "t3code-proxy-feature@0.1.0";
+  const env = fake(root, "git", `echo tag`);
+  const step = publish.jobs["plan"]!.steps.find((step) => step.id === "plan")!;
+  const result = NodeChildProcess.spawnSync("bash", ["-eo", "pipefail", "-c", step.run!], {
+    cwd: root,
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      ...env,
+      GITHUB_OUTPUT: `${root}/outputs`,
+      GITHUB_SHA: "HEAD",
+      EVENT_NAME: "workflow_dispatch",
+      REF_NAME: record,
+      PUBLISH_PACKAGE: "false",
+      PUBLISH_FEATURE: "true",
+    },
+  });
+  expect(result.status, result.stderr).toBe(0);
+  expect(NodeFS.readFileSync(`${root}/outputs`, "utf8")).toBe(
+    `record=\nbuild-package=false\npublish=false\nfeature-record=${record}\n`,
+  );
+});
+
 it("checks out the validated record in all package jobs and keeps the full verifier before builds", () => {
   for (const name of ["build", "npm", "github-release"]) {
     const job = publish.jobs[name]!;
