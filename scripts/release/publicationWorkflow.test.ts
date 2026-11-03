@@ -53,11 +53,13 @@ it("loads new planning helpers from the workflow source before any target checko
     EVENT_NAME: "${{ github.event_name }}",
     REF_NAME: "${{ inputs.ref || github.ref_name }}",
     PUBLISH_PACKAGE: "${{ inputs.publish-package || false }}",
+    PUBLISH_FEATURE: "${{ inputs.publish-devcontainer-feature || false }}",
   });
   expect(plan.outputs).toEqual({
     publish: "${{ steps.plan.outputs.publish }}",
     record: "${{ steps.plan.outputs.record }}",
     "build-package": "${{ steps.plan.outputs.build-package }}",
+    "feature-record": "${{ steps.plan.outputs.feature-record }}",
   });
   expect(publish.on.workflow_dispatch.inputs["publish-package"]).toMatchObject({
     type: "boolean",
@@ -93,11 +95,12 @@ it.each([false, true])(
         EVENT_NAME: "workflow_dispatch",
         REF_NAME: record,
         PUBLISH_PACKAGE: String(optIn),
+        PUBLISH_FEATURE: "false",
       },
     });
     expect(result.status, result.stderr).toBe(0);
     expect(NodeFS.readFileSync(`${root}/outputs`, "utf8")).toBe(
-      `record=${optIn ? record : ""}\nbuild-package=${optIn}\npublish=true\n`,
+      `record=${optIn ? record : ""}\nbuild-package=${optIn}\npublish=true\nfeature-record=\n`,
     );
   },
 );

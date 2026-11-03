@@ -82,6 +82,21 @@ proposed-design:
     one message and one image-only message. The stored text must hold the byline. Mobile clients
     are not proven. When a device with the development client is available, they follow the same
     steps.
+  proxy-feature: |
+    `task feature:test` proves the devcontainer Feature. It needs Docker and the Dev Container CLI,
+    so CI has its own job for it, and `task check` runs only the unit tests of the Caddy writer. It
+    tests the package from this checkout: a test registry in a container serves the packed tarball for the package's
+    scope, and other packages come from npm. All names are `example.test` names.
+
+    | Script | Proves |
+    | ------ | ------ |
+    | `scripts/feature/test-feature.sh` | Option validation, installed version check, refusal with no s6-overlay, and Dev Container CLI scenarios for the options, the service definition and the Caddy files |
+    | `scripts/feature/test-feature-ansible.sh` | The `ansible-setup` dependency with a stand-in oneshot: present, absent and failed |
+    | `scripts/feature/test-feature-runtime.sh` | A bind-mounted config file, the service owner and arguments, Caddy with certificates from a test ACME CA, a stored byline on each person's hostname, none on the server's hostname, a restart that removes a person, and an invalid file |
+
+    The scenarios use the published t3code-server and Caddy Features. The runtime scenario reads the
+    server version from the pinned `t3` devDependency, and a test keeps `scenarios.json` on that
+    version.
   cli-isolated-acceptance: |
     `task cli:acceptance` builds the library and CLI, then starts the pinned stock
     server through the shared library live setup. Its fresh `/tmp/t3c-acceptance-*`

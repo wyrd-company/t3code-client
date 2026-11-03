@@ -24,6 +24,9 @@ Read `docs/technical-designs/testing.yml` and `docs/technical-designs/releasing.
   binary `t3code-mcp`. Read `docs/technical-designs/mcp.yml` and its package guidance.
 - `packages/t3code-proxy`: npm `@wyrd-company/t3code-proxy`, unit `t3code-proxy`,
   binary `t3c-proxy`. Read `docs/technical-designs/proxy.yml` and its package guidance.
+- `features/src/t3code-proxy`: devcontainer Feature, unit `t3code-proxy-feature`, published to
+  `ghcr.io/wyrd-company/t3code-client/t3code-proxy`. Its tests are in `features/test` and
+  `scripts/feature`, and `task feature:test` needs Docker. Read `docs/technical-designs/proxy.yml`.
 - `scripts/release`: shared unit-aware pack, validation and publication steps.
 - `.intentional`: independent unit projections and one pre-0.1.0 intent per unit.
 - `docs/user`: the published wyrd.foo v2 docs. Products `t3c` and `t3mcp` have

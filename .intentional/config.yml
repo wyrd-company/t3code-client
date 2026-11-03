@@ -17,6 +17,9 @@ discovery:
     - detector: npm-package
       path: packages/t3code-proxy/package.json
       release-unit: t3code-proxy
+    - detector: devcontainer-feature
+      path: features/src/t3code-proxy/devcontainer-feature.json
+      release-unit: t3code-proxy-feature
 release-units:
   t3code-lib:
     path: packages/t3code-lib
@@ -63,6 +66,17 @@ release-units:
       - adapter: npm
         file: package.json
         mode: committed
+    tags:
+      primary:
+        role: primary
+        template: '{id}@{version}'
+  t3code-proxy-feature:
+    path: features/src/t3code-proxy
+    projections:
+      - adapter: json
+        file: devcontainer-feature.json
+        mode: committed
+        pointer: /version
     tags:
       primary:
         role: primary

@@ -54,6 +54,17 @@ it("dispatches exactly three npm records for five atomically pushed records", ()
   );
 });
 
+it("dispatches the Feature record with its own input, and no package input", () => {
+  const record = "t3code-proxy-feature@0.1.0";
+  const { root, env, calls } = setup([...records.slice(0, 3), record]);
+  const result = run(root, "dispatch-packages.sh", ["plan.json"], env);
+  expect(result.status, result.stderr).toBe(0);
+  expect(calls()).toContain(
+    `workflow run publish.yml --ref ${record} -f ref=${record} -f publish-devcontainer-feature=true`,
+  );
+  expect(calls()).toHaveLength(4);
+});
+
 it.each([0, 1, 2, 3])("leaves %s records to ordinary push events without dispatch", (count) => {
   const { root, env, calls } = setup(records.slice(0, count));
   const result = run(root, "dispatch-packages.sh", ["plan.json"], env);

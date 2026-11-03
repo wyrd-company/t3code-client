@@ -52,6 +52,12 @@ tasks:
   release:test:
     desc: Test release boundaries without publishing
     cmds: [pnpm exec vp test run]
+  feature:test:
+    desc: Test the devcontainer Feature scenarios and runtime. Needs Docker and the Dev Container CLI
+    cmds:
+      - scripts/feature/test-feature.sh
+      - scripts/feature/test-feature-ansible.sh
+      - scripts/feature/test-feature-runtime.sh
   homebrew:test:
     desc: Validate a temporary formula with local CLI/library tarballs
     env:

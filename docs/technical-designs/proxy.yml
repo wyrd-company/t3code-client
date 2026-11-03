@@ -188,6 +188,8 @@ proposed-design:
     The Feature depends on the Node Feature and installs the npm package. A
     `t3code-proxy` longrun under s6-overlay runs
     `/usr/local/bin/t3code-proxy-service`, which passes `--config` with `configPath`.
+    The package has its own npm prefix under `/usr/local/lib/t3code-proxy`, so that a change of the
+    active Node version does not remove it, and `t3c-proxy` is on `PATH`.
     The service runs as `serviceUser` with its full environment. The Feature does not
     write the config file, and it declares no mount. A missing or invalid file fails the
     service loudly.
@@ -276,7 +278,7 @@ proposed-design:
     and without Ansible. Scenarios also prove that the generated Caddy files pass
     `caddy validate`, and that no Caddy file appears without the t3code-server hostname.
     A runtime scenario bind-mounts the config file, Caddy applies the derived hostnames,
-    and a message through the proxy stores the byline.
+    and a message through the proxy stores the byline. [Testing](testing.yml) has the procedure.
 
     Unit tests also cover the config file, flag overrides, and invalid values.
 

@@ -33,6 +33,11 @@ function setup() {
       `packages/${unit}/package.json`,
       JSON.stringify({ name: `@wyrd-company/${unit}`, version: "0.0.0" }),
     );
+  write(
+    root,
+    "features/src/t3code-proxy/devcontainer-feature.json",
+    JSON.stringify({ id: "t3code-proxy", version: "0.0.0" }),
+  );
   // docs.yml holds the product versions as Intentional projections.
   write(
     root,
@@ -167,6 +172,7 @@ describe("Intentional record agreement", () => {
       "t3code-cli@0.0.0",
       "t3code-mcp@0.0.0",
       "t3code-proxy@0.0.0",
+      "t3code-proxy-feature@0.0.0",
     ]);
     const result = run(root, "check-intents.sh");
     expect(result.status, result.stderr).toBe(0);

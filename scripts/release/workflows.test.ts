@@ -36,7 +36,7 @@ describe("workflow agreements", () => {
     const paths = [...publish().matchAll(/path: (\$\{\{ runner.temp \}\}\/package)/g)];
     expect(paths).toHaveLength(3);
   });
-  it("publishes only the package and docs unit tag families", () => {
+  it("publishes only the package, Feature and docs unit tag families", () => {
     const patterns = [...publish().matchAll(/^      - "([^"]+@\*)"$/gm)]
       .map((match) => match[1])
       .sort();
@@ -45,9 +45,22 @@ describe("workflow agreements", () => {
       "t3code-cli@*",
       "t3code-lib@*",
       "t3code-mcp@*",
+      "t3code-proxy-feature@*",
       "t3code-proxy@*",
       "t3mcp-docs@*",
     ]);
+  });
+  it("publishes the Feature only after its record check, with only the permissions it needs", () => {
+    const job = publish().split("\n  devcontainer-feature:")[1]!.split("\n  docs:")[0]!;
+    expect(job).toContain("if: needs.plan.outputs.feature-record != ''");
+    expect(job).toContain("packages: write");
+    expect(job).not.toContain("contents: write");
+    expect(job).toContain("base-path-to-features: ./features/src");
+    expect(job).toContain('disable-repo-tagging: "true"');
+    expect(job.indexOf("verify-feature-record.sh")).toBeGreaterThan(0);
+    expect(job.indexOf("verify-feature-record.sh")).toBeLessThan(
+      job.indexOf("devcontainers/action@"),
+    );
   });
   it("uses one saved plan for validation, apply and record creation", () => {
     const workflow = release();
