@@ -7,6 +7,8 @@ export * as assets from "./assets.ts";
 export * as auth from "./auth.ts";
 export * as diagnostics from "./diagnostics.ts";
 export * as providerSetup from "./providerSetup.ts";
+export * as providerInstall from "./providerInstall.ts";
+export * as acpRegistry from "./acpRegistry.ts";
 export * as editor from "./editor.ts";
 export * as environment from "./environment.ts";
 export * as filesystem from "./filesystem.ts";

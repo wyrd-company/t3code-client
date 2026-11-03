@@ -9,6 +9,13 @@ describe("redactSecrets", () => {
     });
   });
 
+  it("replaces a whole header map, since any header can hold a credential", () => {
+    expect(redactSecrets({ providerId: "kept", headers: { "x-sample": "value" } })).toEqual({
+      providerId: "kept",
+      headers: "[redacted]",
+    });
+  });
+
   it("replaces string values under credential-like keys, at any depth", () => {
     const input = {
       access_token: "abc",

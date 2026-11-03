@@ -7,6 +7,8 @@
 const SECRET_KEY = /token|credential|secret|authorization|password|ticket|usercode|^dpop$|^d$/iu;
 // A sign-in URL can carry a one-use code or an identity token in its query.
 const SECRET_QUERY = /[?&](?:code|id_token_hint)=/iu;
+// Each value of a request's header map can be a credential, under any name.
+const SECRET_MAP = /^headers$/iu;
 
 export const REDACTED = "[redacted]";
 
@@ -31,6 +33,10 @@ function redact(value: unknown, seen: WeakSet<object>): unknown {
   seen.add(value);
   const out: Record<string, unknown> = {};
   for (const [key, item] of Object.entries(value)) {
+    if (SECRET_MAP.test(key) && isPlainObject(item)) {
+      out[key] = REDACTED;
+      continue;
+    }
     out[key] =
       typeof item === "string" && (SECRET_KEY.test(key) || SECRET_QUERY.test(item))
         ? REDACTED

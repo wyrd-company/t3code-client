@@ -1,5 +1,6 @@
-/** Tagged failures of the auth and server RPC methods, mirroring the contracts' `auth.ts`, `keybindings.ts`, `settings.ts`, `server.ts`, `secretRequest.ts` and `providerSetup.ts`. */
+/** Tagged failures of the auth and server RPC methods, mirroring the contracts' `auth.ts`, `keybindings.ts`, `settings.ts`, `server.ts`, `secretRequest.ts`, `providerSetup.ts` and `acpRegistry.ts`. */
 import { z } from "zod";
+import { AcpRegistryProbeAuthMethod, AcpRegistryUrlAuthAction } from "../acpRegistry.ts";
 import { AuthGrantedScope } from "../auth.ts";
 import { forwardCompatibleLiteral } from "../common.ts";
 import { Defect, taggedError } from "./shared.ts";
@@ -43,6 +44,38 @@ export const ProviderSetupError = taggedError("ProviderSetupError", {
   instanceId: z.string(),
   operation: z.string(),
   detail: z.string(),
+  cause: Defect.optional(),
+});
+export const AcpRegistryOperationError = taggedError("AcpRegistryOperationError", {
+  reason: forwardCompatibleLiteral([
+    "agent_not_configured",
+    "agent_not_found",
+    "archive_invalid",
+    "authentication_failed",
+    "checksum_mismatch",
+    "download_failed",
+    "install_failed",
+    "instance_not_found",
+    "logout_unsupported",
+    "logout_failed",
+    "probe_failed",
+    "project_not_found",
+    "registry_unavailable",
+    "runner_unavailable",
+    "session_import_failed",
+    "session_delete_unsupported",
+    "session_delete_failed",
+    "session_list_unsupported",
+    "session_resume_unsupported",
+    "providers_unsupported",
+    "providers_list_failed",
+    "provider_configuration_failed",
+    "unsupported_distribution",
+    "unsupported_platform",
+  ]),
+  message: z.string(),
+  authMethods: z.array(AcpRegistryProbeAuthMethod).optional(),
+  authAction: AcpRegistryUrlAuthAction.optional(),
   cause: Defect.optional(),
 });
 export const UsageLimitSourceError = taggedError("UsageLimitSourceError", {
