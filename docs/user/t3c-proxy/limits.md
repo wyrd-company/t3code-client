@@ -20,8 +20,8 @@ These results follow from that design, and they are accepted.
 - The direct route and T3 Connect have no byline.
 - A byline with a name that is not configured stays as text in a queue edit. If such a name
   starts with a configured name, the remainder of the name stays too.
-- For a message with only images, the agent receives the byline and not the placeholder
-  sentence.
+- For a message with only images, the agent receives the image and the byline and not the
+  placeholder sentence, and the model can answer without using the image.
 - In the web client, a message with only files shows each file as a link above the byline,
   and not as a card. The web client shows a card only for a message with no words.
 - If an upstream release changes the placeholder of a message with only images, the match

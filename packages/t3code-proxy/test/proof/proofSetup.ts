@@ -180,12 +180,6 @@ export default async function setup() {
     );
     process.env["T3_PROOF_BROWSER_BROKER"] = browsers.url;
     await NodeFSP.writeFile(NodePath.join(workspace, "README.md"), "Sample workspace.\n");
-    // A message with only an attachment has no request in it. This makes each reply show what the
-    // agent received, and it names no colour or file content.
-    await NodeFSP.writeFile(
-      NodePath.join(workspace, "AGENTS.md"),
-      "When a message has an attachment and no request, do not ask a question. Reply with the main colour of an attached image, or read an attached file with a tool and reply with its exact text.\n",
-    );
     makeCertificates(root);
 
     const log = (name: string) => NodeFS.openSync(NodePath.join(root, name), "w");

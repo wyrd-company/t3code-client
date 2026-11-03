@@ -5,6 +5,7 @@
 /** The clients, waits and transcript reads that the live proof shares. */
 import * as NodeChildProcess from "node:child_process";
 import * as NodeCrypto from "node:crypto";
+import * as NodePath from "node:path";
 import * as NodeZlib from "node:zlib";
 import { serverEnvironment } from "../../../t3code-lib/test/support/serverEnvironment.ts";
 import {
@@ -16,6 +17,7 @@ import {
   type ThreadId,
 } from "@wyrd-company/t3code-lib";
 import { WebSocket } from "ws";
+import { agentInputs, fileProblem, imageProblem } from "../support/agentInput.ts";
 
 const setting = (name: string) => {
   const value = process.env[name];
@@ -73,6 +75,33 @@ export async function until<T>(
   }
   throw new Error(`Timed out waiting for ${what}.`);
 }
+
+const startedAt = Date.now();
+
+/** Waits for Codex to record the input of a settled turn, and fails with what is still wrong. */
+async function receives(
+  attachmentId: string,
+  problem: (inputs: Awaited<ReturnType<typeof agentInputs>>) => string | undefined,
+) {
+  let last: string | undefined;
+  const deadline = Date.now() + 30_000;
+  do {
+    last = problem(await agentInputs(setting("CODEX_HOME"), attachmentId, startedAt));
+    if (last === undefined) return;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  } while (Date.now() < deadline);
+  throw new Error(`The agent did not receive attachment ${attachmentId}: ${last}.`);
+}
+
+/** The agent's recorded input holds exactly these image bytes. */
+export const receivesImage = (attachmentId: string, expected: Buffer) =>
+  receives(attachmentId, (inputs) => imageProblem(inputs, expected));
+
+/** The agent's recorded input gives a path in the server's attachments to this content. */
+export const receivesFile = (attachmentId: string, expected: string) =>
+  receives(attachmentId, (inputs) =>
+    fileProblem(inputs, NodePath.join(setting("T3_PROOF_HOME"), "userdata/attachments"), expected),
+  );
 
 /** A valid 32x32 red PNG. */
 export function samplePng() {
