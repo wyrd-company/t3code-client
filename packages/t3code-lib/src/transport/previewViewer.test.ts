@@ -152,6 +152,18 @@ describe("PreviewViewer", () => {
     expect(await third).toMatchObject({ done: true });
   });
 
+  it("acknowledges a frame for a call that already waits", async () => {
+    const { viewer, socket } = await opened();
+    const iterator = viewer[Symbol.asyncIterator]();
+    const first = iterator.next();
+    const second = iterator.next();
+    socket.message(new Uint8Array([1]).buffer);
+    await first;
+    await expect.poll(() => socket.sent).toEqual([JSON.stringify({ type: "ack" })]);
+    socket.message(JSON.stringify({ type: "clipboard", text: "sample" }));
+    expect((await second).value).toMatchObject({ value: { text: "sample" } });
+  });
+
   it("rejects without the address when the socket does not open", async () => {
     const pending = connectPreviewViewer(webSocket, url);
     FakeSocket.last.drop(1006, "");

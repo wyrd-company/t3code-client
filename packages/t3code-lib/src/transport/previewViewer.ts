@@ -127,16 +127,19 @@ class ViewerSession implements PreviewViewer {
   }
 
   async #next(): Promise<IteratorResult<Item>> {
-    this.#acknowledgeFrame();
-    while (this.#items.length === 0) {
+    for (;;) {
+      // A call that waits also asks for more, so it acknowledges a frame that another call took.
+      this.#acknowledgeFrame();
+      const item = this.#items.shift();
+      if (item !== undefined) {
+        if (item.kind === "item" && "bytes" in item.value) this.#frameToAck = true;
+        return { done: false, value: item };
+      }
       if (this.#ended) return { done: true, value: undefined };
       await new Promise<void>((resolve) => {
         this.#waiting.push(resolve);
       });
     }
-    const item = this.#items.shift() as Item;
-    if (item.kind === "item" && "bytes" in item.value) this.#frameToAck = true;
-    return { done: false, value: item };
   }
 
   #acknowledgeFrame(): void {
