@@ -25,6 +25,7 @@ proposed-design:
     | `t3code-cli` | `packages/t3code-cli/package.json` | `@wyrd-company/t3code-cli` | `t3code-cli@X.Y.Z` |
     | `t3code-mcp` | `packages/t3code-mcp/package.json` | `@wyrd-company/t3code-mcp` | `t3code-mcp@X.Y.Z` |
     | `t3code-proxy` | `packages/t3code-proxy/package.json` | `@wyrd-company/t3code-proxy` | `t3code-proxy@X.Y.Z` |
+    | `t3code-proxy-feature` | `features/src/t3code-proxy/devcontainer-feature.json` | none (GHCR Feature) | `t3code-proxy-feature@X.Y.Z` |
     | `t3c-docs`   | `docs/user/docs.yml`               | none (tag-only)            | `t3c-docs@X.Y.Z`   |
     | `t3mcp-docs` | `docs/user/docs.yml`               | none (tag-only)            | `t3mcp-docs@X.Y.Z` |
 
@@ -164,6 +165,15 @@ proposed-design:
     - a `t3code-lib` record and the zero baseline records publish nothing;
     - a manual run publishes the `ref` it is given, and may feature the product.
 
+    A `t3code-proxy-feature@X.Y.Z` record publishes the devcontainer Feature to
+    `ghcr.io/wyrd-company/t3code-client/t3code-proxy` through `devcontainers/action`, with
+    the workflow token and `packages: write`. `verify-feature-record.sh` requires an
+    annotated record on main that names the version in `devcontainer-feature.json`. The
+    action skips a version that GHCR already holds, and it adds no tag. The zero baseline
+    publishes nothing. A manual run with `publish-devcontainer-feature` recovers a failed
+    publication, and a release with over three tags dispatches the Feature in the same way.
+    A Feature record publishes no npm package and no documentation.
+
     A plain push to main does not publish. The package jobs run only for package
     records. The call passes only the two publisher secrets, not the repository's
     other secrets.
@@ -210,7 +220,7 @@ proposed-design:
 
     The App needs Contents write. Publish requires an Intentional release record
     whose commit is on main. A tag ruleset allowing only the App to create
-    `t3code-lib@*`, `t3code-cli@*`, `t3code-mcp@*`, `t3code-proxy@*`, `t3c-docs@*` and `t3mcp-docs@*` records enforces that release
+    `t3code-lib@*`, `t3code-cli@*`, `t3code-mcp@*`, `t3code-proxy@*`, `t3code-proxy-feature@*`, `t3c-docs@*` and `t3mcp-docs@*` records enforces that release
     authority.
   documentation-and-homebrew-finalization: |
     The CLI/MCP code records, product docs records and manual runs publish `docs/user` to wyrd.foo

@@ -13,6 +13,8 @@ mapfile -t units < <(jq -er '.tags[].release_unit' "$plan")
 for selected in "${units[@]}"; do
   # A tag-only docs unit has no package to check.
   if is_docs_unit "$selected"; then continue; fi
+  # The Feature's identity is its record and its devcontainer-feature.json.
+  if is_feature_unit "$selected"; then continue; fi
   release_unit "$selected"
   node --input-type=module - "$package_dir/package.json" "$package" <<'JS'
 import * as fs from 'node:fs';

@@ -78,3 +78,32 @@ jobs:
           pnpm --filter "@wyrd-company/$UNIT" run test
           pnpm --filter "@wyrd-company/$UNIT" run test:live
           pnpm --filter "@wyrd-company/$UNIT" run package
+
+  devcontainer-feature:
+    name: Check the devcontainer Feature
+    needs: release-foundation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Vite+
+        uses: voidzero-dev/setup-vp@3754dd7dbdb32bd8f6d28b6043de13ad3a75f21f # v1.21.1
+        with:
+          node-version: "24"
+          cache: true
+          run-install: true
+
+      - name: Install the Dev Container CLI
+        run: npm install --global @devcontainers/cli@0.90.0
+
+      - name: Test the Feature scenarios
+        run: |
+          scripts/feature/test-feature.sh
+          scripts/feature/test-feature-ansible.sh
+
+      - name: Test the Feature at runtime
+        run: scripts/feature/test-feature-runtime.sh

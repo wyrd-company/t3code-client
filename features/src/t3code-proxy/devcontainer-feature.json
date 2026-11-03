@@ -1,0 +1,35 @@
+{
+  "id": "t3code-proxy",
+  "version": "0.0.0",
+  "name": "T3 Code Sender Identity Proxy",
+  "documentationURL": "https://github.com/wyrd-company/t3code-client/tree/main/features/src/t3code-proxy",
+  "description": "Runs t3c-proxy under s6-overlay in front of a shared T3 Code server, so that each message shows who sent it. Exposes one hostname for each person when the t3code-server and Caddy Features supply a DNS name.",
+  "options": {
+    "version": {
+      "type": "string",
+      "default": "latest",
+      "description": "npm version of @wyrd-company/t3code-proxy: `latest` or an exact version."
+    },
+    "configPath": {
+      "type": "string",
+      "default": "/etc/t3code-proxy/config.yml",
+      "description": "Absolute path of the config file in the container, passed to `t3c-proxy --config`. You supply the file, for example with a bind mount."
+    },
+    "serviceUser": {
+      "type": "string",
+      "default": "automatic",
+      "description": "User account to run the service as. `automatic` prefers the remote user, container user, `vscode`, then `root`."
+    }
+  },
+  "dependsOn": {
+    "ghcr.io/devcontainers/features/node:2": {
+      "version": "24"
+    }
+  },
+  "installsAfter": [
+    "ghcr.io/devcontainers/features/common-utils",
+    "ghcr.io/wyrd-company/devcontainers/ansible",
+    "ghcr.io/wyrd-company/devcontainers/caddy",
+    "ghcr.io/wyrd-company/devcontainers/t3code-server"
+  ]
+}

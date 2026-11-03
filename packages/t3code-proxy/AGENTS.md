@@ -24,5 +24,7 @@ Read `docs/technical-designs/proxy.yml` at the repository root. It leads this co
   HTTPS and a browser, so it runs only with `task proxy:test:proof`.
   `docs/technical-designs/testing.yml` has the needs and the manual client steps. Each
   pinned `t3` update reruns it.
+- `test/feature` is the client of the Feature's runtime scenario. It runs only from
+  `scripts/feature/test-feature-runtime.sh`.
 - Run the workspace `task check` before handoff. Add consumer changes to the package's
   single initial minor intent. Publication requires explicit user approval.

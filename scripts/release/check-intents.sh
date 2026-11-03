@@ -7,7 +7,8 @@ cleanup() { node -e 'require("node:fs").rmSync(process.argv[1], {recursive:true,
 trap cleanup EXIT
 git clone --quiet --shared "$root" "$scratch"
 # Release units come from .intentional/config.yml. Package units project their
-# version into package.json; docs.yml holds product versions as yaml projections.
+# version into package.json and a Feature unit into its devcontainer-feature.json;
+# docs.yml holds product versions as yaml projections.
 # A projection file that starts with / is relative to the repository root.
 config="$root/.intentional/config.yml"
 mapfile -t units < <(yq '.release-units | keys | .[]' "$config")
@@ -31,7 +32,7 @@ needs_baseline=false
 for unit in "${units[@]}"; do
   [[ -z "$(git tag --list "$unit@*")" ]] || continue
   needs_baseline=true
-  package="$(awk -F'\t' -v unit="$unit" '$1 == unit && $2 == "npm" { print $3; exit }' <<<"$projections")"
+  package="$(awk -F'\t' -v unit="$unit" '$1 == unit && ($2 == "npm" || $2 == "json") { print $3; exit }' <<<"$projections")"
   if [[ -n "$package" ]]; then
     version="$(node -p "require('./$package').version")"
     if [[ "$version" != "0.0.0" ]]; then
