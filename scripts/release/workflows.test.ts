@@ -42,6 +42,7 @@ describe("workflow agreements", () => {
       .sort();
     expect(patterns).toEqual([
       "t3c-docs@*",
+      "t3c-proxy-docs@*",
       "t3code-cli@*",
       "t3code-lib@*",
       "t3code-mcp@*",
@@ -160,7 +161,7 @@ describe("package unit inventory", () => {
         unit,
       ]).status === 0;
     for (const unit of packageUnits) expect(accepted(unit)).toBe(true);
-    for (const unit of ["t3c-docs", "t3mcp-docs", "t3code-client", "t3code"])
+    for (const unit of ["t3c-docs", "t3mcp-docs", "t3c-proxy-docs", "t3code-client", "t3code"])
       expect(accepted(unit)).toBe(false);
   });
 });

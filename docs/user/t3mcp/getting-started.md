@@ -34,6 +34,10 @@ direct flags. Without a named profile, `T3_SERVER_URL`, `T3_TOKEN` and the curre
 t3c profile apply. The process connects when a tool first needs the server.
 `t3code-mcp tools` lists the tool names without connecting.
 
+t3mcp uses the direct route: pair its profile with the server's own address. If people
+share the server through [t3c-proxy](https://wyrd.foo/tools/t3c-proxy), do not pair
+t3mcp with a person's hostname, because a hostname is for the messages of one person.
+
 | Tools                                                      | Result                                                                                    |
 | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | `scheduled_task_endpoint`                                  | Relative token-bearing path, direct URL, optional Connect URL and signing-secret presence |

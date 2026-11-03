@@ -13,6 +13,7 @@ const records = [
   "t3code-mcp@0.1.0",
   "t3c-docs@0.3.0",
   "t3mcp-docs@0.1.0",
+  "t3c-proxy-docs@0.1.0",
 ];
 afterEach(() => {
   for (const root of roots.splice(0)) NodeFS.rmSync(root, { recursive: true, force: true });
@@ -77,7 +78,7 @@ it("counts docs and baseline tags toward suppression but dispatches neither", ()
   const result = run(root, "dispatch-packages.sh", ["plan.json"], env);
   expect(result.status, result.stderr).toBe(0);
   expect(calls()).toHaveLength(2);
-  expect(calls().join("\n")).not.toMatch(/t3code-lib|t3c-docs|t3mcp-docs/);
+  expect(calls().join("\n")).not.toMatch(/t3code-lib|t3c-docs|t3mcp-docs|t3c-proxy-docs/);
 });
 
 it.each([

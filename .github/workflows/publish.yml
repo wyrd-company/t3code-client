@@ -6,9 +6,9 @@ name: Publish
 # version or GitHub Release that already exists is verified instead of
 # recreated. A library record publishes no documentation.
 #
-# Documentation publishes to wyrd.foo through the reusable workflow, on a CLI
-# or MCP record (after its GitHub Release exists), on a product docs record,
-# or on a manual run. Docs records pushed with a CLI or MCP record are
+# Documentation publishes to wyrd.foo through the reusable workflow, on a CLI,
+# MCP or proxy record (after its GitHub Release exists), on a product docs
+# record, or on a manual run. Docs records pushed with one of those records are
 # published by those package runs. There is no publish on a plain push to main.
 # See docs/technical-designs/releasing.yml.
 
@@ -22,6 +22,7 @@ on:
       - "t3code-proxy-feature@*"
       - "t3c-docs@*"
       - "t3mcp-docs@*"
+      - "t3c-proxy-docs@*"
   workflow_dispatch:
     inputs:
       ref:

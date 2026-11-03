@@ -81,6 +81,7 @@ it.each([
   "t3code-mcp@0.0.0",
   "t3c-docs@0.1.0",
   "t3mcp-docs@0.1.0",
+  "t3c-proxy-docs@0.1.0",
   "main",
 ])("does not build non-package push %s", (ref) => {
   const { root } = setup();
@@ -95,6 +96,7 @@ it.each([
   "t3code-client@0.1.0",
   "t3c-docs@0.1.0",
   "t3mcp-docs@0.1.0",
+  "t3c-proxy-docs@0.1.0",
   "t3code-lib@0.0.0",
   "t3code-cli@0.0.0",
   "t3code-mcp@0.0.0",
