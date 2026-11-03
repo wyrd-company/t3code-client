@@ -55,5 +55,6 @@ model selection use project defaults, then server defaults. Ambiguous selection
 asks for an explicit choice through a usage error.
 
 Use [command behavior](commands.md), [output and exit codes](policy.md),
-[the Dagu harness](dagu.md), or [the library API](library-reference.md) for details.
+[the Dagu harness](dagu.md), [the library guides](guide-quick-start.md), or
+[the library API](library-reference.md) for details.
 `t3c --help` and each command's `--help` list supported options.
