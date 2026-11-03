@@ -33,12 +33,14 @@ proposed-design:
     export class T3TimeoutError extends T3Error     // code: "timeout"
     ```
 
-    `body` and `raw` pass through `redactSecrets` (`internal/redact.ts`): string
+    `body`, `raw`, an RPC failure's `detail` and `record`, and `defect` pass through
+    `redactSecrets` (`internal/redact.ts`): string
     values whose key looks like a credential (`token`, `credential`, `secret`,
     `authorization`, `password`, `ticket`, `usercode`) become `"[redacted]"`, so an
     error that carries a badly shaped `/oauth/token` response never carries the
     token. So do string values with a `code` or `id_token_hint` query parameter, so
-    an error that carries a sign-in state never carries its URLs.
+    an error that carries a sign-in state never carries its URLs. A whole `headers`
+    map becomes `"[redacted]"`, since a header with any name can hold a credential.
   schemas: |
     Conventions:
 

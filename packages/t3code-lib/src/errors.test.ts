@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
-import { T3AuthError, T3DecodeError, T3HttpError, T3RpcError } from "./errors.ts";
+import { T3AuthError, T3DecodeError, T3HttpError, T3RpcDefectError, T3RpcError } from "./errors.ts";
 
 describe("error payload redaction", () => {
   it("T3DecodeError.raw does not carry credentials from a badly shaped token response", () => {
@@ -37,6 +37,19 @@ describe("error payload redaction", () => {
 });
 
 describe("T3RpcError", () => {
+  it("keeps no credential-shaped value of a failure", () => {
+    const quoted = { cause: { data: { headers: { "x-sample": "quoted" }, token: "quoted" } } };
+    const error = new T3RpcError("server.setAcpRegistryProvider", {
+      _tag: "AcpRegistryOperationError",
+      reason: "provider_configuration_failed",
+      message: "Refused.",
+      ...quoted,
+    });
+    expect(error.is("AcpRegistryOperationError")).toBe(true);
+    expect(JSON.stringify([error.detail, error.record])).not.toContain("quoted");
+    expect(JSON.stringify(new T3RpcDefectError("server.probe", quoted))).not.toContain("quoted");
+  });
+
   it("decodes a known tagged failure into a typed record", () => {
     const error = new T3RpcError("terminal.write", {
       _tag: "TerminalNotRunningError",
@@ -68,7 +81,7 @@ describe("T3RpcError", () => {
     const error = new T3RpcError("server.probe", raw);
     expect(error.record).toEqual({ unknown: true, raw });
     expect(error.tag).toBe("SomeFutureError");
-    expect(error.detail).toBe(raw);
+    expect(error.detail).toEqual(raw);
     expect(error.message).toBe("server.probe failed: later");
   });
 

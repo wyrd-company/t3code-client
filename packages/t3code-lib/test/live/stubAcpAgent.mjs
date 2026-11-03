@@ -5,8 +5,12 @@ import * as NodeFS from "node:fs";
 import * as NodeReadline from "node:readline";
 
 const log = process.argv[2];
+const refusedProvider = "sample-refused";
 const sessions = [{ sessionId: "sample-session", cwd: process.cwd(), title: "Sample session" }];
-const providers = new Map([["main", { apiType: "openai", baseUrl: "https://example.invalid/v1" }]]);
+const providers = new Map([
+  ["main", { apiType: "openai", baseUrl: "https://example.invalid/v1" }],
+  [refusedProvider, null],
+]);
 
 const results = {
   initialize: () => ({
@@ -51,7 +55,8 @@ const results = {
 // The server starts a new process for each management call, so state comes from the log.
 for (const line of NodeFS.readFileSync(log, "utf8").split("\n").filter(Boolean)) {
   const { method, params } = JSON.parse(line);
-  if (method.startsWith("session/delete") || method.startsWith("providers/")) {
+  const replayed = method.startsWith("session/delete") || method.startsWith("providers/");
+  if (replayed && params?.providerId !== refusedProvider) {
     results[method]?.(params ?? {});
   }
 }
@@ -61,6 +66,12 @@ NodeReadline.createInterface({ input: process.stdin }).on("line", (line) => {
   if (method === undefined) return;
   NodeFS.appendFileSync(log, `${JSON.stringify({ method, params })}\n`);
   if (id === undefined) return;
+  if (params?.providerId === refusedProvider) {
+    // A failure that quotes its request, as an agent's diagnostic can.
+    const error = { code: -32603, message: "Refused.", data: { headers: params.headers } };
+    process.stdout.write(`${JSON.stringify({ jsonrpc: "2.0", id, error })}\n`);
+    return;
+  }
   const handler = results[method];
   const reply = handler
     ? { result: handler(params ?? {}) }

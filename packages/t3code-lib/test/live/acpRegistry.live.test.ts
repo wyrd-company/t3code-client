@@ -13,7 +13,7 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
-import type { T3Client } from "../../src/index.ts";
+import { T3RpcError, type T3Client } from "../../src/index.ts";
 import { ProjectId, ProviderDriverKind, ProviderInstanceId } from "../../src/schemas/common.ts";
 import type { ServerProvider } from "../../src/schemas/provider.ts";
 import { connectWithScopes, firstItem, hasLiveServer, refusal, waitFor } from "./liveClient.ts";
@@ -166,6 +166,27 @@ describe.skipIf(!hasLiveServer)("ACP registry methods", () => {
     ).toEqual({ disabled: true });
     const disabled = await listProviders();
     expect(disabled.providers[0]?.current).toBeNull();
+  }, 120_000);
+
+  it("keeps a header out of a failure whose diagnostic quotes it", async () => {
+    const failure = await client.rpc
+      .call("server.setAcpRegistryProvider", {
+        instanceId: agent,
+        projectId,
+        providerId: "sample-refused",
+        apiType: "openai",
+        baseUrl: "https://example.invalid/v3",
+        headers: { "x-sample": "sample-quoted" },
+      })
+      .catch((error: unknown) => error);
+    if (!(failure instanceof T3RpcError)) throw new Error("Expected a typed refusal.");
+    expect(failure.record).toMatchObject({ reason: "provider_configuration_failed" });
+    expect(JSON.stringify([failure.message, failure.detail, failure.record])).not.toContain(
+      "sample-quoted",
+    );
+    expect(agentRequests("providers/set").at(-1)).toMatchObject({
+      headers: { "x-sample": "sample-quoted" },
+    });
   }, 120_000);
 
   it("accepts no address that is not pending, and signs the agent out", async () => {
