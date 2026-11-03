@@ -26,5 +26,7 @@ Read `docs/technical-designs/proxy.yml` at the repository root. It leads this co
   pinned `t3` update reruns it.
 - `test/feature` is the client of the Feature's runtime scenario. It runs only from
   `scripts/feature/test-feature-runtime.sh`.
+- `docs/user/t3c-proxy` holds the published guides. A change to an option or an accepted
+  limit changes those guides, and `scripts/docs/publishedDocs.test.ts` checks them.
 - Run the workspace `task check` before handoff. Add consumer changes to the package's
   single initial minor intent. Publication requires explicit user approval.

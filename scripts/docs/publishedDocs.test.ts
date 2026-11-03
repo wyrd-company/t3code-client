@@ -222,6 +222,7 @@ it("documents the Feature's real reference and options", () => {
   ]);
   const page = read("t3c-proxy/devcontainer-feature.md");
   expect(page).toContain(reference);
+  expect(page).toContain(`\`${reference.split(":")[0]}\` runs`);
   const rows = [...page.matchAll(/^\| `([A-Za-z]+)`\s+\| `([^`]+)`/gmu)].map(([, name, value]) => [
     name!,
     value!,
