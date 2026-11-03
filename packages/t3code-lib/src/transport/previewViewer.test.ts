@@ -138,6 +138,20 @@ describe("PreviewViewer", () => {
     expect(second.socket.readyState).toBe(3);
   });
 
+  it("answers every waiting call of the iterator", async () => {
+    const { viewer, socket } = await opened();
+    const iterator = viewer[Symbol.asyncIterator]();
+    const first = iterator.next();
+    const second = iterator.next();
+    const third = iterator.next();
+    socket.message(JSON.stringify({ type: "clipboard", text: "first" }));
+    socket.message(JSON.stringify({ type: "clipboard", text: "second" }));
+    expect((await first).value).toMatchObject({ value: { text: "first" } });
+    expect((await second).value).toMatchObject({ value: { text: "second" } });
+    socket.drop(1000, "");
+    expect(await third).toMatchObject({ done: true });
+  });
+
   it("rejects without the address when the socket does not open", async () => {
     const pending = connectPreviewViewer(webSocket, url);
     FakeSocket.last.drop(1006, "");

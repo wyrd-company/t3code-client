@@ -71,7 +71,7 @@ export interface PreviewViewer extends AsyncIterable<Item> {
 class ViewerSession implements PreviewViewer {
   readonly #socket: () => WebSocketLike;
   readonly #items: Item[] = [];
-  #wake: (() => void) | undefined;
+  #waiting: (() => void)[] = [];
   #ended = false;
   #frameToAck = false;
   #resolveClosed!: (close: PreviewViewerClose) => void;
@@ -101,7 +101,7 @@ class ViewerSession implements PreviewViewer {
   end(info: WebSocketCloseInfo): void {
     this.#ended = true;
     this.#resolveClosed(closeDetails(info));
-    this.#wake?.();
+    this.#wakeAll();
   }
 
   send(input: PreviewViewerInput): void {
@@ -131,7 +131,7 @@ class ViewerSession implements PreviewViewer {
     while (this.#items.length === 0) {
       if (this.#ended) return { done: true, value: undefined };
       await new Promise<void>((resolve) => {
-        this.#wake = resolve;
+        this.#waiting.push(resolve);
       });
     }
     const item = this.#items.shift() as Item;
@@ -155,7 +155,13 @@ class ViewerSession implements PreviewViewer {
 
   #push(item: Item): void {
     this.#items.push(item);
-    this.#wake?.();
+    this.#wakeAll();
+  }
+
+  #wakeAll(): void {
+    const waiting = this.#waiting;
+    this.#waiting = [];
+    for (const wake of waiting) wake();
   }
 }
 
