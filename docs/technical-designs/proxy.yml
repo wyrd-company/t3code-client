@@ -21,6 +21,11 @@ design-challenges:
   commands-need-exact-text: |
     The server matches some commands on the exact message text, for example
     `/compact` and `/logout`. Added text stops the command.
+  attachment-only-placeholder: |
+    A turn needs text. A client that sends only images sends the upstream placeholder
+    `ATTACHMENT_ONLY_BOOTSTRAP_PROMPT` as that text. Clients hide this text and search
+    skips it, but only on an exact match. Added text makes the placeholder visible to
+    people. A client that sends only files sends a reference to each file as the text.
 proposed-design:
   high-level-overview: |
     `t3c-proxy` is a service in front of one T3 Code server. It has one listener
@@ -82,6 +87,9 @@ proposed-design:
     - Text with a leading `/`, after leading whitespace, has no byline, so that
       slash commands keep working.
     - Empty text becomes the byline alone.
+    - The exact placeholder becomes the byline alone, so that people see the attachment
+      and the sender and not the placeholder. In its `Ultrathink:` form, the prefix stays
+      and the byline replaces only the placeholder.
     - All other text receives two line breaks and the byline.
     - A guest message that the owner sends has the server's own attribution, so it
       has no byline.
@@ -90,7 +98,8 @@ proposed-design:
     proxy finds the last byline at the start of a line that has a configured name,
     using the longest name that matches. It removes only that byline and its leading
     line breaks, keeps all other text, and then applies the rules above. The editor's
-    name replaces the earlier name. A new message keeps a byline that the sender
+    name replaces the earlier name. A queue edit that sends the placeholder follows
+    the placeholder rule. A new message keeps a byline that the sender
     quotes.
   unchanged-traffic: |
     HTTP requests and upgrades other than `/ws` pass through unchanged, and streamed
@@ -103,7 +112,8 @@ proposed-design:
   access: |
     T3 pairing and sessions are the only access control. The proxy has no token,
     no login and no session of its own. A client upgrade completes only after the
-    server accepts the upgrade, so the server decides each connection.
+    server accepts the upgrade, so the server decides each connection. When the server
+    refuses an upgrade, the client receives the server's status and body.
 
     The byline names an endpoint, and it does not prove a person. Anyone with a
     valid session can use any endpoint. The people who share a server trust each
@@ -132,6 +142,14 @@ proposed-design:
     - The direct route and T3 Connect have no byline.
     - A byline with a name that is not configured stays as text in a queue edit. If
       such a name starts with a configured name, the remainder of the name stays too.
+    - For a message with only images, the agent receives the byline and not the
+      placeholder sentence.
+    - In the web client, a message with only files shows each file as a link above the
+      byline, and not as a card. The web client shows a card only for a message with no
+      words.
+    - If an upstream release changes the placeholder, the match fails until the proxy
+      changes too. People then see the placeholder with a byline, and the message is
+      not lost.
     - A new upstream command that carries text passes with no byline and no warning.
       Each upstream release is evaluated before adoption.
   devcontainer-feature: |
@@ -214,8 +232,9 @@ proposed-design:
     requires the user's release approval.
   verification: |
     Unit tests cover each row of the rewrite table, each byline rule, batched frames,
-    byte-identical frames, and queue edits with text after the byline, a quoted byline
-    and names that share a prefix.
+    byte-identical frames, and queue edits with text after the byline, a quoted byline,
+    names that share a prefix and the placeholder. They cover the placeholder in its
+    `Ultrathink:` form.
 
     An isolated stock server with real turns proves these through an HTTPS reverse
     proxy with one hostname per person:
@@ -225,8 +244,9 @@ proposed-design:
     - `/compact` through a person's endpoint compacts the thread.
     - The direct route, an agent's `t3_thread_send`, and an outside agent's `/mcp` on a
       person's endpoint store no byline. The agent messages have `createdBy: agent`.
-    - A message with only attachments keeps its upstream behavior. Upstream matches
-      `ATTACHMENT_ONLY_BOOTSTRAP_PROMPT` on exact text.
+    - A message with only attachments, on a first message and a follow-up: the
+      placeholder does not show, the attachment shows with the byline, and the agent
+      replies about the attachment.
     - The mobile and desktop clients pair and send through a person's endpoint.
     - A large streamed turn with a slow client keeps all frames in order.
 
@@ -244,7 +264,7 @@ proposed-design:
 
     A consumer installs the local tarball and runs the executable. The pinned `t3`
     update reruns the live proof, and its review checks for new commands that carry
-    text.
+    text and for a change to `ATTACHMENT_ONLY_BOOTSTRAP_PROMPT`.
   documentation: |
     The wyrd.foo product is t3c-proxy, with code release unit t3code-proxy and
     tag-only docs unit t3c-proxy-docs. Its pages live in docs/user/t3c-proxy: setup,
