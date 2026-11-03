@@ -193,7 +193,10 @@ export const pullRequestsMethods = {
     stream: false,
     scope: "orchestration:operate",
   }),
-  /** Drops the cached reads that the input names, and tells subscribers to read again. */
+  /**
+   * Drops the cached reads that the input names, and tells subscribers to read again.
+   * With `filesViewedOnly`, no subscriber is told, so the caller reads again itself.
+   */
   "pullRequests.invalidate": defineMethod({
     payload: PullRequestInvalidateInput,
     success: VoidSuccess,

@@ -406,7 +406,7 @@ the two sides of one file. `reviewGuide` reads the stored guide and generates no
 `pullRequests.subscribeRefreshes` sends a new revision after which a client reads again.
 `pullRequests.invalidate` drops cached reads, so that the next read asks the host: those
 of one pull request with `reference`, listings and viewers without it, and only viewed
-marks with `filesViewedOnly`.
+marks with `filesViewedOnly`. Then it tells subscribers, except with `filesViewedOnly`.
 
 A write takes a `PullRequestRef` and goes to the host with the server's credential. It
 needs `source-control:write`:

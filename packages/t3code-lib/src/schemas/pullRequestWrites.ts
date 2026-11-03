@@ -21,7 +21,7 @@ const refFields = PullRequestRef.shape;
 export const PullRequestInvalidateInput = z.looseObject({
   /** The pull request to read again. Without it, listings and viewers, not one pull request's reads. */
   reference: PullRequestRef.optional(),
-  /** Drops only the viewed marks. */
+  /** Drops only the viewed marks, and tells no subscriber. */
   filesViewedOnly: z.boolean().optional(),
 });
 export type PullRequestInvalidateInput = z.infer<typeof PullRequestInvalidateInput>;
