@@ -8,58 +8,25 @@
  * The GitLab driver has no routing identity, stacks or paged thread comments, so
  * those reads reach the server's refusal or its empty answer.
  */
-import * as NodeFSP from "node:fs/promises";
-import * as NodeOS from "node:os";
-import * as NodePath from "node:path";
-import * as NodeURL from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
-import { commandId, projectId, providerInstanceId } from "../../src/schemas/common.ts";
+import { projectId, providerInstanceId } from "../../src/schemas/common.ts";
 import type { T3Client } from "../../src/index.ts";
-import { connectWithScopes, firstItem, hasLiveServer, refusal, waitFor } from "./liveClient.ts";
-import { createLocalForge } from "./localForge.ts";
-import { startPeerServer, type PeerServer } from "./peerServer.ts";
-
-const stub = NodeURL.fileURLToPath(new URL("./stubGitLabPullRequests.mjs", import.meta.url));
-const headSha = "1111111111111111111111111111111111111111";
-const repository = "sample/repository";
-const host = "gitlab.invalid";
+import { firstItem, hasLiveServer, refusal, waitFor } from "./liveClient.ts";
+import { withScopes, type PeerServer } from "./peerServer.ts";
+import { headSha, host, repository, startPullRequestServer } from "./pullRequestForge.ts";
 
 describe.skipIf(!hasLiveServer)("pull request reads with a local forge stub", () => {
-  let root: string;
   let peer: PeerServer;
   let client: T3Client;
   const project = projectId(`project-${crypto.randomUUID()}`);
   const ref = { projectId: project, repository, number: 7 };
 
   beforeAll(async () => {
-    root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-lib-pull-requests-"));
-    const forge = await createLocalForge(root, [
-      `  "api "*) exec node '${stub}' "$@" ;;`,
-      `  "auth status") echo "Logged in to ${host} as sample-viewer" ;;`,
-    ]);
-    peer = await startPeerServer({
-      environment: {
-        ...forge.environment,
-        HOME: root,
-        CODEX_HOME: NodePath.join(root, ".codex"),
-      },
-    });
+    peer = await startPullRequestServer(project);
     client = peer.client;
-    await client.routes.call("projects.mutate", {
-      body: {
-        type: "project.create",
-        commandId: commandId(`command-${crypto.randomUUID()}`),
-        projectId: project,
-        title: "Sample project",
-        workspaceRoot: forge.cwd,
-      },
-    });
   });
 
-  afterAll(async () => {
-    await peer?.stop();
-    if (root) await NodeFSP.rm(root, { recursive: true, force: true });
-  });
+  afterAll(() => peer?.stop());
 
   it("lists the merge request, with its stats and filter options", async () => {
     const listed = await client.rpc.call("pullRequests.list", { state: "open", limit: 10 });
@@ -263,8 +230,8 @@ describe.skipIf(!hasLiveServer)("pull request reads with a local forge stub", ()
   });
 
   it("needs the read scope", async () => {
-    const narrow = await connectWithScopes(client, ["access:read"], peer.baseUrl);
-    await expect(narrow.rpc.call("pullRequests.detail", ref)).rejects.toThrow();
-    await narrow.close();
+    await withScopes(peer, ["access:read"], async (narrow) => {
+      await expect(narrow.rpc.call("pullRequests.detail", ref)).rejects.toThrow();
+    });
   });
 });

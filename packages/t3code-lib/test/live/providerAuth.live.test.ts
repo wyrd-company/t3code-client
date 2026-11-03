@@ -8,9 +8,6 @@
  * connection in that server's home. The tests never open a sign-in URL, so no
  * sign-in happens. Starting a flow reads the provider's public sign-in metadata.
  */
-import * as NodeFSP from "node:fs/promises";
-import * as NodeOS from "node:os";
-import * as NodePath from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import type { T3Client } from "../../src/index.ts";
 import {
@@ -21,7 +18,7 @@ import {
 } from "../../src/schemas/common.ts";
 import type { ProviderAuthState } from "../../src/schemas/providerSetup.ts";
 import { firstItem, hasLiveServer, refusal } from "./liveClient.ts";
-import { startPeerServer, type PeerServer } from "./peerServer.ts";
+import { startScratchServer, type PeerServer } from "./peerServer.ts";
 
 const managed = ProviderInstanceId.parse("signin");
 const unsupported = ProviderInstanceId.parse("codex");
@@ -59,12 +56,8 @@ const mismatchedProfile = {
 describe.skipIf(!hasLiveServer)("provider sign-in methods", () => {
   let peer: PeerServer;
   let client: T3Client;
-  let home: string;
   beforeAll(async () => {
-    home = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-lib-provider-auth-"));
-    peer = await startPeerServer({
-      environment: { HOME: home, CODEX_HOME: NodePath.join(home, ".codex") },
-    });
+    peer = await startScratchServer("t3code-lib-provider-auth-");
     client = peer.client;
     await client.rpc.call("server.updateSettings", {
       patch: {
@@ -78,10 +71,7 @@ describe.skipIf(!hasLiveServer)("provider sign-in methods", () => {
       },
     });
   }, 120_000);
-  afterAll(async () => {
-    await peer?.stop();
-    if (home) await NodeFSP.rm(home, { recursive: true, force: true });
-  });
+  afterAll(() => peer?.stop());
 
   it("reports the state of a managed instance, and of an instance with no sign-in", async () => {
     const state = await nextState(client, managed, () => true);

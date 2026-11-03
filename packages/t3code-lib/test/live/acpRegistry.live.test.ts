@@ -9,15 +9,13 @@
  * it. No test prepares an agent, since that can use the host's package manager.
  */
 import * as NodeFS from "node:fs";
-import * as NodeFSP from "node:fs/promises";
-import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { T3RpcError, type T3Client } from "../../src/index.ts";
 import { ProjectId, ProviderDriverKind, ProviderInstanceId } from "../../src/schemas/common.ts";
 import type { ServerProvider } from "../../src/schemas/provider.ts";
-import { connectWithScopes, firstItem, hasLiveServer, refusal, waitFor } from "./liveClient.ts";
-import { startPeerServer, type PeerServer } from "./peerServer.ts";
+import { firstItem, hasLiveServer, refusal, waitFor } from "./liveClient.ts";
+import { startScratchServer, withScopes, type PeerServer } from "./peerServer.ts";
 
 const stubAgent = new URL("./stubAcpAgent.mjs", import.meta.url).pathname;
 const agent = ProviderInstanceId.parse("sample-agent");
@@ -61,15 +59,11 @@ describe.skipIf(!hasLiveServer)("ACP registry methods", () => {
     );
 
   beforeAll(async () => {
-    home = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-lib-acp-registry-"));
-    requestLog = NodePath.join(home, "agent-requests.log");
-    NodeFS.writeFileSync(requestLog, "");
-    peer = await startPeerServer({
-      environment: {
-        HOME: home,
-        CODEX_HOME: NodePath.join(home, ".codex"),
-        PATH: pathWithoutCodex(),
-      },
+    peer = await startScratchServer("t3code-lib-acp-registry-", (dir) => {
+      home = dir;
+      requestLog = NodePath.join(home, "agent-requests.log");
+      NodeFS.writeFileSync(requestLog, "");
+      return { PATH: pathWithoutCodex() };
     });
     client = peer.client;
     await client.rpc.call("server.updateSettings", {
@@ -99,10 +93,7 @@ describe.skipIf(!hasLiveServer)("ACP registry methods", () => {
     projectId = ProjectId.parse(project.id);
     await agentProvider((provider) => provider.nativeSessions?.canList === true);
   }, 180_000);
-  afterAll(async () => {
-    await peer?.stop();
-    if (home) await NodeFSP.rm(home, { recursive: true, force: true });
-  });
+  afterAll(() => peer?.stop());
 
   it("lists, imports once and deletes an agent's session", async () => {
     const input = { instanceId: agent, projectId };
@@ -268,8 +259,7 @@ describe.skipIf(!hasLiveServer)("ACP registry methods", () => {
   }, 60_000);
 
   it("holds a read scope to the read methods", async () => {
-    const reader = await connectWithScopes(client, ["orchestration:read"], peer.baseUrl);
-    try {
+    await withScopes(peer, ["orchestration:read"], async (reader) => {
       expect(
         await refusal(
           reader.rpc.call("server.listAcpRegistrySessions", { instanceId: absent, projectId }),
@@ -278,8 +268,6 @@ describe.skipIf(!hasLiveServer)("ACP registry methods", () => {
       await expect(
         reader.rpc.call("provider.install.start", { instanceId: managed }),
       ).rejects.toMatchObject({ requiredScope: "providers:manage" });
-    } finally {
-      await reader.close();
-    }
+    });
   });
 });

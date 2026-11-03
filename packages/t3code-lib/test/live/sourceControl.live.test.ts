@@ -10,13 +10,12 @@
  */
 import * as NodeFS from "node:fs";
 import * as NodeFSP from "node:fs/promises";
-import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import type { T3Client } from "../../src/index.ts";
-import { connectWithScopes, hasLiveServer, refusal } from "./liveClient.ts";
+import { hasLiveServer, refusal } from "./liveClient.ts";
 import { createLocalForge, gitLabProjectCases, type LocalForge } from "./localForge.ts";
-import { startPeerServer, type PeerServer } from "./peerServer.ts";
+import { startScratchServer, withScopes, type PeerServer } from "./peerServer.ts";
 
 const provider = "gitlab";
 const noDriver = { provider: "example-forge", host: "forge.example.invalid" };
@@ -33,24 +32,16 @@ describe.skipIf(!hasLiveServer)("source control methods with a local forge stub"
   const destination = (name: string) => NodePath.join(root, "clones", name);
 
   beforeAll(async () => {
-    root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-lib-source-control-"));
-    createCalls = NodePath.join(root, "create-calls.log");
-    forge = await createLocalForge(root, gitLabProjectCases(root, createCalls));
-    peer = await startPeerServer({
-      environment: {
-        ...forge.environment,
-        HOME: root,
-        CODEX_HOME: NodePath.join(root, ".codex"),
-        T3CODE_GITHUB_APP_CLIENT_ID: "",
-      },
+    peer = await startScratchServer("t3code-lib-source-control-", async (home) => {
+      root = home;
+      createCalls = NodePath.join(root, "create-calls.log");
+      forge = await createLocalForge(root, gitLabProjectCases(root, createCalls));
+      return { ...forge.environment, T3CODE_GITHUB_APP_CLIENT_ID: "" };
     });
     client = peer.client;
   });
 
-  afterAll(async () => {
-    await peer?.stop();
-    if (root) await NodeFSP.rm(root, { recursive: true, force: true });
-  });
+  afterAll(() => peer?.stop());
 
   it("looks up a repository, and refuses one that the forge does not have", async () => {
     await expect(
@@ -205,8 +196,7 @@ describe.skipIf(!hasLiveServer)("source control methods with a local forge stub"
   });
 
   it("holds each method to its scope", async () => {
-    const reader = await connectWithScopes(client, ["orchestration:read"], peer.baseUrl);
-    try {
+    await withScopes(peer, ["orchestration:read"], async (reader) => {
       await expect(
         reader.rpc.call("sourceControl.lookupRepository", { provider, repository }),
       ).resolves.toMatchObject({ nameWithOwner: repository });
@@ -220,8 +210,6 @@ describe.skipIf(!hasLiveServer)("source control methods with a local forge stub"
         }),
       ).rejects.toMatchObject({ requiredScope: "source-control:write" });
       expect(NodeFS.existsSync(destination("refused"))).toBe(false);
-    } finally {
-      await reader.close();
-    }
+    });
   });
 });

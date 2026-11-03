@@ -9,20 +9,19 @@
  */
 import * as NodeFS from "node:fs";
 import * as NodeFSP from "node:fs/promises";
-import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import type { T3Client } from "../../src/index.ts";
 import { ProjectId } from "../../src/schemas/common.ts";
 import type { ProjectCloneSnapshot } from "../../src/schemas/projectClone.ts";
-import { connectWithScopes, firstItem, hasLiveServer, refusal } from "./liveClient.ts";
+import { firstItem, hasLiveServer, refusal } from "./liveClient.ts";
 import {
   createLocalForge,
   gitLabProjectCases,
   initBareRepository,
   type LocalForge,
 } from "./localForge.ts";
-import { startPeerServer, type PeerServer } from "./peerServer.ts";
+import { startScratchServer, withScopes, type PeerServer } from "./peerServer.ts";
 
 const projectId = (name: string) => ProjectId.parse(`sample-clone-${name}`);
 const remote = (name: string) => `git@gitlab.invalid:sample/${name}.git`;
@@ -55,32 +54,24 @@ describe.skipIf(!hasLiveServer)("project clone methods with a local forge stub",
   const inPhase = (name: string, phase: string) => snapshot(name, (clone) => clone.phase === phase);
 
   beforeAll(async () => {
-    root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-lib-project-clone-"));
-    forge = await createLocalForge(
-      root,
-      gitLabProjectCases(root, NodePath.join(root, "create-calls.log")),
-    );
-    const holdingSsh = NodePath.join(root, "bin", "ssh-holding");
-    await NodeFSP.writeFile(
-      holdingSsh,
-      `#!/bin/sh\nfor last; do :; done\ncase "$last" in *holding*) exec sleep 30 ;; esac\nexec '${forge.sshCommand}' "$@"\n`,
-      { mode: 0o755 },
-    );
-    peer = await startPeerServer({
-      environment: {
-        ...forge.environment,
-        GIT_SSH_COMMAND: holdingSsh,
-        HOME: root,
-        CODEX_HOME: NodePath.join(root, ".codex"),
-      },
+    peer = await startScratchServer("t3code-lib-project-clone-", async (home) => {
+      root = home;
+      forge = await createLocalForge(
+        root,
+        gitLabProjectCases(root, NodePath.join(root, "create-calls.log")),
+      );
+      const holdingSsh = NodePath.join(root, "bin", "ssh-holding");
+      await NodeFSP.writeFile(
+        holdingSsh,
+        `#!/bin/sh\nfor last; do :; done\ncase "$last" in *holding*) exec sleep 30 ;; esac\nexec '${forge.sshCommand}' "$@"\n`,
+        { mode: 0o755 },
+      );
+      return { ...forge.environment, GIT_SSH_COMMAND: holdingSsh };
     });
     client = peer.client;
   });
 
-  afterAll(async () => {
-    await peer?.stop();
-    if (root) await NodeFSP.rm(root, { recursive: true, force: true });
-  });
+  afterAll(() => peer?.stop());
 
   it("creates the project at once, then reports the clone to its end", async () => {
     const started = await start("named", {
@@ -166,16 +157,13 @@ describe.skipIf(!hasLiveServer)("project clone methods with a local forge stub",
   });
 
   it("holds each method to its scope", async () => {
-    const reader = await connectWithScopes(client, ["orchestration:read"], peer.baseUrl);
-    try {
+    await withScopes(peer, ["orchestration:read"], async (reader) => {
       await expect(
         firstItem(reader.rpc.stream("subscribeProjectClones", {}), (clones) => clones),
       ).resolves.toEqual(expect.any(Array));
       await expect(
         reader.rpc.call("projectClone.cancel", { projectId: projectId("absent") }),
       ).rejects.toMatchObject({ requiredScope: "source-control:write" });
-    } finally {
-      await reader.close();
-    }
+    });
   });
 });

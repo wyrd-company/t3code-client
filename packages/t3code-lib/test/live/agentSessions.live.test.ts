@@ -7,13 +7,12 @@
  * transcript in that home's Codex folder plays another agent's session.
  */
 import * as NodeFSP from "node:fs/promises";
-import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import type { T3Client } from "../../src/index.ts";
 import { ProjectId } from "../../src/schemas/common.ts";
-import { connectWithScopes, hasLiveServer, refusal } from "./liveClient.ts";
-import { startPeerServer, type PeerServer } from "./peerServer.ts";
+import { hasLiveServer, refusal } from "./liveClient.ts";
+import { startScratchServer, withScopes, type PeerServer } from "./peerServer.ts";
 
 const sessionId = "019a0000-0000-7000-8000-000000000001";
 
@@ -29,42 +28,37 @@ describe.skipIf(!hasLiveServer)("agent session methods", () => {
   };
 
   beforeAll(async () => {
-    home = await NodeFSP.realpath(
-      await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-lib-agent-sessions-")),
-    );
-    workspace = NodePath.join(home, "sample-workspace");
-    await NodeFSP.mkdir(workspace);
-    const now = new Date();
-    const day = NodePath.join(
-      home,
-      ".codex",
-      "sessions",
-      String(now.getUTCFullYear()),
-      String(now.getUTCMonth() + 1).padStart(2, "0"),
-      String(now.getUTCDate()).padStart(2, "0"),
-    );
-    await NodeFSP.mkdir(day, { recursive: true });
-    const timestamp = now.toISOString();
-    await NodeFSP.writeFile(
-      NodePath.join(day, `rollout-sample-${sessionId}.jsonl`),
-      [
-        { timestamp, type: "session_meta", payload: { id: sessionId, cwd: workspace } },
-        { timestamp, type: "event_msg", payload: { type: "user_message", message: "Sample" } },
-        { timestamp, type: "event_msg", payload: { type: "agent_message", message: "Reply" } },
-      ]
-        .map((record) => JSON.stringify(record))
-        .join("\n") + "\n",
-    );
-    peer = await startPeerServer({
-      environment: { HOME: home, CODEX_HOME: NodePath.join(home, ".codex") },
+    peer = await startScratchServer("t3code-lib-agent-sessions-", async (dir) => {
+      home = dir;
+      workspace = NodePath.join(home, "sample-workspace");
+      await NodeFSP.mkdir(workspace);
+      const now = new Date();
+      const day = NodePath.join(
+        home,
+        ".codex",
+        "sessions",
+        String(now.getUTCFullYear()),
+        String(now.getUTCMonth() + 1).padStart(2, "0"),
+        String(now.getUTCDate()).padStart(2, "0"),
+      );
+      await NodeFSP.mkdir(day, { recursive: true });
+      const timestamp = now.toISOString();
+      await NodeFSP.writeFile(
+        NodePath.join(day, `rollout-sample-${sessionId}.jsonl`),
+        [
+          { timestamp, type: "session_meta", payload: { id: sessionId, cwd: workspace } },
+          { timestamp, type: "event_msg", payload: { type: "user_message", message: "Sample" } },
+          { timestamp, type: "event_msg", payload: { type: "agent_message", message: "Reply" } },
+        ]
+          .map((record) => JSON.stringify(record))
+          .join("\n") + "\n",
+      );
+      return {};
     });
     client = peer.client;
   });
 
-  afterAll(async () => {
-    await peer?.stop();
-    if (home) await NodeFSP.rm(home, { recursive: true, force: true });
-  });
+  afterAll(() => peer?.stop());
 
   it("scans a session, and imports it into the project at its folder", async () => {
     await expect(candidate()).resolves.toMatchObject({
@@ -108,16 +102,13 @@ describe.skipIf(!hasLiveServer)("agent session methods", () => {
   });
 
   it("holds each method to its scope", async () => {
-    const reader = await connectWithScopes(client, ["orchestration:read"], peer.baseUrl);
-    try {
+    await withScopes(peer, ["orchestration:read"], async (reader) => {
       await expect(reader.rpc.call("agentSessions.scan", {})).resolves.toMatchObject({
         candidates: expect.any(Array),
       });
       await expect(
         reader.rpc.call("agentSessions.import", { projectId: ProjectId.parse("sample-absent") }),
       ).rejects.toMatchObject({ requiredScope: "orchestration:operate" });
-    } finally {
-      await reader.close();
-    }
+    });
   });
 });
