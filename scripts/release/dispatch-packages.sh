@@ -29,13 +29,23 @@ JS
 )"
 # shellcheck source=scripts/release/unit.sh
 source "$(dirname "$0")/unit.sh"
+docs_record=''
+docs_carried=false
 while IFS= read -r record; do
   [[ -n "$record" && "${record#*@}" != 0.0.0 ]] || continue
-  is_docs_unit "${record%@*}" && continue
+  if is_docs_unit "${record%@*}"; then
+    docs_record="${docs_record:-$record}"
+    continue
+  fi
   if is_feature_unit "${record%@*}"; then
     gh workflow run publish.yml --ref "$record" -f "ref=$record" -f publish-devcontainer-feature=true
     continue
   fi
   release_unit "${record%@*}"
+  [[ "$unit" == t3code-lib ]] || docs_carried=true
   gh workflow run publish.yml --ref "$record" -f "ref=$record" -f publish-package=true
 done <<< "$records"
+# A CLI, MCP or proxy run publishes the docs. Without one, a docs-only run must.
+if [[ -n "$docs_record" && "$docs_carried" == false ]]; then
+  gh workflow run publish.yml --ref "$docs_record" -f "ref=$docs_record"
+fi
