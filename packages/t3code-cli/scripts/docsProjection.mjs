@@ -31,7 +31,11 @@ const areas = [
 
 function areaOf(name, summary = false) {
   if (/^T3.*Error$|^(?:isT3Error|isRpcErrorOfTag|RpcErrorRecord)$/u.test(name)) return "errors";
-  if (/^Auth|^(?:hasScope|ensureScopes|grantedScopes|watchAccess)$/u.test(name))
+  if (
+    /^Auth|^(?:hasScope|ensureScopes|grantedScopes|watchAccess|generateDpopKey|createDpopProof|currentDesktopBootstrapToken|DESKTOP_BOOTSTRAP_TOKEN_WINDOW_MS)$/u.test(
+      name,
+    )
+  )
     return "authentication";
   if (/^Profile|^(?:memoryCredentialStore|fileCredentialStore)$/u.test(name)) return "profiles";
   if (name === "ServerApi") return summary ? "server-summary" : "server";
@@ -46,7 +50,12 @@ function areaOf(name, summary = false) {
     GuestSharesApi: "guest-shares",
   };
   if (Object.hasOwn(facades, name)) return facades[name];
-  if (/^(?:T3Client|RpcClient|CommandDispatcher|consoleLogger)$/u.test(name)) return "client";
+  if (
+    /^(?:T3Client|RpcClient|HttpRouteClient|httpRoutes|CommandDispatcher|consoleLogger)$/u.test(
+      name,
+    )
+  )
+    return "client";
   if (
     /^(?:threadId|THREAD_SEARCH_MAX_LIMIT|TurnTokenUsage|ProviderUserInputAnswer|ModelSelection|latestDiffTurnCount|applyThreadEvent|pendingRequests|runOutcome|assistantMessageForRun|activeRun|threadPhase|watchThread|isRunTerminalStatus|isRunActiveStatus|isTurnItemOfType)$/u.test(
       name,

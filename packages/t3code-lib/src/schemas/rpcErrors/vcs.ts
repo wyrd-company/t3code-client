@@ -1,9 +1,14 @@
 /**
  * Tagged failures of the VCS RPC methods, mirroring the contracts'
- * `git.ts` and `sourceControl.ts`.
+ * `git.ts`, `sourceControl.ts` and `vcs.ts`.
  */
 import { z } from "zod";
-import { PositiveInt, TrimmedNonEmptyString, forwardCompatibleLiteral } from "../common.ts";
+import {
+  NonNegativeInt,
+  PositiveInt,
+  TrimmedNonEmptyString,
+  forwardCompatibleLiteral,
+} from "../common.ts";
 import { SourceControlProviderKind } from "../vcs.ts";
 import { Defect, taggedError } from "./shared.ts";
 
@@ -65,3 +70,76 @@ export const TextGenerationError = taggedError("TextGenerationError", {
   detail: z.string(),
   cause: Defect.optional(),
 });
+
+const vcsProcess = {
+  operation: z.string(),
+  command: z.string(),
+  cwd: z.string(),
+  argumentCount: NonNegativeInt.optional(),
+};
+export const VcsProcessSpawnError = taggedError("VcsProcessSpawnError", {
+  ...vcsProcess,
+  cause: Defect,
+});
+export const VcsProcessExitError = taggedError("VcsProcessExitError", {
+  ...vcsProcess,
+  exitCode: z.number(),
+  detail: z.string(),
+  failureKind: forwardCompatibleLiteral([
+    "authentication",
+    "not-found",
+    "rate-limited",
+    "command-failed",
+  ]).optional(),
+  retryable: z.boolean().optional(),
+  stderrLength: NonNegativeInt.optional(),
+  stderrTruncated: z.boolean().optional(),
+});
+export const VcsProcessTimeoutError = taggedError("VcsProcessTimeoutError", {
+  ...vcsProcess,
+  timeoutMs: z.number(),
+});
+export const VcsProcessStdinWriteError = taggedError("VcsProcessStdinWriteError", {
+  ...vcsProcess,
+  stdinBytes: NonNegativeInt,
+  cause: Defect,
+});
+export const VcsProcessOutputReadError = taggedError("VcsProcessOutputReadError", {
+  ...vcsProcess,
+  stream: forwardCompatibleLiteral(["stdout", "stderr", "exitCode"]),
+  cause: Defect,
+});
+export const VcsProcessOutputLimitError = taggedError("VcsProcessOutputLimitError", {
+  ...vcsProcess,
+  stream: forwardCompatibleLiteral(["stdout", "stderr"]),
+  maxBytes: NonNegativeInt,
+  observedBytes: NonNegativeInt,
+});
+export const VcsProcessMissingExitCodeError = taggedError(
+  "VcsProcessMissingExitCodeError",
+  vcsProcess,
+);
+export const VcsRepositoryDetectionError = taggedError("VcsRepositoryDetectionError", {
+  operation: z.string(),
+  cwd: z.string(),
+  detail: z.string(),
+  cause: Defect.optional(),
+});
+export const VcsUnsupportedOperationError = taggedError("VcsUnsupportedOperationError", {
+  operation: z.string(),
+  kind: forwardCompatibleLiteral(["git", "jj", "unknown"]),
+  detail: z.string(),
+});
+
+/** The failures of the contracts' `VcsError`, in the order `RpcErrorRecord` lists them. */
+export const vcsRpcErrors = [
+  VcsProcessSpawnError,
+  VcsProcessExitError,
+  VcsProcessTimeoutError,
+  VcsProcessStdinWriteError,
+  VcsProcessOutputReadError,
+  VcsProcessOutputLimitError,
+  VcsProcessMissingExitCodeError,
+  VcsRepositoryDetectionError,
+  VcsUnsupportedOperationError,
+] as const;

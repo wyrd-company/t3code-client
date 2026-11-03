@@ -77,10 +77,10 @@ export type SecretRef = z.infer<typeof SecretRef>;
 export const AuthSessionId = entityId("AuthSessionId");
 export type AuthSessionId = z.infer<typeof AuthSessionId>;
 /** Open slug: letters, digits, `-`, `_`; starts with a letter; at most 64 chars. */
-const providerSlug = TrimmedNonEmptyString.max(64).regex(/^[a-zA-Z][a-zA-Z0-9_-]*$/);
-export const ProviderInstanceId = providerSlug.brand<"ProviderInstanceId">();
+export const ProviderSlug = TrimmedNonEmptyString.max(64).regex(/^[a-zA-Z][a-zA-Z0-9_-]*$/);
+export const ProviderInstanceId = ProviderSlug.brand<"ProviderInstanceId">();
 export type ProviderInstanceId = z.infer<typeof ProviderInstanceId>;
-export const ProviderDriverKind = providerSlug.brand<"ProviderDriverKind">();
+export const ProviderDriverKind = ProviderSlug.brand<"ProviderDriverKind">();
 export type ProviderDriverKind = z.infer<typeof ProviderDriverKind>;
 
 /** Brand a trusted string without validation. Use for ids this process generated or already decoded. */
@@ -182,6 +182,14 @@ function literalValues(schema: z.ZodType): string[] {
 
 export function isUnknownVariant<D extends string>(value: object): value is UnknownVariant<D> {
   return (value as { unknown?: unknown }).unknown === true;
+}
+
+/** An Effect `Option` field as JSON carries it: a `None` or `Some` record. */
+export function effectOption<T extends z.ZodType>(value: T) {
+  return z.discriminatedUnion("_tag", [
+    z.looseObject({ _tag: z.literal("None") }),
+    z.looseObject({ _tag: z.literal("Some"), value }),
+  ]);
 }
 
 /**

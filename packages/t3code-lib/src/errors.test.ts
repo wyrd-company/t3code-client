@@ -1,8 +1,40 @@
 import { describe, expect, it } from "vite-plus/test";
 import { z } from "zod";
-import { T3AuthError, T3DecodeError, T3HttpError, T3RpcError } from "./errors.ts";
+import { T3AuthError, T3DecodeError, T3HttpError, T3RpcDefectError, T3RpcError } from "./errors.ts";
+import { SourceControlCloneRepositoryResult } from "./schemas/sourceControl.ts";
+
+const urlsWithCredential = [
+  "https://sample:sample-password@forge.example.invalid/sample.git",
+  "https://git@sample:sample-password@forge.example.invalid/sample.git",
+  "https://forge.example.invalid/sample.git?access%5Ftoken=sample-password",
+];
 
 describe("error payload redaction", () => {
+  it.each(urlsWithCredential)(
+    "T3DecodeError.raw redacts a bad clone result with %s",
+    (urlWithCredential) => {
+      const raw = { cwd: 7, remoteUrl: urlWithCredential, repository: null };
+      const result = SourceControlCloneRepositoryResult.safeParse(raw);
+      if (result.success) throw new Error("Expected a decode failure.");
+      const error = new T3DecodeError("sourceControl.cloneRepository", result.error, raw);
+      expect(JSON.stringify(error.raw)).not.toContain("sample-password");
+    },
+  );
+
+  it.each(urlsWithCredential)("T3RpcError redacts a failure's nested %s", (urlWithCredential) => {
+    const error = new T3RpcError("sourceControl.cloneRepository", {
+      _tag: "SourceControlRepositoryError",
+      provider: "unknown",
+      operation: "cloneRepository",
+      detail: "Sample.",
+      cause: { command: `git clone ${urlWithCredential}`, args: [urlWithCredential] },
+    });
+    expect(JSON.stringify(error.detail)).not.toContain("sample-password");
+    expect(JSON.stringify(error.record)).not.toContain("sample-password");
+    expect(error.message).not.toContain("sample-password");
+    expect(error.record).toMatchObject({ _tag: "SourceControlRepositoryError" });
+  });
+
   it("T3DecodeError.raw does not carry credentials from a badly shaped token response", () => {
     const raw = { access_token: "secret-1", scope: "orchestration:read", expires_in: "soon" };
     const result = z.looseObject({ expires_in: z.number() }).safeParse(raw);
@@ -37,6 +69,19 @@ describe("error payload redaction", () => {
 });
 
 describe("T3RpcError", () => {
+  it("keeps no credential-shaped value of a failure", () => {
+    const quoted = { cause: { data: { headers: { "x-sample": "quoted" }, token: "quoted" } } };
+    const error = new T3RpcError("server.setAcpRegistryProvider", {
+      _tag: "AcpRegistryOperationError",
+      reason: "provider_configuration_failed",
+      message: "Refused.",
+      ...quoted,
+    });
+    expect(error.is("AcpRegistryOperationError")).toBe(true);
+    expect(JSON.stringify([error.detail, error.record])).not.toContain("quoted");
+    expect(JSON.stringify(new T3RpcDefectError("server.probe", quoted))).not.toContain("quoted");
+  });
+
   it("decodes a known tagged failure into a typed record", () => {
     const error = new T3RpcError("terminal.write", {
       _tag: "TerminalNotRunningError",
@@ -68,7 +113,7 @@ describe("T3RpcError", () => {
     const error = new T3RpcError("server.probe", raw);
     expect(error.record).toEqual({ unknown: true, raw });
     expect(error.tag).toBe("SomeFutureError");
-    expect(error.detail).toBe(raw);
+    expect(error.detail).toEqual(raw);
     expect(error.message).toBe("server.probe failed: later");
   });
 

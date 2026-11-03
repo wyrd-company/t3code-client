@@ -27,6 +27,28 @@ proposed-design:
     committing it. The schema tests decode them, so a fixture
     captured from a newer server shows where the schemas have to change.
   live-tests: |
+    `server.updateProvider` is tested to its refusal. A success runs the provider's
+    installer on the host, outside the isolated server.
+
+    The diagnostics tests that act on a host run on an owned server. A storage
+    cleanup removes only a rotated log that the test writes to that server's logs
+    folder, a process signal stops only a process that the test starts in that
+    server's terminal, and an endpoint check reaches only a loopback stub.
+
+    The provider sign-in tests run on an owned server with its own `HOME` and
+    `CODEX_HOME`, so that a sign-out or a reset credit cannot reach a login of the
+    machine. A managed Codex instance keeps its connection in that server's home.
+    A test starts a flow and never opens its URL, so no sign-in happens. Starting
+    a flow reads the provider's public sign-in metadata. With no route to it, the
+    flow ends in `failed`, and the test accepts that message. A reset credit and a
+    feedback upload are tested to their refusals. A success spends account credit
+    or sends data to the provider.
+
+    A live test that needs a forge uses a local stub: an owned server with a
+    `glab` script on its `PATH` and `GIT_SSH_COMMAND` set to a script that serves
+    a local bare repository. The remote host is under `.invalid`, and the test
+    clears inherited Git configuration, so no call can leave the machine.
+
     The repository-origin live test waits up to ten seconds for asynchronous
     project enrichment before asserting the canonical and checkout remote URLs.
     Its no-origin assertion for a canonical checkout remains explicit.
@@ -57,6 +79,22 @@ proposed-design:
     evidence log contains an explicit omission marker. Readiness, stopped-process
     and home-removal records remain available. `T3_LIVE_KEEP=1` preserves the
     owned home and raw log for explicit diagnosis without copying it to evidence.
+    `test/live/desktopServer.ts` starts an isolated server in desktop mode. Its
+    bootstrap document is a file on standard input, because the `t3` launcher
+    passes only the standard descriptors to the server. Explicit flags name its
+    mode, port and host, so that the environment of a parent T3 server cannot.
+    `test/live/localForge.ts` holds the Git fixtures: a repository seeded against
+    a local bare repository, and a forge that adds a `glab` script, an `ssh` script
+    and a remote host under `.invalid`. Its server environment clears inherited
+    Git configuration, so that no call can leave the machine.
+    `test/live/peerServer.ts` starts a second isolated server. Its scratch form also
+    has its own `HOME` and `CODEX_HOME`, and inherits no value that names a forge
+    token, provider key or folder, device tool or relay of the machine, so that a
+    method that can reach a login or an installed provider finds none of this machine's.
+    `test/live/localHttp.ts` is the loopback server for a stub that a test's server calls.
+    `test/live/guestTunnel.ts` starts a server whose guest links work with no relay:
+    `stubTunnelClient.mjs` plays the tunnel client and reports the link's host, and
+    the stopped home gets the records of a confirmed tunnel.
     The `t3` version is the server build this library targets,
     so the live suite is the check that the client still matches it.
 

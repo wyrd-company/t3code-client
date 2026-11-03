@@ -9,17 +9,12 @@
  * without a store round trip, and it tells subscribers when the stored
  * credential changes so an open socket can re-authenticate.
  */
-import { z } from "zod";
-
 import { T3AuthError, T3PreconditionError } from "../errors.ts";
+import { callRoute, routeRequest } from "../http/client.ts";
+import { httpRoutes } from "../http/registry.ts";
 import type { Clock } from "../internal/clock.ts";
 import { systemClock } from "../internal/clock.ts";
 import {
-  AuthAccessTokenResult,
-  AuthCreatePairingCredentialInput,
-  AuthPairingCredentialResult,
-  AuthSessionState,
-  AuthWebSocketTicketResult,
   grantedScopes,
   type AuthAccessTokenResult as AuthAccessTokenResultType,
   type AuthClientMetadataDeviceType as AuthClientMetadataDeviceTypeType,
@@ -29,12 +24,10 @@ import {
   type AuthPairingCredentialResult as AuthPairingCredentialResultType,
   type AuthSessionState as AuthSessionStateType,
   type AuthWebSocketTicketResult as AuthWebSocketTicketResultType,
+  type DpopPrivateJwk,
 } from "../schemas/auth.ts";
 import type { AuthSessionId } from "../schemas/common.ts";
-import {
-  ExecutionEnvironmentDescriptor,
-  type ExecutionEnvironmentDescriptor as ExecutionEnvironmentDescriptorType,
-} from "../schemas/environment.ts";
+import type { ExecutionEnvironmentDescriptor as ExecutionEnvironmentDescriptorType } from "../schemas/environment.ts";
 import type { HttpTransport } from "../transport/http.ts";
 import type { CredentialStore, StoredCredentials } from "./credentialStore.ts";
 import { ensureScopes as requireScopes, hasScope as includesScope } from "./scopes.ts";
@@ -44,10 +37,14 @@ export interface ExchangePairingTokenOptions {
   clientLabel?: string;
   clientDeviceType?: AuthClientMetadataDeviceTypeType;
   clientOs?: string;
+  /** Binds the session to this key, so that a stolen token is useless without it. */
+  dpopKey?: DpopPrivateJwk;
 }
 
-const BooleanRevoked = z.looseObject({ revoked: z.boolean() });
-const RevokedCount = z.looseObject({ revokedCount: z.number() });
+export interface SetAccessTokenOptions {
+  /** The key the token is bound to, when the session is proof-bound. */
+  dpopKey?: DpopPrivateJwk;
+}
 
 /** Auth control plane and the sole owner of credential-store access. */
 export class AuthClient {
@@ -84,27 +81,18 @@ export class AuthClient {
 
   /** Read the public environment descriptor without authentication. */
   descriptor(signal?: AbortSignal): Promise<ExecutionEnvironmentDescriptorType> {
-    return this.http.request({
-      method: "GET",
-      path: "/.well-known/t3/environment",
-      auth: "none",
-      decode: ExecutionEnvironmentDescriptor,
-      ...(signal === undefined ? {} : { signal }),
-    });
+    return callRoute(this.http, httpRoutes["metadata.descriptor"], undefined, { signal });
   }
 
   /** Read the session state using the stored token when present. */
   sessionState(signal?: AbortSignal): Promise<AuthSessionStateType> {
-    return this.http.request({
-      method: "GET",
-      path: "/api/auth/session",
-      auth: "optional",
-      decode: AuthSessionState,
-      ...(signal === undefined ? {} : { signal }),
-    });
+    return callRoute(this.http, httpRoutes["auth.session"], undefined, { signal });
   }
 
-  /** Exchange a single-use pairing token and save the resulting credential. */
+  /**
+   * Exchange a bootstrap credential and save the resulting session. A pairing
+   * token is single use; a desktop bootstrap token can be exchanged again.
+   */
   async exchangePairingToken(
     pairingToken: string,
     options: ExchangePairingTokenOptions = {},
@@ -112,46 +100,46 @@ export class AuthClient {
     if (pairingToken.trim().length === 0) {
       throw new T3PreconditionError("pairingToken must not be empty.");
     }
-    const form = new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
-      subject_token: pairingToken,
-      subject_token_type: "urn:t3:params:oauth:token-type:environment-bootstrap",
-      requested_token_type: "urn:ietf:params:oauth:token-type:access_token",
-    });
-    if (options.scopes !== undefined) form.set("scope", options.scopes.join(" "));
-    if (options.clientLabel !== undefined) form.set("client_label", options.clientLabel);
-    if (options.clientDeviceType !== undefined) {
-      form.set("client_device_type", options.clientDeviceType);
-    }
-    if (options.clientOs !== undefined) form.set("client_os", options.clientOs);
-
-    const result = await this.http.request({
-      method: "POST",
-      path: "/oauth/token",
-      auth: "none",
-      body: form,
-      decode: AuthAccessTokenResult,
-    });
+    const result = await callRoute(
+      this.http,
+      httpRoutes["auth.token"],
+      {
+        body: {
+          grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
+          subject_token: pairingToken,
+          subject_token_type: "urn:t3:params:oauth:token-type:environment-bootstrap",
+          requested_token_type: "urn:ietf:params:oauth:token-type:access_token",
+          ...(options.scopes === undefined ? {} : { scope: options.scopes.join(" ") }),
+          ...(options.clientLabel === undefined ? {} : { client_label: options.clientLabel }),
+          ...(options.clientDeviceType === undefined
+            ? {}
+            : { client_device_type: options.clientDeviceType }),
+          ...(options.clientOs === undefined ? {} : { client_os: options.clientOs }),
+        },
+      },
+      { dpopKey: options.dpopKey },
+    );
+    const bound = result.token_type === "DPoP";
     await this.#save({
       accessToken: result.access_token,
       scopes: splitScopes(result.scope),
       expiresAt: new Date(this.clock.now().getTime() + result.expires_in * 1_000).toISOString(),
-      sessionMethod: result.token_type === "Bearer" ? "bearer-access-token" : "dpop-access-token",
+      sessionMethod: bound ? "dpop-access-token" : "bearer-access-token",
+      ...(bound && options.dpopKey !== undefined ? { dpopKey: options.dpopKey } : {}),
     });
     return result;
   }
 
   /** Validate an issued token before saving its session metadata. */
-  async setAccessToken(token: string): Promise<AuthSessionStateType> {
+  async setAccessToken(
+    token: string,
+    options: SetAccessTokenOptions = {},
+  ): Promise<AuthSessionStateType> {
     if (token.trim().length === 0) throw new T3PreconditionError("token must not be empty.");
     const state = await this.http.requestWithAccessToken(
-      {
-        method: "GET",
-        path: "/api/auth/session",
-        auth: "required",
-        decode: AuthSessionState,
-      },
+      { ...routeRequest(httpRoutes["auth.session"], undefined), auth: "required" },
       token,
+      options.dpopKey,
     );
     if (!state.authenticated) {
       throw new T3AuthError("The supplied access token did not authenticate a session.", {
@@ -163,7 +151,10 @@ export class AuthClient {
         reason: "invalid_credential",
       });
     }
-    await this.#save(credentialsFromState(token, state));
+    await this.#save({
+      ...credentialsFromState(token, state),
+      ...(options.dpopKey === undefined ? {} : { dpopKey: options.dpopKey }),
+    });
     return state;
   }
 
@@ -175,67 +166,42 @@ export class AuthClient {
 
   /** Issue a short-lived WebSocket ticket for the stored credential. */
   websocketTicket(signal?: AbortSignal): Promise<AuthWebSocketTicketResultType> {
-    return this.http.request({
-      method: "POST",
-      path: "/api/auth/websocket-ticket",
-      auth: "required",
-      decode: AuthWebSocketTicketResult,
-      ...(signal === undefined ? {} : { signal }),
-    });
+    return callRoute(this.http, httpRoutes["auth.webSocketTicket"], undefined, { signal });
   }
 
   /** Create a pairing credential with the requested scopes. */
   createPairingCredential(
     input: AuthCreatePairingCredentialInputType,
   ): Promise<AuthPairingCredentialResultType> {
-    const body = parseInput(AuthCreatePairingCredentialInput, input, "pairing credential input");
-    return this.http.request({
-      method: "POST",
-      path: "/api/auth/pairing-token",
-      auth: "required",
-      body,
-      decode: AuthPairingCredentialResult,
-    });
+    return callRoute(this.http, httpRoutes["auth.pairingCredential"], { body: input });
   }
 
   /** Revoke a pairing link; return whether it was revoked. */
   async revokePairingLink(id: string): Promise<boolean> {
-    const result = await this.http.request({
-      method: "POST",
-      path: "/api/auth/pairing-links/revoke",
-      auth: "required",
-      body: { id },
-      decode: BooleanRevoked,
-    });
-    return result.revoked;
+    const body = { id };
+    return (await callRoute(this.http, httpRoutes["auth.revokePairingLink"], { body })).revoked;
   }
 
   /** Revoke the selected client session. */
   async revokeClient(sessionId: AuthSessionId): Promise<boolean> {
-    const result = await this.http.request({
-      method: "POST",
-      path: "/api/auth/clients/revoke",
-      auth: "required",
-      body: { sessionId },
-      decode: BooleanRevoked,
-    });
-    return result.revoked;
+    const body = { sessionId };
+    return (await callRoute(this.http, httpRoutes["auth.revokeClient"], { body })).revoked;
   }
 
   /** Revoke other sessions; return the number revoked. */
   async revokeOtherClients(): Promise<number> {
-    const result = await this.http.request({
-      method: "POST",
-      path: "/api/auth/clients/revoke-others",
-      auth: "required",
-      decode: RevokedCount,
-    });
-    return result.revokedCount;
+    return (await callRoute(this.http, httpRoutes["auth.revokeOtherClients"], undefined))
+      .revokedCount;
   }
 
   /** Load the current bearer token through the credential store. */
   async currentAccessToken(): Promise<string | undefined> {
     return (await this.#load()).accessToken;
+  }
+
+  /** The key of a proof-bound session; `undefined` for a bearer session. */
+  async currentDpopKey(): Promise<DpopPrivateJwk | undefined> {
+    return (await this.#load()).dpopKey;
   }
 
   /** Load and return the scopes granted to the current credential. */
@@ -285,6 +251,7 @@ function sameCredentials(a: StoredCredentials, b: StoredCredentials): boolean {
     a.accessToken === b.accessToken &&
     a.expiresAt === b.expiresAt &&
     a.sessionMethod === b.sessionMethod &&
+    a.dpopKey?.d === b.dpopKey?.d &&
     (a.scopes ?? []).join(" ") === (b.scopes ?? []).join(" ")
   );
 }
@@ -298,10 +265,4 @@ function credentialsFromState(token: string, state: AuthSessionStateType): Store
     ...(state.expiresAt === undefined ? {} : { expiresAt: state.expiresAt }),
     ...(state.sessionMethod === undefined ? {} : { sessionMethod: state.sessionMethod }),
   };
-}
-
-function parseInput<T>(schema: z.ZodType<T>, input: unknown, name: string): T {
-  const result = schema.safeParse(input);
-  if (!result.success) throw new T3PreconditionError(`${name} is invalid: ${result.error.message}`);
-  return result.data;
 }

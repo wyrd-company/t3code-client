@@ -124,7 +124,7 @@ export class T3RpcError extends T3Error {
   readonly method: string;
   /** The server error's `_tag`, for example `OrchestrationDispatchCommandError`. */
   readonly tag: string;
-  /** The whole error record as received. */
+  /** The whole error record as received, with credential-shaped values redacted. */
   readonly detail: Readonly<Record<string, unknown>>;
   /**
    * The error record decoded against the method's declared error schemas.
@@ -134,11 +134,12 @@ export class T3RpcError extends T3Error {
   readonly record: RpcErrorRecord;
 
   constructor(method: string, error: { readonly _tag: string } & Record<string, unknown>) {
-    super(`${method} failed: ${failureText(error)}`);
+    const safe = { ...(redactSecrets(error) as typeof error), _tag: error._tag };
+    super(`${method} failed: ${failureText(safe)}`);
     this.method = method;
     this.tag = error._tag;
-    this.detail = error;
-    this.record = decodeRpcErrorRecord(error);
+    this.detail = safe;
+    this.record = decodeRpcErrorRecord(safe);
   }
 
   /** `true` when the failure is a recognised `tag` whose fields matched its schema. */
@@ -165,9 +166,10 @@ export class T3RpcDefectError extends T3Error {
   readonly defect: unknown;
 
   constructor(method: string, defect: unknown) {
-    super(`${method} hit a server defect: ${defectText(defect)}`);
+    const safe = redactSecrets(defect);
+    super(`${method} hit a server defect: ${defectText(safe)}`);
     this.method = method;
-    this.defect = defect;
+    this.defect = safe;
   }
 }
 

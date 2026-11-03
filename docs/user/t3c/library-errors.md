@@ -150,7 +150,7 @@ The server error's `_tag`, for example `OrchestrationDispatchCommandError`.
 
 ### t3RpcError.detail
 
-The whole error record as received.
+The whole error record as received, with credential-shaped values redacted.
 
 **Kind**: instance property of [<code>T3RpcError</code>](#T3RpcError)  
 <a name="T3RpcError+record"></a>

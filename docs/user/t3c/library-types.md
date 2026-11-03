@@ -24,6 +24,9 @@ relationships:
 ## Constants
 
 <dl>
+<dt><a href="#DpopPrivateJwk">DpopPrivateJwk</a></dt>
+<dd><p>The P-256 key that a proof-bound session signs with. <code>d</code> is the private part.</p>
+</dd>
 <dt><a href="#TARGET_T3_CODE_VERSION">TARGET_T3_CODE_VERSION</a></dt>
 <dd><p>T3 Code release targeted by this library, independent of the library version.</p>
 </dd>
@@ -54,6 +57,26 @@ tokens. <code>reasoningTokens</code> is a subset of <code>outputTokens</code>; n
 </dd>
 </dl>
 
+## Functions
+
+<dl>
+<dt><a href="#assetUrlParams">assetUrlParams()</a></dt>
+<dd><p>The <code>assets.read</code> params of a <code>relativeUrl</code> from <code>assets.createUrl</code>.</p>
+<pre><code class="language-ts">export function assetUrlParams(relativeUrl: string): { token: string; path: string };
+</code></pre>
+</dd>
+<dt><a href="#attachmentUploadUrlParams">attachmentUploadUrlParams()</a></dt>
+<dd><p>The <code>attachments.upload</code> params of a <code>relativeUrl</code> from <code>attachments.createUploadUrl</code>.</p>
+<pre><code class="language-ts">export function attachmentUploadUrlParams(relativeUrl: string): { token: string };
+</code></pre>
+</dd>
+<dt><a href="#webhookUrlParams">webhookUrlParams()</a></dt>
+<dd><p>The route params of a webhook endpoint&#39;s <code>path</code>, from <code>scheduledTasks.webhookEndpoint</code>.</p>
+<pre><code class="language-ts">export function webhookUrlParams(path: string): { hookId: string; token: string };
+</code></pre>
+</dd>
+</dl>
+
 <a name="messageId"></a>
 
 ## messageId
@@ -68,6 +91,13 @@ The message the snippet is from. Older servers omit it.
 The run that ignored Stop; the server refuses once a newer run has started.
 
 **Kind**: global variable  
+<a name="DpopPrivateJwk"></a>
+
+## DpopPrivateJwk
+
+The P-256 key that a proof-bound session signs with. `d` is the private part.
+
+**Kind**: global constant  
 <a name="TARGET_T3_CODE_VERSION"></a>
 
 ## TARGET\_T3\_CODE\_VERSION
@@ -131,4 +161,37 @@ Calendar day as `YYYY-MM-DD`.
 Cached and cache-creation input tokens are disjoint from uncached input
 tokens. `reasoningTokens` is a subset of `outputTokens`; never add it on top.
 
-**Kind**: global constant
+**Kind**: global constant  
+<a name="assetUrlParams"></a>
+
+## assetUrlParams()
+
+The `assets.read` params of a `relativeUrl` from `assets.createUrl`.
+
+```ts
+export function assetUrlParams(relativeUrl: string): { token: string; path: string };
+```
+
+**Kind**: global function  
+<a name="attachmentUploadUrlParams"></a>
+
+## attachmentUploadUrlParams()
+
+The `attachments.upload` params of a `relativeUrl` from `attachments.createUploadUrl`.
+
+```ts
+export function attachmentUploadUrlParams(relativeUrl: string): { token: string };
+```
+
+**Kind**: global function  
+<a name="webhookUrlParams"></a>
+
+## webhookUrlParams()
+
+The route params of a webhook endpoint's `path`, from `scheduledTasks.webhookEndpoint`.
+
+```ts
+export function webhookUrlParams(path: string): { hookId: string; token: string };
+```
+
+**Kind**: global function

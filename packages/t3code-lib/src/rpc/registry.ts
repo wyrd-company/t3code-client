@@ -11,7 +11,18 @@ import { authAccessMethods } from "./methods/authAccess.ts";
 import { peerLinksMethods } from "./methods/peerLinks.ts";
 import { guestShareMethods } from "./methods/guestShare.ts";
 import { mcpAppsMethods } from "./methods/mcpApps.ts";
+import { deviceMethods } from "./methods/device.ts";
+import { previewMethods } from "./methods/preview.ts";
 import { scheduledTasksMethods } from "./methods/scheduledTasks.ts";
+import { filesMethods } from "./methods/files.ts";
+import { gitMethods } from "./methods/git.ts";
+import { diagnosticsMethods } from "./methods/diagnostics.ts";
+import { providerAuthMethods } from "./methods/providerAuth.ts";
+import { providerInstallMethods } from "./methods/providerInstall.ts";
+import { acpRegistryMethods } from "./methods/acpRegistry.ts";
+import { sourceControlMethods } from "./methods/sourceControl.ts";
+import { agentSessionsMethods } from "./methods/agentSessions.ts";
+import { pullRequestsMethods } from "./methods/pullRequests.ts";
 
 export const rpcMethods = {
   ...orchestrationMethods,
@@ -23,7 +34,18 @@ export const rpcMethods = {
   ...peerLinksMethods,
   ...guestShareMethods,
   ...mcpAppsMethods,
+  ...previewMethods,
+  ...deviceMethods,
   ...scheduledTasksMethods,
+  ...filesMethods,
+  ...gitMethods,
+  ...diagnosticsMethods,
+  ...providerAuthMethods,
+  ...providerInstallMethods,
+  ...acpRegistryMethods,
+  ...sourceControlMethods,
+  ...agentSessionsMethods,
+  ...pullRequestsMethods,
 };
 export type RpcMethods = typeof rpcMethods;
 export type RpcMethodName = keyof RpcMethods;

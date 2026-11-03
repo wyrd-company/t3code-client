@@ -15,6 +15,74 @@ describe("RpcErrorRecord", () => {
     expect(record.requiredPermission).toBe("terminal:read");
   });
 
+  it("decodes a settings failure with no cause", () => {
+    const record = decodeRpcErrorRecord({
+      _tag: "ServerSettingsError",
+      settingsPath: "/sample/settings.json",
+      operation: "create-provider-instance",
+      providerInstanceId: "sample",
+    });
+    expect(isRpcErrorOfTag(record, "ServerSettingsError")).toBe(true);
+  });
+
+  it("decodes the provider update and secret request failures", () => {
+    const update = { _tag: "ServerProviderUpdateError", provider: "sample", reason: "sample" };
+    expect(isRpcErrorOfTag(decodeRpcErrorRecord(update), "ServerProviderUpdateError")).toBe(true);
+    for (const reason of ["already_answered", "newer-reason"]) {
+      const record = decodeRpcErrorRecord({ _tag: "SecretRequestError", reason });
+      expect(isRpcErrorOfTag(record, "SecretRequestError") && record.reason).toBe(reason);
+    }
+  });
+
+  it("decodes the repository process failures", () => {
+    const record = decodeRpcErrorRecord({
+      _tag: "VcsProcessExitError",
+      operation: "sample",
+      command: "git status",
+      cwd: "/sample",
+      exitCode: 128,
+      detail: "sample failure",
+      failureKind: "newer-kind",
+    });
+    expect(isRpcErrorOfTag(record, "VcsProcessExitError")).toBe(true);
+    expect(
+      isRpcErrorOfTag(
+        decodeRpcErrorRecord({
+          _tag: "VcsUnsupportedOperationError",
+          operation: "sample",
+          kind: "unknown",
+          detail: "sample failure",
+        }),
+        "VcsUnsupportedOperationError",
+      ),
+    ).toBe(true);
+  });
+
+  it("decodes the file failures", () => {
+    const record = decodeRpcErrorRecord({
+      _tag: "AssetWorkspaceAssetNotFoundError",
+      resource: { _tag: "draft-workspace-file", cwd: "/sample", path: "a.png" },
+      checkedPath: "/sample/a.png",
+    });
+    expect(isRpcErrorOfTag(record, "AssetWorkspaceAssetNotFoundError")).toBe(true);
+    expect(
+      isRpcErrorOfTag(
+        decodeRpcErrorRecord({ _tag: "AssetGitHubMediaUrlValidationError" }),
+        "AssetGitHubMediaUrlValidationError",
+      ),
+    ).toBe(true);
+    expect(
+      isRpcErrorOfTag(
+        decodeRpcErrorRecord({
+          _tag: "ExternalLauncherCommandNotFoundError",
+          editor: "rustrover",
+          command: "rustrover",
+        }),
+        "ExternalLauncherCommandNotFoundError",
+      ),
+    ).toBe(true);
+  });
+
   it("uses the wire tag of the keybindings error", () => {
     const record = decodeRpcErrorRecord({
       _tag: "KeybindingsConfigParseError",
@@ -100,6 +168,22 @@ describe("RpcErrorRecord", () => {
     expect(isRpcErrorOfTag(mutation, "ProjectMutationError")).toBe(true);
     if (isRpcErrorOfTag(mutation, "ProjectMutationError"))
       expect(mutation.commandId).toBe("command-1");
+  });
+
+  it("decodes the preview failures", () => {
+    const lookup = decodeRpcErrorRecord({
+      _tag: "PreviewSessionLookupError",
+      threadId: "thread-1",
+      tabId: "tab-1",
+    });
+    expect(isRpcErrorOfTag(lookup, "PreviewSessionLookupError") && lookup.tabId).toBe("tab-1");
+    const stop = decodeRpcErrorRecord({
+      _tag: "PreviewStopLocalServerError",
+      reason: "a-future-reason",
+    });
+    expect(isRpcErrorOfTag(stop, "PreviewStopLocalServerError") && stop.reason).toBe(
+      "a-future-reason",
+    );
   });
 
   it("decodes an unknown tag as the unknown variant", () => {

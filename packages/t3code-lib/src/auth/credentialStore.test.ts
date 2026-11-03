@@ -27,6 +27,26 @@ describe("credential stores", () => {
     expect(await store.load()).toEqual({});
   });
 
+  it("round trips the key of a proof-bound session", async () => {
+    const dpopKey = {
+      kty: "EC",
+      crv: "P-256",
+      x: "sample-x",
+      y: "sample-y",
+      d: "sample-d",
+    } as const;
+    const directory = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "credential-store-"));
+    const path = NodePath.join(directory, "credentials.json");
+    try {
+      const store = fileCredentialStore(path);
+      await store.save({ ...credentials, dpopKey });
+      expect((await store.load()).dpopKey).toEqual(dpopKey);
+      expect((await memoryCredentialStore({ dpopKey }).load()).dpopKey).toEqual(dpopKey);
+    } finally {
+      await NodeFSP.rm(directory, { recursive: true, force: true });
+    }
+  });
+
   it("round trips a mode-0600 file and treats a missing file as empty", async () => {
     const directory = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "credential-store-"));
     const path = NodePath.join(directory, "credentials.json");

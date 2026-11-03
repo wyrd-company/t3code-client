@@ -3,20 +3,35 @@
  * error. Errors travel into logs and bug reports; a token that rode along in
  * a body that failed to decode must not travel with them. No T3 knowledge.
  */
-const SECRET_KEY = /token|credential|secret|authorization|password|ticket/iu;
+// `d` is the private part of a JSON Web Key.
+const SECRET_KEY =
+  /token|credential|secret|authorization|password|ticket|usercode|verifier|^dpop$|^d$/iu;
+// A URL can carry a one-use code, a token, or an OAuth client's state or verifier in its query. A
+// query name can be percent-encoded. The bare keys `code` and `state` are not secret names: the
+// first is an error's code, and the second is a status.
+const QUERY_NAME = /[?&]([^=&\s]+)=/gu;
+const SECRET_QUERY_NAME = /^(?:code|code_verifier|state|id_token_hint|\w*token)$/iu;
+// A URL's user information can hold a password or a token, up to the last `@` of its authority.
+const URL_USERINFO = /\b([a-z][a-z0-9+.-]*):\/\/([^\s/?#]*)@/giu;
+// Each value of a request's header map can be a credential, under any name.
+const SECRET_MAP = /^headers$/iu;
 
 export const REDACTED = "[redacted]";
 
 /**
- * Deep-copies plain objects and arrays, replacing every string value whose
- * key matches a credential-like name with `"[redacted]"`. Other values
- * (primitives, class instances) are returned as they are.
+ * Deep-copies plain objects and arrays, replacing with `"[redacted]"` every
+ * string value whose key matches a credential-like name, and every string that
+ * holds a URL with a credential. Other values (primitives, class instances) are
+ * returned as they are.
  */
 export function redactSecrets(value: unknown): unknown {
   return redact(value, new WeakSet());
 }
 
 function redact(value: unknown, seen: WeakSet<object>): unknown {
+  if (typeof value === "string") {
+    return holdsSecretUrl(value) ? REDACTED : value;
+  }
   if (Array.isArray(value)) {
     if (seen.has(value)) return undefined;
     seen.add(value);
@@ -27,9 +42,32 @@ function redact(value: unknown, seen: WeakSet<object>): unknown {
   seen.add(value);
   const out: Record<string, unknown> = {};
   for (const [key, item] of Object.entries(value)) {
+    if (SECRET_MAP.test(key) && isPlainObject(item)) {
+      out[key] = REDACTED;
+      continue;
+    }
     out[key] = typeof item === "string" && SECRET_KEY.test(key) ? REDACTED : redact(item, seen);
   }
   return out;
+}
+
+function holdsSecretUrl(text: string): boolean {
+  for (const [, name = ""] of text.matchAll(QUERY_NAME)) {
+    if (SECRET_QUERY_NAME.test(decodedName(name))) return true;
+  }
+  for (const [, scheme = "", userinfo = ""] of text.matchAll(URL_USERINFO)) {
+    // `git` with no password is the name of an SSH login.
+    if (scheme.toLowerCase() !== "ssh" || userinfo !== "git") return true;
+  }
+  return false;
+}
+
+function decodedName(name: string): string {
+  try {
+    return decodeURIComponent(name);
+  } catch {
+    return name;
+  }
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

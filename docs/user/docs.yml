@@ -46,6 +46,20 @@ products:
               - dagu
               - complementary-tools
               - automation
+      - section: Library guides
+        groups:
+          - group: Start
+            pages:
+              - guide-quick-start
+              - guide-threads
+              - guide-sessions-and-errors
+          - group: Server features
+            pages:
+              - guide-server-calls
+              - guide-browser-and-devices
+              - guide-providers
+              - guide-source-control
+              - guide-remote-access
       - section: Developers
         groups:
           - group: Library

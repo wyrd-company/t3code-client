@@ -45,10 +45,10 @@ proposed-design:
       loose (unknown keys pass through), every growing literal set decodes an
       unknown member into an `unknown` variant instead of failing, and every
       stream keeps flowing when one item fails to decode.
-    - **One credential model.** A bearer access token is the only steady-state
-      credential. The library obtains one by exchanging a pairing token, or the
-      caller supplies one issued by `t3 auth session issue`. The library never
-      shells out.
+    - **One credential model.** An access token is the steady-state credential,
+      plain or bound to a DPoP key. The library obtains one by exchanging a pairing
+      token or a desktop bootstrap token, or the caller supplies one issued by
+      `t3 auth session issue`. The library never shells out.
     - **Small files, deep modules.** Each module has a small interface and hides
       its implementation. No file over roughly 300 lines. Callers compose the
       facade; tests cross the same seams callers do.
@@ -79,7 +79,31 @@ proposed-design:
         httpErrors.ts           Environment*Error records
         keybindings.ts          resolved keybinding rules: commands, shortcuts, when nodes
         rpcErrors.ts            RpcErrorRecord: every tagged error the registered RPC methods declare
-        rpcErrors/              orchestration, peer and guest link, MCP app, vcs, and terminal error records, shared tagged-error helpers
+        rpcErrors/              server, project, orchestration, peer and guest link, MCP app, file, preview, device, vcs, and terminal error records, shared tagged-error helpers
+        assets.ts               asset resources and URLs, attachment upload URLs, and the bytes of an asset
+        editor.ts               editor ids and the editor launch input
+        preview.ts              browser tabs, browser profiles and discovered local servers
+        previewViewer.ts        viewer socket messages, and the bodies of the two routes beside it
+        device.ts               device hosts, simulators and emulators, their sessions and actions
+        serverSelfUpdate.ts     what moves a server to another version, and its progress
+        relayClient.ts          the tunnel client of T3 Connect, and its install progress
+        cloudLink.ts            T3 Connect routes: link proof, relay configuration, link state, reachability, a relay's health and credential requests
+        filesystem.ts           host path browsing and metadata
+        git.ts                  stacked Git actions and their progress events, pull request resolution and preparation
+        review.ts               a branch's commits, diff previews and the contents of a changed file
+        settingsPatch.ts        the server settings mutation and the scopes it requires
+        settingsPatchFields.ts  the nested shapes of the settings mutation
+        providerInstance.ts     provider instances, usage limit sources and secret providers as a settings write sends them
+        deviceHosts.ts          the device hosts a settings patch can write
+        serverActions.ts        keybinding, provider update, client activity and secret request inputs and results
+        sourceControl.ts        version control systems and source control hosts the server can use, repository lookup, clone and publish, forge sign-in
+        projectClone.ts         the tracked clone of a new project and its progress
+        agentSessions.ts        the scan and import of another agent's sessions on the host
+        pullRequests.ts         the pull request reads and writes, from pullRequestInputs.ts, pullRequestWrites.ts, pullRequestParts.ts, pullRequestList.ts, pullRequestDetail.ts and pullRequestDiff.ts; pullRequestValues.ts holds the value lists that a result leaves open and a write closes, and is not exported
+        diagnostics.ts          trace and process diagnostics, process resource history, the process signal and the OTLP endpoint check
+        resourceTelemetry.ts    host resources and the server's process telemetry, as a client reads them
+        storageCleanup.ts       the storage cleanup report
+        providerSetup.ts        the provider sign-in flow, ChatGPT profile transfer, reset credit and feedback upload
         mcpApps.ts              MCP App tool calls, tool info, resource reads, model context
         projects.ts             Project, ProjectMutation, icons and scripts, file entries, read/write/search
         projectCreation.ts      Scratch, new-project and from-thread creator inputs and results (re-exported by projects.ts)
@@ -128,14 +152,22 @@ proposed-design:
         socket.ts               SocketTransport: WebSocket lifecycle, reconnect, send/receive
         keepalive.ts            Ping/Pong liveness for one open socket
         socketClose.ts          classifies a close event: credential rejection (fatal) or drop (retry)
+        previewViewer.ts        PreviewViewer: the viewer socket of a server browser tab
         rpcConnection.ts        RpcConnection: request ids, correlation, Chunk→AsyncIterable with Ack, Interrupt
+      http/
+        registry.ts             httpRoutes: route name → { method, path, input, success, auth, scope }
+        routes/*.ts             one file per family (assets, auth, cloudLink, orchestration, preview, projects, pullRequests)
+        spec.ts                 the shape of one route entry
+        client.ts               HttpRouteClient: typed call by route name; callRoute for the facades
       rpc/
         registry.ts             RpcMethodTable: method name → { payload, success, stream } zod schemas + scope
-        methods/*.ts            one file per family (orchestration, server, vcs, projects, terminal, authAccess, peerLinks)
+        methods/*.ts            one file per family (orchestration, server, vcs, git, projects, terminal, authAccess, peerLinks, files, diagnostics, providerAuth, providerInstall, acpRegistry, sourceControl, agentSessions, pullRequests, preview, device)
         client.ts               RpcClient: typed call/stream over RpcConnection using the registry
       auth/
         credentialStore.ts      CredentialStore seam + memoryCredentialStore + fileCredentialStore
         authClient.ts           AuthClient: exchange, ticket, session state, pairing links, clients, scopes
+        dpop.ts                 generateDpopKey, createDpopProof
+        desktopBootstrap.ts     currentDesktopBootstrapToken
         scopes.ts               scope constants, hasScope, grantedScopes
       api/                      facades composed by T3Client
         server.ts               getConfig, probe, getNpmRelease, prepareTriage, watchConfig, watchLifecycle, watchDatabaseStorage
@@ -220,8 +252,10 @@ proposed-design:
     mutation. Commands that the server accepts only from itself are not client
     surface.
 
-    `rpc.callRaw` and `rpc.streamRaw` serve a method that a server newer than the
-    target build offers. They are not the path for a method of the target build.
+    `client.rpc` is the entry for an RPC method and `client.routes` for an HTTP
+    route. A facade composes them where the design calls for one. `rpc.callRaw` and
+    `rpc.streamRaw` serve a method that a server newer than the target build offers.
+    They are not the path for a method of the target build.
   profiles-and-target: >-
     TARGET_T3_CODE_VERSION exports the target version. ProfileManager owns shared
     named-server resolution and CredentialSource plugs in credential stores.

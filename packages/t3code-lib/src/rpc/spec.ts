@@ -20,6 +20,8 @@ export interface RpcMethodSpec<Payload = unknown, Success = unknown> {
   readonly scope: AuthEnvironmentScope;
   /** Further scopes the server requires for this payload, checked the same way. */
   payloadScopes?(payload: Payload): readonly AuthEnvironmentScope[];
+  /** The scope the server requires for this payload, in place of `scope`. */
+  scopeForPayload?(payload: Payload): AuthEnvironmentScope;
 }
 
 /** Effect's JSON codec encodes Schema.Void as null; callers still receive void. */
@@ -50,6 +52,7 @@ export function defineMethod<Payload, Success, const Stream extends boolean>(spe
   readonly stream: Stream;
   readonly scope: AuthEnvironmentScope;
   payloadScopes?(payload: Payload): readonly AuthEnvironmentScope[];
+  scopeForPayload?(payload: Payload): AuthEnvironmentScope;
 }): RpcMethodSpec<Payload, Success> & { readonly stream: Stream } {
   return spec;
 }

@@ -147,3 +147,9 @@ export type {
   RpcErrorOfTag,
 } from "./schemas/rpcErrors.ts";
 export { isRpcErrorOfTag } from "./schemas/rpcErrors.ts";
+export type {
+  AuthBrowserSessionRequest,
+  AuthBrowserSessionResult,
+  AuthWebSocketTicketUse,
+  DpopPrivateJwk,
+} from "./schemas/auth.ts";

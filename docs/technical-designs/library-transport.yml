@@ -33,10 +33,15 @@ proposed-design:
     export class T3TimeoutError extends T3Error     // code: "timeout"
     ```
 
-    `body` and `raw` pass through `redactSecrets` (`internal/redact.ts`): string
+    `body`, `raw`, an RPC failure's `detail` and `record`, and `defect` pass through
+    `redactSecrets` (`internal/redact.ts`): string
     values whose key looks like a credential (`token`, `credential`, `secret`,
-    `authorization`, `password`, `ticket`) become `"[redacted]"`, so an error that
-    carries a badly shaped `/oauth/token` response never carries the token.
+    `authorization`, `password`, `ticket`, `usercode`, `verifier`) become `"[redacted]"`, so an
+    error that carries a badly shaped `/oauth/token` response never carries the
+    token. So do string values with a `code`, `code_verifier`, `state` or `id_token_hint`
+    query parameter, so an error that carries a sign-in state never carries its URLs.
+    The bare keys `code` and `state` stay, since they name an error's code and a status. A whole `headers`
+    map becomes `"[redacted]"`, since a header with any name can hold a credential.
   schemas: |
     Conventions:
 
@@ -118,28 +123,84 @@ proposed-design:
     export interface HttpTransportOptions {
       baseUrl: string;
       fetch?: typeof fetch;
-      credentials: CredentialStore;
+      getAccessToken: () => Promise<string | undefined>;
+      getDpopKey?: () => Promise<DpopPrivateJwk | undefined>;
       userAgent?: string;
     }
     export interface HttpRequest<T> {
-      method: "GET" | "POST" | "PUT" | "DELETE";
+      method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
       path: string;
       query?: Record<string, string | number | undefined>;
-      body?: unknown | URLSearchParams;
+      body?: unknown | URLSearchParams | Uint8Array;
       auth?: "required" | "optional" | "none";
       headers?: Record<string, string>; // the orchestration routes add the protocol header
       decode: z.ZodType<T> | "empty";
       signal?: AbortSignal;
+      dpopKey?: DpopPrivateJwk; // signs this request with this key, as a token exchange does
+      binaryResponse?: boolean; // a 2xx answer reaches `decode` as `{ bytes, contentType }`
+      redirectResponse?: boolean; // a 3xx answer is not followed, and reaches `decode` as `{ location }`
+      errorPath?: string; // what errors name, when `path` or `query` is a credential
     }
     export class HttpTransport {
       request<T>(req: HttpRequest<T>): Promise<T>;
+      openResponse(req: HttpRequest<unknown>): Promise<Response>; // a 2xx response, body unread
     }
     ```
 
-    `request` attaches `authorization: Bearer` when a token is present, maps
+    `request` attaches `authorization: Bearer` when a token is present, or
+    `authorization: DPoP` and a new `dpop` proof when the session has a key, maps
     non-2xx to `T3HttpError` subclasses using the tagged error body when present,
     decodes 2xx JSON through the schema, and treats 204 or an empty body as
-    `undefined` when `decode` is `"empty"`.
+    `undefined` when `decode` is `"empty"`. A `Uint8Array` body goes as raw bytes with
+    `content-type: application/octet-stream`, unless the request's headers name a type. No error names a signed path or keeps a
+    cause that could quote it, because the path is the credential.
+  http-route-registry: |
+    ```ts
+    export interface HttpRouteSpec<Input, Success> {
+      method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
+      path: string; // upstream's path; `:name` segments come from `input.params`
+      auth: "required" | "optional" | "none";
+      input: z.ZodType<Input>; // { params?, query?, headers?, body? }; `undefined` when the route takes none
+      success: z.ZodType<Success>; // a 2xx JSON answer, or each event of an event stream
+      scope?: AuthEnvironmentScope;
+      inputScopes?(input: Input): readonly AuthEnvironmentScope[];
+      headers?: Record<string, string>;
+      form?: true; // sends `input.body` form-encoded; a `Uint8Array` body goes as raw bytes
+      multipart?: true; // `body.files` are the parts, and each other string of `body` is a field
+      multipartFileField?: string; // the name of the file parts; `files` by default
+      binaryResponse?: true; // a 2xx answer reaches `success` as `{ bytes, contentType }`
+      redirectResponse?: true; // a 3xx answer is not followed, and reaches `success` as `{ location }`
+      signedPath?: true; // the path or query is a credential; an error names the `path` template and keeps no cause
+      eventStream?: true; // the answer is server-sent events; set by `defineEventStreamRoute`
+    }
+    export const httpRoutes: { [name: string]: HttpRouteSpec }; // assembled from http/routes/*.ts
+
+    export class HttpRouteClient<Table> {
+      call<N extends keyof Table>(name: N, input, signal?): Promise<HttpRouteSuccess<Table, N>>;
+      stream<N extends HttpEventStreamRouteName<Table>>(name: N, input, signal?):
+        AsyncGenerator<StreamItem<HttpRouteSuccess<Table, N>>>;
+    }
+    export function callRoute(http, route, input, options?): Promise<Success>; // what the facades use
+    ```
+
+    The table is to HTTP what the RPC registry is to the socket: every HTTP route
+    that the target build exposes to a client, one entry per route. Route names are
+    upstream's `HttpApi` group and endpoint names (`auth.browserSession`,
+    `projects.mutate`), so a reader can diff against `environmentHttp.ts`. Adding a
+    route is one entry in a family file.
+
+    `HttpRouteClient` validates the input and raises `T3PreconditionError` before it
+    sends a bad one. It checks the route's scope and `inputScopes` when the session's
+    scopes are known, and raises `T3AuthError("insufficient_scope")`. Query schemas
+    are strict, so an option the table does not offer fails locally. `/ws` is the
+    socket transport's and has no route entry.
+
+    `stream` reads an event stream route and `call` refuses one; `stream` refuses
+    any other route. An event that does not decode is a `decode-error` item, as for
+    an RPC stream, and the stream continues. A heartbeat comment yields nothing.
+    Ending the iteration closes the request. A refusal at open raises the same
+    `T3HttpError` subclass as `call`. An abort raises `T3InterruptedError`, and a
+    lost connection `T3ConnectionError("closed")`. A stream is not resumed.
   transport-socket-ts: |
     ```ts
     export type SocketState = "idle" | "connecting" | "open" | "closed";
@@ -225,7 +286,8 @@ proposed-design:
   rpc-registry-ts-and-rpc-client-ts: |
     ```ts
     export interface RpcMethodSpec<P, S> { payload: z.ZodType<P>; success: z.ZodType<S>; stream: boolean; scope: AuthEnvironmentScope;
-      payloadScopes?(payload: P): readonly AuthEnvironmentScope[] }   // further scopes a particular payload needs
+      payloadScopes?(payload: P): readonly AuthEnvironmentScope[];   // further scopes a particular payload needs
+      scopeForPayload?(payload: P): AuthEnvironmentScope }            // the scope for this payload, in place of `scope`
     export const rpcMethods: { [K in RpcMethodName]: RpcMethodSpec<…> }   // assembled from rpc/methods/*.ts
     export type RpcMethodName = keyof typeof rpcMethods
     export type RpcPayload<M> / RpcSuccess<M>
@@ -250,5 +312,5 @@ proposed-design:
     Before sending, `RpcClient` checks the credential's scopes when known and
     raises `T3AuthError("insufficient_scope")` locally so a workflow fails fast
     with the scope name instead of a generic server error. A method whose scope
-    depends on the payload declares `payloadScopes`, checked once the payload is
-    valid.
+    depends on the payload declares `payloadScopes` or `scopeForPayload`, checked once
+    the payload is valid.

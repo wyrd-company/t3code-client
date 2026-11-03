@@ -30,6 +30,27 @@ export const VcsWorktree = z.looseObject({
 export type VcsWorktree = z.infer<typeof VcsWorktree>;
 export const VcsStatusInput = z.looseObject({ cwd: TrimmedNonEmptyString });
 export type VcsStatusInput = z.infer<typeof VcsStatusInput>;
+export const VcsStatusSubscriptionInput = z.looseObject({
+  cwd: TrimmedNonEmptyString,
+  /** A passive observer gets cached remote status and keeps no refresh loop alive. */
+  includeRemote: z.boolean().optional(),
+});
+export type VcsStatusSubscriptionInput = z.infer<typeof VcsStatusSubscriptionInput>;
+export const VcsPullInput = z.looseObject({ cwd: TrimmedNonEmptyString });
+export type VcsPullInput = z.infer<typeof VcsPullInput>;
+export const VcsPullResult = z.looseObject({
+  status: forwardCompatibleLiteral(["pulled", "skipped_up_to_date"]),
+  refName: TrimmedNonEmptyString,
+  upstreamRef: TrimmedNonEmptyString.nullable(),
+});
+export type VcsPullResult = z.infer<typeof VcsPullResult>;
+export const VcsDriverKind = z.enum(["git", "jj", "unknown"]);
+export type VcsDriverKind = z.infer<typeof VcsDriverKind>;
+export const VcsInitInput = z.looseObject({
+  cwd: TrimmedNonEmptyString,
+  kind: VcsDriverKind.optional(),
+});
+export type VcsInitInput = z.infer<typeof VcsInitInput>;
 export const VcsRefreshStatusInput = z.looseObject({
   cwd: TrimmedNonEmptyString,
   /** Refresh only the local state and keep the remote state the server already has. */
@@ -117,6 +138,13 @@ export const VcsStatusLocalShape = {
     insertions: NonNegativeInt,
     deletions: NonNegativeInt,
   }),
+  branchChanges: z
+    .looseObject({
+      baseRef: TrimmedNonEmptyString.nullable(),
+      insertions: NonNegativeInt,
+      deletions: NonNegativeInt,
+    })
+    .optional(),
 };
 export const VcsStatusRemoteShape = {
   hasUpstream: z.boolean(),

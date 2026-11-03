@@ -127,6 +127,7 @@ proposed-design:
       readonly vcs: VcsApi;
       readonly terminal: TerminalApi;
       readonly rpc: RpcClient;
+      readonly routes: HttpRouteClient<HttpRoutes>;
       connect(signal?): Promise<void>; // optional eager connect
       close(): Promise<void>;
     }

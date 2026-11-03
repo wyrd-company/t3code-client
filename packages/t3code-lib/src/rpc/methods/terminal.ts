@@ -6,7 +6,11 @@ import { VoidSuccess, defineMethod } from "../spec.ts";
 import {
   TerminalAttachInput,
   TerminalAttachStreamEvent,
+  TerminalClearInput,
   TerminalCloseInput,
+  TerminalMetadataInput,
+  TerminalMetadataStreamEvent,
+  TerminalObserveInput,
   TerminalOpenInput,
   TerminalResizeInput,
   TerminalSessionSnapshot,
@@ -26,6 +30,12 @@ export const terminalMethods = {
     stream: true,
     scope: "terminal:operate",
   }),
+  "terminal.observe": defineMethod({
+    payload: TerminalObserveInput,
+    success: TerminalAttachStreamEvent,
+    stream: true,
+    scope: "terminal:read",
+  }),
   "terminal.write": defineMethod({
     payload: TerminalWriteInput,
     success: VoidSuccess,
@@ -38,10 +48,22 @@ export const terminalMethods = {
     stream: false,
     scope: "terminal:operate",
   }),
+  "terminal.clear": defineMethod({
+    payload: TerminalClearInput,
+    success: VoidSuccess,
+    stream: false,
+    scope: "terminal:operate",
+  }),
   "terminal.close": defineMethod({
     payload: TerminalCloseInput,
     success: VoidSuccess,
     stream: false,
     scope: "terminal:operate",
+  }),
+  subscribeTerminalMetadata: defineMethod({
+    payload: TerminalMetadataInput,
+    success: TerminalMetadataStreamEvent,
+    stream: true,
+    scope: "terminal:read",
   }),
 } as const;

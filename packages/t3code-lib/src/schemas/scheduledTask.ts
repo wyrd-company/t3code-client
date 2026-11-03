@@ -52,6 +52,10 @@ export const ScheduledTaskWebhookEndpoint = z.looseObject({
 });
 export type ScheduledTaskWebhookEndpoint = z.infer<typeof ScheduledTaskWebhookEndpoint>;
 
+/** The answer to a webhook request that the server accepted. */
+export const ScheduledTaskWebhookAccepted = z.looseObject({ deliveryId: TrimmedNonEmptyString });
+export type ScheduledTaskWebhookAccepted = z.infer<typeof ScheduledTaskWebhookAccepted>;
+
 export const ScheduledTask = z.looseObject({
   id: ScheduledTaskId,
   title: TrimmedNonEmptyString,

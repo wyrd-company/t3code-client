@@ -5,6 +5,7 @@ import { authSessionId } from "../schemas/common.ts";
 import { HttpTransport } from "../transport/http.ts";
 import { AuthClient } from "./authClient.ts";
 import { memoryCredentialStore } from "./credentialStore.ts";
+import { generateDpopKey } from "./dpop.ts";
 
 const authDescriptor = {
   policy: "remote-reachable",
@@ -199,6 +200,77 @@ describe("AuthClient", () => {
     await expect(client.setAccessToken("credential-candidate")).rejects.toBeInstanceOf(T3AuthError);
     await expect(store.load()).resolves.toEqual({ accessToken: "credential-original" });
   });
+
+  it("binds an exchanged session to the key and signs later requests with it", async () => {
+    const requests: Request[] = [];
+    const fetch = vi.fn<typeof globalThis.fetch>(async (input, init) => {
+      const request = new Request(input, init);
+      requests.push(request);
+      if (new URL(request.url).pathname === "/oauth/token") {
+        return json({
+          access_token: "bound-credential",
+          issued_token_type: "urn:ietf:params:oauth:token-type:access_token",
+          token_type: "DPoP",
+          expires_in: 3600,
+          scope: "orchestration:read",
+        });
+      }
+      return json(sessionState);
+    });
+    const store = memoryCredentialStore();
+    const dpopKey = generateDpopKey();
+    const client = makeClient(fetch, store);
+    const onChange = vi.fn();
+    client.onCredentialsChange(onChange);
+
+    await client.exchangePairingToken("sample-pairing", { dpopKey });
+    expect(requests[0]?.headers.get("dpop")).toBeTruthy();
+    expect(requests[0]?.headers.get("authorization")).toBeNull();
+    await expect(store.load()).resolves.toMatchObject({
+      accessToken: "bound-credential",
+      sessionMethod: "dpop-access-token",
+      dpopKey,
+    });
+    await expect(client.currentDpopKey()).resolves.toEqual(dpopKey);
+    expect(onChange).toHaveBeenCalledTimes(1);
+
+    await client.sessionState();
+    expect(requests[1]?.headers.get("authorization")).toBe("DPoP bound-credential");
+    expect(requests[1]?.headers.get("dpop")).toBeTruthy();
+    expect(requests[1]?.headers.get("dpop")).not.toBe(requests[0]?.headers.get("dpop"));
+  });
+
+  it("does not keep a key when the server issues a bearer token", async () => {
+    const fetch = vi.fn<typeof globalThis.fetch>(async () =>
+      json({
+        access_token: "plain-credential",
+        issued_token_type: "urn:ietf:params:oauth:token-type:access_token",
+        token_type: "Bearer",
+        expires_in: 3600,
+        scope: "orchestration:read",
+      }),
+    );
+    const store = memoryCredentialStore();
+    await makeClient(fetch, store).exchangePairingToken("sample-pairing", {
+      dpopKey: generateDpopKey(),
+    });
+    const saved = await store.load();
+    expect(saved.sessionMethod).toBe("bearer-access-token");
+    expect(saved.dpopKey).toBeUndefined();
+  });
+
+  it("validates a proof-bound token with its key before it stores both", async () => {
+    const requests: Request[] = [];
+    const fetch = vi.fn<typeof globalThis.fetch>(async (input, init) => {
+      requests.push(new Request(input, init));
+      return json({ ...sessionState, sessionMethod: "dpop-access-token" });
+    });
+    const store = memoryCredentialStore();
+    const dpopKey = generateDpopKey();
+    await makeClient(fetch, store).setAccessToken("bound-credential", { dpopKey });
+    expect(requests[0]?.headers.get("authorization")).toBe("DPoP bound-credential");
+    await expect(store.load()).resolves.toMatchObject({ dpopKey });
+  });
 });
 
 function makeClient(
@@ -209,6 +281,7 @@ function makeClient(
     baseUrl: "https://example.invalid",
     fetch,
     getAccessToken: async () => (await store.load()).accessToken,
+    getDpopKey: async () => (await store.load()).dpopKey,
   });
   return new AuthClient(transport, store, { now: () => new Date("2029-12-31T00:00:00.000Z") });
 }

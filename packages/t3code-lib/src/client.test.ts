@@ -2,6 +2,7 @@
 // relationships:
 //   verifies: library
 // ---
+import * as NodeCrypto from "node:crypto";
 import { WebSocket as WsWebSocket } from "ws";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { FakeT3Server } from "../test/support/fakeServer.ts";
@@ -11,6 +12,7 @@ import {
   makeShellSnapshot,
   makeShellThread,
 } from "../test/support/threadFixtures.ts";
+import { generateDpopKey } from "./auth/dpop.ts";
 import { memoryCredentialStore } from "./auth/credentialStore.ts";
 import { T3Client } from "./client.ts";
 import type { WebSocketConstructor } from "./internal/websocket.ts";
@@ -34,14 +36,17 @@ describe("T3Client", () => {
     server = await FakeT3Server.start({ token: "token-1" });
     scopesByToken["token-1"] = ["orchestration:read", "orchestration:operate"];
     server.routes.route("POST /api/auth/websocket-ticket", (request) => {
-      if (request.headers["authorization"] !== `Bearer ${server.token}`) return { status: 401 };
+      const authorization = request.headers["authorization"];
+      if (authorization !== `Bearer ${server.token}` && authorization !== `DPoP ${server.token}`) {
+        return { status: 401 };
+      }
       return {
         status: 200,
         body: { ticket: server.issueTicket(), expiresAt: "2020-01-01T00:05:00.000Z" },
       };
     });
     server.routes.route("GET /api/auth/session", (request) => {
-      const token = request.headers["authorization"]?.replace(/^Bearer /u, "");
+      const token = request.headers["authorization"]?.replace(/^(Bearer|DPoP) /u, "");
       const scopes = token === undefined ? undefined : scopesByToken[token];
       if (scopes === undefined)
         return { status: 200, body: { authenticated: false, auth: authDescriptor } };
@@ -107,6 +112,58 @@ describe("T3Client", () => {
     expect(upgrade?.query["wsTicket"]).toBeUndefined();
     expect(server.routes.requests.map((r) => r.path)).not.toContain("/api/auth/websocket-ticket");
     expect(server.routes.requests.map((r) => r.path)).toContain("/api/auth/session");
+  });
+
+  it("carries a proof for the ticket of a proof-bound session", async () => {
+    server.routes.route("POST /api/auth/websocket-ticket/rpc", () => ({
+      status: 200,
+      body: { ticket: server.issueTicket(), expiresAt: "2020-01-01T00:05:00.000Z" },
+    }));
+    client = T3Client.create({
+      baseUrl: server.httpUrl,
+      credentials: memoryCredentialStore({ accessToken: "token-1", dpopKey: generateDpopKey() }),
+      fetch: server.fetch,
+      webSocket,
+    });
+    await client.connect();
+    const upgrade = server.upgrades[0];
+    const payload = proofPayload(upgrade?.query["dpop"]);
+    expect(payload["htm"]).toBe("GET");
+    expect(payload["htu"]).toBe(`${server.httpUrl}/ws`);
+    expect(payload["ath"]).toBe(
+      NodeCrypto.createHash("sha256")
+        .update(upgrade?.query["wsTicket"] ?? "")
+        .digest("base64url"),
+    );
+    const mint = server.routes.requests.find((r) => r.path === "/api/auth/websocket-ticket/rpc");
+    expect(mint?.headers["authorization"]).toBe("DPoP token-1");
+    expect(proofPayload(mint?.headers["dpop"])["htm"]).toBe("POST");
+  });
+
+  it("sends DPoP headers on the upgrade in bearer-header mode", async () => {
+    client = T3Client.create({
+      baseUrl: server.httpUrl,
+      credentials: memoryCredentialStore({ accessToken: "token-1", dpopKey: generateDpopKey() }),
+      socketAuth: "bearer-header",
+      fetch: server.fetch,
+      webSocket,
+    });
+    await client.connect().catch(() => undefined);
+    const upgrade = server.upgrades[0];
+    expect(upgrade?.headers["authorization"]).toBe("DPoP token-1");
+    expect(proofPayload(upgrade?.headers["dpop"])["htu"]).toBe(`${server.httpUrl}/ws`);
+  });
+
+  it("exposes the route table by name", async () => {
+    client = T3Client.create({
+      baseUrl: server.httpUrl,
+      accessToken: "token-1",
+      fetch: server.fetch,
+      webSocket,
+    });
+    await expect(client.routes.call("auth.session")).resolves.toMatchObject({
+      authenticated: true,
+    });
   });
 
   it("fails fast in bearer-header mode when the token no longer authenticates", async () => {
@@ -252,3 +309,8 @@ describe("T3Client", () => {
     ).toThrow(/either credentials or accessToken/);
   });
 });
+
+function proofPayload(proof: string | undefined): Record<string, unknown> {
+  const part = proof?.split(".")[1] ?? "";
+  return JSON.parse(Buffer.from(part, "base64url").toString()) as Record<string, unknown>;
+}

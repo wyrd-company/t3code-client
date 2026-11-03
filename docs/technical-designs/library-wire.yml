@@ -49,7 +49,9 @@ proposed-design:
     | `GET /.well-known/t3/environment`                     | none                 | `ExecutionEnvironmentDescriptor`                                                           |
     | `GET /api/auth/session`                               | optional bearer      | `AuthSessionState`; `authenticated:false` without a credential                             |
     | `POST /oauth/token`                                   | none                 | form-encoded token exchange; pairing token is single use                                   |
-    | `POST /api/auth/websocket-ticket`                     | bearer               | `{ticket, expiresAt}`; ticket lives about five minutes                                     |
+    | `POST /api/auth/browser-session`                      | none                 | `{credential}` → session state; the session token is only in an HttpOnly cookie            |
+    | `POST /api/auth/websocket-ticket`                     | bearer               | `{ticket, expiresAt}`; ticket lives about five minutes; valid for either use               |
+    | `POST /api/auth/websocket-ticket/:use`                | bearer               | `use` is `rpc` or `media`; the other route refuses the ticket                              |
     | `POST /api/auth/pairing-token`                        | bearer, access:write | body `{label?, scopes?}`; the credential is returned once                                  |
     | `POST /api/auth/pairing-links/revoke`                 | bearer, access:write | `{id}` → `{revoked}`                                                                       |
     | `POST /api/auth/clients/revoke`                       | bearer, access:write | `{sessionId}` → `{revoked}`                                                                |
@@ -58,10 +60,96 @@ proposed-design:
     | `POST /api/projects/mutate`                           | bearer, orch:operate | `ProjectMutation` → `Project`                                                              |
     | `GET /api/orchestration/shell`                        | bearer, orch:read    | `OrchestrationV2ShellSnapshot` (protocol header)                                           |
     | `GET /api/orchestration/threads/:threadId`            | bearer, orch:read    | `OrchestrationV2ThreadDetailSnapshot`, the full projection; 404 `thread_not_found`         |
-    | `GET /api/orchestration/threads/:threadId/bounded`    | bearer, orch:read    | `OrchestrationV2ThreadBoundedSnapshot`: a recent window plus `historyCursor`               |
+    | `GET /api/orchestration/threads/:threadId/bounded`    | bearer, orch:read    | `OrchestrationV2ThreadBoundedSnapshot`: a recent window plus `historyCursor`; query flags  |
     | `GET /api/orchestration/threads/:threadId/history`    | bearer, orch:read    | query `cursor`; `OrchestrationV2ThreadHistoryPage`; 400 `invalid_history_cursor`           |
     | `GET /api/orchestration/threads/:threadId/transcript` | bearer, orch:read    | `OrchestrationV2ThreadTranscript`: the visible timeline; 400 `thread_transcript_too_large` |
+    | `GET /api/assets/:token/:path`                         | signed URL           | bytes and `content-type`; 404 for a bad or expired token                                   |
+    | `POST /api/attachments/upload/:token`                 | signed URL           | raw bytes of the signed size; 204; 400 for another size; 404 for a bad or expired token    |
     | `POST /api/pull-requests/diff`                        | bearer               | `PullRequestDiffInput` → `PullRequestDiffResult`                                                              |
+    | `GET /api/preview-stream/download`                    | bearer, orch:read    | query `threadId`, `tabId`, `id`; bytes and `content-type`; 404 for an unknown file         |
+    | `POST /api/preview-stream/upload`                     | bearer, preview:op   | query `threadId`, `tabId`, `chooser`; multipart files; 204; 409 when the picker is not open |
+    | `POST /api/guest/redeem`                              | none                 | `{credential, name}`; 204 and a session cookie for the share; 403 `invalid`                |
+    | `GET /api/guest/session`                              | guest cookie         | query `share`; 204                                                                         |
+    | `POST /api/guest/messages`                            | guest cookie         | query `share`; multipart `shareId`, `text`, `file`; 204; 400 `empty`, `too_large`          |
+    | `GET /api/guest/stream`                               | guest cookie         | query `share`; server-sent `GuestStreamEvent`: `view`, `thread`, `ended`                   |
+    | `GET /api/guest/item`                                 | guest cookie         | query `share`, `item`; `OrchestrationV2GetTurnItemResult`                                  |
+    | `GET /api/guest/history`                              | guest cookie         | query `share`, `cursor`; `OrchestrationV2ThreadHistoryPage`                                |
+    | `GET /api/guest/command-output`                       | guest cookie         | query `share`, `item`; server-sent `OrchestrationV2CommandOutputFrame`; ends when settled  |
+    | `GET /api/guest/render`                               | guest cookie         | query `share`, `item`; the bytes of one HTML render                                        |
+    | `GET /api/guest/attachment`                           | guest cookie         | query `share`, `id`; bytes and `content-type`                                              |
+    | `GET /api/guest/media`                                | guest cookie         | query `share`, `path`; an image that a reply the guest received shows                      |
+    | `POST`, `PUT`, `PATCH`, `GET /api/hooks/:hookId/:token` | path token         | raw body; 202 `{deliveryId}`; 401, 404, 409, 410, 413, 429 with `{error}`                  |
+    | `GET /.well-known/oauth-protected-resource`           | none                 | `AuthMcpProtectedResourceMetadata`; the same at `/mcp` under this path                     |
+    | `GET /.well-known/oauth-authorization-server`         | none                 | `AuthMcpAuthorizationServerMetadata`                                                       |
+    | `POST /oauth/mcp/register`                            | none                 | `AuthMcpClientRegistration`; 201 `AuthMcpRegisteredClient`; 400 with `{error}`             |
+    | `GET /oauth/mcp/authorize`                            | none                 | query `AuthMcpAuthorizationRequest`; 302; 400 and an HTML page for an unverified client    |
+    | `POST /oauth/mcp/approval`                            | browser cookie or none | `AuthMcpAuthorizationRequest` → `AuthMcpApprovalDetails` or `{redirectTo}`; 400 `AuthMcpApprovalError` |
+    | `POST /oauth/mcp/decision`                            | browser cookie or none | `{authorization, decision}` → `{redirectTo}`; 400 `AuthMcpApprovalError`                 |
+    | `POST /oauth/mcp/token`                               | none                 | form-encoded, code is single use; `AuthMcpTokenResult`; 400 with `{error}`                 |
+
+    A guest route refuses with `{reason, message}`: 403 for `invalid`, `inactive` and
+    `unavailable`, 400 for a bad message, 409 otherwise. The session cookie is
+    HttpOnly and names one share, so a guest's client needs a `fetch` that keeps it,
+    as for a browser session. A webhook's path holds its token, so no error names
+    the path. The signature, when the task requires one, is over the raw bytes, and
+    `input.headers` carries it. `webhookUrlParams` splits an endpoint's `path` into
+    route params.
+
+    An MCP client gets a token for `/mcp` with these OAuth routes and PKCE, with no client
+    secret. `authorize` answers with a redirect: to `/connect-agent` with the same query, or to the
+    client's verified `redirect_uri` with `error`. The route does not follow it, and answers with
+    `{location}`. `approval` and `decision` serve that page. A `decision` is `deny`, `pairing-code`
+    or `browser-session`. A `browser-session` needs the session's cookie and the `csrfToken` from
+    `approval`, and its scopes must cover the `access`. The server takes that session only from
+    the cookie, so a bearer token adds nothing. After an approval, `redirectTo` holds a one-use
+    `code` that lasts one minute, and `token` exchanges it with the PKCE verifier. A token request
+    spends the code that it presents, also when a later check fails.
+
+    A signed URL comes from `assets.createUrl` or `attachments.createUploadUrl` as
+    `relativeUrl`. The token in its path is the credential, so these routes do not
+    send the session's token, and no error names the path. `assetUrlParams` and
+    `attachmentUploadUrlParams` split a `relativeUrl` into route params. `assets.read`
+    holds the whole file in memory and sends no `range` header. A caller that needs
+    part of a large file fetches `relativeUrl` itself, which takes no credential.
+    An asset token for a browser document also reads the files next to it, by path.
+
+    `GET /api/preview-stream/ws` is the viewer socket of a tab in the server's browser.
+    `T3Client.openPreviewViewer` opens it with a ticket for the `media` use and
+    `orchestration:read`. Query `threadId`, `tabId`, `maxWidth`, `maxHeight`, `quality` and
+    `interactive`. A binary message is one JPEG frame, and the server sends the next
+    after a `{"type":"ack"}`. A text message is JSON: `viewport`, `control`, `probe`,
+    `clipboard`, `pointer`, `fileChooser`, `fileChooserClosed`, `popup` or `download`. The
+    viewer sends `takeControl`, `releaseControl`, `dialog`, `mouse`, `wheel`, `key`, `text`,
+    `resize`, `viewport`, `navigate`, `history`, `reload` and `probe`, and the server drops them
+    without `preview:operate`. Close 4404 means that the tab is gone, 4503 has a JSON
+    reason with the host setup that the browser needs, and 1012 asks for a new attach.
+    The `upgrade` is 503 when the browser fails in another way. Upstream has no contract for these
+    messages, so `schemas/previewViewer.ts` mirrors `ServerBrowser.ts`.
+
+    In this table "bearer" is any access token. A proof-bound session sends
+    `authorization: DPoP <token>` and a `dpop` header in place of
+    `authorization: Bearer <token>`. `POST /oauth/token` with a `dpop` header binds
+    the session it issues to that key and answers with `token_type: "DPoP"`.
+
+    A DPoP proof (RFC 9449) is a compact ES256 JWT with the header
+    `{typ: "dpop+jwt", alg: "ES256", jwk}`, where `jwk` is the public P-256 key,
+    and the claims `htm`, `htu` (the URL without query and fragment), `jti`, `iat`
+    (within 300 seconds of the server clock) and, with a token, `ath` (the base64url
+    SHA-256 of that token). The server refuses a `jti` it has seen. A socket upgrade
+    names `http` or `https` in `htu`. A ticket minted for the `rpc` use is bound to
+    the key, and the proof rides in the `dpop` query parameter with `ath` over the
+    ticket. A bare or `media` ticket is not bound, so a proof-bound client mints for
+    `rpc`. A refused proof
+    is a 401 `EnvironmentAuthInvalidError` with `dpopFailureReason` and a
+    `www-authenticate: DPoP` header.
+
+    The server refuses a bound token sent as a bearer token.
+
+    The orchestration query options take effect only with the value `1`: `deferWork`
+    and `compactTurnItems` on the bounded route, `deferWork` on the history route,
+    `omitIdleSubagents` and `omitOlderSettled` on the shell route. The route table
+    does not offer the wire forms `compactIds` and `dedupeBodies`: they save bytes,
+    and the snapshot schemas decode whole ids and bodies.
 
     HTTP errors are JSON tagged records: `EnvironmentRequestInvalidError` (400),
     `EnvironmentAuthInvalidError` (401), `EnvironmentScopeRequiredError` and
@@ -80,8 +168,36 @@ proposed-design:
     `grantedScopes()` reads whichever is present. A pairing credential may ask for
     any grantable scope.
 
+    `server.updateSettings` needs `settings:write`. A patch whose only keys are
+    `providerInstances`, `usageLimitSources` or `secretProviders`, or an empty
+    patch with a `providerInstanceMutation`, needs `providers:manage` in its place.
+    A patch with both kinds needs both. A key the target build does not know
+    counts for neither.
+
+    `server.retryResourceTelemetry` restarts the server's resource monitor, so it
+    needs `diagnostics:read` and `environment:maintain`.
+
+    The provider sign-in methods need `providers:manage`, as does
+    `provider.consumeResetCredit`. `provider.uploadFeedback` needs
+    `orchestration:operate`. An instance has sign-in methods only when its driver
+    has a sign-in controller, and any other instance refuses with
+    `ProviderSetupError`. A flow belongs to the session that started it: another
+    session sees its phase without its `flowId`, URL or interaction.
+
+    `provider.chatgpt.handoff.subscribe` runs a sign-in in memory for another
+    environment, and closing the stream ends it. Its `finished` item holds a
+    `ChatGptTransferredProfile` with live tokens, and
+    `provider.chatgpt.import-profile` takes that profile. The library does not store
+    it.
+
+    An Effect `Option` field arrives as a `{ _tag: "None" }` or
+    `{ _tag: "Some", value }` record, and a schema keeps that form. The
+    diagnostics results report a failed read in an `Option` field and keep what
+    they read.
+
     WebSocket at `GET /ws`. Authentication on the upgrade is either
-    `?wsTicket=<ticket>` or an `authorization: Bearer` header. Optional query
+    `?wsTicket=<ticket>` (with `dpop=<proof>` for a bound ticket) or an
+    `authorization` header. Optional query
     parameters `clientSurface=cli` and `clientAppVersion` label the connection in
     the server's client list. Messages are JSON text, one envelope per frame (the
     server may also send a JSON array of envelopes). Envelopes:

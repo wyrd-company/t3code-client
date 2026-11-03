@@ -12,19 +12,32 @@
  * `Schema.Defect()` fields (`cause`) encode whatever the server threw and
  * have no stable shape, so they stay `z.unknown()`.
  */
-import { z } from "zod";
-import { AuthGrantedScope } from "./auth.ts";
+import type { z } from "zod";
+import { isUnknownVariant, taggedUnionWithUnknown, type UnknownVariant } from "./common.ts";
 import {
-  CommandId,
-  NonNegativeInt,
-  PositiveInt,
-  TrimmedNonEmptyString,
-  forwardCompatibleLiteral,
-  isUnknownVariant,
-  taggedUnionWithUnknown,
-  type UnknownVariant,
-} from "./common.ts";
-import { Defect, messageAndCause, taggedError } from "./rpcErrors/shared.ts";
+  ProjectListEntriesError,
+  ProjectMutationError,
+  ProjectReadFileError,
+  ProjectSearchContentsError,
+  ProjectSearchEntriesError,
+  ProjectWriteFileError,
+} from "./rpcErrors/projects.ts";
+import {
+  AuthAccessStreamError,
+  EnvironmentAuthorizationError,
+  KeybindingsConfigError,
+  ProviderSetupError,
+  AcpRegistryOperationError,
+  ProviderUploadFeedbackError,
+  SecretRequestError,
+  ServerNpmReleaseError,
+  ServerPrepareTriageError,
+  RelayClientInstallFailedError,
+  ServerProviderUpdateError,
+  ServerSelfUpdateError,
+  ServerSettingsError,
+  UsageLimitSourceError,
+} from "./rpcErrors/server.ts";
 import {
   TerminalCwdNotDirectoryError,
   TerminalCwdNotFoundError,
@@ -43,6 +56,7 @@ import {
   GitPullRequestMaterializationError,
   SourceControlProviderError,
   TextGenerationError,
+  vcsRpcErrors,
 } from "./rpcErrors/vcs.ts";
 import {
   OrchestrationDispatchCommandError,
@@ -60,136 +74,27 @@ import {
   OrchestrationV2ThreadLaunchError,
 } from "./rpcErrors/orchestration.ts";
 import { GuestShareCreateError, PeerLinkError, PeerLinkRequestError } from "./rpcErrors/links.ts";
+import { fileRpcErrors } from "./rpcErrors/files.ts";
 import { McpAppRequestError } from "./rpcErrors/mcpApps.ts";
+import { deviceRpcErrors } from "./rpcErrors/device.ts";
+import { previewRpcErrors } from "./rpcErrors/preview.ts";
+import { pullRequestRpcErrors } from "./rpcErrors/pullRequests.ts";
+import { sourceControlRpcErrors } from "./rpcErrors/sourceControl.ts";
 import { ScheduledTaskError, UsageReadError } from "./rpcErrors/automation.ts";
 
+export * from "./rpcErrors/server.ts";
+export * from "./rpcErrors/projects.ts";
 export * from "./rpcErrors/terminal.ts";
 export * from "./rpcErrors/vcs.ts";
 export * from "./rpcErrors/orchestration.ts";
 export * from "./rpcErrors/links.ts";
+export * from "./rpcErrors/files.ts";
 export * from "./rpcErrors/mcpApps.ts";
+export * from "./rpcErrors/device.ts";
+export * from "./rpcErrors/preview.ts";
+export * from "./rpcErrors/pullRequests.ts";
+export * from "./rpcErrors/sourceControl.ts";
 export * from "./rpcErrors/automation.ts";
-
-// auth.ts
-
-export const EnvironmentAuthorizationError = taggedError("EnvironmentAuthorizationError", {
-  message: z.string(),
-  requiredScope: AuthGrantedScope,
-  requiredPermission: z.string().optional(),
-});
-export const AuthAccessStreamError = taggedError("AuthAccessStreamError", { message: z.string() });
-
-// keybindings.ts, settings.ts, providerSetup.ts
-
-/** The contracts class is `KeybindingsConfigError`; its wire tag is `KeybindingsConfigParseError`. */
-export const KeybindingsConfigError = taggedError("KeybindingsConfigParseError", {
-  configPath: z.string(),
-  detail: z.string(),
-  cause: Defect.optional(),
-});
-export const ServerSettingsOperation = forwardCompatibleLiteral([
-  "normalize",
-  "check-exists",
-  "read-file",
-  "read-provider-history",
-  "read-project-settings",
-  "read-secret",
-  "remove-secret",
-  "remove-stale-secret",
-  "write-secret",
-  "write-file",
-  "prepare-directory",
-]);
-export const ServerSettingsError = taggedError("ServerSettingsError", {
-  settingsPath: z.string(),
-  operation: ServerSettingsOperation,
-  providerInstanceId: z.string().optional(),
-  environmentVariable: z.string().optional(),
-  cause: Defect,
-});
-export const ProviderSetupError = taggedError("ProviderSetupError", {
-  instanceId: z.string(),
-  operation: z.string(),
-  detail: z.string(),
-  cause: Defect.optional(),
-});
-export const ServerNpmReleaseError = taggedError("ServerNpmReleaseError", {
-  reason: z.string(),
-});
-export const ServerPrepareTriageError = taggedError("ServerPrepareTriageError", {
-  cause: Defect.optional(),
-});
-
-// project.ts
-
-export const ProjectEntriesFailure = forwardCompatibleLiteral([
-  "workspace_root_not_found",
-  "workspace_root_create_failed",
-  "workspace_root_stat_failed",
-  "workspace_root_not_directory",
-  "search_index_create_failed",
-  "search_index_scan_timed_out",
-  "search_index_search_failed",
-  "directory_list_failed",
-]);
-export const ProjectFileFailure = forwardCompatibleLiteral([
-  "workspace_path_outside_root",
-  "resolved_path_outside_root",
-  "path_not_file",
-  "binary_file",
-  "operation_failed",
-]);
-export const ProjectFileOperation = forwardCompatibleLiteral([
-  "realpath-workspace-root",
-  "realpath-target",
-  "open",
-  "stat",
-  "read",
-  "close",
-  "make-directory",
-  "write-file",
-]);
-
-// The structured fields are optional on the wire so legacy message-only failures decode.
-const projectEntriesFields = {
-  cwd: TrimmedNonEmptyString.optional(),
-  failure: ProjectEntriesFailure.optional(),
-  normalizedCwd: TrimmedNonEmptyString.optional(),
-  timeout: TrimmedNonEmptyString.optional(),
-  detail: TrimmedNonEmptyString.optional(),
-  ...messageAndCause,
-};
-const projectSearchFields = {
-  ...projectEntriesFields,
-  queryLength: NonNegativeInt.optional(),
-  limit: PositiveInt.optional(),
-};
-const projectFileFields = {
-  cwd: TrimmedNonEmptyString.optional(),
-  relativePath: TrimmedNonEmptyString.optional(),
-  failure: ProjectFileFailure.optional(),
-  resolvedPath: TrimmedNonEmptyString.optional(),
-  resolvedWorkspaceRoot: TrimmedNonEmptyString.optional(),
-  operation: ProjectFileOperation.optional(),
-  operationPath: TrimmedNonEmptyString.optional(),
-  ...messageAndCause,
-};
-export const ProjectListEntriesError = taggedError("ProjectListEntriesError", projectEntriesFields);
-export const ProjectSearchEntriesError = taggedError(
-  "ProjectSearchEntriesError",
-  projectSearchFields,
-);
-export const ProjectSearchContentsError = taggedError(
-  "ProjectSearchContentsError",
-  projectSearchFields,
-);
-export const ProjectReadFileError = taggedError("ProjectReadFileError", projectFileFields);
-export const ProjectWriteFileError = taggedError("ProjectWriteFileError", projectFileFields);
-
-export const ProjectMutationError = taggedError("ProjectMutationError", {
-  commandId: CommandId,
-  ...messageAndCause,
-});
 
 /**
  * Every tagged failure a registered RPC method declares. A failure with an
@@ -203,7 +108,12 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   GitManagerError,
   GitPullRequestMaterializationError,
   SourceControlProviderError,
+  ...previewRpcErrors,
+  ...deviceRpcErrors,
+  ...pullRequestRpcErrors,
+  ...sourceControlRpcErrors,
   TextGenerationError,
+  ...vcsRpcErrors,
   TerminalCwdNotFoundError,
   TerminalCwdNotDirectoryError,
   TerminalCwdStatError,
@@ -217,8 +127,15 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   KeybindingsConfigError,
   ServerSettingsError,
   ProviderSetupError,
+  AcpRegistryOperationError,
+  ProviderUploadFeedbackError,
+  UsageLimitSourceError,
   ServerNpmReleaseError,
   ServerPrepareTriageError,
+  ServerProviderUpdateError,
+  ServerSelfUpdateError,
+  RelayClientInstallFailedError,
+  SecretRequestError,
   PeerLinkError,
   PeerLinkRequestError,
   GuestShareCreateError,
@@ -242,6 +159,7 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   OrchestrationV2CommandOutputError,
   OrchestrationV2SearchThreadError,
   McpAppRequestError,
+  ...fileRpcErrors,
   ScheduledTaskError,
   UsageReadError,
 ]);

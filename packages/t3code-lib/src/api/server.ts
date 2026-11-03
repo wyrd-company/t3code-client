@@ -2,13 +2,12 @@
 // relationships:
 //   implements: library
 // ---
+import { callRoute } from "../http/client.ts";
+import { httpRoutes } from "../http/registry.ts";
 import type { RpcClient } from "../rpc/client.ts";
 import type { RpcMethods } from "../rpc/registry.ts";
 import type { RpcPayload, RpcSuccess } from "../rpc/spec.ts";
-import {
-  ExecutionEnvironmentDescriptor,
-  type ExecutionEnvironmentDescriptor as ExecutionEnvironmentDescriptorType,
-} from "../schemas/environment.ts";
+import type { ExecutionEnvironmentDescriptor as ExecutionEnvironmentDescriptorType } from "../schemas/environment.ts";
 import type { ServerProvider, ServerProviderModel } from "../schemas/provider.ts";
 import type { ServerSettings } from "../schemas/server.ts";
 import type { UsageSummary, UsageSummaryInput } from "../schemas/usage.ts";
@@ -515,13 +514,7 @@ export class ServerApi {
 
   /** Read the public environment descriptor over HTTP. */
   environment(signal?: AbortSignal): Promise<ExecutionEnvironmentDescriptorType> {
-    return this.http.request({
-      method: "GET",
-      path: "/.well-known/t3/environment",
-      auth: "none",
-      decode: ExecutionEnvironmentDescriptor,
-      ...(signal === undefined ? {} : { signal }),
-    });
+    return callRoute(this.http, httpRoutes["metadata.descriptor"], undefined, { signal });
   }
 
   /** List configured provider instances. */

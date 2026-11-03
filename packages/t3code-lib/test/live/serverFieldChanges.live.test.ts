@@ -9,7 +9,7 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { afterAll, describe, expect, it } from "vite-plus/test";
-import { threadId } from "../../src/schemas/common.ts";
+import { ProviderDriverKind, threadId } from "../../src/schemas/common.ts";
 import { ComposerContextId } from "../../src/schemas/orchestration/messageContext.ts";
 import { TerminalActivityEvent } from "../../src/schemas/terminal.ts";
 import {
@@ -141,7 +141,7 @@ describe.skipIf(!ownsServer)("live settings field changes", () => {
     const server = await startPeerServer();
     const secret = { provider: "sample", reference: "op://vault/item/field" };
     try {
-      await server.client.rpc.callRaw("server.updateSettings", {
+      await server.client.rpc.call("server.updateSettings", {
         patch: {
           observability: { otlpTracesUrl: "http://127.0.0.1:9/v1/traces" },
           secretProviders: {
@@ -149,7 +149,7 @@ describe.skipIf(!ownsServer)("live settings field changes", () => {
           },
           providerInstances: {
             sample_codex: {
-              driver: "codex",
+              driver: ProviderDriverKind.parse("codex"),
               environment: [{ name: "SAMPLE_KEY", value: "", sensitive: true, secret }],
             },
           },

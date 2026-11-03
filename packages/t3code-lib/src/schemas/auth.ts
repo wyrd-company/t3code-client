@@ -171,6 +171,46 @@ export const AuthWebSocketTicketResult = z.looseObject({
 });
 export type AuthWebSocketTicketResult = z.infer<typeof AuthWebSocketTicketResult>;
 
+/** A ticket minted for one use is refused on the other route. */
+export const AuthWebSocketTicketUse = z.enum(["rpc", "media"]);
+export type AuthWebSocketTicketUse = z.infer<typeof AuthWebSocketTicketUse>;
+
+export const AuthBrowserSessionRequest = z.looseObject({ credential: TrimmedNonEmptyString });
+export type AuthBrowserSessionRequest = z.infer<typeof AuthBrowserSessionRequest>;
+
+/** The session token itself is only in the response's HttpOnly cookie. */
+export const AuthBrowserSessionResult = z.looseObject({
+  authenticated: z.literal(true),
+  ...authScopeResponseFields,
+  sessionMethod: ServerAuthSessionMethod,
+  expiresAt: IsoDateTime,
+});
+export type AuthBrowserSessionResult = z.infer<typeof AuthBrowserSessionResult>;
+
+export const AuthRevokePairingLinkInput = z.looseObject({ id: TrimmedNonEmptyString });
+export type AuthRevokePairingLinkInput = z.infer<typeof AuthRevokePairingLinkInput>;
+
+export const AuthRevokeClientSessionInput = z.looseObject({ sessionId: AuthSessionId });
+export type AuthRevokeClientSessionInput = z.infer<typeof AuthRevokeClientSessionInput>;
+
+export const AuthRevokeResult = z.looseObject({ revoked: z.boolean() });
+export type AuthRevokeResult = z.infer<typeof AuthRevokeResult>;
+
+export const AuthOtherClientSessionsRevokeResult = z.looseObject({ revokedCount: z.number() });
+export type AuthOtherClientSessionsRevokeResult = z.infer<
+  typeof AuthOtherClientSessionsRevokeResult
+>;
+
+/** The P-256 key that a proof-bound session signs with. `d` is the private part. */
+export const DpopPrivateJwk = z.looseObject({
+  kty: z.literal("EC"),
+  crv: z.literal("P-256"),
+  x: TrimmedNonEmptyString,
+  y: TrimmedNonEmptyString,
+  d: TrimmedNonEmptyString,
+});
+export type DpopPrivateJwk = z.infer<typeof DpopPrivateJwk>;
+
 export const AuthPairingCredentialResult = z.looseObject({
   id: TrimmedNonEmptyString,
   credential: TrimmedNonEmptyString,
@@ -197,6 +237,19 @@ export const AuthClientMetadataDeviceType = z.enum([
   "unknown",
 ]);
 export type AuthClientMetadataDeviceType = z.infer<typeof AuthClientMetadataDeviceType>;
+
+/** The form body of `POST /oauth/token`. */
+export const AuthTokenExchangeRequest = z.looseObject({
+  grant_type: z.literal("urn:ietf:params:oauth:grant-type:token-exchange"),
+  subject_token: TrimmedNonEmptyString,
+  subject_token_type: z.literal("urn:t3:params:oauth:token-type:environment-bootstrap"),
+  requested_token_type: z.literal("urn:ietf:params:oauth:token-type:access_token"),
+  scope: TrimmedNonEmptyString.optional(),
+  client_label: TrimmedNonEmptyString.optional(),
+  client_device_type: AuthClientMetadataDeviceType.optional(),
+  client_os: TrimmedNonEmptyString.optional(),
+});
+export type AuthTokenExchangeRequest = z.infer<typeof AuthTokenExchangeRequest>;
 
 export const AuthClientMetadata = z.looseObject({
   label: TrimmedNonEmptyString.optional(),

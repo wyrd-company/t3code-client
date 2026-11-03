@@ -5,81 +5,9 @@
 import { describe, expect, expectTypeOf, it } from "vite-plus/test";
 import { rpcMethods, type RpcMethods, type RpcMethodName } from "./registry.ts";
 import type { RpcPayload, RpcSuccess, StreamMethodName, UnaryMethodName } from "./spec.ts";
+import { expectedRpcMethods as expected } from "../../test/support/expectedRpcMethods.ts";
 import { VcsStatusStreamEvent } from "../schemas/vcs.ts";
 import { TerminalAttachStreamEvent } from "../schemas/terminal.ts";
-
-const expected = {
-  "orchestration.dispatchCommand": [false, "orchestration:operate"],
-  "orchestration.launchThread": [false, "orchestration:operate"],
-  "orchestration.getThreadProjection": [false, "orchestration:read"],
-  "orchestration.getTurnItem": [false, "orchestration:read"],
-  "orchestration.getWorkflowScript": [false, "orchestration:read"],
-  "orchestration.stopWorkflow": [false, "orchestration:operate"],
-  "orchestration.forceStopThread": [false, "orchestration:operate"],
-  "orchestration.getTurnDiff": [false, "orchestration:read"],
-  "orchestration.getFullThreadDiff": [false, "orchestration:read"],
-  "orchestration.searchThreads": [false, "orchestration:read"],
-  "orchestration.searchThread": [false, "orchestration:read"],
-  "orchestration.searchThreadStream": [true, "orchestration:read"],
-  "orchestration.getArchivedShellSnapshot": [false, "orchestration:read"],
-  "orchestration.getThreadFamily": [false, "orchestration:read"],
-  "orchestration.getWorktreeThreadIds": [false, "orchestration:read"],
-  "orchestration.getOlderSettledThreads": [false, "orchestration:read"],
-  "orchestration.subscribeShell": [true, "orchestration:read"],
-  "orchestration.subscribeThread": [true, "orchestration:read"],
-  "orchestration.subscribeCommandOutput": [true, "orchestration:read"],
-  "server.probe": [false, "orchestration:read"],
-  "server.getConfig": [false, "orchestration:read"],
-  "server.refreshProviders": [false, "orchestration:read"],
-  "server.getNpmRelease": [false, "orchestration:read"],
-  "server.prepareTriage": [false, "orchestration:operate"],
-  "server.getDatabaseStorage": [true, "orchestration:read"],
-  "server.getUsageSummary": [false, "diagnostics:read"],
-  subscribeServerConfig: [true, "orchestration:read"],
-  subscribeServerLifecycle: [true, "orchestration:read"],
-  subscribeAuthAccess: [true, "access:read"],
-  "peerLinks.list": [false, "access:read"],
-  "peerLinks.link": [false, "access:write"],
-  "peerLinks.unlink": [false, "access:write"],
-  "peerLinks.answerRequest": [false, "access:write"],
-  "guestShare.create": [false, "access:write"],
-  "vcs.listRefs": [false, "orchestration:read"],
-  "vcs.refreshStatus": [false, "orchestration:read"],
-  "vcs.createWorktree": [false, "source-control:write"],
-  "vcs.removeWorktree": [false, "source-control:write"],
-  "vcs.createRef": [false, "source-control:write"],
-  "vcs.switchRef": [false, "source-control:write"],
-  subscribeVcsStatus: [true, "orchestration:read"],
-  subscribeWorktreeSetup: [true, "orchestration:read"],
-  "worktreeSetup.cancel": [false, "orchestration:operate"],
-  "projects.mutate": [false, "orchestration:operate"],
-  "projects.listEntries": [false, "filesystem:read"],
-  "projects.listIgnoredFiles": [false, "filesystem:read"],
-  "projects.readFile": [false, "filesystem:read"],
-  "projects.writeFile": [false, "filesystem:write"],
-  "projects.searchEntries": [false, "filesystem:read"],
-  "projects.searchContents": [false, "filesystem:read"],
-  "projects.ensureScratch": [false, "orchestration:operate"],
-  "projects.createNew": [false, "orchestration:operate"],
-  "projects.createFromThread": [false, "orchestration:operate"],
-  "terminal.open": [false, "terminal:operate"],
-  "terminal.attach": [true, "terminal:operate"],
-  "terminal.write": [false, "terminal:operate"],
-  "terminal.resize": [false, "terminal:operate"],
-  "terminal.close": [false, "terminal:operate"],
-  "mcpApps.callTool": [false, "orchestration:operate"],
-  "mcpApps.toolInfo": [false, "orchestration:read"],
-  "mcpApps.readResource": [false, "orchestration:read"],
-  "mcpApps.updateModelContext": [false, "orchestration:operate"],
-  "scheduledTasks.subscribe": [true, "orchestration:read"],
-  "scheduledTasks.upsert": [false, "orchestration:operate"],
-  "scheduledTasks.setEnabled": [false, "orchestration:operate"],
-  "scheduledTasks.delete": [false, "orchestration:operate"],
-  "scheduledTasks.runNow": [false, "orchestration:operate"],
-  "scheduledTasks.rotateWebhookToken": [false, "orchestration:operate"],
-  "scheduledTasks.listWebhookDeliveries": [false, "orchestration:operate"],
-  "scheduledTasks.getWebhookDelivery": [false, "orchestration:operate"],
-} as const;
 
 describe("RPC contract registry", () => {
   it("covers exactly the design's wire methods, with server scopes and stream flags", () => {
@@ -95,6 +23,53 @@ describe("RPC contract registry", () => {
     expect(
       scopes?.(rpcMethods["projects.mutate"].payload.parse({ ...update, scripts: [] })),
     ).toEqual(["settings:write"]);
+  });
+  it("asks for the file grant in place of the orchestration grant for an asset on disk", () => {
+    const spec = rpcMethods["assets.createUrl"];
+    const scopeOf = (resource: unknown) => spec.scopeForPayload?.(spec.payload.parse({ resource }));
+    const threadId = "thread-1";
+    for (const resource of [
+      { _tag: "workspace-file", threadId, path: "a.png" },
+      { _tag: "media-file", threadId, path: "a.png" },
+      { _tag: "draft-workspace-file", cwd: "/sample", path: "a.png" },
+    ]) {
+      expect(scopeOf(resource), resource._tag).toBe("filesystem:read");
+    }
+    for (const resource of [
+      { _tag: "attachment", attachmentId: "attachment-1" },
+      { _tag: "tool-output-image", threadId, itemId: "item-1", index: 0 },
+      { _tag: "project-favicon", cwd: "/sample" },
+      { _tag: "native-app-icon", app: { _tag: "app-id", appId: "sample.app" } },
+      { _tag: "github-media", cwd: "/sample", url: "https://host.invalid/a.png" },
+    ]) {
+      expect(scopeOf(resource), resource._tag).toBe("orchestration:read");
+    }
+  });
+  it("asks for the thread grant only when a Git action touches a thread", () => {
+    const run = rpcMethods["git.runStackedAction"];
+    const runScopes = (fields: object) =>
+      run.payloadScopes?.(
+        run.payload.parse({ actionId: "action-1", cwd: "/sample", action: "commit", ...fields }),
+      );
+    expect(runScopes({ action: "create_pr", threadId: "thread-1" })).toEqual([
+      "orchestration:read",
+    ]);
+    expect(runScopes({ action: "commit_push_pr", threadId: "thread-1" })).toEqual([
+      "orchestration:read",
+    ]);
+    expect(runScopes({ action: "commit_push", threadId: "thread-1" })).toEqual([]);
+    expect(runScopes({ action: "create_pr" })).toEqual([]);
+
+    const prepare = rpcMethods["git.preparePullRequestThread"];
+    const prepareScopes = (fields: object) =>
+      prepare.payloadScopes?.(
+        prepare.payload.parse({ cwd: "/sample", reference: "1", mode: "local", ...fields }),
+      );
+    expect(prepareScopes({ mode: "worktree", threadId: "thread-1" })).toEqual([
+      "orchestration:operate",
+    ]);
+    expect(prepareScopes({ mode: "worktree" })).toEqual([]);
+    expect(prepareScopes({ threadId: "thread-1" })).toEqual([]);
   });
   it("retains payload, success, and stream types", () => {
     expectTypeOf<"terminal.attach">().toExtend<StreamMethodName<RpcMethods>>();

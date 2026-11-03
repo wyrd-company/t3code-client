@@ -6,20 +6,23 @@
  * A second isolated stock server, for a test that links two environments. It
  * has its own home and port. Its output goes to a file in that home, because
  * it can contain pairing credentials, and `stop` removes that home.
+ * A scratch server also has its own `HOME`, for a method that can reach a login
+ * or an installed provider.
  */
 import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import type { T3Client } from "../../src/index.ts";
+import { clearedMachineAccess } from "../support/serverEnvironment.ts";
 import {
-  freePort,
-  hasExited,
   issueToken,
+  prepareServerHome,
   serverBin,
   spawnServer,
+  stopServerProcess,
   waitForReady,
 } from "./globalSetup.ts";
-import { connectTo } from "./liveClient.ts";
+import { connectTo, connectWithScopes } from "./liveClient.ts";
 
 export interface PeerServer {
   readonly baseUrl: string;
@@ -30,26 +33,42 @@ export interface PeerServer {
   stop(): Promise<void>;
 }
 
-export async function startPeerServer(): Promise<PeerServer> {
+/** Sets `values` in this process, and returns what restores them. */
+export function withInherited(values: Readonly<Record<string, string>>): () => void {
+  const saved = Object.keys(values).map((name) => [name, process.env[name]] as const);
+  Object.assign(process.env, values);
+  return () => {
+    for (const [name, value] of saved) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  };
+}
+
+/** The `PATH` of a server that finds a stub in `dir` first. */
+export function pathWith(dir: string): { readonly PATH: string } {
+  return { PATH: `${dir}${NodePath.delimiter}${process.env["PATH"] ?? ""}` };
+}
+
+export async function startPeerServer(
+  options: { readonly environment?: NodeJS.ProcessEnv } = {},
+): Promise<PeerServer> {
   const bin = serverBin();
-  const root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-lib-peer-"));
-  const baseDir = NodePath.join(root, "home");
-  const workspace = NodePath.join(root, "workspace");
-  await NodeFSP.mkdir(workspace, { recursive: true });
-  const port = await freePort();
-  const baseUrl = `http://127.0.0.1:${port}`;
-  const log = await NodeFSP.open(NodePath.join(root, "server.log"), "w");
-  const start = () => spawnServer({ bin, port, baseDir, workspace, logFd: log.fd });
+  const { root, baseDir, workspace, port, baseUrl, log } =
+    await prepareServerHome("t3code-lib-peer-");
+  const start = () =>
+    spawnServer({
+      bin,
+      port,
+      baseDir,
+      workspace,
+      logFd: log.fd,
+      ...(options.environment === undefined ? {} : { environment: options.environment }),
+    });
   const connect = () => connectTo(baseUrl, issueToken(bin, baseDir));
   let server = start();
-  const stopProcess = async () => {
-    if (hasExited(server)) return;
-    const exited = new Promise((resolve) => server.once("exit", resolve));
-    server.kill("SIGTERM");
-    await exited;
-  };
   const stopServer = async () => {
-    await stopProcess();
+    await stopServerProcess(server);
     await log.close();
     await NodeFSP.rm(root, { recursive: true, force: true });
   };
@@ -63,7 +82,7 @@ export async function startPeerServer(): Promise<PeerServer> {
       },
       restart: async (change) => {
         await client.close();
-        await stopProcess();
+        await stopServerProcess(server);
         await change(baseDir);
         server = start();
         await waitForReady(baseUrl, server);
@@ -80,5 +99,60 @@ export async function startPeerServer(): Promise<PeerServer> {
   } catch (error) {
     await stopServer();
     throw error;
+  }
+}
+
+/**
+ * A peer server whose `HOME` and `CODEX_HOME` are in a new folder, with the prefix
+ * `name`, and that inherits no value in `clearedMachineAccess`. `prepare` fills that
+ * folder, before the server starts, and returns more of the server's environment.
+ * `stop` also removes the folder.
+ */
+export async function startScratchServer(
+  name: string,
+  prepare: (home: string) => NodeJS.ProcessEnv | Promise<NodeJS.ProcessEnv> = () => ({}),
+): Promise<PeerServer> {
+  const home = await NodeFSP.realpath(await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), name)));
+  const removeHome = () => NodeFSP.rm(home, { recursive: true, force: true });
+  try {
+    const peer = await startPeerServer({
+      environment: {
+        ...clearedMachineAccess(),
+        ...(await prepare(home)),
+        HOME: home,
+        CODEX_HOME: NodePath.join(home, ".codex"),
+      },
+    });
+    return {
+      baseUrl: peer.baseUrl,
+      get client() {
+        return peer.client;
+      },
+      restart: (change) => peer.restart(change),
+      stop: async () => {
+        try {
+          await peer.stop();
+        } finally {
+          await removeHome();
+        }
+      },
+    };
+  } catch (error) {
+    await removeHome();
+    throw error;
+  }
+}
+
+/** Runs `use` with a client of `server` that holds only `scopes`, then closes that client. */
+export async function withScopes<T>(
+  server: Pick<PeerServer, "baseUrl" | "client">,
+  scopes: Parameters<typeof connectWithScopes>[1],
+  use: (client: T3Client) => Promise<T>,
+): Promise<T> {
+  const scoped = await connectWithScopes(server.client, scopes, server.baseUrl);
+  try {
+    return await use(scoped);
+  } finally {
+    await scoped.close();
   }
 }

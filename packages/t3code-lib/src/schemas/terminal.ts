@@ -58,6 +58,10 @@ export const TerminalAttachInput = z.looseObject({
   resume: z.boolean().optional(),
 });
 export type TerminalAttachInput = z.infer<typeof TerminalAttachInput>;
+export const TerminalObserveInput = TerminalSessionInput;
+export type TerminalObserveInput = z.infer<typeof TerminalObserveInput>;
+export const TerminalClearInput = TerminalSessionInput;
+export type TerminalClearInput = z.infer<typeof TerminalClearInput>;
 export const TerminalWriteInput = z.looseObject({
   ...TerminalSessionInput.shape,
   data: z.string().min(1).max(65_536),
@@ -100,6 +104,32 @@ export const TerminalSessionSnapshot = z.looseObject({
   rows: TerminalRowsSchema.optional(),
 });
 export type TerminalSessionSnapshot = z.infer<typeof TerminalSessionSnapshot>;
+export const TerminalSummary = z.looseObject({
+  threadId: z.string().min(1),
+  terminalId: z.string().min(1),
+  cwd: z.string().min(1),
+  worktreePath: TrimmedNonEmptyStringSchema.nullable(),
+  status: TerminalSessionStatus,
+  pid: z.number().int().gt(0).nullable(),
+  exitCode: z.number().int().nullable(),
+  exitSignal: z.number().int().nullable(),
+  hasRunningSubprocess: z.boolean(),
+  label: z.string().max(128),
+  updatedAt: z.string(),
+});
+export type TerminalSummary = z.infer<typeof TerminalSummary>;
+export const TerminalMetadataInput = z.looseObject({});
+export type TerminalMetadataInput = z.infer<typeof TerminalMetadataInput>;
+export const TerminalMetadataStreamEvent = taggedUnionWithUnknown("type", [
+  z.looseObject({ type: z.literal("snapshot"), terminals: z.array(TerminalSummary) }),
+  z.looseObject({ type: z.literal("upsert"), terminal: TerminalSummary }),
+  z.looseObject({
+    type: z.literal("remove"),
+    threadId: z.string().min(1),
+    terminalId: z.string().min(1),
+  }),
+]);
+export type TerminalMetadataStreamEvent = z.infer<typeof TerminalMetadataStreamEvent>;
 export const TerminalEventBaseSchema = z.looseObject({
   threadId: z.string().min(1),
   terminalId: z.string().min(1),

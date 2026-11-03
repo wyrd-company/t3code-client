@@ -9,7 +9,8 @@
  * locally when they are known. `callRaw` and `streamRaw` bypass the table.
  */
 import type { z } from "zod";
-import { T3AuthError, T3DecodeError, T3PreconditionError } from "../errors.ts";
+import { ensureScopes } from "../auth/scopes.ts";
+import { T3DecodeError, T3PreconditionError } from "../errors.ts";
 import { noopLogger, type Logger } from "../internal/logger.ts";
 import type { RpcConnection, RpcStreamOptions } from "../transport/rpcConnection.ts";
 import type {
@@ -123,9 +124,7 @@ export class RpcClient<Table extends RpcMethodTable> {
   /** Scope check, then validation and normalisation through the payload schema. */
   #preparePayload(method: string, spec: RpcMethodSpec, payload: unknown): unknown {
     const scopes = this.#getScopes();
-    if (scopes && !scopes.includes(spec.scope)) {
-      throw T3AuthError.insufficientScope(spec.scope, method);
-    }
+    if (scopes && spec.scopeForPayload === undefined) ensureScopes(scopes, [spec.scope], method);
     const result = spec.payload.safeParse(payload);
     if (!result.success) {
       throw new T3PreconditionError(
@@ -133,8 +132,17 @@ export class RpcClient<Table extends RpcMethodTable> {
         { cause: result.error },
       );
     }
-    const missing = scopes && spec.payloadScopes?.(result.data).find((s) => !scopes.includes(s));
-    if (missing) throw T3AuthError.insufficientScope(missing, method);
+    if (scopes) {
+      const replaced = spec.scopeForPayload?.(result.data);
+      ensureScopes(
+        scopes,
+        [
+          ...(replaced === undefined ? [] : [replaced]),
+          ...(spec.payloadScopes?.(result.data) ?? []),
+        ],
+        method,
+      );
+    }
     return result.data;
   }
 }

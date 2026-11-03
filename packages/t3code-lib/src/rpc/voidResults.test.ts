@@ -19,9 +19,27 @@ const cases = [
     { threadId: "thread-1", itemId: "item-1", conversationThreadId: "thread-1" },
   ],
   ["orchestration.stopWorkflow", { threadId: "thread-1", subagentId: "node-1" }],
+  [
+    "server.reportClientActivity",
+    {
+      clientId: "client-1",
+      clientKind: "unknown",
+      visible: true,
+      focused: true,
+      recentlyInteracted: true,
+      scopes: [],
+      observedAt: "2026-01-01T00:00:00.000Z",
+    },
+  ],
+  [
+    "secrets.answerRequest",
+    { threadId: "thread-1", turnItemId: "item-1", answer: { type: "decline" } },
+  ],
   ["terminal.write", { threadId: "thread-1", terminalId: "terminal-1", data: "sample" }],
   ["terminal.resize", { threadId: "thread-1", terminalId: "terminal-1", cols: 80, rows: 24 }],
+  ["terminal.clear", { threadId: "thread-1", terminalId: "terminal-1" }],
   ["terminal.close", { threadId: "thread-1" }],
+  ["vcs.init", { cwd: "/tmp/sample" }],
   ["vcs.removeWorktree", { cwd: "/tmp/sample", path: "/tmp/sample-worktree" }],
 ] as const;
 

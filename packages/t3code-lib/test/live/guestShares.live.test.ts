@@ -102,7 +102,7 @@ describe.skipIf(!hasLiveServer)("live guest shares", () => {
 
   it("refuses a link while the setting is off, and with no tunnel", async () => {
     await expect(createRefusal(server.client, threadId)).resolves.toBe("disabled");
-    await server.client.rpc.callRaw("server.updateSettings", {
+    await server.client.rpc.call("server.updateSettings", {
       patch: { guestSharingEnabled: true },
     });
     await expect(createRefusal(server.client, threadId)).resolves.toBe("connect_unavailable");

@@ -48,6 +48,27 @@ export function hasExited(child: NodeChildProcess.ChildProcess): boolean {
   return child.exitCode !== null || child.signalCode !== null;
 }
 
+/** Stop the process and wait for it to end. */
+export async function stopServerProcess(child: NodeChildProcess.ChildProcess): Promise<void> {
+  if (hasExited(child)) return;
+  const exited = new Promise((resolve) => child.once("exit", resolve));
+  child.kill("SIGTERM");
+  await exited;
+}
+
+/** A new root with a data directory, a workspace and a log, and a free port for its server. */
+export async function prepareServerHome(prefix: string) {
+  const root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), prefix));
+  const baseDir = NodePath.join(root, "home");
+  const workspace = NodePath.join(root, "workspace");
+  await NodeFSP.mkdir(baseDir, { recursive: true });
+  await NodeFSP.mkdir(workspace, { recursive: true });
+  const port = await freePort();
+  const baseUrl = `http://127.0.0.1:${port}`;
+  const log = await NodeFSP.open(NodePath.join(root, "server.log"), "w");
+  return { root, baseDir, workspace, port, baseUrl, log };
+}
+
 export async function waitForReady(baseUrl: string, server: NodeChildProcess.ChildProcess) {
   const deadline = Date.now() + READY_TIMEOUT_MS;
   while (Date.now() < deadline) {
@@ -76,6 +97,7 @@ export function spawnServer(options: {
   readonly baseDir: string;
   readonly workspace: string;
   readonly logFd: number;
+  readonly environment?: NodeJS.ProcessEnv;
 }): NodeChildProcess.ChildProcess {
   return NodeChildProcess.spawn(
     process.execPath,
@@ -93,7 +115,10 @@ export function spawnServer(options: {
       "warn",
       options.workspace,
     ],
-    { stdio: ["ignore", options.logFd, options.logFd], env: serverEnvironment() },
+    {
+      stdio: ["ignore", options.logFd, options.logFd],
+      env: { ...serverEnvironment(), ...options.environment },
+    },
   );
 }
 
@@ -120,13 +145,8 @@ export default async function setup(): Promise<(() => Promise<void>) | undefined
   if (process.env["T3_LIVE_URL"] && process.env["T3_LIVE_TOKEN"]) return undefined;
 
   const bin = serverBin();
-  const root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-lib-live-"));
-  const baseDir = NodePath.join(root, "home");
-  const workspace = NodePath.join(root, "workspace");
-  await NodeFSP.mkdir(workspace, { recursive: true });
-  const port = await freePort();
-  const baseUrl = `http://127.0.0.1:${port}`;
-  const log = await NodeFSP.open(NodePath.join(root, "server.log"), "w");
+  const { root, baseDir, workspace, port, baseUrl, log } =
+    await prepareServerHome("t3code-lib-live-");
 
   const server = spawnServer({ bin, port, baseDir, workspace, logFd: log.fd });
 
@@ -156,11 +176,7 @@ export default async function setup(): Promise<(() => Promise<void>) | undefined
   };
 
   const stop = async () => {
-    if (!hasExited(server)) {
-      const exited = new Promise((resolve) => server.once("exit", resolve));
-      server.kill("SIGTERM");
-      await exited;
-    }
+    await stopServerProcess(server);
     await log.close();
     await writeEvidence("stopped", {
       exitCode: server.exitCode,

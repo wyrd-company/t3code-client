@@ -10,8 +10,10 @@ import { z } from "zod";
 import { T3ConnectionError, T3DecodeError, T3Error } from "../errors.ts";
 import {
   AuthGrantedScope,
+  DpopPrivateJwk,
   ServerAuthSessionMethod,
   type AuthGrantedScope as AuthGrantedScopeType,
+  type DpopPrivateJwk as DpopPrivateJwkType,
   type ServerAuthSessionMethod as ServerAuthSessionMethodType,
 } from "../schemas/auth.ts";
 import { IsoDateTime } from "../schemas/common.ts";
@@ -22,6 +24,8 @@ export interface StoredCredentials {
   scopes?: AuthGrantedScopeType[];
   expiresAt?: string;
   sessionMethod?: ServerAuthSessionMethodType;
+  /** Present for a proof-bound session: every request signs a DPoP proof with this key. */
+  dpopKey?: DpopPrivateJwkType;
 }
 
 export interface CredentialStore {
@@ -38,6 +42,7 @@ const StoredCredentialsSchema = z.looseObject({
   scopes: z.array(AuthGrantedScope).optional(),
   expiresAt: IsoDateTime.optional(),
   sessionMethod: ServerAuthSessionMethod.optional(),
+  dpopKey: DpopPrivateJwk.optional(),
 });
 
 /** Create an isolated in-memory credential store. */
@@ -118,6 +123,7 @@ function clone(credentials: {
   scopes?: AuthGrantedScopeType[] | undefined;
   expiresAt?: string | undefined;
   sessionMethod?: ServerAuthSessionMethodType | undefined;
+  dpopKey?: DpopPrivateJwkType | undefined;
 }): StoredCredentials {
   return {
     ...(credentials.accessToken === undefined ? {} : { accessToken: credentials.accessToken }),
@@ -126,6 +132,7 @@ function clone(credentials: {
     ...(credentials.sessionMethod === undefined
       ? {}
       : { sessionMethod: credentials.sessionMethod }),
+    ...(credentials.dpopKey === undefined ? {} : { dpopKey: { ...credentials.dpopKey } }),
   };
 }
 

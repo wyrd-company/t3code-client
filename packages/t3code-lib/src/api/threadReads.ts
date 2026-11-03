@@ -2,17 +2,19 @@
  * Thread reads: shell lookups that fall back to the archived shell, and the
  * HTTP detail, history page, and transcript routes. ThreadsApi exposes them.
  */
+import { callRoute } from "../http/client.ts";
+import { httpRoutes } from "../http/registry.ts";
 import type { RpcClient } from "../rpc/client.ts";
 import type { RpcMethods } from "../rpc/registry.ts";
 import type { ProjectId, ThreadId } from "../schemas/common.ts";
-import {
+import type {
   OrchestrationV2ThreadDetailSnapshot,
   OrchestrationV2ThreadHistoryPage,
   OrchestrationV2ThreadTranscript,
 } from "../schemas/orchestration/projection.ts";
 import type { OrchestrationV2ThreadShell } from "../schemas/orchestration/shell.ts";
 import type { HttpTransport } from "../transport/http.ts";
-import { loadShellSnapshot, orchestrationHttpHeaders } from "./shell.ts";
+import { loadShellSnapshot } from "./shell.ts";
 
 export interface ThreadListOptions {
   readonly projectId?: ProjectId;
@@ -21,7 +23,7 @@ export interface ThreadListOptions {
 
 export interface ThreadHistoryPageOptions {
   readonly throughEntryId?: string;
-  readonly view?: "conversation" | "activity";
+  readonly view?: "conversation" | "activity" | "work";
 }
 
 /**
@@ -76,14 +78,8 @@ export function loadThreadDetail(
   threadId: ThreadId,
   signal?: AbortSignal,
 ): Promise<OrchestrationV2ThreadDetailSnapshot> {
-  return http.request({
-    method: "GET",
-    path: threadPath(threadId),
-    auth: "required",
-    headers: orchestrationHttpHeaders,
-    decode: OrchestrationV2ThreadDetailSnapshot,
-    ...(signal === undefined ? {} : { signal }),
-  });
+  const input = { params: { threadId } };
+  return callRoute(http, httpRoutes["orchestration.threadSnapshot"], input, { signal });
 }
 
 export function loadThreadHistoryPage(
@@ -93,15 +89,8 @@ export function loadThreadHistoryPage(
   options: ThreadHistoryPageOptions,
   signal?: AbortSignal,
 ): Promise<OrchestrationV2ThreadHistoryPage> {
-  return http.request({
-    method: "GET",
-    path: `${threadPath(threadId)}/history`,
-    query: { cursor, ...options },
-    auth: "required",
-    headers: orchestrationHttpHeaders,
-    decode: OrchestrationV2ThreadHistoryPage,
-    ...(signal === undefined ? {} : { signal }),
-  });
+  const input = { params: { threadId }, query: { cursor, ...options } };
+  return callRoute(http, httpRoutes["orchestration.threadHistoryPage"], input, { signal });
 }
 
 export function loadThreadTranscript(
@@ -109,16 +98,6 @@ export function loadThreadTranscript(
   threadId: ThreadId,
   signal?: AbortSignal,
 ): Promise<OrchestrationV2ThreadTranscript> {
-  return http.request({
-    method: "GET",
-    path: `${threadPath(threadId)}/transcript`,
-    auth: "required",
-    headers: orchestrationHttpHeaders,
-    decode: OrchestrationV2ThreadTranscript,
-    ...(signal === undefined ? {} : { signal }),
-  });
-}
-
-function threadPath(threadId: ThreadId): string {
-  return `/api/orchestration/threads/${encodeURIComponent(threadId)}`;
+  const input = { params: { threadId } };
+  return callRoute(http, httpRoutes["orchestration.threadTranscript"], input, { signal });
 }

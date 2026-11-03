@@ -20,12 +20,13 @@ import {
   hasLiveServer,
   modelSelection,
   refusal,
+  turnEnded,
   waitFor,
 } from "./liveClient.ts";
 import { startPeerServer, type PeerServer } from "./peerServer.ts";
 
 const setLinksEnabled = (client: T3Client, enabled: boolean) =>
-  client.rpc.callRaw("server.updateSettings", { patch: { linkedEnvironmentsEnabled: enabled } });
+  client.rpc.call("server.updateSettings", { patch: { linkedEnvironmentsEnabled: enabled } });
 
 /** A pairing code from the peer. Nothing logs it. */
 const pairingCode = async (peer: PeerServer) => {
@@ -233,13 +234,7 @@ describe.skipIf(!ownsServer)("live peer links", () => {
           }
           return row.linkStatus === status ? row : undefined;
         }, `a ${status} link request`);
-      const idle = () =>
-        waitFor(async () => {
-          const row = (await client.shell.snapshot()).threads.find((entry) => entry.id === id);
-          return row && ["completed", "idle", "failed", "interrupted"].includes(row.status)
-            ? row
-            : undefined;
-        }, "the turn to end");
+      const idle = () => turnEnded(client, id);
 
       const first = await askLink("Sample decline", 1, openThread);
       // `reason` is optional in the tool input, and the server records its absence as empty text.

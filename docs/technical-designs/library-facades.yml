@@ -376,6 +376,8 @@ proposed-design:
     advertise support. Supplied non-boolean values fail decoding. The library does
     not check them before a call. `server.prepareTriage` needs `orchestration:operate`.
     `vcs.status` takes `localOnly`, which refreshes only the local state.
+    `vcs.watchStatus` takes `includeRemote`: with `false`, a passive observer gets
+    cached remote status and keeps no refresh loop alive.
 
   guest-shares: |
     `client.guestShares` is the owner's side of a guest link: one unauthenticated
@@ -837,7 +839,9 @@ proposed-design:
     Growing strings, omission and unknown settings metadata remain intact.
     Non-string values fail decoding; later valid chunks remain available.
     Reading this metadata does not compact threads or change defaults or timing.
-    Other settings remain loose. `server.updateSettings` is the typed mutation.
+    Other settings remain loose on a read. `server.updateSettings` is the typed
+    mutation: its patch names each key of the target build, with closed lists and
+    no defaults, so that a patch sends only what the caller set.
 
   configuration-issues: |
     Configuration reads, configuration snapshots and `keybindingsUpdated`

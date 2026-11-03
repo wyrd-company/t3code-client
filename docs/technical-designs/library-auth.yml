@@ -21,6 +21,7 @@ proposed-design:
       scopes?: AuthGrantedScope[]; // KnownOr<AuthEnvironmentScope>: a newer server may grant a scope this client does not know
       expiresAt?: string;
       sessionMethod?: ServerAuthSessionMethod;
+      dpopKey?: DpopPrivateJwk; // present for a proof-bound session
     }
     export interface CredentialStore {
       load(): Promise<StoredCredentials>;
@@ -40,9 +41,10 @@ proposed-design:
           clientLabel?: string;
           clientDeviceType?: AuthClientMetadataDeviceType;
           clientOs?: string;
+          dpopKey?: DpopPrivateJwk; // binds the session to this key
         },
       ): Promise<AuthAccessTokenResult>; // saves to the store
-      setAccessToken(token: string): Promise<AuthSessionState>; // validates via /api/auth/session, saves
+      setAccessToken(token: string, options?: { dpopKey?: DpopPrivateJwk }): Promise<AuthSessionState>; // validates via /api/auth/session, saves
       clearCredentials(): Promise<void>;
       websocketTicket(signal?): Promise<AuthWebSocketTicketResult>;
       createPairingCredential(
@@ -54,6 +56,7 @@ proposed-design:
       watchAccess(options?): AsyncIterable<AuthAccessStreamEvent>; // subscribeAuthAccess over RPC; its snapshot lists pairing links and clients
       hasScope(scope: AuthEnvironmentScope): Promise<boolean>;
       ensureScopes(required: AuthEnvironmentScope[]): Promise<void>; // throws T3AuthError with the missing scope
+      currentDpopKey(): Promise<DpopPrivateJwk | undefined>;
       scopesSync(): AuthGrantedScope[] | undefined; // from the last credential loaded or saved; no store round trip
       readonly credentialsVersion: number; // increments on every save or clear that changes the credential
       onCredentialsChange(handler: () => void): () => void;
@@ -71,6 +74,45 @@ proposed-design:
     calls `SocketTransport.reconnect()` on every credential change so the open
     socket authenticates as the new session.
 
+  proof-bound-sessions: |
+    ```ts
+    export function generateDpopKey(): DpopPrivateJwk; // a P-256 key, as a private JWK
+    export function createDpopProof(input: {
+      key: DpopPrivateJwk;
+      method: string;
+      url: URL | string;
+      accessToken?: string; // the access token, or the ticket of a socket upgrade
+      clock?: Clock;
+    }): string;
+    ```
+
+    A caller that wants a session a stolen token cannot use generates a key and
+    passes it to `exchangePairingToken`. The key is stored with the token, because
+    the token is useless without it: a file store keeps both in the same 0600 file.
+    From then on `HttpTransport` signs a new proof for each request. `T3Client`
+    signs one for each socket upgrade in both socket modes, and in ticket mode it
+    mints for the `rpc` use, the only ticket the server binds to the key. If the server issues a
+    plain bearer token, the key is not stored. `redactSecrets` removes the private
+    part of a key from anything an error carries.
+
+    The library uses `node:crypto` for proofs, so a proof needs no dependency.
+  desktop-bootstrap: |
+    A desktop launcher starts the server and hands it a bootstrap document on a
+    file descriptor. The document holds a seeded `desktopBootstrapToken`, or a
+    `desktopBootstrapSecret` that tokens derive from. `exchangePairingToken` and
+    the `auth.browserSession` route accept either kind of token, and neither is
+    single use. `currentDesktopBootstrapToken(secret, nowMs?)` derives the token of
+    the current 12-hour window, as the upstream desktop app does; the server also
+    accepts the window on each side. The library starts no server, so the document
+    is the launcher's concern and has no schema here.
+  browser-sessions: |
+    The `auth.browserSession` route exchanges a bootstrap credential for a session
+    whose token is only in an HttpOnly cookie. The credential store holds nothing
+    for it, and a Node `fetch` does not keep cookies. A program that wants the
+    session supplies a `fetch` with a cookie jar and sets
+    `T3ClientOptions.fetchAuthenticates`, so that a route that requires a session
+    sends without a stored token. The client then mints socket tickets through
+    that `fetch`.
   scope-groups: >-
     AuthStandardClientScopes mirrors the stock 0.1.6 standard client grant,
     including access:read, access:write and relay:write. There is no separate
