@@ -5,6 +5,7 @@
 /** The HTTP route table: every route with a schema, assembled from `routes/*.ts`. */
 import { assetRoutes } from "./routes/assets.ts";
 import { authRoutes } from "./routes/auth.ts";
+import { cloudLinkRoutes } from "./routes/cloudLink.ts";
 import { orchestrationRoutes } from "./routes/orchestration.ts";
 import { previewRoutes } from "./routes/preview.ts";
 import { projectRoutes } from "./routes/projects.ts";
@@ -14,6 +15,7 @@ import { pullRequestRoutes } from "./routes/pullRequests.ts";
 export const httpRoutes = {
   ...assetRoutes,
   ...authRoutes,
+  ...cloudLinkRoutes,
   ...orchestrationRoutes,
   ...previewRoutes,
   ...projectRoutes,

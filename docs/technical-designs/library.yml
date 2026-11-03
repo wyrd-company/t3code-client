@@ -85,6 +85,9 @@ proposed-design:
         preview.ts              browser tabs, browser profiles and discovered local servers
         previewViewer.ts        viewer socket messages, and the bodies of the two routes beside it
         device.ts               device hosts, simulators and emulators, their sessions and actions
+        serverSelfUpdate.ts     what moves a server to another version, and its progress
+        relayClient.ts          the tunnel client of T3 Connect, and its install progress
+        cloudLink.ts            T3 Connect routes: link proof, relay configuration, link state, reachability, a relay's health and credential requests
         filesystem.ts           host path browsing and metadata
         git.ts                  stacked Git actions and their progress events, pull request resolution and preparation
         review.ts               a branch's commits, diff previews and the contents of a changed file
@@ -153,7 +156,7 @@ proposed-design:
         rpcConnection.ts        RpcConnection: request ids, correlation, Chunk→AsyncIterable with Ack, Interrupt
       http/
         registry.ts             httpRoutes: route name → { method, path, input, success, auth, scope }
-        routes/*.ts             one file per family (assets, auth, orchestration, projects, pullRequests)
+        routes/*.ts             one file per family (assets, auth, cloudLink, orchestration, preview, projects, pullRequests)
         spec.ts                 the shape of one route entry
         client.ts               HttpRouteClient: typed call by route name; callRoute for the facades
       rpc/

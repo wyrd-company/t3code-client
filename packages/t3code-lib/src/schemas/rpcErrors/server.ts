@@ -1,4 +1,4 @@
-/** Tagged failures of the auth and server RPC methods, mirroring the contracts' `auth.ts`, `keybindings.ts`, `settings.ts`, `server.ts`, `secretRequest.ts`, `providerSetup.ts` and `acpRegistry.ts`. */
+/** Tagged failures of the auth and server RPC methods, mirroring the contracts' `auth.ts`, `keybindings.ts`, `settings.ts`, `server.ts`, `secretRequest.ts`, `providerSetup.ts`, `acpRegistry.ts` and `relayClient.ts`. */
 import { z } from "zod";
 import { AcpRegistryProbeAuthMethod, AcpRegistryUrlAuthAction } from "../acpRegistry.ts";
 import { AuthGrantedScope } from "../auth.ts";
@@ -95,6 +95,22 @@ export const ServerProviderUpdateError = taggedError("ServerProviderUpdateError"
   provider: z.string(),
   reason: z.string(),
   cause: Defect.optional(),
+});
+export const ServerSelfUpdateError = taggedError("ServerSelfUpdateError", {
+  reason: z.string(),
+  cause: Defect.optional(),
+});
+export const RelayClientInstallFailedError = taggedError("RelayClientInstallFailedError", {
+  reason: forwardCompatibleLiteral([
+    "download_failed",
+    "invalid_checksum",
+    "install_locked",
+    "override_missing",
+    "unsupported_platform",
+    "validation_failed",
+    "write_failed",
+  ]),
+  message: z.string(),
 });
 export const SecretRequestFailureReason = forwardCompatibleLiteral([
   "load_failed",

@@ -32,7 +32,9 @@ import {
   SecretRequestError,
   ServerNpmReleaseError,
   ServerPrepareTriageError,
+  RelayClientInstallFailedError,
   ServerProviderUpdateError,
+  ServerSelfUpdateError,
   ServerSettingsError,
   UsageLimitSourceError,
 } from "./rpcErrors/server.ts";
@@ -131,6 +133,8 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   ServerNpmReleaseError,
   ServerPrepareTriageError,
   ServerProviderUpdateError,
+  ServerSelfUpdateError,
+  RelayClientInstallFailedError,
   SecretRequestError,
   PeerLinkError,
   PeerLinkRequestError,

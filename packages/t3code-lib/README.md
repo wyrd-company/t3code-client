@@ -400,6 +400,33 @@ instance's snapshot reports the capability. A session with an imported thread re
 `server.setAcpRegistryProvider` sends `headers` to the agent, and no method returns
 them. A failure is an `AcpRegistryOperationError`, whose `reason` names the cause.
 
+## Server update and T3 Connect
+
+`server.updateServer` asks a server to move to an exact version of `t3`, and
+`server.updateServerWithProgress` reports its `downloading` and `installing` stages. Only a
+server under a service launcher or a desktop app can do this. Another server refuses with a
+`ServerSelfUpdateError`. `server.commitDesktopUpdate` lets a desktop host restart into an
+update that its app downloaded. Each needs `environment:maintain`.
+
+`cloud.getRelayClientStatus` reports the tunnel client that T3 Connect needs, and
+`cloud.installRelayClient` downloads it into the server's home and reports each stage. A
+failure is a `RelayClientInstallFailedError`, and its `reason` names the cause.
+
+The `connect.*` routes read and change the server's link to a relay. `schemas.cloudLink`
+holds their shapes, and `schemas.httpErrors.EnvironmentHttpCloudError` their failures:
+
+```ts
+const state = await client.routes.call("connect.linkState");
+const reachability = await client.routes.call("connect.checkReachability");
+await client.routes.call("connect.preferences", { body: { publishAgentActivity: true } });
+```
+
+`connect.linkProof`, `connect.relayConfig` and `connect.unlink` make and remove a link. A proof
+is only for the server's own loopback origin, and `relayConfig` takes only an `https` relay.
+`connect.health` and `connect.mintCredential` are what a relay calls. They take no session,
+because the server checks the proof, which the relay signs with the key from `relayConfig`. A
+proof works once. The reads need `relay:read`, and the writes `relay:write`.
+
 ## Source control repositories and clones
 
 `sourceControl.lookupRepository` reads a repository's URLs from the forge.

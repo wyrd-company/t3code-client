@@ -28,6 +28,13 @@ import {
   ServerPrepareTriageResult,
 } from "../../schemas/serverRelease.ts";
 import {
+  DesktopUpdateCommitInput,
+  ServerSelfUpdateInput,
+  ServerSelfUpdateProgressEvent,
+  ServerSelfUpdateResult,
+} from "../../schemas/serverSelfUpdate.ts";
+import { RelayClientInstallProgressEvent, RelayClientStatus } from "../../schemas/relayClient.ts";
+import {
   requiredScopesForSettingsUpdate,
   ServerUpdateSettingsInput,
 } from "../../schemas/settingsPatch.ts";
@@ -116,6 +123,40 @@ export const serverMethods = {
     success: ServerProviderUpdatedPayload,
     stream: false,
     scope: "providers:manage",
+  }),
+  /** Moves the server to `targetVersion`. It replaces the running server when it succeeds. */
+  "server.updateServer": defineMethod({
+    payload: ServerSelfUpdateInput,
+    success: ServerSelfUpdateResult,
+    stream: false,
+    scope: "environment:maintain",
+  }),
+  /** `server.updateServer` with its progress. The update continues if the stream closes. */
+  "server.updateServerWithProgress": defineMethod({
+    payload: ServerSelfUpdateInput,
+    success: ServerSelfUpdateProgressEvent,
+    stream: true,
+    scope: "environment:maintain",
+  }),
+  /** Lets a desktop host restart into an update that its app downloaded. */
+  "server.commitDesktopUpdate": defineMethod({
+    payload: DesktopUpdateCommitInput,
+    success: ServerSelfUpdateResult,
+    stream: false,
+    scope: "environment:maintain",
+  }),
+  "cloud.getRelayClientStatus": defineMethod({
+    payload: z.looseObject({}),
+    success: RelayClientStatus,
+    stream: false,
+    scope: "relay:read",
+  }),
+  /** Downloads the tunnel client into the server's home. */
+  "cloud.installRelayClient": defineMethod({
+    payload: z.looseObject({}),
+    success: RelayClientInstallProgressEvent,
+    stream: true,
+    scope: "relay:write",
   }),
   "server.reportClientActivity": defineMethod({
     payload: ClientActivityReportInput,

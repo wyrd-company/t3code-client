@@ -97,3 +97,37 @@ export const EnvironmentHttpCommonError = z.discriminatedUnion("_tag", [
   EnvironmentInternalError,
 ]);
 export type EnvironmentHttpCommonError = z.infer<typeof EnvironmentHttpCommonError>;
+
+/**
+ * The failures of the `/api/connect` and `/api/t3-connect` routes. Each carries a `message`, and
+ * the status tells them apart: 400, 401, 403, 409 and 500.
+ */
+const cloudLinkFailure = <const Tag extends string>(tag: Tag) =>
+  z.looseObject({ _tag: z.literal(tag), message: z.string() });
+
+export const EnvironmentHttpBadRequestError = cloudLinkFailure("EnvironmentHttpBadRequestError");
+export const EnvironmentHttpUnauthorizedError = cloudLinkFailure(
+  "EnvironmentHttpUnauthorizedError",
+);
+export const EnvironmentHttpForbiddenError = cloudLinkFailure("EnvironmentHttpForbiddenError");
+export const EnvironmentHttpConflictError = cloudLinkFailure("EnvironmentHttpConflictError");
+export const EnvironmentHttpInternalServerError = cloudLinkFailure(
+  "EnvironmentHttpInternalServerError",
+);
+/** A 503: the server could not start the tunnel that the relay configuration asks for. */
+export const EnvironmentCloudEndpointUnavailableError = z.looseObject({
+  _tag: z.literal("EnvironmentCloudEndpointUnavailableError"),
+  message: z.string(),
+  endpointRuntimeStatus: z.unknown(),
+});
+
+export const EnvironmentHttpCloudError = z.discriminatedUnion("_tag", [
+  EnvironmentHttpBadRequestError,
+  EnvironmentHttpUnauthorizedError,
+  EnvironmentHttpForbiddenError,
+  EnvironmentHttpConflictError,
+  EnvironmentHttpInternalServerError,
+  EnvironmentCloudEndpointUnavailableError,
+  EnvironmentScopeRequiredError,
+]);
+export type EnvironmentHttpCloudError = z.infer<typeof EnvironmentHttpCloudError>;
