@@ -45,3 +45,6 @@ Put each listener behind an HTTPS reverse proxy with its own hostname, because c
 ignore ports. T3 pairing and sessions are the only access control: the proxy has no
 login. The byline names an endpoint and does not prove a person, so use it only among
 people who trust each other.
+
+The [guides](https://wyrd.foo/docs/t3c-proxy/getting-started) have a reverse proxy example,
+the accepted limits and the dev container Feature.
