@@ -48,7 +48,7 @@ it("stamps a message on a person's endpoint and leaves the direct route clean", 
   const proxyUrl = `http://127.0.0.1:${service.listeners[0]!.port}`;
   const proxied = T3Client.create({ baseUrl: proxyUrl, accessToken });
   const root = await mkdtemp(join(tmpdir(), "t3code-proxy-live-"));
-  let threadId: ThreadId | undefined;
+  const threadIds: ThreadId[] = [];
   let projectId: ProjectId | undefined;
   try {
     // A client with no protocol parameter reads the server's refusal through the proxy.
@@ -59,32 +59,33 @@ it("stamps a message on a person's endpoint and leaves the direct route clean", 
 
     const project = await proxied.projects.ensure({ workspaceRoot: root, title: "Sample" });
     projectId = project.id;
-    const thread = await proxied.threads.create({
-      projectId: project.id,
-      title: "Sample",
-      modelSelection: { instanceId: providerInstanceId("codex"), model: "gpt-6-luna" },
-    });
-    threadId = thread.id;
+    // Each route sends the first message of its own thread, so that no earlier run holds it back.
+    const send = async (client: T3Client, text: string) => {
+      const thread = await client.threads.create({
+        projectId: project.id,
+        title: "Sample",
+        modelSelection: { instanceId: providerInstanceId("codex"), model: "gpt-6-luna" },
+      });
+      threadIds.push(thread.id);
+      await client.threads.startTurn({ threadId: thread.id, text, delivery: "queue" });
+      const stored = async () => JSON.stringify(await direct.threads.transcript(thread.id));
+      return { thread, stored };
+    };
 
-    const stored = async () => JSON.stringify(await direct.threads.transcript(thread.id));
-    const expected = JSON.stringify("Reply with SAMPLE only.\n\n— Sent by Alice");
-    await proxied.threads.startTurn({
-      threadId: thread.id,
-      text: "Reply with SAMPLE only.",
-      delivery: "queue",
-    });
-    await expect.poll(stored, { timeout: 30_000 }).toContain(expected);
+    const stamped = await send(proxied, "Reply with SAMPLE only.");
+    await expect
+      .poll(stamped.stored, { timeout: 30_000 })
+      .toContain(JSON.stringify("Reply with SAMPLE only.\n\n— Sent by Alice"));
 
-    const clean = JSON.stringify("Reply with DIRECT only.");
-    await direct.threads.startTurn({
-      threadId: thread.id,
-      text: "Reply with DIRECT only.",
-      delivery: "queue",
-    });
-    await expect.poll(stored, { timeout: 30_000 }).toContain(clean);
-    await direct.threads.interrupt(thread.id);
+    const clean = await send(direct, "Reply with DIRECT only.");
+    await expect
+      .poll(clean.stored, { timeout: 30_000 })
+      .toContain(JSON.stringify("Reply with DIRECT only."));
   } finally {
-    if (threadId) await direct.threads.delete(threadId).catch(() => undefined);
+    for (const threadId of threadIds) {
+      await direct.threads.interrupt(threadId).catch(() => undefined);
+      await direct.threads.delete(threadId).catch(() => undefined);
+    }
     if (projectId) await direct.projects.delete(projectId, { force: true }).catch(() => undefined);
     await proxied.close();
     await direct.close();
