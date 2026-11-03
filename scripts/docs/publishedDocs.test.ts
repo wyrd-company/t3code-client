@@ -47,7 +47,11 @@ type Product = {
   favicon: string;
   media: { src: string }[];
   nav: { section: string; groups: { group: string; pages: string[] }[] }[];
-  kinds: { kind: string; tools?: { name: string; description: string; effect: string }[] }[];
+  kinds: {
+    kind: string;
+    ref?: string;
+    tools?: { name: string; description: string; effect: string }[];
+  }[];
 };
 const manifest = parse(read("docs.yml")) as { assets: string[]; products: Record<string, Product> };
 const front = (name: string) =>
@@ -57,13 +61,13 @@ const front = (name: string) =>
     order: number;
   };
 
-it("treats both configured docs changelogs as release data, not pages", () => {
+it("treats each configured docs changelog as release data, not a page", () => {
   expect(
     markdownPages([...changelogs, "t3c/getting-started.md", "t3mcp/getting-started.md"]),
   ).toEqual(["t3c/getting-started.md", "t3mcp/getting-started.md"]);
 });
-it("publishes t3c and t3mcp as distinct products with matching code/docs projections", () => {
-  expect(Object.keys(manifest.products).sort()).toEqual(["t3c", "t3mcp"]);
+it("publishes each product as distinct, with matching code/docs projections", () => {
+  expect(Object.keys(manifest.products).sort()).toEqual(["t3c", "t3c-proxy", "t3mcp"]);
   for (const [key, product] of Object.entries(manifest.products)) {
     const unit = config["release-units"][product["release-unit"]]!;
     const pkg = JSON.parse(
@@ -128,7 +132,7 @@ it("resolves local page links without leaving each product's published folder", 
     }
   }
 });
-it("registers real SVG marks and media for both products", () => {
+it("registers real SVG marks and media for each product", () => {
   expect(new Set(manifest.assets).size).toBe(manifest.assets.length);
   for (const path of manifest.assets)
     expect(NodeFS.existsSync(NodePath.join(user, path)), path).toBe(true);
@@ -166,10 +170,11 @@ it("documents every declared MCP tool without loading built packages", () => {
     "thread_stop",
   ]);
 });
-it("retains one initial minor intent for each new MCP unit", () => {
-  const product = manifest.products["t3mcp"]!;
-  const initialUnits = ["t3code-mcp", "t3mcp-docs"].filter(
-    (unit) => (unit === "t3code-mcp" ? product.version : product["docs-version"]) === "0.0.0",
+it.each(["t3mcp", "t3c-proxy"])("retains one initial minor intent for each new %s unit", (key) => {
+  const product = manifest.products[key]!;
+  const initialUnits = [product["release-unit"], `${key}-docs`].filter(
+    (unit) =>
+      (unit === product["release-unit"] ? product.version : product["docs-version"]) === "0.0.0",
   );
   // A clean checkout has no intents directory once all pending intents are consumed.
   if (initialUnits.length === 0) return;
@@ -179,5 +184,68 @@ it("retains one initial minor intent for each new MCP unit", () => {
   for (const unit of initialUnits) {
     const matches = intents.filter((intent) => new RegExp(`^${unit}: minor$`, "mu").test(intent));
     expect(matches, unit).toHaveLength(1);
+  }
+});
+it("states the direct route in the t3c and t3mcp guides", () => {
+  for (const guide of ["t3c/getting-started.md", "t3mcp/getting-started.md"]) {
+    const text = read(guide).replace(/\s+/gu, " ");
+    expect(text, guide).toContain("uses the direct route: pair its profile with the server's own");
+    expect(text, guide).toContain("(https://wyrd.foo/tools/t3c-proxy)");
+  }
+});
+it("documents the proxy's real options", () => {
+  // The foundation job runs before package builds, so read the literal option declarations.
+  const source = NodeFS.readFileSync(
+    NodePath.join(repository, "packages/t3code-proxy/src/cliMain.ts"),
+    "utf8",
+  );
+  const declared = [
+    ...source.slice(source.indexOf("parseArgs(")).matchAll(/^\s+"?([a-z-]+)"?: \{ type:/gmu),
+  ].map(([, name]) => `--${name}`);
+  const documented = [...read("t3c-proxy/getting-started.md").matchAll(/^\| `(--[a-z-]+)/gmu)].map(
+    ([, name]) => name!,
+  );
+  expect(declared.length).toBeGreaterThan(0);
+  expect(documented.sort()).toEqual(declared.sort());
+});
+it("documents the Feature's real reference and options", () => {
+  const feature = JSON.parse(
+    NodeFS.readFileSync(
+      NodePath.join(repository, "features/src/t3code-proxy/devcontainer-feature.json"),
+      "utf8",
+    ),
+  ) as { id: string; version: string; options: Record<string, { default: string }> };
+  const reference = `ghcr.io/wyrd-company/t3code-client/${feature.id}:${feature.version.split(".")[0]}`;
+  expect(manifest.products["t3c-proxy"]!.kinds.map((kind) => kind.ref ?? kind.kind)).toEqual([
+    "cli",
+    reference,
+  ]);
+  const page = read("t3c-proxy/devcontainer-feature.md");
+  expect(page).toContain(reference);
+  const rows = [...page.matchAll(/^\| `([A-Za-z]+)`\s+\| `([^`]+)`/gmu)].map(([, name, value]) => [
+    name!,
+    value!,
+  ]);
+  expect(Object.fromEntries(rows)).toEqual(
+    Object.fromEntries(
+      Object.entries(feature.options).map(([name, option]) => [name, option.default]),
+    ),
+  );
+});
+it("lists each accepted limit of the proxy design", () => {
+  const design = parse(
+    NodeFS.readFileSync(NodePath.join(repository, "docs/technical-designs/proxy.yml"), "utf8"),
+  ) as { "proposed-design": { "accepted-limits": string } };
+  const bullets = (text: string) => text.match(/^- /gmu)?.length ?? 0;
+  expect(bullets(design["proposed-design"]["accepted-limits"])).toBeGreaterThan(0);
+  expect(bullets(read("t3c-proxy/limits.md"))).toBe(
+    bullets(design["proposed-design"]["accepted-limits"]),
+  );
+});
+it("uses only example hostnames in the proxy pages", () => {
+  for (const name of published.filter((page) => page.startsWith("t3c-proxy/"))) {
+    for (const [host] of read(name).matchAll(/\bt3[a-z-]*(?:\.[a-z0-9-]+)+\.[a-z]+\b/gu)) {
+      expect(host, name).toMatch(/\.example\.test$/u);
+    }
   }
 });

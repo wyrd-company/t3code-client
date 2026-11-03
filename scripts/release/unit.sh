@@ -10,9 +10,9 @@ release_unit() {
   package_dir="$root/packages/$unit"
   package="@wyrd-company/$unit"
 }
-# The docs unit is tag-only: it has a release record and no package.
+# A docs unit is tag-only: it has a release record and no package.
 is_docs_unit() {
-  [[ "${1:-}" == t3c-docs || "${1:-}" == t3mcp-docs ]]
+  [[ "${1:-}" == t3c-docs || "${1:-}" == t3mcp-docs || "${1:-}" == t3c-proxy-docs ]]
 }
 # The Feature unit has a release record and an OCI artifact, and no npm package.
 is_feature_unit() {

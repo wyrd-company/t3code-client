@@ -14,12 +14,12 @@ case "$event:$ref" in
   # A Feature run publishes only the Feature.
   workflow_dispatch:*) [[ "$publish_feature" == true ]] || publish=true ;;
   push:*@0.0.0) ;; # baseline records establish authority without publication
-  push:t3code-cli@*|push:t3code-mcp@*) publish=true ;;
-  push:t3c-docs@*|push:t3mcp-docs@*)
-    # The publisher reads both products. A package run carries docs released on
+  push:t3code-cli@*|push:t3code-mcp@*|push:t3code-proxy@*) publish=true ;;
+  push:t3c-docs@*|push:t3mcp-docs@*|push:t3c-proxy-docs@*)
+    # The publisher reads every product. A package run carries docs released on
     # that same commit so its GitHub Release exists before docs are consumed.
     publish=true
-    tags="$(git tag --points-at "$sha" --list 't3code-cli@*' 't3code-mcp@*')"
+    tags="$(git tag --points-at "$sha" --list 't3code-cli@*' 't3code-mcp@*' 't3code-proxy@*')"
     while IFS= read -r tag; do
       case "$tag" in
         ''|*@0.0.0) ;;

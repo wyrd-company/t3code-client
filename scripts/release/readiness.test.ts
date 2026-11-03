@@ -33,7 +33,7 @@ describe("pre-apply package readiness", () => {
       expect(result.status).not.toBe(0);
     });
   }
-  it.each(["t3c-docs", "t3mcp-docs", "t3code-proxy-feature"])(
+  it.each(["t3c-docs", "t3mcp-docs", "t3c-proxy-docs", "t3code-proxy-feature"])(
     "accepts %s, which has no package",
     (unit) => {
       const root = fixture();

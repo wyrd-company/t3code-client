@@ -66,6 +66,10 @@ release-units:
       - adapter: npm
         file: package.json
         mode: committed
+      - adapter: yaml
+        file: /docs/user/docs.yml
+        pointer: /products/t3c-proxy/version
+        mode: committed
     tags:
       primary:
         role: primary
@@ -104,6 +108,19 @@ release-units:
       - adapter: yaml
         file: /docs/user/docs.yml
         pointer: /products/t3mcp/docs-version
+        mode: committed
+    tags:
+      primary:
+        role: primary
+        template: "{id}@{version}"
+  t3c-proxy-docs:
+    path: docs/user/t3c-proxy
+    depends-on:
+      - t3code-proxy
+    projections:
+      - adapter: yaml
+        file: /docs/user/docs.yml
+        pointer: /products/t3c-proxy/docs-version
         mode: committed
     tags:
       primary:

@@ -54,6 +54,12 @@ selects that project; omission uses the server Scratch project. Provider and
 model selection use project defaults, then server defaults. Ambiguous selection
 asks for an explicit choice through a usage error.
 
+## Shared servers
+
+`t3c` uses the direct route: pair its profile with the server's own address. If people
+share the server through [t3c-proxy](https://wyrd.foo/tools/t3c-proxy), do not pair `t3c`
+with a person's hostname. A message that `t3c` sends there ends with that person's byline.
+
 Use [command behavior](commands.md), [output and exit codes](policy.md),
 [the Dagu harness](dagu.md), [the library guides](guide-quick-start.md), or
 [the library API](library-reference.md) for details.
