@@ -26,6 +26,10 @@ tasks:
     desc: Test the proxy in front of the pinned server
     deps: [build]
     cmds: [pnpm --filter @wyrd-company/t3code-lib build, pnpm run test:live]
+  test:proof:
+    desc: Prove the proxy with real turns, HTTPS and a browser. Needs CODEX_HOME, Caddy, openssl and agent-browser
+    deps: [build]
+    cmds: [pnpm --filter @wyrd-company/t3code-lib build, pnpm run test:proof]
   package:
     desc: Pack the proxy and verify the installed executable
     cmds: [pnpm run package]

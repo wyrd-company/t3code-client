@@ -279,9 +279,9 @@ proposed-design:
     Unit tests also cover the config file, flag overrides, and invalid values.
 
     A consumer installs the local tarball and runs the executable, which forwards a request
-    and stops on SIGTERM. The pinned `t3`
-    update reruns the live proof, and its review checks for new commands that carry
-    text and for a change to `ATTACHMENT_ONLY_BOOTSTRAP_PROMPT`.
+    and stops on SIGTERM. The pinned `t3` update reruns the live proof, and its review
+    checks for new commands that carry text and for a change to
+    `ATTACHMENT_ONLY_BOOTSTRAP_PROMPT`. [Testing](testing.yml) has the procedure.
   documentation: |
     The wyrd.foo product is t3c-proxy, with code release unit t3code-proxy and
     tag-only docs unit t3c-proxy-docs. Its pages live in docs/user/t3c-proxy: setup,
