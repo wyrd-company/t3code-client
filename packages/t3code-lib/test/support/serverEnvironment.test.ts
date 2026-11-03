@@ -26,30 +26,39 @@ it("preserves standalone environments", () => {
 });
 
 it("removes each value that reaches this machine's access, and no other", () => {
+  const access = [
+    "AGENT_DEVICE_SPEC",
+    "ANDROID_HOME",
+    "ANDROID_SDK_ROOT",
+    "ANTHROPIC_AUTH_TOKEN",
+    "ANTHROPIC_BASE_URL",
+    "ANTIGRAVITY_DATA_DIR",
+    "CLAUDE_CODE_OAUTH_TOKEN",
+    "CLAUDE_CONFIG_DIR",
+    "CURSOR_API_KEY",
+    "EXPO_TOKEN",
+    "GEMINI_HOME",
+    "GH_TOKEN",
+    "GITHUB_TOKEN",
+    "GITLAB_TOKEN",
+    "OPENAI_API_KEY",
+    "OPENCODE_DATA_DIR",
+    "PI_CODING_AGENT_DIR",
+    "PI_CODING_AGENT_SESSION_DIR",
+    "T3CODE_BITBUCKET_API_TOKEN",
+    "T3CODE_RELAY_URL",
+    "XAI_API_KEY",
+    "XDG_CONFIG_HOME",
+    "XDG_DATA_HOME",
+    "XDG_STATE_HOME",
+  ];
   expect(
     clearedMachineAccess({
-      AGENT_DEVICE_SPEC: "sample",
-      ANDROID_HOME: "/sample",
-      ANDROID_SDK_ROOT: "/sample",
-      EXPO_TOKEN: "sample",
-      GH_TOKEN: "sample",
-      GITHUB_TOKEN: "sample",
-      GITLAB_TOKEN: "sample",
-      OPENAI_API_KEY: "sample",
-      T3CODE_RELAY_URL: "https://relay.invalid",
+      ...Object.fromEntries(access.map((name) => [name, "sample"])),
       PATH: "/bin",
       SAMPLE_VALUE: "sample",
       GH_TOKEN_NOTE: "sample",
+      XDG_RUNTIME_DIR: "/sample",
     }),
-  ).toEqual({
-    AGENT_DEVICE_SPEC: undefined,
-    ANDROID_HOME: undefined,
-    ANDROID_SDK_ROOT: undefined,
-    EXPO_TOKEN: undefined,
-    GH_TOKEN: undefined,
-    GITHUB_TOKEN: undefined,
-    GITLAB_TOKEN: undefined,
-    OPENAI_API_KEY: undefined,
-    T3CODE_RELAY_URL: undefined,
-  });
+  ).toEqual(Object.fromEntries(access.map((name) => [name, undefined])));
 });

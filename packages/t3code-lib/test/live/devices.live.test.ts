@@ -18,11 +18,10 @@ import {
   SAMPLE_MODEL,
   SAMPLE_TOKEN,
   startGateway,
-  withInherited,
   writeStubSsh,
 } from "./deviceStubs.ts";
 import { firstItem, hasLiveServer, refusal, waitFor } from "./liveClient.ts";
-import { startScratchServer, withScopes, type PeerServer } from "./peerServer.ts";
+import { startScratchServer, withInherited, withScopes, type PeerServer } from "./peerServer.ts";
 
 const SAMPLE_THREAD = threadId("sample-thread");
 const SAMPLE_HOST = "sample-pool";

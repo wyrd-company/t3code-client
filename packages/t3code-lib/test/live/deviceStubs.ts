@@ -39,18 +39,6 @@ export async function writeStubSsh(bin: string): Promise<void> {
   );
 }
 
-/** Sets `values` in this process, and returns what restores them. */
-export function withInherited(values: Readonly<Record<string, string>>): () => void {
-  const saved = Object.keys(values).map((name) => [name, process.env[name]] as const);
-  Object.assign(process.env, values);
-  return () => {
-    for (const [name, value] of saved) {
-      if (value === undefined) delete process.env[name];
-      else process.env[name] = value;
-    }
-  };
-}
-
 /** Answers the two read routes of a Simlock gateway, and refuses any other credential. */
 export function startGateway(): Promise<LocalHttp> {
   const answers: Record<string, unknown> = {

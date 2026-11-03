@@ -7,12 +7,13 @@
  * transcript in that home's Codex folder plays another agent's session.
  */
 import * as NodeFSP from "node:fs/promises";
+import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import type { T3Client } from "../../src/index.ts";
 import { ProjectId } from "../../src/schemas/common.ts";
 import { hasLiveServer, refusal } from "./liveClient.ts";
-import { startScratchServer, withScopes, type PeerServer } from "./peerServer.ts";
+import { startScratchServer, withInherited, withScopes, type PeerServer } from "./peerServer.ts";
 
 const sessionId = "019a0000-0000-7000-8000-000000000001";
 
@@ -110,5 +111,49 @@ describe.skipIf(!hasLiveServer)("agent session methods", () => {
         reader.rpc.call("agentSessions.import", { projectId: ProjectId.parse("sample-absent") }),
       ).rejects.toMatchObject({ requiredScope: "orchestration:operate" });
     });
+  });
+});
+
+describe.skipIf(!hasLiveServer)("the sessions in reach of a scratch server", () => {
+  let machine: string;
+  let workspace: string;
+
+  const scannedPaths = async (peer: PeerServer) => {
+    try {
+      const { candidates } = await peer.client.rpc.call("agentSessions.scan", {});
+      return candidates.map((entry) => entry.path);
+    } finally {
+      await peer.stop();
+    }
+  };
+
+  beforeAll(async () => {
+    machine = await NodeFSP.realpath(
+      await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-lib-claude-config-")),
+    );
+    workspace = NodePath.join(machine, "sample-workspace");
+    const project = NodePath.join(machine, "projects", "sample-project");
+    await NodeFSP.mkdir(workspace);
+    await NodeFSP.mkdir(project, { recursive: true });
+    await NodeFSP.writeFile(
+      NodePath.join(project, "sample-session.jsonl"),
+      [{ type: "user", cwd: workspace, sessionId: "sample-session" }, { type: "assistant" }]
+        .map((record) => JSON.stringify(record))
+        .join("\n") + "\n",
+    );
+  });
+
+  afterAll(() => NodeFSP.rm(machine, { recursive: true, force: true }));
+
+  it("finds a session through a given Claude folder, and none through an inherited one", async () => {
+    // A server that has this value reads the folder, so the second check has force.
+    const given = await startScratchServer("t3code-lib-claude-given-", () => ({
+      CLAUDE_CONFIG_DIR: machine,
+    }));
+    await expect(scannedPaths(given)).resolves.toContain(workspace);
+
+    const restore = withInherited({ CLAUDE_CONFIG_DIR: machine });
+    const inherited = await startScratchServer("t3code-lib-claude-inherited-").finally(restore);
+    await expect(scannedPaths(inherited)).resolves.not.toContain(workspace);
   });
 });
