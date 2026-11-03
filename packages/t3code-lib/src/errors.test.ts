@@ -3,18 +3,25 @@ import { z } from "zod";
 import { T3AuthError, T3DecodeError, T3HttpError, T3RpcDefectError, T3RpcError } from "./errors.ts";
 import { SourceControlCloneRepositoryResult } from "./schemas/sourceControl.ts";
 
-const urlWithCredential = "https://sample:sample-password@forge.example.invalid/sample.git";
+const urlsWithCredential = [
+  "https://sample:sample-password@forge.example.invalid/sample.git",
+  "https://git@sample:sample-password@forge.example.invalid/sample.git",
+  "https://forge.example.invalid/sample.git?access%5Ftoken=sample-password",
+];
 
 describe("error payload redaction", () => {
-  it("T3DecodeError.raw redacts a clone result that fails to decode", () => {
-    const raw = { cwd: 7, remoteUrl: urlWithCredential, repository: null };
-    const result = SourceControlCloneRepositoryResult.safeParse(raw);
-    if (result.success) throw new Error("Expected a decode failure.");
-    const error = new T3DecodeError("sourceControl.cloneRepository", result.error, raw);
-    expect(JSON.stringify(error.raw)).not.toContain("sample-password");
-  });
+  it.each(urlsWithCredential)(
+    "T3DecodeError.raw redacts a bad clone result with %s",
+    (urlWithCredential) => {
+      const raw = { cwd: 7, remoteUrl: urlWithCredential, repository: null };
+      const result = SourceControlCloneRepositoryResult.safeParse(raw);
+      if (result.success) throw new Error("Expected a decode failure.");
+      const error = new T3DecodeError("sourceControl.cloneRepository", result.error, raw);
+      expect(JSON.stringify(error.raw)).not.toContain("sample-password");
+    },
+  );
 
-  it("T3RpcError redacts a URL in a failure's nested cause", () => {
+  it.each(urlsWithCredential)("T3RpcError redacts a failure's nested %s", (urlWithCredential) => {
     const error = new T3RpcError("sourceControl.cloneRepository", {
       _tag: "SourceControlRepositoryError",
       provider: "unknown",
@@ -24,6 +31,7 @@ describe("error payload redaction", () => {
     });
     expect(JSON.stringify(error.detail)).not.toContain("sample-password");
     expect(JSON.stringify(error.record)).not.toContain("sample-password");
+    expect(error.message).not.toContain("sample-password");
     expect(error.record).toMatchObject({ _tag: "SourceControlRepositoryError" });
   });
 

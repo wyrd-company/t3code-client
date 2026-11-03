@@ -5,10 +5,11 @@
  */
 // `d` is the private part of a JSON Web Key.
 const SECRET_KEY = /token|credential|secret|authorization|password|ticket|usercode|^dpop$|^d$/iu;
-// A URL can carry a one-use code or a token in its query.
-const SECRET_QUERY = /[?&](?:code|id_token_hint|\w*token)=/iu;
-// A URL's user information can hold a password or a token. `git@` is the name of an SSH login.
-const SECRET_USERINFO = /\b[a-z][a-z0-9+.-]*:\/\/(?!git@)[^\s/?#]+@/iu;
+// A URL can carry a one-use code or a token in its query. A query name can be percent-encoded.
+const QUERY_NAME = /[?&]([^=&\s]+)=/gu;
+const SECRET_QUERY_NAME = /^(?:code|id_token_hint|\w*token)$/iu;
+// A URL's user information can hold a password or a token, up to the last `@` of its authority.
+const URL_USERINFO = /\b([a-z][a-z0-9+.-]*):\/\/([^\s/?#]*)@/giu;
 // Each value of a request's header map can be a credential, under any name.
 const SECRET_MAP = /^headers$/iu;
 
@@ -26,7 +27,7 @@ export function redactSecrets(value: unknown): unknown {
 
 function redact(value: unknown, seen: WeakSet<object>): unknown {
   if (typeof value === "string") {
-    return SECRET_QUERY.test(value) || SECRET_USERINFO.test(value) ? REDACTED : value;
+    return holdsSecretUrl(value) ? REDACTED : value;
   }
   if (Array.isArray(value)) {
     if (seen.has(value)) return undefined;
@@ -45,6 +46,25 @@ function redact(value: unknown, seen: WeakSet<object>): unknown {
     out[key] = typeof item === "string" && SECRET_KEY.test(key) ? REDACTED : redact(item, seen);
   }
   return out;
+}
+
+function holdsSecretUrl(text: string): boolean {
+  for (const [, name = ""] of text.matchAll(QUERY_NAME)) {
+    if (SECRET_QUERY_NAME.test(decodedName(name))) return true;
+  }
+  for (const [, scheme = "", userinfo = ""] of text.matchAll(URL_USERINFO)) {
+    // `git` with no password is the name of an SSH login.
+    if (scheme.toLowerCase() !== "ssh" || userinfo !== "git") return true;
+  }
+  return false;
+}
+
+function decodedName(name: string): string {
+  try {
+    return decodeURIComponent(name);
+  } catch {
+    return name;
+  }
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

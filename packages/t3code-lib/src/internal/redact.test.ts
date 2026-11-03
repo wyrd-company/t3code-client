@@ -22,6 +22,13 @@ describe("redactSecrets", () => {
       "https://sample-token@forge.example.invalid/sample.git",
       "https://forge.example.invalid/sample.git?access_token=sample-token",
       "https://forge.example.invalid/sample.git?private_token=sample-token",
+      "https://forge.example.invalid/sample.git?access%5Ftoken=sample-token",
+      "https://forge.example.invalid/sample.git?first=1&Access_Token=sample-token",
+      "https://git@sample:sample-password@forge.example.invalid/sample.git",
+      "https://git@forge.example.invalid/sample.git",
+      "ssh://git:sample-password@forge.example.invalid/sample.git",
+      "ssh://git@sample:sample-password@forge.example.invalid/sample.git",
+      "ssh://sample@forge.example.invalid/sample.git",
       "git clone https://sample:sample-password@forge.example.invalid/sample.git failed",
     ];
     for (const url of secret) {
@@ -36,6 +43,7 @@ describe("redactSecrets", () => {
     const kept = [
       "https://forge.example.invalid/sample.git",
       "https://forge.example.invalid/search?query=sample",
+      "https://forge.example.invalid/search?query=%zz",
       "git@forge.example.invalid:sample/repository.git",
       "ssh://git@forge.example.invalid/sample/repository.git",
       "sample@example.invalid",
