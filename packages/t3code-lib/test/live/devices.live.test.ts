@@ -8,24 +8,57 @@
  * the test reaches no real account or machine. The server installs its own device CLI from
  * npm on first use, in its scratch home.
  */
+import * as NodeFS from "node:fs";
 import * as NodeFSP from "node:fs/promises";
 import * as NodeHttp from "node:http";
 import type { AddressInfo } from "node:net";
+import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { threadId, type T3Client } from "../../src/index.ts";
 import { firstItem, hasLiveServer, refusal, waitFor } from "./liveClient.ts";
-import { pathWith, startScratchServer, withScopes, type PeerServer } from "./peerServer.ts";
+import { startScratchServer, withScopes, type PeerServer } from "./peerServer.ts";
 
 const SAMPLE_THREAD = threadId("sample-thread");
 const SAMPLE_TOKEN = "sample-agent-token";
 const SAMPLE_HOST = "sample-pool";
 const SAMPLE_MODEL = "Sample Phone";
 
+const DEVICE_TOOLS = ["adb", "emulator", "avdmanager", "xcrun", "simctl"];
+
+/**
+ * What a scratch server's environment must change, so that this machine's device tools and
+ * credentials stay out of the test. `undefined` removes a value that the server inherits.
+ */
+function deviceSandbox(parent: NodeJS.ProcessEnv, bin: string): NodeJS.ProcessEnv {
+  const cleared = Object.keys(parent).filter((name) =>
+    /^(?:AGENT_DEVICE_|EXPO_|ANDROID_(?:HOME|SDK_ROOT)$)/u.test(name),
+  );
+  const path = (parent["PATH"] ?? "")
+    .split(NodePath.delimiter)
+    .filter((dir) => !DEVICE_TOOLS.some((tool) => NodeFS.existsSync(NodePath.join(dir, tool))));
+  return {
+    ...Object.fromEntries(cleared.map((name) => [name, undefined])),
+    PATH: [bin, ...path].join(NodePath.delimiter),
+  };
+}
+
 const probeOutput = JSON.stringify({
   nodePath: "/usr/bin/node",
   platforms: [{ platform: "android", available: true }],
 });
+
+/** Sets `values` in this process, and returns what restores them. */
+function withInherited(values: Readonly<Record<string, string>>): () => void {
+  const saved = Object.keys(values).map((name) => [name, process.env[name]] as const);
+  Object.assign(process.env, values);
+  return () => {
+    for (const [name, value] of saved) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  };
+}
 
 /** Answers the two read routes of a Simlock gateway, and refuses any other credential. */
 function startGateway(): Promise<{ readonly url: string; close(): Promise<void> }> {
@@ -53,13 +86,19 @@ function startGateway(): Promise<{ readonly url: string; close(): Promise<void> 
   });
 }
 
-describe.skipIf(!hasLiveServer)("devices", () => {
+// On macOS, Xcode's tools are in a folder that the server also needs, so real simulators are in reach.
+describe.skipIf(!hasLiveServer || process.platform === "darwin")("devices", () => {
   let server: PeerServer;
   let client: T3Client;
   let gateway: Awaited<ReturnType<typeof startGateway>>;
 
   beforeAll(async () => {
     gateway = await startGateway();
+    // A server that inherits this value finds the gateway with no input, and the test sees it.
+    const inherited = withInherited({
+      AGENT_DEVICE_DAEMON_BASE_URL: `${gateway.url}/v1/agent-device`,
+      AGENT_DEVICE_DAEMON_AUTH_TOKEN: SAMPLE_TOKEN,
+    });
     server = await startScratchServer("t3code-lib-device-", async (home) => {
       const bin = NodePath.join(home, "bin");
       await NodeFSP.mkdir(bin);
@@ -68,14 +107,42 @@ describe.skipIf(!hasLiveServer)("devices", () => {
         `#!/bin/sh\ncat >/dev/null\nprintf '%s\\n' '${probeOutput}'\n`,
         { mode: 0o755 },
       );
-      return pathWith(bin);
-    });
+      return deviceSandbox(process.env, bin);
+    }).finally(inherited);
     client = server.client;
   }, 120_000);
 
   afterAll(async () => {
     await server?.stop();
     await gateway?.close();
+  });
+
+  it("removes what a server would inherit from this machine", () => {
+    const dir = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "t3code-lib-tools-"));
+    try {
+      NodeFS.writeFileSync(NodePath.join(dir, "adb"), "");
+      expect(
+        deviceSandbox(
+          {
+            EXPO_TOKEN: "sample",
+            AGENT_DEVICE_SPEC: "sample",
+            ANDROID_HOME: "/sample",
+            ANDROID_SDK_ROOT: "/sample",
+            SAMPLE_VALUE: "sample",
+            PATH: [dir, "/sample-bin"].join(NodePath.delimiter),
+          },
+          "/sample-stubs",
+        ),
+      ).toEqual({
+        EXPO_TOKEN: undefined,
+        AGENT_DEVICE_SPEC: undefined,
+        ANDROID_HOME: undefined,
+        ANDROID_SDK_ROOT: undefined,
+        PATH: ["/sample-stubs", "/sample-bin"].join(NodePath.delimiter),
+      });
+    } finally {
+      NodeFS.rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("reads the state of a server whose device support is off", async () => {
@@ -112,9 +179,11 @@ describe.skipIf(!hasLiveServer)("devices", () => {
   it("checks a credential and a host", async () => {
     expect(await refusal(client.rpc.call("device.easAccount", {}))).toMatchObject({
       _tag: "DeviceEasAccountError",
+      reason: expect.stringContaining("No Expo credential"),
     });
     expect(await refusal(client.rpc.call("device.simlockIdentity", {}))).toMatchObject({
       _tag: "DeviceSimlockIdentityError",
+      reason: expect.stringContaining("does not point at"),
     });
     expect(
       await refusal(
