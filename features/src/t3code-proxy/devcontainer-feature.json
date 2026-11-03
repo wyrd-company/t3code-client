@@ -1,6 +1,6 @@
 {
   "id": "t3code-proxy",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "name": "T3 Code Sender Identity Proxy",
   "documentationURL": "https://github.com/wyrd-company/t3code-client/tree/main/features/src/t3code-proxy",
   "description": "Runs t3c-proxy under s6-overlay in front of a shared T3 Code server, so that each message shows who sent it. Exposes one hostname for each person when the t3code-server and Caddy Features supply a DNS name.",

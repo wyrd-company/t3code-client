@@ -1,6 +1,6 @@
 {
   "name": "@wyrd-company/t3code-proxy",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Service that shows who sent each message on a shared T3 Code server.",
   "keywords": [
     "proxy",

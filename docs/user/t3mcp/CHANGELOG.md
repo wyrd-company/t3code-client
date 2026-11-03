@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.3
+
+### Fixes
+
+- State that t3c and t3mcp use the direct route when people share a server through t3c-proxy.
+
 ## 0.1.2
 
 ### Fixes
