@@ -825,6 +825,11 @@ unrecognised <code>_tag</code> decodes as <code>{ unknown: true, raw }</code>. U
 <pre><code class="language-ts">export function attachmentUploadUrlParams(relativeUrl: string): { token: string };
 </code></pre>
 </dd>
+<dt><a href="#webhookUrlParams">webhookUrlParams()</a></dt>
+<dd><p>The route params of a webhook endpoint&#39;s <code>path</code>, from <code>scheduledTasks.webhookEndpoint</code>.</p>
+<pre><code class="language-ts">export function webhookUrlParams(path: string): { hookId: string; token: string };
+</code></pre>
+</dd>
 <dt><a href="#watchAccess">watchAccess()</a></dt>
 <dd><p>Watch changes to access grants and authenticated clients.</p>
 <pre><code class="language-ts">export function watchAccess(
@@ -1416,7 +1421,12 @@ async ensureScopes(required: AuthEnvironmentScopeType[]): Promise<void>;
 
 Every HTTP route of the target build by name, with validated input and a decoded answer.
 
-**Kind**: global class  
+**Kind**: global class
+
+- [HttpRouteClient](#HttpRouteClient)
+  - [.call()](#HttpRouteClient+call)
+  - [.stream()](#HttpRouteClient+stream)
+
 <a name="HttpRouteClient+call"></a>
 
 ### httpRouteClient.call()
@@ -1430,6 +1440,25 @@ async call<N extends keyof Table & string>(
       ? [input?: HttpRouteInput<Table, N>, signal?: AbortSignal]
       : [input: HttpRouteInput<Table, N>, signal?: AbortSignal]
   ): Promise<HttpRouteSuccess<Table, N>>;
+```
+
+**Kind**: instance method of [<code>HttpRouteClient</code>](#HttpRouteClient)  
+<a name="HttpRouteClient+stream"></a>
+
+### httpRouteClient.stream()
+
+Validate the input, check the known scopes, and read the events of an event stream route. An
+event that does not decode is a `decode-error` item, and the stream continues. Ending the
+iteration or aborting `signal` closes the request. An abort raises `T3InterruptedError`, and a
+lost connection raises `T3ConnectionError`.
+
+```ts
+async *stream<N extends HttpEventStreamRouteName<Table>>(
+    name: N,
+    ...args: undefined extends HttpRouteInput<Table, N>
+      ? [input?: HttpRouteInput<Table, N>, signal?: AbortSignal]
+      : [input: HttpRouteInput<Table, N>, signal?: AbortSignal]
+  ): AsyncGenerator<StreamItem<HttpRouteSuccess<Table, N>>>;
 ```
 
 **Kind**: instance method of [<code>HttpRouteClient</code>](#HttpRouteClient)  
@@ -4252,6 +4281,17 @@ The `attachments.upload` params of a `relativeUrl` from `attachments.createUploa
 
 ```ts
 export function attachmentUploadUrlParams(relativeUrl: string): { token: string };
+```
+
+**Kind**: global function  
+<a name="webhookUrlParams"></a>
+
+## webhookUrlParams()
+
+The route params of a webhook endpoint's `path`, from `scheduledTasks.webhookEndpoint`.
+
+```ts
+export function webhookUrlParams(path: string): { hookId: string; token: string };
 ```
 
 **Kind**: global function  

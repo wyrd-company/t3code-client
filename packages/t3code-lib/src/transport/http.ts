@@ -5,13 +5,11 @@ import {
   T3ConnectionError,
   T3DecodeError,
   T3Error,
-  T3HttpError,
-  T3NotFoundError,
   T3PreconditionError,
-  type T3HttpErrorDetails,
 } from "../errors.ts";
 import { createDpopProof } from "../auth/dpop.ts";
 import type { DpopPrivateJwk } from "../schemas/auth.ts";
+import { httpError, parseBody } from "./httpAnswer.ts";
 
 export interface HttpTransportOptions {
   baseUrl: string;
@@ -25,7 +23,7 @@ export interface HttpTransportOptions {
 }
 
 export interface HttpRequest<T> {
-  method: "GET" | "POST" | "PUT" | "DELETE";
+  method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   path: string;
   query?: Record<string, string | number | undefined>;
   body?: unknown | URLSearchParams;
@@ -76,11 +74,41 @@ export class HttpTransport {
     );
   }
 
+  /**
+   * Sends the request and returns a 2xx response with its body unread, for an answer that arrives
+   * over time. `decode` is not used.
+   */
+  async openResponse(request: HttpRequest<unknown>): Promise<Response> {
+    const errorPath = request.errorPath ?? request.path;
+    const response = await this.#send(request, undefined, false);
+    if (response.ok) return response;
+    const raw = await readAnswer(request, response, errorPath);
+    throw httpError(response.status, request.method, errorPath, raw);
+  }
+
   async #request<T>(
     request: HttpRequest<T>,
     accessTokenOverride: string | undefined,
     hasOverride: boolean,
   ): Promise<T> {
+    const errorPath = request.errorPath ?? request.path;
+    const response = await this.#send(request, accessTokenOverride, hasOverride);
+    const raw = await readAnswer(request, response, errorPath);
+    if (!response.ok) throw httpError(response.status, request.method, errorPath, raw);
+    if (request.decode === "empty") return undefined as T;
+
+    const decoded = request.decode.safeParse(raw);
+    if (!decoded.success) {
+      throw new T3DecodeError(`${request.method} ${errorPath}`, decoded.error, raw);
+    }
+    return decoded.data;
+  }
+
+  async #send(
+    request: HttpRequest<unknown>,
+    accessTokenOverride: string | undefined,
+    hasOverride: boolean,
+  ): Promise<Response> {
     const errorPath = request.errorPath ?? request.path;
     const url = requestUrl(request, this.#baseUrl, errorPath);
     const credential = hasOverride
@@ -90,9 +118,8 @@ export class HttpTransport {
     const headers = this.#requestHeaders(request, url, credential);
     const body = encodeBody(request, headers, errorPath);
 
-    let response: Response;
     try {
-      response = await this.#fetch(url, {
+      return await this.#fetch(url, {
         method: request.method,
         headers,
         ...(body === undefined ? {} : { body }),
@@ -105,16 +132,6 @@ export class HttpTransport {
         keptCause(request, cause),
       );
     }
-
-    const raw = await readAnswer(request, response, errorPath);
-    if (!response.ok) throw httpError(response.status, request.method, errorPath, raw);
-    if (request.decode === "empty") return undefined as T;
-
-    const decoded = request.decode.safeParse(raw);
-    if (!decoded.success) {
-      throw new T3DecodeError(`${request.method} ${errorPath}`, decoded.error, raw);
-    }
-    return decoded.data;
   }
 
   /** The stored token and key. A request with `auth: "none"` loads neither. */
@@ -216,7 +233,7 @@ function encodeBody(
   // `fetch` writes the content type of a multipart body, with its boundary.
   if (request.body instanceof FormData) return request.body;
   if (request.body instanceof Uint8Array) {
-    headers.set("content-type", "application/octet-stream");
+    if (!headers.has("content-type")) headers.set("content-type", "application/octet-stream");
     return request.body as Uint8Array<ArrayBuffer>;
   }
   headers.set("content-type", "application/json");
@@ -248,55 +265,7 @@ async function readAnswer(
   }
 }
 
-function parseBody(text: string): unknown {
-  if (text.length === 0) return undefined;
-  try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    return text;
-  }
-}
-
 function binaryBody(bytes: Uint8Array, response: Response): unknown {
   const contentType = response.headers.get("content-type");
   return contentType === null ? { bytes } : { bytes, contentType };
-}
-
-function httpError(status: number, method: string, path: string, body: unknown): T3HttpError {
-  const record = asRecord(body);
-  const tag = stringField(record, "_tag");
-  const reason = stringField(record, "reason") ?? stringField(record, "error");
-  const traceId = stringField(record, "traceId");
-  const requiredScope = stringField(record, "requiredScope");
-  const details: T3HttpErrorDetails = {
-    status,
-    method,
-    path,
-    body,
-    ...(tag === undefined ? {} : { tag }),
-    ...(reason === undefined ? {} : { reason }),
-    ...(traceId === undefined ? {} : { traceId }),
-  };
-  const message = `${method} ${path} failed with HTTP ${status}${reason ? ` (${reason})` : ""}.`;
-  if (status === 401) return new T3AuthError(message, { ...details, code: "auth_invalid" });
-  if (status === 403) {
-    return new T3AuthError(message, {
-      ...details,
-      code: "insufficient_scope",
-      ...(requiredScope === undefined ? {} : { requiredScope }),
-    });
-  }
-  if (status === 404) return new T3NotFoundError(message, details);
-  return new T3HttpError(message, details);
-}
-
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === "object" && value !== null
-    ? (value as Record<string, unknown>)
-    : undefined;
-}
-
-function stringField(record: Record<string, unknown> | undefined, key: string): string | undefined {
-  const value = record?.[key];
-  return typeof value === "string" ? value : undefined;
 }

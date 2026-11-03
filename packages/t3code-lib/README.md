@@ -141,7 +141,7 @@ const launched = await client.threads.launch({
 | `client.peerLinks`      | List, link, unlink peer environments; answer an agent's link request.                                         |
 | `client.guestShares`    | Create and close a thread's guest link; send or dismiss a guest's message.                                    |
 | `client.rpc`            | Typed `call` and `stream` for every registered method, plus `callRaw` and `streamRaw` for a newer server.     |
-| `client.routes`         | Typed `call` for every registered HTTP route, by name.                                                        |
+| `client.routes`         | Typed `call` and `stream` for every registered HTTP route, by name.                                           |
 
 ## HTTP routes
 
@@ -426,6 +426,42 @@ is only for the server's own loopback origin, and `relayConfig` takes only an `h
 `connect.health` and `connect.mintCredential` are what a relay calls. They take no session,
 because the server checks the proof, which the relay signs with the key from `relayConfig`. A
 proof works once. The reads need `relay:read`, and the writes `relay:write`.
+
+## Guests and webhooks
+
+`guest.*` are the routes of a person or program that has a share's link from
+`guestShares.create`. They send no session token. `guest.redeem` answers with a cookie for
+that share, so give the client a `fetch` that keeps it, as for `auth.browserSession`. The
+credential is the link's fragment. `schemas.orchestrationGuestShare` and
+`schemas.orchestrationGuestStream` hold their shapes.
+
+```ts
+const guest = T3Client.create({ baseUrl, fetch: fetchWithCookieJar });
+const query = { share: shareId };
+await guest.routes.call("guest.redeem", { body: { credential, name: "Sample guest" } });
+await guest.routes.call("guest.submit", { query, body: { shareId, text: "Sample proposal." } });
+for await (const event of guest.routes.stream("guest.stream", { query }, signal)) {
+  if (event.kind === "item") console.log(event.value);
+}
+```
+
+`routes.stream` reads a route that answers with server-sent events: `guest.stream` and
+`guest.commandOutput`. An event that does not decode is a `decode-error` item, and the stream
+continues. A guest's refusal is a `T3HttpError` whose `reason` names the cause, such as
+`inactive` when the link is closed or `unavailable` when the thread does not show the item.
+
+`webhooks.webhookPost`, `webhookPut`, `webhookPatch` and `webhookGet` call a webhook task's
+endpoint. The path holds the token, so no error names it, and `webhookUrlParams` reads the
+params from `scheduledTasks.webhookEndpoint`. The server reads the body as raw bytes:
+
+```ts
+const params = webhookUrlParams(endpoint.path);
+const { deliveryId } = await client.routes.call("webhooks.webhookPost", {
+  params,
+  headers: { "content-type": "application/json", "x-sample-signature": signature },
+  body: new TextEncoder().encode(JSON.stringify({ action: "sample" })),
+});
+```
 
 ## Source control repositories and clones
 

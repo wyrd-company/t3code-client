@@ -63,6 +63,7 @@ export * as orchestrationShellOmittedRows from "./orchestration/shellOmittedRows
 export * as orchestrationStream from "./orchestration/stream.ts";
 export * as orchestrationThreadLink from "./orchestration/threadLink.ts";
 export * as orchestrationGuestShare from "./orchestration/guestShare.ts";
+export * as orchestrationGuestStream from "./orchestration/guestStream.ts";
 export * as orchestrationThread from "./orchestration/thread.ts";
 export * as orchestrationThreadFind from "./orchestration/threadFind.ts";
 export * as orchestrationThreadForceStop from "./orchestration/threadForceStop.ts";

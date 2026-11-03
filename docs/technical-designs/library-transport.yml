@@ -127,7 +127,7 @@ proposed-design:
       userAgent?: string;
     }
     export interface HttpRequest<T> {
-      method: "GET" | "POST" | "PUT" | "DELETE";
+      method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
       path: string;
       query?: Record<string, string | number | undefined>;
       body?: unknown | URLSearchParams | Uint8Array;
@@ -141,6 +141,7 @@ proposed-design:
     }
     export class HttpTransport {
       request<T>(req: HttpRequest<T>): Promise<T>;
+      openResponse(req: HttpRequest<unknown>): Promise<Response>; // a 2xx response, body unread
     }
     ```
 
@@ -149,27 +150,32 @@ proposed-design:
     non-2xx to `T3HttpError` subclasses using the tagged error body when present,
     decodes 2xx JSON through the schema, and treats 204 or an empty body as
     `undefined` when `decode` is `"empty"`. A `Uint8Array` body goes as raw bytes with
-    `content-type: application/octet-stream`. No error names a signed path or keeps a
+    `content-type: application/octet-stream`, unless the request's headers name a type. No error names a signed path or keeps a
     cause that could quote it, because the path is the credential.
   http-route-registry: |
     ```ts
     export interface HttpRouteSpec<Input, Success> {
-      method: "GET" | "POST" | "PUT" | "DELETE";
+      method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
       path: string; // upstream's path; `:name` segments come from `input.params`
       auth: "required" | "optional" | "none";
-      input: z.ZodType<Input>; // { params?, query?, body? }; `undefined` when the route takes none
-      success: z.ZodType<Success>;
+      input: z.ZodType<Input>; // { params?, query?, headers?, body? }; `undefined` when the route takes none
+      success: z.ZodType<Success>; // a 2xx JSON answer, or each event of an event stream
       scope?: AuthEnvironmentScope;
       inputScopes?(input: Input): readonly AuthEnvironmentScope[];
       headers?: Record<string, string>;
       form?: true; // sends `input.body` form-encoded; a `Uint8Array` body goes as raw bytes
+      multipart?: true; // `body.files` are the parts, and each other string of `body` is a field
+      multipartFileField?: string; // the name of the file parts; `files` by default
       binaryResponse?: true; // a 2xx answer reaches `success` as `{ bytes, contentType }`
       signedPath?: true; // the path is a credential; an error names the `path` template
+      eventStream?: true; // the answer is server-sent events; set by `defineEventStreamRoute`
     }
     export const httpRoutes: { [name: string]: HttpRouteSpec }; // assembled from http/routes/*.ts
 
     export class HttpRouteClient<Table> {
       call<N extends keyof Table>(name: N, input, signal?): Promise<HttpRouteSuccess<Table, N>>;
+      stream<N extends HttpEventStreamRouteName<Table>>(name: N, input, signal?):
+        AsyncGenerator<StreamItem<HttpRouteSuccess<Table, N>>>;
     }
     export function callRoute(http, route, input, options?): Promise<Success>; // what the facades use
     ```
@@ -185,6 +191,13 @@ proposed-design:
     scopes are known, and raises `T3AuthError("insufficient_scope")`. Query schemas
     are strict, so an option the table does not offer fails locally. `/ws` is the
     socket transport's and has no route entry.
+
+    `stream` reads an event stream route and `call` refuses one; `stream` refuses
+    any other route. An event that does not decode is a `decode-error` item, as for
+    an RPC stream, and the stream continues. A heartbeat comment yields nothing.
+    Ending the iteration closes the request. A refusal at open raises the same
+    `T3HttpError` subclass as `call`. An abort raises `T3InterruptedError`, and a
+    lost connection `T3ConnectionError("closed")`. A stream is not resumed.
   transport-socket-ts: |
     ```ts
     export type SocketState = "idle" | "connecting" | "open" | "closed";

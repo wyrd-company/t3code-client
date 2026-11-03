@@ -8,10 +8,20 @@
  * public entry, by name, with the local scope check that `RpcClient` also does.
  */
 import { ensureScopes } from "../auth/scopes.ts";
-import { T3PreconditionError } from "../errors.ts";
+import {
+  T3ConnectionError,
+  T3DecodeError,
+  T3Error,
+  T3InterruptedError,
+  T3PreconditionError,
+} from "../errors.ts";
+import type { StreamItem } from "../rpc/client.ts";
 import type { AuthGrantedScope, DpopPrivateJwk } from "../schemas/auth.ts";
+import { serverSentEventData } from "../transport/eventStream.ts";
 import type { HttpRequest, HttpTransport } from "../transport/http.ts";
+import { parseBody } from "../transport/httpAnswer.ts";
 import type {
+  HttpEventStreamRouteName,
   HttpRouteInput,
   HttpRouteInputShape,
   HttpRouteSpec,
@@ -48,7 +58,9 @@ export function routeRequest<Input, Success>(
     decode: route.success,
     ...(shape.query === undefined ? {} : { query: shape.query }),
     ...(shape.body === undefined ? {} : { body: encodeRouteBody(route, shape.body) }),
-    ...(route.headers === undefined ? {} : { headers: route.headers }),
+    ...(route.headers === undefined && shape.headers === undefined
+      ? {}
+      : { headers: { ...route.headers, ...shape.headers } }),
     ...(route.binaryResponse === true ? { binaryResponse: true } : {}),
     ...(route.signedPath === true ? { errorPath: route.path } : {}),
     ...(options.signal === undefined ? {} : { signal: options.signal }),
@@ -79,15 +91,21 @@ function routePath(path: string, params: Record<string, string> | undefined): st
 
 function encodeRouteBody<Input, Success>(route: HttpRouteSpec<Input, Success>, body: unknown) {
   if (route.form === true) return formBody(body);
-  return route.multipart === true ? multipartBody(body) : body;
+  return route.multipart === true ? multipartBody(body, route.multipartFileField) : body;
 }
 
-function multipartBody(body: unknown): FormData {
+function multipartBody(body: unknown, fileField = "files"): FormData {
   const form = new FormData();
-  const { files } = body as { files: readonly MultipartFile[] };
+  const { files = [], ...fields } = body as {
+    readonly files?: readonly MultipartFile[];
+    readonly [field: string]: unknown;
+  };
+  for (const [name, value] of Object.entries(fields)) {
+    if (typeof value === "string") form.append(name, value);
+  }
   for (const file of files) {
     const content = new Blob([file.bytes as Uint8Array<ArrayBuffer>], { type: file.mimeType });
-    form.append("files", content, file.name);
+    form.append(fileField, content, file.name);
   }
   return form;
 }
@@ -104,6 +122,36 @@ function formBody(body: unknown): URLSearchParams {
     if (typeof value === "string") form.set(key, value);
   }
   return form;
+}
+
+async function* routeEvents<Input, Success>(
+  http: HttpTransport,
+  route: HttpRouteSpec<Input, Success>,
+  input: Input,
+  signal: AbortSignal | undefined,
+): AsyncGenerator<StreamItem<Success>> {
+  const request = routeRequest(route, input, { signal });
+  const source = `${route.method} ${route.path}`;
+  try {
+    const response = await http.openResponse({
+      ...request,
+      headers: { accept: "text/event-stream", ...request.headers },
+    });
+    if (response.body === null) return;
+    for await (const data of serverSentEventData(response.body)) {
+      const raw = parseBody(data);
+      const decoded = route.success.safeParse(raw);
+      yield decoded.success
+        ? { kind: "item", value: decoded.data }
+        : { kind: "decode-error", error: new T3DecodeError(source, decoded.error, raw) };
+    }
+  } catch (cause) {
+    if (signal?.aborted === true) {
+      throw new T3InterruptedError(`${source} was aborted.`, { cause });
+    }
+    if (cause instanceof T3Error) throw cause;
+    throw new T3ConnectionError("closed", `${source} lost its connection.`, { cause });
+  }
 }
 
 export interface HttpRouteClientOptions {
@@ -133,11 +181,38 @@ export class HttpRouteClient<Table extends HttpRouteTable> {
     const route = this.#table[name];
     if (route === undefined) throw new T3PreconditionError(`Unknown HTTP route ${name}.`);
     const [input, signal] = args;
+    if (route.eventStream === true) {
+      throw new T3PreconditionError(`HTTP route ${name} is an event stream. Use stream.`);
+    }
     const parsed = parseRouteInput(route, input);
     this.#checkScopes(name, route, parsed);
     return this.#http.request(routeRequest(route, parsed, { signal })) as Promise<
       HttpRouteSuccess<Table, N>
     >;
+  }
+
+  /**
+   * Validate the input, check the known scopes, and read the events of an event stream route. An
+   * event that does not decode is a `decode-error` item, and the stream continues. Ending the
+   * iteration or aborting `signal` closes the request. An abort raises `T3InterruptedError`, and a
+   * lost connection raises `T3ConnectionError`.
+   */
+  async *stream<N extends HttpEventStreamRouteName<Table>>(
+    name: N,
+    ...args: undefined extends HttpRouteInput<Table, N>
+      ? [input?: HttpRouteInput<Table, N>, signal?: AbortSignal]
+      : [input: HttpRouteInput<Table, N>, signal?: AbortSignal]
+  ): AsyncGenerator<StreamItem<HttpRouteSuccess<Table, N>>> {
+    const route = this.#table[name];
+    if (route === undefined) throw new T3PreconditionError(`Unknown HTTP route ${name}.`);
+    if (route.eventStream !== true) {
+      throw new T3PreconditionError(`HTTP route ${name} is not an event stream. Use call.`);
+    }
+    const [input, signal] = args;
+    const parsed = parseRouteInput(route, input);
+    this.#checkScopes(name, route, parsed);
+    const events = routeEvents(this.#http, route, parsed, signal);
+    yield* events as AsyncGenerator<StreamItem<HttpRouteSuccess<Table, N>>>;
   }
 
   #checkScopes(name: string, route: HttpRouteSpec, input: unknown): void {

@@ -70,6 +70,11 @@ tokens. <code>reasoningTokens</code> is a subset of <code>outputTokens</code>; n
 <pre><code class="language-ts">export function attachmentUploadUrlParams(relativeUrl: string): { token: string };
 </code></pre>
 </dd>
+<dt><a href="#webhookUrlParams">webhookUrlParams()</a></dt>
+<dd><p>The route params of a webhook endpoint&#39;s <code>path</code>, from <code>scheduledTasks.webhookEndpoint</code>.</p>
+<pre><code class="language-ts">export function webhookUrlParams(path: string): { hookId: string; token: string };
+</code></pre>
+</dd>
 </dl>
 
 <a name="messageId"></a>
@@ -176,6 +181,17 @@ The `attachments.upload` params of a `relativeUrl` from `attachments.createUploa
 
 ```ts
 export function attachmentUploadUrlParams(relativeUrl: string): { token: string };
+```
+
+**Kind**: global function  
+<a name="webhookUrlParams"></a>
+
+## webhookUrlParams()
+
+The route params of a webhook endpoint's `path`, from `scheduledTasks.webhookEndpoint`.
+
+```ts
+export function webhookUrlParams(path: string): { hookId: string; token: string };
 ```
 
 **Kind**: global function

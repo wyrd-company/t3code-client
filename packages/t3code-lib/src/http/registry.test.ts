@@ -33,6 +33,16 @@ const expected: Record<string, [string, string, string, string | undefined]> = {
   "connect.preferences": ["POST", "/api/connect/preferences", "required", "relay:write"],
   "connect.health": ["POST", "/api/t3-connect/health", "none", undefined],
   "connect.mintCredential": ["POST", "/api/t3-connect/mint-credential", "none", undefined],
+  "guest.redeem": ["POST", "/api/guest/redeem", "none", undefined],
+  "guest.session": ["GET", "/api/guest/session", "none", undefined],
+  "guest.submit": ["POST", "/api/guest/messages", "none", undefined],
+  "guest.stream": ["GET", "/api/guest/stream", "none", undefined],
+  "guest.render": ["GET", "/api/guest/render", "none", undefined],
+  "guest.item": ["GET", "/api/guest/item", "none", undefined],
+  "guest.history": ["GET", "/api/guest/history", "none", undefined],
+  "guest.commandOutput": ["GET", "/api/guest/command-output", "none", undefined],
+  "guest.attachment": ["GET", "/api/guest/attachment", "none", undefined],
+  "guest.media": ["GET", "/api/guest/media", "none", undefined],
   "orchestration.shellSnapshot": [
     "GET",
     "/api/orchestration/shell",
@@ -73,6 +83,10 @@ const expected: Record<string, [string, string, string, string | undefined]> = {
   "projects.snapshot": ["GET", "/api/projects", "required", "orchestration:read"],
   "projects.mutate": ["POST", "/api/projects/mutate", "required", "orchestration:operate"],
   "pullRequests.diff": ["POST", "/api/pull-requests/diff", "required", "orchestration:read"],
+  "webhooks.webhookPost": ["POST", "/api/hooks/:hookId/:token", "none", undefined],
+  "webhooks.webhookPut": ["PUT", "/api/hooks/:hookId/:token", "none", undefined],
+  "webhooks.webhookPatch": ["PATCH", "/api/hooks/:hookId/:token", "none", undefined],
+  "webhooks.webhookGet": ["GET", "/api/hooks/:hookId/:token", "none", undefined],
 };
 
 it("has one entry for each route of the table, with the server's scope", () => {

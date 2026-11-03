@@ -92,6 +92,9 @@ proposed-design:
     token, provider key or folder, device tool or relay of the machine, so that a
     method that can reach a login or an installed provider finds none of this machine's.
     `test/live/localHttp.ts` is the loopback server for a stub that a test's server calls.
+    `test/live/guestTunnel.ts` starts a server whose guest links work with no relay:
+    `stubTunnelClient.mjs` plays the tunnel client and reports the link's host, and
+    the stopped home gets the records of a confirmed tunnel.
     The `t3` version is the server build this library targets,
     so the live suite is the check that the client still matches it.
 

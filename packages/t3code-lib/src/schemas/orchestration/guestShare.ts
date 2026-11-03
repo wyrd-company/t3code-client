@@ -14,6 +14,7 @@ import {
   IsoDateTime,
   ThreadId,
   TrimmedNonEmptyString,
+  TrimmedString,
   forwardCompatibleLiteral,
 } from "../common.ts";
 import { ChatAttachment } from "./attachments.ts";
@@ -52,3 +53,39 @@ export const GuestShareCreateResult = z.looseObject({
   share: ThreadGuestShare,
 });
 export type GuestShareCreateResult = z.infer<typeof GuestShareCreateResult>;
+
+export const GUEST_MESSAGE_MAX_LENGTH = 4_000;
+export const GUEST_NAME_MAX_LENGTH = 40;
+export const GUEST_MESSAGE_MAX_ATTACHMENTS = 4;
+
+// The server refuses a name that does not read as one plain line of text.
+const NAME_BREAKING_CHARACTER = /[\p{Cc}\p{Zl}\p{Zp}\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/u;
+
+/** A guest's first request: the credential from the link's fragment, and the guest's name. */
+export const GuestRedeemRequest = z.strictObject({
+  credential: TrimmedNonEmptyString,
+  name: TrimmedNonEmptyString.max(GUEST_NAME_MAX_LENGTH).refine(
+    (name) => !NAME_BREAKING_CHARACTER.test(name),
+    "The name must be a single line of text.",
+  ),
+});
+export type GuestRedeemRequest = z.infer<typeof GuestRedeemRequest>;
+
+/** One file of a guest's message. */
+export const GuestUploadFile = z.strictObject({
+  name: z.string().min(1),
+  mimeType: z.string().min(1),
+  bytes: z.instanceof(Uint8Array),
+});
+export type GuestUploadFile = z.infer<typeof GuestUploadFile>;
+
+/**
+ * A guest's message. `shareId` names the share the guest sees, so the server refuses a message
+ * for a replaced link. `text` can be empty when there are files.
+ */
+export const GuestSubmitRequest = z.strictObject({
+  shareId: GuestShareId,
+  text: TrimmedString.max(GUEST_MESSAGE_MAX_LENGTH),
+  files: z.array(GuestUploadFile).max(GUEST_MESSAGE_MAX_ATTACHMENTS).optional(),
+});
+export type GuestSubmitRequest = z.infer<typeof GuestSubmitRequest>;

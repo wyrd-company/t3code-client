@@ -68,6 +68,25 @@ proposed-design:
     | `POST /api/pull-requests/diff`                        | bearer               | `PullRequestDiffInput` → `PullRequestDiffResult`                                                              |
     | `GET /api/preview-stream/download`                    | bearer, orch:read    | query `threadId`, `tabId`, `id`; bytes and `content-type`; 404 for an unknown file         |
     | `POST /api/preview-stream/upload`                     | bearer, preview:op   | query `threadId`, `tabId`, `chooser`; multipart files; 204; 409 when the picker is not open |
+    | `POST /api/guest/redeem`                              | none                 | `{credential, name}`; 204 and a session cookie for the share; 403 `invalid`                |
+    | `GET /api/guest/session`                              | guest cookie         | query `share`; 204                                                                         |
+    | `POST /api/guest/messages`                            | guest cookie         | query `share`; multipart `shareId`, `text`, `file`; 204; 400 `empty`, `too_large`          |
+    | `GET /api/guest/stream`                               | guest cookie         | query `share`; server-sent `GuestStreamEvent`: `view`, `thread`, `ended`                   |
+    | `GET /api/guest/item`                                 | guest cookie         | query `share`, `item`; `OrchestrationV2GetTurnItemResult`                                  |
+    | `GET /api/guest/history`                              | guest cookie         | query `share`, `cursor`; `OrchestrationV2ThreadHistoryPage`                                |
+    | `GET /api/guest/command-output`                       | guest cookie         | query `share`, `item`; server-sent `OrchestrationV2CommandOutputFrame`; ends when settled  |
+    | `GET /api/guest/render`                               | guest cookie         | query `share`, `item`; the bytes of one HTML render                                        |
+    | `GET /api/guest/attachment`                           | guest cookie         | query `share`, `id`; bytes and `content-type`                                              |
+    | `GET /api/guest/media`                                | guest cookie         | query `share`, `path`; an image that a reply the guest received shows                      |
+    | `POST`, `PUT`, `PATCH`, `GET /api/hooks/:hookId/:token` | path token         | raw body; 202 `{deliveryId}`; 401, 404, 409, 410, 413, 429 with `{error}`                  |
+
+    A guest route refuses with `{reason, message}`: 403 for `invalid`, `inactive` and
+    `unavailable`, 400 for a bad message, 409 otherwise. The session cookie is
+    HttpOnly and names one share, so a guest's client needs a `fetch` that keeps it,
+    as for a browser session. A webhook's path holds its token, so no error names
+    the path. The signature, when the task requires one, is over the raw bytes, and
+    `input.headers` carries it. `webhookUrlParams` splits an endpoint's `path` into
+    route params.
 
     A signed URL comes from `assets.createUrl` or `attachments.createUploadUrl` as
     `relativeUrl`. The token in its path is the credential, so these routes do not

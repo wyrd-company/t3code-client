@@ -53,6 +53,7 @@ export type {
 } from "./transport/previewViewer.ts";
 export { httpRoutes, type HttpRouteName, type HttpRoutes } from "./http/registry.ts";
 export { assetUrlParams, attachmentUploadUrlParams } from "./http/routes/assets.ts";
+export { webhookUrlParams } from "./http/routes/webhooks.ts";
 export type {
   HttpRouteAuth,
   HttpRouteInput,

@@ -116,7 +116,12 @@ static create(options: T3ClientOptions): T3Client;
 
 Every HTTP route of the target build by name, with validated input and a decoded answer.
 
-**Kind**: global class  
+**Kind**: global class
+
+- [HttpRouteClient](#HttpRouteClient)
+  - [.call()](#HttpRouteClient+call)
+  - [.stream()](#HttpRouteClient+stream)
+
 <a name="HttpRouteClient+call"></a>
 
 ### httpRouteClient.call()
@@ -130,6 +135,25 @@ async call<N extends keyof Table & string>(
       ? [input?: HttpRouteInput<Table, N>, signal?: AbortSignal]
       : [input: HttpRouteInput<Table, N>, signal?: AbortSignal]
   ): Promise<HttpRouteSuccess<Table, N>>;
+```
+
+**Kind**: instance method of [<code>HttpRouteClient</code>](#HttpRouteClient)  
+<a name="HttpRouteClient+stream"></a>
+
+### httpRouteClient.stream()
+
+Validate the input, check the known scopes, and read the events of an event stream route. An
+event that does not decode is a `decode-error` item, and the stream continues. Ending the
+iteration or aborting `signal` closes the request. An abort raises `T3InterruptedError`, and a
+lost connection raises `T3ConnectionError`.
+
+```ts
+async *stream<N extends HttpEventStreamRouteName<Table>>(
+    name: N,
+    ...args: undefined extends HttpRouteInput<Table, N>
+      ? [input?: HttpRouteInput<Table, N>, signal?: AbortSignal]
+      : [input: HttpRouteInput<Table, N>, signal?: AbortSignal]
+  ): AsyncGenerator<StreamItem<HttpRouteSuccess<Table, N>>>;
 ```
 
 **Kind**: instance method of [<code>HttpRouteClient</code>](#HttpRouteClient)  
