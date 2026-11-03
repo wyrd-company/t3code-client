@@ -84,7 +84,7 @@ jobs:
         run: |
           {
             scripts/release/plan-package.sh "$EVENT_NAME" "$REF_NAME" "$PUBLISH_PACKAGE"
-            scripts/release/plan-docs.sh "$EVENT_NAME" "$REF_NAME" "$GITHUB_SHA"
+            scripts/release/plan-docs.sh "$EVENT_NAME" "$REF_NAME" "$GITHUB_SHA" "$PUBLISH_FEATURE"
             scripts/release/plan-feature.sh "$EVENT_NAME" "$REF_NAME" "$PUBLISH_FEATURE"
           } >> "$GITHUB_OUTPUT"
 
