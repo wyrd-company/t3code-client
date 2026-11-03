@@ -1,6 +1,6 @@
 ---
 relationships:
-  references: [library, command-line, mcp, testing, releasing]
+  references: [library, command-line, mcp, proxy, testing, releasing]
 ---
 
 # t3code-client
@@ -17,6 +17,8 @@ A pnpm workspace for stock T3 Code 0.1.6, orchestration protocol 2.
   named server profiles, thread inspection and automation.
 - [`@wyrd-company/t3code-mcp`](packages/t3code-mcp/README.md): complementary stdio
   tools for scheduler endpoints, webhook diagnostics, inspection and usage.
+- [`@wyrd-company/t3code-proxy`](packages/t3code-proxy/README.md): `t3c-proxy`, a service
+  that shows who sent each message when people share one server.
 
 The release units have independent versions.
 Node >=22.16 and pnpm 11 are required. The root package is private.
@@ -41,6 +43,7 @@ task check
 task lib:check
 task cli:check
 task mcp:check
+task proxy:check
 ```
 
 User guide: [getting started](docs/user/t3c/getting-started.md),

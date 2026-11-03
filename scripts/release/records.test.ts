@@ -27,7 +27,7 @@ function setup() {
     ".intentional/config.yml",
     NodeFS.readFileSync(new URL("../../.intentional/config.yml", import.meta.url), "utf8"),
   );
-  for (const unit of ["t3code-lib", "t3code-cli", "t3code-mcp"])
+  for (const unit of ["t3code-lib", "t3code-cli", "t3code-mcp", "t3code-proxy"])
     write(
       root,
       `packages/${unit}/package.json`,
@@ -160,7 +160,14 @@ describe("Intentional record agreement", () => {
   });
   it("creates ephemeral zero baselines without tagging the source repository", () => {
     const root = setup();
-    command(root, "git", ["tag", "-d", "t3code-lib@0.0.0", "t3code-cli@0.0.0", "t3code-mcp@0.0.0"]);
+    command(root, "git", [
+      "tag",
+      "-d",
+      "t3code-lib@0.0.0",
+      "t3code-cli@0.0.0",
+      "t3code-mcp@0.0.0",
+      "t3code-proxy@0.0.0",
+    ]);
     const result = run(root, "check-intents.sh");
     expect(result.status, result.stderr).toBe(0);
     expect(command(root, "git", ["tag", "--list"]).trim()).toBe("t3c-docs@0.1.0\nt3mcp-docs@0.0.0");

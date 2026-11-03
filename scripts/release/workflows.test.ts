@@ -45,6 +45,7 @@ describe("workflow agreements", () => {
       "t3code-cli@*",
       "t3code-lib@*",
       "t3code-mcp@*",
+      "t3code-proxy@*",
       "t3mcp-docs@*",
     ]);
   });
@@ -78,7 +79,7 @@ describe("release foundation wiring", () => {
     }
     expect(foundation).toContain("name: Show Intentional status");
     expect(matrix).toContain("needs: release-foundation");
-    expect(matrix).toContain("unit: [t3code-lib, t3code-cli, t3code-mcp]");
+    expect(matrix).toContain("unit: [t3code-lib, t3code-cli, t3code-mcp, t3code-proxy]");
   });
   it("checks package readiness before applying the saved release plan", () => {
     const workflow = release();
@@ -91,8 +92,8 @@ describe("release foundation wiring", () => {
 });
 
 describe("package unit inventory", () => {
-  it("names exactly the library, CLI and MCP package units", () => {
-    expect(packageUnits).toEqual(["t3code-cli", "t3code-lib", "t3code-mcp"]);
+  it("names exactly the library, CLI, MCP and proxy package units", () => {
+    expect(packageUnits).toEqual(["t3code-cli", "t3code-lib", "t3code-mcp", "t3code-proxy"]);
   });
   it("checks every package unit in the CI matrix", () => {
     const matrix = /unit: \[([^\]]+)\]/.exec(ci())![1]!.split(/,\s*/).sort();

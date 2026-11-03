@@ -6,6 +6,7 @@ relationships:
     - testing
     - releasing
     - mcp
+    - proxy
 ---
 
 # t3code-client workspace
@@ -21,6 +22,8 @@ Read `docs/technical-designs/testing.yml` and `docs/technical-designs/releasing.
   `t3c`. Shared composition and handler ownership are in `docs/technical-designs/composition.yml`.
 - `packages/t3code-mcp`: npm `@wyrd-company/t3code-mcp`, unit `t3code-mcp`,
   binary `t3code-mcp`. Read `docs/technical-designs/mcp.yml` and its package guidance.
+- `packages/t3code-proxy`: npm `@wyrd-company/t3code-proxy`, unit `t3code-proxy`,
+  binary `t3c-proxy`. Read `docs/technical-designs/proxy.yml` and its package guidance.
 - `scripts/release`: shared unit-aware pack, validation and publication steps.
 - `.intentional`: independent unit projections and one pre-0.1.0 intent per unit.
 - `docs/user`: the published wyrd.foo v2 docs. Products `t3c` and `t3mcp` have
@@ -48,4 +51,4 @@ No authoritative baseline tags before epic finalization. `task check` uses a
 scratch repository for missing pre-release baselines, without tagging this repo.
 
 Run `task check` before handoff. Root verbs cover the workspace; `lib:*`,
-`cli:*` and `mcp:*` select a package. Registered commands without handlers explicitly fail.
+`cli:*`, `mcp:*` and `proxy:*` select a package. Registered commands without handlers explicitly fail.

@@ -1,7 +1,7 @@
 name: Publish
 
-# Annotated `t3code-lib@X.Y.Z`, `t3code-cli@X.Y.Z` and `t3code-mcp@X.Y.Z`
-# records start package publication. Every job is safe to rerun: an npm
+# Annotated `t3code-lib@X.Y.Z`, `t3code-cli@X.Y.Z`, `t3code-mcp@X.Y.Z` and
+# `t3code-proxy@X.Y.Z` records start package publication. Every job is safe to rerun: an npm
 # version or GitHub Release that already exists is verified instead of
 # recreated. A library record publishes no documentation.
 #
@@ -17,6 +17,7 @@ on:
       - "t3code-lib@*"
       - "t3code-cli@*"
       - "t3code-mcp@*"
+      - "t3code-proxy@*"
       - "t3c-docs@*"
       - "t3mcp-docs@*"
   workflow_dispatch:

@@ -1,0 +1,40 @@
+# ---
+# relationships:
+#   implements: proxy
+# ---
+version: "3"
+tasks:
+  install:
+    desc: Install workspace dependencies
+    cmds: [pnpm install]
+  build:
+    desc: Build the proxy
+    cmds: [pnpm run build]
+  fmt:
+    desc: Format proxy sources
+    cmds: [pnpm run fmt]
+  lint:
+    desc: Check proxy formatting and lint
+    cmds: [pnpm run check]
+  typecheck:
+    desc: Type-check proxy sources and tests
+    cmds: [pnpm --filter @wyrd-company/t3code-lib build, pnpm run typecheck]
+  test:
+    desc: Test the rewrite rules, configuration and service
+    cmds: [pnpm run test]
+  test:live:
+    desc: Test the proxy in front of the pinned server
+    deps: [build]
+    cmds: [pnpm --filter @wyrd-company/t3code-lib build, pnpm run test:live]
+  package:
+    desc: Pack the proxy and verify the installed executable
+    cmds: [pnpm run package]
+  check:
+    desc: All proxy gates
+    cmds:
+      - task: build
+      - task: lint
+      - task: typecheck
+      - task: test
+      - task: test:live
+      - task: package

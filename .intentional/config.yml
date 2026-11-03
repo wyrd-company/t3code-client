@@ -14,6 +14,9 @@ discovery:
     - detector: npm-package
       path: packages/t3code-mcp/package.json
       release-unit: t3code-mcp
+    - detector: npm-package
+      path: packages/t3code-proxy/package.json
+      release-unit: t3code-proxy
 release-units:
   t3code-lib:
     path: packages/t3code-lib
@@ -49,6 +52,16 @@ release-units:
       - adapter: yaml
         file: /docs/user/docs.yml
         pointer: /products/t3mcp/version
+        mode: committed
+    tags:
+      primary:
+        role: primary
+        template: '{id}@{version}'
+  t3code-proxy:
+    path: packages/t3code-proxy
+    projections:
+      - adapter: npm
+        file: package.json
         mode: committed
     tags:
       primary:
