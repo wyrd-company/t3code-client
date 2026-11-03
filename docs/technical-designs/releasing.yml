@@ -66,28 +66,29 @@ proposed-design:
     is baselined at the version its `docs/user/docs.yml` projection holds.
 
     Only at staged epic finalization, after Bob's UAT, client default-branch merge
-    and epic retrospective, establish
-    authority on the merged main commit:
+    and epic retrospective, establish authority on the merged main commit. A new unit
+    joins the same way. The baseline command creates one record for each configured unit
+    that has none, and the push names exactly the records that the dry run lists:
 
     ```bash
     intentional tag --baseline --dry-run
     intentional tag --baseline
-    git push --atomic origin refs/tags/t3code-lib@0.0.0 refs/tags/t3code-cli@0.0.0
+    git push --atomic origin refs/tags/t3code-proxy@0.0.0 \
+      refs/tags/t3code-proxy-feature@0.0.0 refs/tags/t3c-proxy-docs@0.0.0
     intentional status
     intentional check
     intentional plan > release-plan.json
     ```
 
-    Each minor intent computes 0.1.0. Baseline records do not start publication.
-    The tag-only docs unit starts at the `docs-version` in `docs/user/docs.yml`:
+    Each minor intent computes 0.1.0. A zero baseline starts no publication.
+    A docs unit is baselined at the `docs-version` in `docs/user/docs.yml`. When that
+    version is not zero, name it, because a nonzero docs record publishes the docs:
 
     ```bash
     intentional tag --baseline --version t3c-docs=0.1.0
     git push origin refs/tags/t3c-docs@0.1.0
     ```
 
-    A `t3c-docs` record starts a documentation publish, so the first push publishes
-    the docs.
     The CLI scaffold removes `private` and supplies its executable, build, tests,
     license, README and npm shrinkwrap before finalization. Private placeholders
     cannot be packed or released. First publication is pre-approved only at that
@@ -221,6 +222,11 @@ proposed-design:
     | `NPM_TOKEN`               | Publish | npm automation token for package units |
     | `WYRD_TOOLS_DOCS_PUBLISHER_APP_ID` | Publish | Organization secret; mints the wyrd.foo publisher token |
     | `WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY` | Publish | Organization secret; the publisher App key |
+
+    `NPM_TOKEN` must be able to create a package in the `@wyrd-company` scope, because the
+    first publication of a package creates it. npm provenance needs no trusted publisher.
+    A Feature's first publication creates its GHCR package with the workflow token. Check that an
+    anonymous client can read it, and an organization owner sets it public if it is not.
 
     The App needs Contents write. Publish requires an Intentional release record
     whose commit is on main. A tag ruleset allowing only the App to create
