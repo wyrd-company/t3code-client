@@ -20,5 +20,9 @@ Read `docs/technical-designs/proxy.yml` at the repository root. It leads this co
   queries. The log names a person, an RPC tag and a command type from the rewrite table.
 - Application code does not spawn commands and has no pinned version check.
 - Use ESM/NodeNext, `.ts` relative imports, no `any` and colocated tests.
+- `test/live` runs in `task check` with no provider. `test/proof` needs real turns,
+  HTTPS and a browser, so it runs only with `task proxy:test:proof`.
+  `docs/technical-designs/testing.yml` has the needs and the manual client steps. Each
+  pinned `t3` update reruns it.
 - Run the workspace `task check` before handoff. Add consumer changes to the package's
   single initial minor intent. Publication requires explicit user approval.
