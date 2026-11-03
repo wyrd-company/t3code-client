@@ -292,6 +292,7 @@ proposed-design:
   documentation: |
     The wyrd.foo product is t3c-proxy, with code release unit t3code-proxy and
     tag-only docs unit t3c-proxy-docs. Its pages live in docs/user/t3c-proxy: setup,
-    a reverse proxy example, and the accepted limits. The catalog entry has its own
-    navigation and SVG mark. The t3c and t3mcp guides state that they use the direct
-    route.
+    a reverse proxy example, the accepted limits and the Feature. The catalog entry has
+    its own navigation and SVG mark, and it lists the npm package and the Feature. The
+    t3c and t3mcp guides state that they use the direct route. A proxy code record or a
+    t3c-proxy-docs record publishes the docs; a Feature record does not.
