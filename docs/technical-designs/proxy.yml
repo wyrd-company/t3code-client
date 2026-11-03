@@ -231,6 +231,9 @@ proposed-design:
     before it starts or reloads, so one unresolved name holds back all sites. A
     wildcard DNS record for the server's parent domain supplies the names.
 
+    The Feature publishes no port. The README shows `appPort` for ports 80 and 443, and states
+    that the DNS record points at the Docker host or another entry point.
+
     The server's own hostname stays as the direct route.
   devcontainer-ordering: |
     The Feature declares `installsAfter` the Ansible, Caddy and t3code-server
