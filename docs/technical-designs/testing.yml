@@ -71,12 +71,16 @@ proposed-design:
     | `stream.proof.test.ts` | A client that stops reading during a large turn gets every event in order |
     | `web.proof.test.ts` | Pairing, both bylines, image and file in the stock web client in a real browser |
 
-    The desktop and mobile clients are manual steps on each `t3` update. Run the upstream desktop
-    release of that version under a display server, with a clean environment and its own home,
-    `T3CODE_PORT`, session bus and Secret Service keyring. A `T3CODE_PORT` inherited from another
-    T3 Code process makes the app treat that server as its backend. Pair it through a person's
-    hostname and send one message and one image-only message. The stored text must hold the
-    byline. Mobile follows the same steps on a device with the development client.
+    The proof clears `T3CODE_PORT`, `T3CODE_HOST` and `T3CODE_HOME` before it starts a process, so
+    that a run inside another T3 Code process does not reach that server.
+
+    The desktop client is a manual step on each `t3` update. Run the upstream desktop release of
+    that version under a display server, with a clean environment and its own home, `T3CODE_PORT`,
+    session bus and Secret Service keyring. A `T3CODE_PORT` inherited from another T3 Code process
+    makes the app treat that server as its backend. Pair it through a person's hostname and send
+    one message and one image-only message. The stored text must hold the byline. Mobile clients
+    are not proven. When a device with the development client is available, they follow the same
+    steps.
   cli-isolated-acceptance: |
     `task cli:acceptance` builds the library and CLI, then starts the pinned stock
     server through the shared library live setup. Its fresh `/tmp/t3c-acceptance-*`

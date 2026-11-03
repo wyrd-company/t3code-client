@@ -109,6 +109,8 @@ const answers = (host: string, port: number, ca: string) =>
 
 export default async function setup() {
   requireTools();
+  // An inherited value can name another T3 Code server. Each process below inherits this.
+  for (const name of ["T3CODE_PORT", "T3CODE_HOST", "T3CODE_HOME"]) delete process.env[name];
   const root = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3code-proxy-proof-"));
   const baseDir = NodePath.join(root, "home");
   const workspace = NodePath.join(root, "workspace");

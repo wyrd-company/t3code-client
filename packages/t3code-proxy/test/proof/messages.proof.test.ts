@@ -13,6 +13,12 @@ describe("messages through a person's hostname", () => {
   const proof = routes();
   afterAll(proof.close);
 
+  it("runs with no inherited setting that names another T3 Code server", () => {
+    for (const name of ["T3CODE_PORT", "T3CODE_HOST", "T3CODE_HOME"]) {
+      expect(process.env[name]).toBeUndefined();
+    }
+  });
+
   it("stores each byline on a first message and a follow-up, and the agent receives them", async () => {
     const threadId = await proof.launch(proof.alice, ASK_NAME);
     await proof.settled(threadId);
