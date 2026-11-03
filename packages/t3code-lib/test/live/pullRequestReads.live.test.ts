@@ -12,11 +12,16 @@ import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { projectId, providerInstanceId } from "../../src/schemas/common.ts";
 import type { T3Client } from "../../src/index.ts";
 import { firstItem, hasLiveServer, refusal, waitFor } from "./liveClient.ts";
-import { withScopes, type PeerServer } from "./peerServer.ts";
-import { headSha, host, repository, startPullRequestServer } from "./pullRequestForge.ts";
+import { withScopes } from "./peerServer.ts";
+import {
+  host,
+  repository,
+  startPullRequestServer,
+  type PullRequestServer,
+} from "./pullRequestForge.ts";
 
 describe.skipIf(!hasLiveServer)("pull request reads with a local forge stub", () => {
-  let peer: PeerServer;
+  let peer: PullRequestServer;
   let client: T3Client;
   const project = projectId(`project-${crypto.randomUUID()}`);
   const ref = { projectId: project, repository, number: 7 };
@@ -70,7 +75,7 @@ describe.skipIf(!hasLiveServer)("pull request reads with a local forge stub", ()
     expect(detail).toMatchObject({
       provider: "gitlab",
       projectTitle: "Sample project",
-      headSha,
+      headSha: peer.headSha,
       mergeability: "mergeable",
       capabilities: { diff: true, viewedFiles: "environment" },
       viewerPermissions: { comment: true },
@@ -90,7 +95,7 @@ describe.skipIf(!hasLiveServer)("pull request reads with a local forge stub", ()
     expect(activity.reviewThreads).toMatchObject([
       { id: "sample-discussion", path: "sample.txt", line: 1, isResolved: false },
     ]);
-    expect(activity.commits.map((commit) => commit.oid)).toEqual([headSha]);
+    expect(activity.commits.map((commit) => commit.oid)).toEqual([peer.headSha]);
     expect(activity.reactions).toMatchObject([{ content: "thumbs-up", count: 1 }]);
   });
 
@@ -127,7 +132,7 @@ describe.skipIf(!hasLiveServer)("pull request reads with a local forge stub", ()
     await expect(client.rpc.call("pullRequests.reviewGuide", ref)).resolves.toEqual({
       guide: null,
       run: null,
-      currentHeadSha: headSha,
+      currentHeadSha: peer.headSha,
     });
   });
 
@@ -225,7 +230,7 @@ describe.skipIf(!hasLiveServer)("pull request reads with a local forge stub", ()
     const revision = firstItem(client.rpc.stream("pullRequests.subscribeRefreshes", {}), (value) =>
       value > 0 ? value : undefined,
     );
-    await client.rpc.callRaw("pullRequests.invalidate", {});
+    await client.rpc.call("pullRequests.invalidate", {});
     await expect(revision).resolves.toBeGreaterThan(0);
   });
 

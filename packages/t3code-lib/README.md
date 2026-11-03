@@ -371,7 +371,7 @@ and lists the folders that they ran in. `agentSessions.import` makes threads fro
 recent transcripts of a project's folder. `expectedWorkspaceRoot` refuses the import
 when the project has moved since the scan.
 
-## Pull request reads
+## Pull requests
 
 The server reads the forge with its own credential, through one form for all of its
 forge drivers. A `PullRequestRef` names a project and a pull request of that project's
@@ -404,9 +404,38 @@ the two sides of one file. `reviewGuide` reads the stored guide and generates no
 `linkedThreads` lists the threads linked to a pull request. `filterOptions`,
 `reviewerCandidates` and `labelCandidates` list the values that a client can offer.
 `pullRequests.subscribeRefreshes` sends a new revision after which a client reads again.
+`pullRequests.invalidate` drops cached reads, so that the next read asks the host.
 
-A driver can lack a part: GitLab has no routing identity, stacks or paged thread
-comments. A failure is a `PullRequestUnavailableError`, whose `reason` says that the tool
+A write takes a `PullRequestRef` and goes to the host with the server's credential. It
+needs `source-control:write`:
+
+```ts
+await client.rpc.call("pullRequests.comment", { ...ref, body: "Sample comment" });
+await client.rpc.call("pullRequests.submitReview", {
+  ...ref,
+  verdict: "approve",
+  body: "Sample review",
+  comments: [
+    { path: "sample.txt", position: { kind: "added", newLine: 1 }, body: "Sample line comment" },
+  ],
+});
+await client.rpc.call("pullRequests.runAction", { ...ref, action: "merge", mergeMethod: "squash" });
+```
+
+`update`, `updateComment`, `replyToThread`, `setThreadResolution`, `setReaction`,
+`requestReviewers`, `setLabels` and `setFilesViewed` change one part of a pull request.
+Read `capabilities` and `viewerPermissions` from `pullRequests.detail` first. A host with
+no pending review can post part of a review and then fail, and it sends the verdict last.
+`capabilities.viewedFiles` says if viewed marks are on the host or on this server.
+
+`pullRequests.generateReviewGuide` needs `orchestration:operate` and the
+`reviewGuidesEnabled` setting, and the project must be a checkout of the repository. It
+starts a run with the review guide model and answers at once. `pullRequests.reviewGuide`
+reads the run and then the guide. `pullRequests.reportState` tells the server the state
+that a client read.
+
+A driver can lack a part: GitLab has no routing identity, stacks, paged thread comments,
+label writes or `request-changes` verdict. A failure is a `PullRequestUnavailableError`, whose `reason` says that the tool
 or credential is missing or the host is not supported, or a `PullRequestOperationError`.
 The diff route sends the same two failures as HTTP 503 and 502. `expectedAccountId`,
 with `host`, refuses a read unless the server's credential for the host is that account.

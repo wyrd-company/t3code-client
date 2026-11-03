@@ -5,34 +5,56 @@
 import { z } from "zod";
 import { NonNegativeInt } from "../../schemas/common.ts";
 import {
+  PullRequestActionInput,
   PullRequestActivity,
   PullRequestChangeBreakdown,
   PullRequestChecks,
+  PullRequestCommentInput,
+  PullRequestCommentUpdateInput,
   PullRequestDetail,
   PullRequestDiffFileContentsInput,
   PullRequestDiffFileContentsResult,
   PullRequestFilesViewedResult,
   PullRequestFilterOptions,
   PullRequestFilterOptionsInput,
+  PullRequestInvalidateInput,
   PullRequestLabelCandidateList,
+  PullRequestLabelChangeInput,
   PullRequestLinkedThreadsResult,
   PullRequestListInput,
   PullRequestListResult,
   PullRequestListStatsInput,
   PullRequestListStatsResult,
   PullRequestPreview,
+  PullRequestReactionInput,
   PullRequestRef,
-  PullRequestReviewGuideResult,
+  PullRequestReportStateInput,
   PullRequestReviewerCandidateList,
+  PullRequestReviewerRequestInput,
+  PullRequestReviewGuideResult,
   PullRequestRoutingIdentityInput,
   PullRequestRoutingIdentityResult,
   PullRequestRoutingResult,
+  PullRequestSetFilesViewedInput,
   PullRequestStack,
+  PullRequestSubmitReviewInput,
   PullRequestSummary,
   PullRequestThreadCommentsInput,
   PullRequestThreadCommentsResult,
+  PullRequestThreadReplyInput,
+  PullRequestThreadResolutionInput,
+  PullRequestUpdateInput,
 } from "../../schemas/pullRequests.ts";
-import { defineMethod } from "../spec.ts";
+import { VoidSuccess, defineMethod } from "../spec.ts";
+
+/** A write that the server sends to the host with its own credential. */
+const hostWrite = <Payload extends z.ZodType>(payload: Payload) =>
+  defineMethod({
+    payload,
+    success: VoidSuccess,
+    stream: false,
+    scope: "source-control:write",
+  });
 
 export const pullRequestsMethods = {
   /** Rows arrive with zero line counts. `pullRequests.listStats` reads them. */
@@ -160,4 +182,42 @@ export const pullRequestsMethods = {
     stream: true,
     scope: "orchestration:read",
   }),
+  /**
+   * Starts a run with the review guide model, if none runs for this head, and answers
+   * at once. `pullRequests.reviewGuide` reads the run and then the guide. Needs
+   * `reviewGuidesEnabled`, and a project that is a checkout of the repository.
+   */
+  "pullRequests.generateReviewGuide": defineMethod({
+    payload: PullRequestRef,
+    success: PullRequestReviewGuideResult,
+    stream: false,
+    scope: "orchestration:operate",
+  }),
+  /** Drops cached reads, so that the next read asks the host, and tells subscribers to read again. */
+  "pullRequests.invalidate": defineMethod({
+    payload: PullRequestInvalidateInput,
+    success: VoidSuccess,
+    stream: false,
+    scope: "orchestration:read",
+  }),
+  /** Tells the server the state that a client read, so that it can sync a linked thread. */
+  "pullRequests.reportState": defineMethod({
+    payload: PullRequestReportStateInput,
+    success: VoidSuccess,
+    stream: false,
+    scope: "orchestration:read",
+  }),
+  /** Marks are on the host or on this server, as `capabilities.viewedFiles` says. */
+  "pullRequests.setFilesViewed": hostWrite(PullRequestSetFilesViewedInput),
+  "pullRequests.runAction": hostWrite(PullRequestActionInput),
+  "pullRequests.update": hostWrite(PullRequestUpdateInput),
+  "pullRequests.comment": hostWrite(PullRequestCommentInput),
+  "pullRequests.updateComment": hostWrite(PullRequestCommentUpdateInput),
+  /** A host with no pending review can post part of a review and then fail. The verdict is last. */
+  "pullRequests.submitReview": hostWrite(PullRequestSubmitReviewInput),
+  "pullRequests.replyToThread": hostWrite(PullRequestThreadReplyInput),
+  "pullRequests.setThreadResolution": hostWrite(PullRequestThreadResolutionInput),
+  "pullRequests.setReaction": hostWrite(PullRequestReactionInput),
+  "pullRequests.requestReviewers": hostWrite(PullRequestReviewerRequestInput),
+  "pullRequests.setLabels": hostWrite(PullRequestLabelChangeInput),
 };

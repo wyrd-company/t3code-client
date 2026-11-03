@@ -1,17 +1,22 @@
 #!/usr/bin/env node
 /**
- * Plays GitLab's API for the `glab api` calls of the server's merge request reads.
- * It answers one merge request of `sample/repository` from fixed values, and it
- * never reaches a network. A missing resource exits as `glab` does on a 404.
+ * Plays GitLab's API for the `glab` calls of the server's merge request reads and
+ * writes. It answers one merge request of `sample/repository` from fixed values and
+ * the commits in `STUB_FORGE_ROOT/forge.json`, and it never reaches a network. A
+ * write changes nothing. It adds a line to `STUB_FORGE_ROOT/calls.jsonl`. A missing
+ * resource exits as `glab` does on a 404.
  */
 import * as NodeFS from "node:fs";
+import * as NodePath from "node:path";
 
-const [, , command, path] = process.argv;
+const [, , command, path, ...rest] = process.argv;
+const forgeRoot = process.env["STUB_FORGE_ROOT"] ?? "";
+const { headSha, baseSha } = JSON.parse(
+  NodeFS.readFileSync(NodePath.join(forgeRoot, "forge.json"), "utf8"),
+);
 const project = "projects/sample%2Frepository";
 const author = { id: 11, username: "sample-author", name: "Sample Author", avatar_url: null };
 const reviewer = { id: 12, username: "sample-reviewer", name: null, avatar_url: null };
-const headSha = "1111111111111111111111111111111111111111";
-const baseSha = "2222222222222222222222222222222222222222";
 const createdAt = "2026-01-01T00:00:00.000Z";
 
 const mergeRequest = {
@@ -56,6 +61,15 @@ const position = {
 
 function graphql() {
   const { query } = JSON.parse(NodeFS.readFileSync(0, "utf8"));
+  if (query.includes("blobs(")) {
+    return {
+      data: {
+        project: {
+          repository: { blobs: { nodes: [{ path: "sample.txt", oid: "sample-blob" }] } },
+        },
+      },
+    };
+  }
   if (query.includes("awardEmoji")) {
     return {
       data: {
@@ -99,6 +113,26 @@ function graphql() {
 if (path.includes("/merge_requests/9")) {
   process.stderr.write("401 Unauthorized\n");
   process.exit(1);
+}
+
+function recordCall(call) {
+  NodeFS.appendFileSync(NodePath.join(forgeRoot, "calls.jsonl"), `${JSON.stringify(call)}\n`);
+}
+
+if (command === "mr") {
+  recordCall({ args: process.argv.slice(2) });
+  process.exit(0);
+}
+
+const methodFlag = rest.indexOf("--method");
+if (methodFlag !== -1 && path !== "graphql") {
+  recordCall({
+    method: rest[methodFlag + 1],
+    path,
+    ...(rest.includes("--input") ? { body: JSON.parse(NodeFS.readFileSync(0, "utf8")) } : {}),
+  });
+  process.stdout.write("{}");
+  process.exit(0);
 }
 
 /** `[pattern, answer]`, in order. A string answer is written as it is. */
@@ -153,6 +187,10 @@ const routes = [
         stats: { additions: 1, deletions: 1 },
       },
     ],
+  ],
+  [
+    new RegExp(`^${project}/merge_requests/7/award_emoji(\\?|$)`, "u"),
+    () => [{ id: 61, name: "thumbsup", user: { username: "sample-viewer" } }],
   ],
   [new RegExp(`^${project}/merge_requests/7(\\?|$)`, "u"), () => mergeRequest],
   [
