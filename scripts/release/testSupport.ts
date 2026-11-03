@@ -7,6 +7,12 @@ import * as NodeFS from "node:fs";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 
+// `git commit` starts a detached `git maintenance`. Its repack can write in a fixture while
+// the cleanup removes that fixture, which fails the cleanup with ENOTEMPTY.
+process.env["GIT_CONFIG_COUNT"] = "1";
+process.env["GIT_CONFIG_KEY_0"] = "maintenance.auto";
+process.env["GIT_CONFIG_VALUE_0"] = "false";
+
 export function fixture() {
   const root = NodeFS.mkdtempSync(NodePath.join(NodeOS.tmpdir(), "release-test-"));
   NodeFS.cpSync(new URL("./", import.meta.url), NodePath.join(root, "scripts/release"), {

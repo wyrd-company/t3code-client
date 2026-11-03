@@ -70,6 +70,8 @@ function release(root: string, unit = "t3code-lib") {
   command(root, "intentional", ["tag", "--plan", "release-plan.json"]);
   const origin = NodePath.join(root, "remote.git");
   command(root, "git", ["clone", "--quiet", "--bare", root, origin]);
+  // A local push removes GIT_CONFIG_* from receive-pack, so the repository must set this itself.
+  command(origin, "git", ["config", "receive.autogc", "false"]);
   command(root, "git", ["remote", "add", "origin", origin]);
 }
 
@@ -147,6 +149,19 @@ describe("Intentional record agreement", () => {
     const manifest = NodeFS.readFileSync(`${root}/docs/user/docs.yml`, "utf8");
     expect(manifest).toContain("  t3c-proxy:\n    version: 0.1.0\n    docs-version: 0.1.0\n");
     expect(manifest).toContain("  t3mcp:\n    version: 0.0.0\n    docs-version: 0.0.0\n");
+  });
+  it("starts no detached maintenance that can write during fixture cleanup", () => {
+    const root = setup();
+    const trace = `${root}/git-trace.log`;
+    NodeChildProcess.execFileSync(
+      "git",
+      ["commit", "--quiet", "--allow-empty", "-m", "chore: sample"],
+      {
+        cwd: root,
+        env: { ...process.env, GIT_TRACE: trace },
+      },
+    );
+    expect(NodeFS.readFileSync(trace, "utf8")).not.toContain("maintenance run");
   });
   it("refuses apply after pending inputs drift from the saved plan", () => {
     const root = setup();
