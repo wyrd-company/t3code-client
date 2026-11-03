@@ -55,6 +55,13 @@ const expected: Record<string, [string, string, string, string | undefined]> = {
     "required",
     "orchestration:read",
   ],
+  "previewStream.download": [
+    "GET",
+    "/api/preview-stream/download",
+    "required",
+    "orchestration:read",
+  ],
+  "previewStream.upload": ["POST", "/api/preview-stream/upload", "required", "preview:operate"],
   "projects.snapshot": ["GET", "/api/projects", "required", "orchestration:read"],
   "projects.mutate": ["POST", "/api/projects/mutate", "required", "orchestration:operate"],
   "pullRequests.diff": ["POST", "/api/pull-requests/diff", "required", "orchestration:read"],

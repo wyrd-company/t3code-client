@@ -21,20 +21,23 @@ import { VcsApi } from "./api/vcs.ts";
 import { CommandDispatcher } from "./api/dispatch.ts";
 import { AuthClient } from "./auth/authClient.ts";
 import { createDpopProof } from "./auth/dpop.ts";
+import { ensureScopes } from "./auth/scopes.ts";
 import { memoryCredentialStore, type CredentialStore } from "./auth/credentialStore.ts";
 import { T3AuthError, T3PreconditionError } from "./errors.ts";
 import { HttpRouteClient } from "./http/client.ts";
 import { httpRoutes, type HttpRoutes } from "./http/registry.ts";
 import type { BackoffPolicy } from "./internal/backoff.ts";
 import type { Logger } from "./internal/logger.ts";
-import type { WebSocketConstructor } from "./internal/websocket.ts";
+import { defaultWebSocket, type WebSocketConstructor } from "./internal/websocket.ts";
 import { RpcClient } from "./rpc/client.ts";
 import { rpcMethods, type RpcMethods } from "./rpc/registry.ts";
 import {
   ORCHESTRATION_PROTOCOL_QUERY_PARAM,
   ORCHESTRATION_PROTOCOL_VERSION_TEXT,
 } from "./schemas/environment.ts";
+import { PreviewViewerTarget } from "./schemas/previewViewer.ts";
 import { HttpTransport } from "./transport/http.ts";
+import { connectPreviewViewer, type PreviewViewer } from "./transport/previewViewer.ts";
 import { RpcConnection } from "./transport/rpcConnection.ts";
 import { SocketTransport } from "./transport/socket.ts";
 
@@ -80,11 +83,15 @@ export class T3Client {
   readonly routes: HttpRouteClient<HttpRoutes>;
   readonly #socket: SocketTransport;
   readonly #connection: RpcConnection;
+  readonly #baseUrl: string;
+  readonly #webSocket: WebSocketConstructor | undefined;
 
   private constructor(options: T3ClientOptions) {
     if (options.credentials && options.accessToken !== undefined) {
       throw new T3PreconditionError("Pass either credentials or accessToken, not both.");
     }
+    this.#baseUrl = options.baseUrl;
+    this.#webSocket = options.webSocket;
     const credentials =
       options.credentials ??
       memoryCredentialStore(
@@ -168,6 +175,38 @@ export class T3Client {
     return new T3Client(options);
   }
 
+  /**
+   * Attach to a tab that runs in the server's browser, with a new ticket for the
+   * `media` use. Each viewer is its own socket, and `close()` of this client does not
+   * end it.
+   */
+  async openPreviewViewer(
+    target: PreviewViewerTarget,
+    signal?: AbortSignal,
+  ): Promise<PreviewViewer> {
+    const parsed = PreviewViewerTarget.safeParse(target);
+    if (!parsed.success) {
+      throw new T3PreconditionError(`Preview viewer target is invalid: ${parsed.error.message}`);
+    }
+    const granted = await this.auth.currentScopes();
+    if (granted !== undefined) ensureScopes(granted, ["orchestration:read"], "openPreviewViewer");
+    const { ticket } = await this.routes.call(
+      "auth.webSocketTicketFor",
+      { params: { use: "media" } },
+      signal,
+    );
+    const url = previewViewerUrl(this.#baseUrl, parsed.data);
+    url.searchParams.set("wsTicket", ticket);
+    const key = await this.auth.currentDpopKey();
+    if (key !== undefined) {
+      url.searchParams.set(
+        "dpop",
+        createDpopProof({ key, method: "GET", url, accessToken: ticket }),
+      );
+    }
+    return connectPreviewViewer(this.#webSocket ?? (await defaultWebSocket()), url, signal);
+  }
+
   /** Optional eager connect; every RPC connects on demand otherwise. */
   connect(signal?: AbortSignal): Promise<void> {
     return this.#socket.connect(signal);
@@ -213,14 +252,27 @@ function socketAuthError(reason: string, message: string): T3AuthError {
   });
 }
 
-function socketUrl(options: T3ClientOptions): URL {
+function webSocketUrl(path: string, baseUrl: string): URL {
   let url: URL;
   try {
-    url = new URL("/ws", options.baseUrl);
+    url = new URL(path, baseUrl);
   } catch (cause) {
-    throw new T3PreconditionError(`baseUrl is not a valid URL: ${options.baseUrl}`, { cause });
+    throw new T3PreconditionError(`baseUrl is not a valid URL: ${baseUrl}`, { cause });
   }
   url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
+  return url;
+}
+
+function previewViewerUrl(baseUrl: string, target: PreviewViewerTarget): URL {
+  const url = webSocketUrl("/api/preview-stream/ws", baseUrl);
+  for (const [name, value] of Object.entries(target)) {
+    if (value !== undefined) url.searchParams.set(name, String(value));
+  }
+  return url;
+}
+
+function socketUrl(options: T3ClientOptions): URL {
+  const url = webSocketUrl("/ws", options.baseUrl);
   // The server answers 426 to an upgrade that does not name the protocol it speaks.
   url.searchParams.set(ORCHESTRATION_PROTOCOL_QUERY_PARAM, ORCHESTRATION_PROTOCOL_VERSION_TEXT);
   url.searchParams.set("clientSurface", "cli");

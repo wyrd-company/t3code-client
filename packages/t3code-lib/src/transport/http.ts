@@ -213,6 +213,8 @@ function encodeBody(
     headers.set("content-type", "application/x-www-form-urlencoded");
     return request.body;
   }
+  // `fetch` writes the content type of a multipart body, with its boundary.
+  if (request.body instanceof FormData) return request.body;
   if (request.body instanceof Uint8Array) {
     headers.set("content-type", "application/octet-stream");
     return request.body as Uint8Array<ArrayBuffer>;

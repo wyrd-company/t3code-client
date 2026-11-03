@@ -66,6 +66,8 @@ proposed-design:
     | `GET /api/assets/:token/:path`                         | signed URL           | bytes and `content-type`; 404 for a bad or expired token                                   |
     | `POST /api/attachments/upload/:token`                 | signed URL           | raw bytes of the signed size; 204; 400 for another size; 404 for a bad or expired token    |
     | `POST /api/pull-requests/diff`                        | bearer               | `PullRequestDiffInput` → `PullRequestDiffResult`                                                              |
+    | `GET /api/preview-stream/download`                    | bearer, orch:read    | query `threadId`, `tabId`, `id`; bytes and `content-type`; 404 for an unknown file         |
+    | `POST /api/preview-stream/upload`                     | bearer, preview:op   | query `threadId`, `tabId`, `chooser`; multipart files; 204; 409 when the picker is not open |
 
     A signed URL comes from `assets.createUrl` or `attachments.createUploadUrl` as
     `relativeUrl`. The token in its path is the credential, so these routes do not
@@ -74,6 +76,19 @@ proposed-design:
     holds the whole file in memory and sends no `range` header. A caller that needs
     part of a large file fetches `relativeUrl` itself, which takes no credential.
     An asset token for a browser document also reads the files next to it, by path.
+
+    `GET /api/preview-stream/ws` is the viewer socket of a tab in the server's browser.
+    `T3Client.openPreviewViewer` opens it with a ticket for the `media` use and
+    `orchestration:read`. Query `threadId`, `tabId`, `maxWidth`, `maxHeight`, `quality` and
+    `interactive`. A binary message is one JPEG frame, and the server sends the next
+    after a `{"type":"ack"}`. A text message is JSON: `viewport`, `control`, `probe`,
+    `clipboard`, `pointer`, `fileChooser`, `fileChooserClosed`, `popup` or `download`. The
+    viewer sends `takeControl`, `releaseControl`, `dialog`, `mouse`, `wheel`, `key`, `text`,
+    `resize`, `viewport`, `navigate`, `history`, `reload` and `probe`, and the server drops them
+    without `preview:operate`. Close 4404 means that the tab is gone, 4503 has a JSON
+    reason with the host setup that the browser needs, and 1012 asks for a new attach.
+    The `upgrade` is 503 when the browser fails in another way. Upstream has no contract for these
+    messages, so `schemas/previewViewer.ts` mirrors `ServerBrowser.ts`.
 
     In this table "bearer" is any access token. A proof-bound session sends
     `authorization: DPoP <token>` and a `dpop` header in place of

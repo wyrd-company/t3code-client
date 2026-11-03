@@ -45,6 +45,12 @@ export {
   currentDesktopBootstrapToken,
 } from "./auth/desktopBootstrap.ts";
 export { HttpRouteClient, type HttpRouteClientOptions } from "./http/client.ts";
+export type {
+  PreviewViewer,
+  PreviewViewerClose,
+  PreviewViewerFrame,
+  PreviewViewerOutput,
+} from "./transport/previewViewer.ts";
 export { httpRoutes, type HttpRouteName, type HttpRoutes } from "./http/registry.ts";
 export { assetUrlParams, attachmentUploadUrlParams } from "./http/routes/assets.ts";
 export type {

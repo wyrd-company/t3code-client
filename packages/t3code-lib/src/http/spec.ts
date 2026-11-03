@@ -37,6 +37,8 @@ export interface HttpRouteSpec<Input = unknown, Success = unknown> {
   readonly headers?: Record<string, string>;
   /** Sends `input.body` form-encoded; JSON otherwise, and a `Uint8Array` as raw bytes. */
   readonly form?: true;
+  /** Sends `input.body.files` as `multipart/form-data`. */
+  readonly multipart?: true;
   /** A 2xx answer reaches `success` as `{ bytes, contentType }`, not parsed as JSON. */
   readonly binaryResponse?: true;
   /** The path is a credential, so an error names the `path` template and not the sent path. */

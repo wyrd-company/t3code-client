@@ -61,6 +61,29 @@ describe("HttpRouteClient", () => {
     expect(requests[0]?.headers.get("x-t3-orchestration-protocol") ?? "").not.toBe("");
   });
 
+  it("sends files as a multipart body, with the query of the route", async () => {
+    const { requests, routes } = setup(undefined);
+    await routes
+      .call("previewStream.upload", {
+        query: { threadId: threadId("thread-1"), tabId: "tab-1", chooser: "chooser-1" },
+        body: {
+          files: [
+            { name: "a.txt", mimeType: "text/plain", bytes: new Uint8Array([1]) },
+            { name: "b.txt", mimeType: "text/plain", bytes: new Uint8Array([2, 3]) },
+          ],
+        },
+      })
+      .catch(() => undefined);
+    const request = requests[0] as Request;
+    expect(new URL(request.url).searchParams.get("chooser")).toBe("chooser-1");
+    expect(request.headers.get("content-type")).toMatch(/^multipart\/form-data; boundary=/u);
+    const files = (await request.formData()).getAll("files") as File[];
+    expect(files.map((file) => [file.name, file.type, file.size])).toEqual([
+      ["a.txt", "text/plain", 1],
+      ["b.txt", "text/plain", 2],
+    ]);
+  });
+
   it("refuses an input outside the schema without sending it", async () => {
     const { fetch, routes } = setup({});
     await expect(

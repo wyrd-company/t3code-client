@@ -17,6 +17,8 @@ export * as httpErrors from "./httpErrors.ts";
 export * as keybindings from "./keybindings.ts";
 export * as mcpApps from "./mcpApps.ts";
 export * as peerLink from "./peerLink.ts";
+export * as preview from "./preview.ts";
+export * as previewViewer from "./previewViewer.ts";
 export * as projects from "./projects.ts";
 export * as resourceTelemetry from "./resourceTelemetry.ts";
 export * as review from "./review.ts";

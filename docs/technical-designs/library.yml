@@ -82,6 +82,8 @@ proposed-design:
         rpcErrors/              server, project, orchestration, peer and guest link, MCP app, file, vcs, and terminal error records, shared tagged-error helpers
         assets.ts               asset resources and URLs, attachment upload URLs, and the bytes of an asset
         editor.ts               editor ids and the editor launch input
+        preview.ts              browser tabs, browser profiles and discovered local servers
+        previewViewer.ts        viewer socket messages, and the bodies of the two routes beside it
         filesystem.ts           host path browsing and metadata
         git.ts                  stacked Git actions and their progress events, pull request resolution and preparation
         review.ts               a branch's commits, diff previews and the contents of a changed file
@@ -146,6 +148,7 @@ proposed-design:
         socket.ts               SocketTransport: WebSocket lifecycle, reconnect, send/receive
         keepalive.ts            Ping/Pong liveness for one open socket
         socketClose.ts          classifies a close event: credential rejection (fatal) or drop (retry)
+        previewViewer.ts        PreviewViewer: the viewer socket of a server browser tab
         rpcConnection.ts        RpcConnection: request ids, correlation, Chunk→AsyncIterable with Ack, Interrupt
       http/
         registry.ts             httpRoutes: route name → { method, path, input, success, auth, scope }

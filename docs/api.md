@@ -963,11 +963,28 @@ Client composition root for HTTP, auth, RPC and server facades.
 
 - [T3Client](#T3Client)
   - _instance_
+    - [.openPreviewViewer()](#T3Client+openPreviewViewer)
     - [.connect()](#T3Client+connect)
     - [.close()](#T3Client+close)
   - _static_
     - [.create()](#T3Client.create)
 
+<a name="T3Client+openPreviewViewer"></a>
+
+### t3Client.openPreviewViewer()
+
+Attach to a tab that runs in the server's browser, with a new ticket for the
+`media` use. Each viewer is its own socket, and `close()` of this client does not
+end it.
+
+```ts
+async openPreviewViewer(
+    target: PreviewViewerTarget,
+    signal?: AbortSignal,
+  ): Promise<PreviewViewer>;
+```
+
+**Kind**: instance method of [<code>T3Client</code>](#T3Client)  
 <a name="T3Client+connect"></a>
 
 ### t3Client.connect()

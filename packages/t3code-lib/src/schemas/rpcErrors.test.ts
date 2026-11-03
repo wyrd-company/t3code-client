@@ -170,6 +170,22 @@ describe("RpcErrorRecord", () => {
       expect(mutation.commandId).toBe("command-1");
   });
 
+  it("decodes the preview failures", () => {
+    const lookup = decodeRpcErrorRecord({
+      _tag: "PreviewSessionLookupError",
+      threadId: "thread-1",
+      tabId: "tab-1",
+    });
+    expect(isRpcErrorOfTag(lookup, "PreviewSessionLookupError") && lookup.tabId).toBe("tab-1");
+    const stop = decodeRpcErrorRecord({
+      _tag: "PreviewStopLocalServerError",
+      reason: "a-future-reason",
+    });
+    expect(isRpcErrorOfTag(stop, "PreviewStopLocalServerError") && stop.reason).toBe(
+      "a-future-reason",
+    );
+  });
+
   it("decodes an unknown tag as the unknown variant", () => {
     const raw = { _tag: "SomeFutureError", reason: "later" };
     expect(decodeRpcErrorRecord(raw)).toEqual({ unknown: true, raw });

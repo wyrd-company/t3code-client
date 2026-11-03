@@ -47,9 +47,7 @@ export function routeRequest<Input, Success>(
     auth: route.auth,
     decode: route.success,
     ...(shape.query === undefined ? {} : { query: shape.query }),
-    ...(shape.body === undefined
-      ? {}
-      : { body: route.form === true ? formBody(shape.body) : shape.body }),
+    ...(shape.body === undefined ? {} : { body: encodeRouteBody(route, shape.body) }),
     ...(route.headers === undefined ? {} : { headers: route.headers }),
     ...(route.binaryResponse === true ? { binaryResponse: true } : {}),
     ...(route.signedPath === true ? { errorPath: route.path } : {}),
@@ -77,6 +75,27 @@ function routePath(path: string, params: Record<string, string> | undefined): st
     if (value === undefined) throw new T3PreconditionError(`${path} needs the ${name} parameter.`);
     return encodeURIComponent(value);
   });
+}
+
+function encodeRouteBody<Input, Success>(route: HttpRouteSpec<Input, Success>, body: unknown) {
+  if (route.form === true) return formBody(body);
+  return route.multipart === true ? multipartBody(body) : body;
+}
+
+function multipartBody(body: unknown): FormData {
+  const form = new FormData();
+  const { files } = body as { files: readonly MultipartFile[] };
+  for (const file of files) {
+    const content = new Blob([file.bytes as Uint8Array<ArrayBuffer>], { type: file.mimeType });
+    form.append("files", content, file.name);
+  }
+  return form;
+}
+
+interface MultipartFile {
+  readonly name: string;
+  readonly mimeType: string;
+  readonly bytes: Uint8Array;
 }
 
 function formBody(body: unknown): URLSearchParams {
