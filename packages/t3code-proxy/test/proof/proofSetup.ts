@@ -13,7 +13,6 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodeHttps from "node:https";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
-import { promisify } from "node:util";
 import {
   freePort,
   hasExited,
@@ -22,6 +21,7 @@ import {
   spawnServer,
   waitForReady,
 } from "../../../t3code-lib/test/live/globalSetup.ts";
+import { runInOwnGroup, startBrowserBroker } from "../support/browserBroker.ts";
 import { stopAllOwned } from "../support/ownedProcesses.ts";
 
 const PEOPLE = ["Alice", "Sam"] as const;
@@ -30,12 +30,11 @@ const READY_TIMEOUT_MS = 30_000;
 const STOP_GRACE_MS = 10_000;
 const PARENT_WATCH_MS = 1_000;
 const BROWSER_CLOSE_TIMEOUT_MS = 30_000;
-const BROWSER_DRAIN_MS = 2_000;
+const BROWSER_COMMAND_TIMEOUT_MS = 60_000;
 // Longer than any test, so that it cannot end a browser that a test waits on. It ends a daemon that
 // no stop can reach, for example after SIGKILL.
 const BROWSER_IDLE_TIMEOUT_MS = 600_000;
 const packageRoot = NodePath.resolve(import.meta.dirname, "../..");
-const execFile = promisify(NodeChildProcess.execFile);
 
 const run = (command: string, args: readonly string[], cwd: string) =>
   NodeChildProcess.execFileSync(command, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
@@ -117,17 +116,6 @@ const answers = (host: string, port: number, ca: string) =>
     request.on("timeout", () => request.destroy());
   });
 
-/** The second close ends a browser that a command from before the stop started after the first. */
-async function closeBrowsers() {
-  const close = () =>
-    execFile("agent-browser", ["close", "--all"], { timeout: BROWSER_CLOSE_TIMEOUT_MS }).catch(
-      () => undefined,
-    );
-  await close();
-  await new Promise((resolve) => setTimeout(resolve, BROWSER_DRAIN_MS));
-  await close();
-}
-
 /**
  * Vitest answers these signals by exiting, without teardown. The proof answers instead, so that a
  * stopped run also stops what it started. A second signal has the default effect. `vp` does not
@@ -164,10 +152,10 @@ export default async function setup() {
   process.env["AGENT_BROWSER_SOCKET_DIR"] = NodePath.join(root, "browser");
   process.env["AGENT_BROWSER_NAMESPACE"] = `t3code-proxy-proof-${process.pid}`;
   process.env["AGENT_BROWSER_IDLE_TIMEOUT_MS"] = String(BROWSER_IDLE_TIMEOUT_MS);
-  // `WebClient` starts no command when this file is gone. Vitest and its workers run during a stop.
-  const running = NodePath.join(root, "running");
-  await NodeFSP.writeFile(running, "");
-  process.env["T3_PROOF_RUNNING"] = running;
+  const browsers = await startBrowserBroker((args) =>
+    runInOwnGroup("agent-browser", args, BROWSER_COMMAND_TIMEOUT_MS),
+  );
+  process.env["T3_PROOF_BROWSER_BROKER"] = browsers.url;
   await NodeFSP.writeFile(NodePath.join(workspace, "README.md"), "Sample workspace.\n");
   // A message with only an attachment has no request in it. This makes each reply show what the
   // agent received, and it names no colour or file content.
@@ -183,10 +171,13 @@ export default async function setup() {
   const stop = () =>
     (stopping ??= (async () => {
       try {
-        await NodeFSP.rm(running, { force: true });
+        await browsers.drain();
+        await runInOwnGroup("agent-browser", ["close", "--all"], BROWSER_CLOSE_TIMEOUT_MS).catch(
+          () => undefined,
+        );
         await stopAllOwned(children, STOP_GRACE_MS);
       } finally {
-        await closeBrowsers();
+        browsers.close();
         if (process.env["T3_LIVE_KEEP"] !== "1") {
           await NodeFSP.rm(root, { recursive: true, force: true });
         }

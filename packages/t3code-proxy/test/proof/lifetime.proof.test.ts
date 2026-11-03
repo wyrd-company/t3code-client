@@ -133,7 +133,7 @@ describe("what a proof run leaves", () => {
     (current as { signalled: boolean }).signalled = true;
     signal(proof.run.pid as number);
     await expectNothingLeft(report);
-    // A worker that sent a command after the browser closed would start it again here.
+    // A command that ran after the browser closed would start it again here.
     await new Promise((resolve) => setTimeout(resolve, 3_000));
     await expectNothingLeft(report);
   };
@@ -143,7 +143,7 @@ describe("what a proof run leaves", () => {
 
   it("a run stopped by SIGTERM to its top process leaves no daemon or browser", async () => {
     await expectStopLeavesNothing("top", (pid) => process.kill(pid, "SIGTERM"));
-    // Vitest and its worker outlast the start of this stop, so the worker tried another command.
+    // Vitest and its worker outlast the start of this stop, so the worker sent another command.
     expect(NodeFS.existsSync(NodePath.join(scratch, "top.json.refused")), "refused").toBe(true);
   });
 

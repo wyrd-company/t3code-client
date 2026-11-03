@@ -8,6 +8,7 @@
  */
 import * as NodeFSP from "node:fs/promises";
 import { it } from "vite-plus/test";
+import { BROWSER_STOPPING } from "../../support/browserBroker.ts";
 import { WebClient } from "../webClient.ts";
 
 const ownerLives = (pid: number) => {
@@ -42,7 +43,7 @@ it("opens a browser", async () => {
     const owner = Number(process.env["T3_PROOF_LIFETIME_OWNER"]);
     while (ownerLives(owner)) {
       await client.run("get", "url").catch(async (error: Error) => {
-        if (error.message.includes("is stopping")) {
+        if (error.message === BROWSER_STOPPING) {
           await NodeFSP.writeFile(`${reportPath}.refused`, "");
         }
       });
