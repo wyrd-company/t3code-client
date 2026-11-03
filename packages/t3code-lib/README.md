@@ -404,7 +404,9 @@ the two sides of one file. `reviewGuide` reads the stored guide and generates no
 `linkedThreads` lists the threads linked to a pull request. `filterOptions`,
 `reviewerCandidates` and `labelCandidates` list the values that a client can offer.
 `pullRequests.subscribeRefreshes` sends a new revision after which a client reads again.
-`pullRequests.invalidate` drops cached reads, so that the next read asks the host.
+`pullRequests.invalidate` drops cached reads, so that the next read asks the host: those
+of one pull request with `reference`, listings and viewers without it, and only viewed
+marks with `filesViewedOnly`.
 
 A write takes a `PullRequestRef` and goes to the host with the server's credential. It
 needs `source-control:write`:

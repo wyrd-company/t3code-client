@@ -11,7 +11,7 @@ import * as NodePath from "node:path";
 
 const [, , command, path, ...rest] = process.argv;
 const forgeRoot = process.env["STUB_FORGE_ROOT"] ?? "";
-const { headSha, baseSha } = JSON.parse(
+const { headSha, baseSha, title } = JSON.parse(
   NodeFS.readFileSync(NodePath.join(forgeRoot, "forge.json"), "utf8"),
 );
 const project = "projects/sample%2Frepository";
@@ -21,7 +21,7 @@ const createdAt = "2026-01-01T00:00:00.000Z";
 
 const mergeRequest = {
   iid: 7,
-  title: "Sample change",
+  title,
   web_url: "https://gitlab.invalid/sample/repository/-/merge_requests/7",
   description: "Sample description",
   author,

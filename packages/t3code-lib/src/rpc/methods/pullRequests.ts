@@ -193,7 +193,7 @@ export const pullRequestsMethods = {
     stream: false,
     scope: "orchestration:operate",
   }),
-  /** Drops cached reads, so that the next read asks the host, and tells subscribers to read again. */
+  /** Drops the cached reads that the input names, and tells subscribers to read again. */
   "pullRequests.invalidate": defineMethod({
     payload: PullRequestInvalidateInput,
     success: VoidSuccess,

@@ -19,8 +19,9 @@ const FilePath = z.string().min(1).max(4096);
 const refFields = PullRequestRef.shape;
 
 export const PullRequestInvalidateInput = z.looseObject({
-  /** Without it, every read is dropped. */
+  /** The pull request to read again. Without it, listings and viewers, not one pull request's reads. */
   reference: PullRequestRef.optional(),
+  /** Drops only the viewed marks. */
   filesViewedOnly: z.boolean().optional(),
 });
 export type PullRequestInvalidateInput = z.infer<typeof PullRequestInvalidateInput>;

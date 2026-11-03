@@ -234,16 +234,39 @@ describe.skipIf(!hasLiveServer)("pull request writes with a local forge stub", (
   });
 
   it("drops cached reads and reports a new revision", async () => {
+    const title = async () => (await client.rpc.call("pullRequests.detail", ref)).title;
+    await client.rpc.call("pullRequests.invalidate", { reference: ref });
+    await expect(title()).resolves.toBe("Sample change");
+    await peer.setForgeTitle("Sample new title");
+    await expect(title()).resolves.toBe("Sample change");
     const first = firstItem(client.rpc.stream("pullRequests.subscribeRefreshes", {}), (value) =>
       value > 0 ? value : undefined,
     );
-    await client.rpc.call("pullRequests.invalidate", { reference: ref });
+    await client.rpc.call("pullRequests.invalidate", { reference: ref, filesViewedOnly: true });
     const before = await first;
+    await expect(title()).resolves.toBe("Sample change");
     const after = firstItem(client.rpc.stream("pullRequests.subscribeRefreshes", {}), (value) =>
       value > before ? value : undefined,
     );
-    await client.rpc.call("pullRequests.invalidate", { reference: ref, filesViewedOnly: true });
+    await client.rpc.call("pullRequests.invalidate", { reference: ref });
     await expect(after).resolves.toBeGreaterThan(before);
+    await expect(title()).resolves.toBe("Sample new title");
+    await peer.setForgeTitle("Sample change");
+    await client.rpc.call("pullRequests.invalidate", { reference: ref });
+    await expect(title()).resolves.toBe("Sample change");
+  });
+
+  it("drops cached listings without a reference", async () => {
+    const listedTitle = async () =>
+      (await client.rpc.call("pullRequests.list", { state: "open" })).entries[0]?.title;
+    await client.rpc.call("pullRequests.invalidate", {});
+    await expect(listedTitle()).resolves.toBe("Sample change");
+    await peer.setForgeTitle("Sample new title");
+    await expect(listedTitle()).resolves.toBe("Sample change");
+    await client.rpc.call("pullRequests.invalidate", {});
+    await expect(listedTitle()).resolves.toBe("Sample new title");
+    await peer.setForgeTitle("Sample change");
+    await client.rpc.call("pullRequests.invalidate", {});
   });
 
   it("takes a client's report of the state", async () => {

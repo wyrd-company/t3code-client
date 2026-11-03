@@ -29,6 +29,8 @@ export type ForgeCall =
 
 export interface PullRequestServer extends PeerServer {
   readonly headSha: string;
+  /** Changes the merge request's title on the forge, as another person can. */
+  setForgeTitle(title: string): Promise<void>;
   /** The writes the forge received since the last time this was called. */
   takeForgeCalls(): Promise<readonly ForgeCall[]>;
 }
@@ -37,6 +39,7 @@ export async function startPullRequestServer(project: ProjectId): Promise<PullRe
   let workspaceRoot = "";
   let forgeRoot = "";
   let headSha = "";
+  let baseSha = "";
   const peer = await startScratchServer("t3code-lib-pull-requests-", async (home) => {
     forgeRoot = home;
     const forge = await createLocalForge(home, [
@@ -44,7 +47,7 @@ export async function startPullRequestServer(project: ProjectId): Promise<PullRe
       `  "auth status") echo "Logged in to ${host} as sample-viewer" ;;`,
     ]);
     workspaceRoot = forge.cwd;
-    const baseSha = forge.git(forge.cwd, "rev-parse", "HEAD");
+    baseSha = forge.git(forge.cwd, "rev-parse", "HEAD");
     forge.git(forge.cwd, "switch", "--create", "sample-change");
     await NodeFSP.writeFile(NodePath.join(forge.cwd, "sample.txt"), "second\n");
     forge.git(forge.cwd, "commit", "--all", "--message", "Sample change");
@@ -53,7 +56,7 @@ export async function startPullRequestServer(project: ProjectId): Promise<PullRe
     forge.git(forge.cwd, "switch", "main");
     await NodeFSP.writeFile(
       NodePath.join(home, "forge.json"),
-      JSON.stringify({ headSha, baseSha }),
+      JSON.stringify({ headSha, baseSha, title: "Sample change" }),
     );
     const profile = process.env["CODEX_HOME"];
     if (hasAgent && profile) await NodeFSP.symlink(profile, NodePath.join(home, ".codex"));
@@ -62,6 +65,11 @@ export async function startPullRequestServer(project: ProjectId): Promise<PullRe
   const callsFile = NodePath.join(forgeRoot, "calls.jsonl");
   const server = Object.assign(peer, {
     headSha,
+    setForgeTitle: (title: string) =>
+      NodeFSP.writeFile(
+        NodePath.join(forgeRoot, "forge.json"),
+        JSON.stringify({ headSha, baseSha, title }),
+      ),
     takeForgeCalls: async () => {
       const text = await NodeFSP.readFile(callsFile, "utf8").catch(() => "");
       await NodeFSP.rm(callsFile, { force: true });
