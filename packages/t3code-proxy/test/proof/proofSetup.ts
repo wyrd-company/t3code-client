@@ -263,6 +263,9 @@ export default async function setup() {
     process.env["T3_PROOF_DIRECT"] = `https://${hostname("t3")}:${httpsPort}`;
     process.env["T3_PROOF_ALICE"] = `https://${hostname("t3-alice")}:${httpsPort}`;
     process.env["T3_PROOF_SAM"] = `https://${hostname("t3-sam")}:${httpsPort}`;
+    // Test workers start only after this setup returns, so that none can send a browser command
+    // that a stop which began before the broker existed would not drain.
+    if (stopping) throw new Error("The run is stopping.");
   } catch (error) {
     await stop();
     throw new Error(`The live proof could not start: ${(error as Error).message}`, {
