@@ -2,12 +2,11 @@
 // relationships:
 //   verifies: proxy
 // ---
-/** One person's real browser, through `agent-browser`, with its own daemon namespace. */
+/** One person's real browser, through `agent-browser`. The proof's setup sets its environment. */
 import * as NodeChildProcess from "node:child_process";
 import { promisify } from "node:util";
 
 const execFile = promisify(NodeChildProcess.execFile);
-const namespace = `t3code-proxy-proof-${process.pid}`;
 
 export class WebClient {
   readonly #session: string;
@@ -19,7 +18,7 @@ export class WebClient {
   async run(...args: string[]) {
     const { stdout } = await execFile(
       "agent-browser",
-      ["--namespace", namespace, "--session", this.#session, "--ignore-https-errors"]
+      ["--session", this.#session, "--ignore-https-errors"]
         // The certificate is a test certificate, and every example.test name is this machine.
         .concat(["--args", "--host-resolver-rules=MAP *.example.test 127.0.0.1"], args),
       { maxBuffer: 16 * 1024 * 1024, timeout: 60_000 },
