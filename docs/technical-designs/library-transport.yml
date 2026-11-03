@@ -137,7 +137,8 @@ proposed-design:
       signal?: AbortSignal;
       dpopKey?: DpopPrivateJwk; // signs this request with this key, as a token exchange does
       binaryResponse?: boolean; // a 2xx answer reaches `decode` as `{ bytes, contentType }`
-      errorPath?: string; // what errors name, when `path` is a credential
+      redirectResponse?: boolean; // a 3xx answer is not followed, and reaches `decode` as `{ location }`
+      errorPath?: string; // what errors name, when `path` or `query` is a credential
     }
     export class HttpTransport {
       request<T>(req: HttpRequest<T>): Promise<T>;
@@ -167,7 +168,8 @@ proposed-design:
       multipart?: true; // `body.files` are the parts, and each other string of `body` is a field
       multipartFileField?: string; // the name of the file parts; `files` by default
       binaryResponse?: true; // a 2xx answer reaches `success` as `{ bytes, contentType }`
-      signedPath?: true; // the path is a credential; an error names the `path` template
+      redirectResponse?: true; // a 3xx answer is not followed, and reaches `success` as `{ location }`
+      signedPath?: true; // the path or query is a credential; an error names the `path` template and keeps no cause
       eventStream?: true; // the answer is server-sent events; set by `defineEventStreamRoute`
     }
     export const httpRoutes: { [name: string]: HttpRouteSpec }; // assembled from http/routes/*.ts

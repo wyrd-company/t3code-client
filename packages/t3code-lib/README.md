@@ -463,6 +463,58 @@ const { deliveryId } = await client.routes.call("webhooks.webhookPost", {
 });
 ```
 
+## MCP OAuth
+
+`mcpOAuth.*` are the routes of an MCP client that gets a token for the server's `/mcp` endpoint.
+They send no session token. `schemas.authMcp` holds their shapes. The library does not make the
+PKCE values and does not open a browser: the caller owns both.
+
+```ts
+const client = T3Client.create({ baseUrl });
+const { client_id } = await client.routes.call("mcpOAuth.register", {
+  body: { client_name: "Sample client", redirect_uris: [redirectUri] },
+});
+const authorization = {
+  response_type: "code",
+  client_id,
+  redirect_uri: redirectUri,
+  code_challenge: challenge,
+  code_challenge_method: "S256",
+  state,
+};
+const { location } = await client.routes.call("mcpOAuth.authorize", { query: authorization });
+```
+
+`mcpOAuth.authorize` does not follow its redirect. `location` is a relative address of the
+server's approval page, or the client's `redirect_uri` with an `error`. A browser's `fetch` hides
+a redirect, so there the route raises `T3PreconditionError`: send the browser to the URL instead.
+A client or a redirect that the server does not know is a `T3HttpError` whose `body` is an HTML page.
+
+`mcpOAuth.approval` and `mcpOAuth.decision` are what that page calls. A `pairing-code` decision
+takes a credential from `auth.createPairingCredential` with the scopes of the access. A
+`browser-session` decision takes the `csrfToken` from `mcpOAuth.approval`, and needs a `fetch`
+that keeps the session's cookie, as for `auth.browserSession`. The answer's `redirectTo` holds a
+one-use code that lasts one minute:
+
+```ts
+const { redirectTo } = await client.routes.call("mcpOAuth.decision", {
+  body: { authorization, decision: { _tag: "pairing-code", access: "auto", code: credential } },
+});
+const token = await client.routes.call("mcpOAuth.token", {
+  body: {
+    grant_type: "authorization_code",
+    code: new URL(redirectTo).searchParams.get("code") ?? "",
+    redirect_uri: redirectUri,
+    client_id,
+    code_verifier: verifier,
+  },
+});
+```
+
+A refused `register` or `token` is a `T3HttpError` whose `reason` is the OAuth `error`, such as
+`invalid_redirect_uri` or `invalid_grant`. A refused `approval` or `decision` has the `tag`
+`AuthMcpApprovalError`.
+
 ## Source control repositories and clones
 
 `sourceControl.lookupRepository` reads a repository's URLs from the forge.

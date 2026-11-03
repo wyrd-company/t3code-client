@@ -79,6 +79,13 @@ proposed-design:
     | `GET /api/guest/attachment`                           | guest cookie         | query `share`, `id`; bytes and `content-type`                                              |
     | `GET /api/guest/media`                                | guest cookie         | query `share`, `path`; an image that a reply the guest received shows                      |
     | `POST`, `PUT`, `PATCH`, `GET /api/hooks/:hookId/:token` | path token         | raw body; 202 `{deliveryId}`; 401, 404, 409, 410, 413, 429 with `{error}`                  |
+    | `GET /.well-known/oauth-protected-resource`           | none                 | `AuthMcpProtectedResourceMetadata`; the same at `/mcp` under this path                     |
+    | `GET /.well-known/oauth-authorization-server`         | none                 | `AuthMcpAuthorizationServerMetadata`                                                       |
+    | `POST /oauth/mcp/register`                            | none                 | `AuthMcpClientRegistration`; 201 `AuthMcpRegisteredClient`; 400 with `{error}`             |
+    | `GET /oauth/mcp/authorize`                            | none                 | query `AuthMcpAuthorizationRequest`; 302; 400 and an HTML page for an unverified client    |
+    | `POST /oauth/mcp/approval`                            | browser cookie or none | `AuthMcpAuthorizationRequest` → `AuthMcpApprovalDetails` or `{redirectTo}`; 400 `AuthMcpApprovalError` |
+    | `POST /oauth/mcp/decision`                            | browser cookie or none | `{authorization, decision}` → `{redirectTo}`; 400 `AuthMcpApprovalError`                 |
+    | `POST /oauth/mcp/token`                               | none                 | form-encoded, code is single use; `AuthMcpTokenResult`; 400 with `{error}`                 |
 
     A guest route refuses with `{reason, message}`: 403 for `invalid`, `inactive` and
     `unavailable`, 400 for a bad message, 409 otherwise. The session cookie is
@@ -87,6 +94,16 @@ proposed-design:
     the path. The signature, when the task requires one, is over the raw bytes, and
     `input.headers` carries it. `webhookUrlParams` splits an endpoint's `path` into
     route params.
+
+    An MCP client gets a token for `/mcp` with these OAuth routes and PKCE, with no client
+    secret. `authorize` answers with a redirect: to `/connect-agent` with the same query, or to the
+    client's verified `redirect_uri` with `error`. The route does not follow it, and answers with
+    `{location}`. `approval` and `decision` serve that page. A `decision` is `deny`, `pairing-code`
+    or `browser-session`. A `browser-session` needs the session's cookie and the `csrfToken` from
+    `approval`, and its scopes must cover the `access`. The server takes that session only from
+    the cookie, so a bearer token adds nothing. After an approval, `redirectTo` holds a one-use
+    `code` that lasts one minute, and `token` exchanges it with the PKCE verifier. A token request
+    spends the code that it presents, also when a later check fails.
 
     A signed URL comes from `assets.createUrl` or `attachments.createUploadUrl` as
     `relativeUrl`. The token in its path is the credential, so these routes do not

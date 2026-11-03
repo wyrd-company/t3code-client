@@ -36,7 +36,9 @@ export interface HttpRequest<T> {
   dpopKey?: DpopPrivateJwk;
   /** A 2xx answer reaches `decode` as `{ bytes, contentType }`, not parsed as JSON. */
   binaryResponse?: boolean;
-  /** Errors name this and not `path`, when `path` is a credential. */
+  /** A 3xx answer is not followed, and reaches `decode` as `{ location }`. */
+  redirectResponse?: boolean;
+  /** Errors name this and not `path`, when `path` or `query` is a credential. */
   errorPath?: string;
 }
 
@@ -93,8 +95,15 @@ export class HttpTransport {
   ): Promise<T> {
     const errorPath = request.errorPath ?? request.path;
     const response = await this.#send(request, accessTokenOverride, hasOverride);
+    if (request.redirectResponse === true && response.type === "opaqueredirect") {
+      throw new T3PreconditionError(
+        `${request.method} ${errorPath} answers with a redirect that this fetch hides.`,
+      );
+    }
     const raw = await readAnswer(request, response, errorPath);
-    if (!response.ok) throw httpError(response.status, request.method, errorPath, raw);
+    if (!response.ok && !isReadableRedirect(request, response)) {
+      throw httpError(response.status, request.method, errorPath, raw);
+    }
     if (request.decode === "empty") return undefined as T;
 
     const decoded = request.decode.safeParse(raw);
@@ -123,6 +132,7 @@ export class HttpTransport {
         method: request.method,
         headers,
         ...(body === undefined ? {} : { body }),
+        ...(request.redirectResponse === true ? { redirect: "manual" as const } : {}),
         ...(request.signal === undefined ? {} : { signal: request.signal }),
       });
     } catch (cause) {
@@ -265,6 +275,7 @@ async function readAnswer(
   response: Response,
   errorPath: string,
 ): Promise<unknown> {
+  if (isReadableRedirect(request, response)) return redirectBody(response);
   try {
     return response.ok && request.binaryResponse === true
       ? binaryBody(new Uint8Array(await response.arrayBuffer()), response)
@@ -276,6 +287,15 @@ async function readAnswer(
       keptCause(request, cause),
     );
   }
+}
+
+function isReadableRedirect(request: HttpRequest<unknown>, response: Response): boolean {
+  return request.redirectResponse === true && response.status >= 300 && response.status < 400;
+}
+
+function redirectBody(response: Response): unknown {
+  const location = response.headers.get("location");
+  return location === null ? {} : { location };
 }
 
 function binaryBody(bytes: Uint8Array, response: Response): unknown {

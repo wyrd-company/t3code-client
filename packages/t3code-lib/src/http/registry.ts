@@ -7,6 +7,7 @@ import { assetRoutes } from "./routes/assets.ts";
 import { authRoutes } from "./routes/auth.ts";
 import { cloudLinkRoutes } from "./routes/cloudLink.ts";
 import { guestRoutes } from "./routes/guest.ts";
+import { mcpOAuthRoutes } from "./routes/mcpOAuth.ts";
 import { orchestrationRoutes } from "./routes/orchestration.ts";
 import { previewRoutes } from "./routes/preview.ts";
 import { projectRoutes } from "./routes/projects.ts";
@@ -19,6 +20,7 @@ export const httpRoutes = {
   ...authRoutes,
   ...cloudLinkRoutes,
   ...guestRoutes,
+  ...mcpOAuthRoutes,
   ...orchestrationRoutes,
   ...previewRoutes,
   ...projectRoutes,

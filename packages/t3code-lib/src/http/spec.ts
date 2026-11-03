@@ -47,7 +47,15 @@ export interface HttpRouteSpec<Input = unknown, Success = unknown> {
   readonly multipartFileField?: string;
   /** A 2xx answer reaches `success` as `{ bytes, contentType }`, not parsed as JSON. */
   readonly binaryResponse?: true;
-  /** The path is a credential, so an error names the `path` template and not the sent path. */
+  /**
+   * A 3xx answer is not followed, and reaches `success` as `{ location }`. A browser's `fetch`
+   * hides that header, so `call` raises `T3PreconditionError` there.
+   */
+  readonly redirectResponse?: true;
+  /**
+   * The path or the query is a credential, so an error names the `path` template and not the sent
+   * path, and keeps no cause.
+   */
   readonly signedPath?: true;
   /** The answer is server-sent events: `HttpRouteClient.stream` reads it, and `call` refuses. */
   readonly eventStream?: true;

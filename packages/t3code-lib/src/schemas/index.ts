@@ -5,6 +5,7 @@
 export * as common from "./common.ts";
 export * as assets from "./assets.ts";
 export * as auth from "./auth.ts";
+export * as authMcp from "./authMcp.ts";
 export * as cloudLink from "./cloudLink.ts";
 export * as diagnostics from "./diagnostics.ts";
 export * as providerSetup from "./providerSetup.ts";

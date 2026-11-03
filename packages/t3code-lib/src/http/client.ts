@@ -62,6 +62,7 @@ export function routeRequest<Input, Success>(
       ? {}
       : { headers: { ...route.headers, ...shape.headers } }),
     ...(route.binaryResponse === true ? { binaryResponse: true } : {}),
+    ...(route.redirectResponse === true ? { redirectResponse: true } : {}),
     ...(route.signedPath === true ? { errorPath: route.path } : {}),
     ...(options.signal === undefined ? {} : { signal: options.signal }),
     ...(options.dpopKey === undefined ? {} : { dpopKey: options.dpopKey }),
