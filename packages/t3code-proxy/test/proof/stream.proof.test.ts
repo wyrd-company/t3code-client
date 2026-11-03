@@ -51,8 +51,8 @@ const follow = (client: ReturnType<typeof connect>, threadId: ThreadId, stop: Ab
   return watch;
 };
 
-/** Subscriptions on the slow socket, so that one turn is about 2 MB on one connection. */
-const SUBSCRIPTIONS = 25;
+/** Subscriptions on the slow socket, so that one turn is well over 1 MB on one connection. */
+const SUBSCRIPTIONS = 50;
 
 describe("a large streamed turn", () => {
   const proof = routes();
@@ -105,6 +105,7 @@ describe("a large streamed turn", () => {
 
     const evidence = process.env["T3_PROXY_PROOF_EVIDENCE_DIR"];
     if (evidence) {
+      NodeFS.mkdirSync(evidence, { recursive: true });
       NodeFS.writeFileSync(
         NodePath.join(evidence, "stream.json"),
         JSON.stringify({ events: reference.events.length, received }),
