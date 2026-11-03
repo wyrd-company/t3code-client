@@ -82,7 +82,8 @@ proposed-design:
     A test worker ends with Vitest, because Vitest can start one after a signal to the group. The
     setup runs every browser command for the workers, each in its own process group. A stop refuses
     new commands, waits for the running ones and then closes the browsers, so that no command can
-    start a browser after the close.
+    start a browser after the close. A process that setup starts after the stop began is ended, so
+    that a signal during setup also leaves nothing.
     `lifetime.proof.test.ts` starts the proof's setup in a separate Vitest and proves this for a
     completed run, a signal to the process group, a signal to the top process only and the end of
     the run's owner, with a worker that sends browser commands during the stop. `pnpm` does

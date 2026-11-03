@@ -22,7 +22,7 @@ import {
   waitForReady,
 } from "../../../t3code-lib/test/live/globalSetup.ts";
 import { runInOwnGroup, startBrowserBroker } from "../support/browserBroker.ts";
-import { stopAllOwned } from "../support/ownedProcesses.ts";
+import { ownedProcesses } from "../support/ownedProcesses.ts";
 
 const PEOPLE = ["Alice", "Sam"] as const;
 const DOMAIN = "dev.example.test";
@@ -166,7 +166,7 @@ export default async function setup() {
   makeCertificates(root);
 
   const log = (name: string) => NodeFS.openSync(NodePath.join(root, name), "w");
-  const children: NodeChildProcess.ChildProcess[] = [];
+  const owned = ownedProcesses(STOP_GRACE_MS);
   let stopping: Promise<void> | undefined;
   const stop = () =>
     (stopping ??= (async () => {
@@ -175,7 +175,7 @@ export default async function setup() {
         await runInOwnGroup("agent-browser", ["close", "--all"], BROWSER_CLOSE_TIMEOUT_MS).catch(
           () => undefined,
         );
-        await stopAllOwned(children, STOP_GRACE_MS);
+        await owned.stop();
       } finally {
         browsers.close();
         if (process.env["T3_LIVE_KEEP"] !== "1") {
@@ -189,14 +189,15 @@ export default async function setup() {
     const bin = serverBin();
     const serverPort = await freePort();
     const direct = `http://127.0.0.1:${serverPort}`;
-    const server = spawnServer({
-      bin,
-      port: serverPort,
-      baseDir,
-      workspace,
-      logFd: log("server.log"),
-    });
-    children.push(server);
+    const server = owned.own(
+      spawnServer({
+        bin,
+        port: serverPort,
+        baseDir,
+        workspace,
+        logFd: log("server.log"),
+      }),
+    );
     await waitForReady(direct, server);
 
     const users = [];
@@ -204,7 +205,7 @@ export default async function setup() {
     const configPath = NodePath.join(root, "proxy.json");
     // YAML is a superset of JSON.
     await NodeFSP.writeFile(configPath, JSON.stringify({ upstream: direct, users }));
-    children.push(
+    owned.own(
       NodeChildProcess.spawn(
         process.execPath,
         [NodePath.join(packageRoot, "dist/cli.js"), "--config", configPath],
@@ -220,10 +221,8 @@ export default async function setup() {
     const caddyfile = `{\n\tadmin off\n\tpersist_config off\n\tauto_https disable_redirects\n\thttp_port ${httpPort}\n\thttps_port ${httpsPort}\n}\n${site("t3", serverPort)}${users.map((user) => site(`t3-${user.name.toLowerCase()}`, user.port)).join("")}`;
     const caddyConfig = NodePath.join(root, "Caddyfile");
     await NodeFSP.writeFile(caddyConfig, caddyfile);
-    const caddy = NodeChildProcess.spawn(
-      "caddy",
-      ["run", "--config", caddyConfig, "--adapter", "caddyfile"],
-      {
+    const caddy = owned.own(
+      NodeChildProcess.spawn("caddy", ["run", "--config", caddyConfig, "--adapter", "caddyfile"], {
         stdio: ["ignore", log("caddy.log"), log("caddy.err")],
         env: {
           PATH: process.env["PATH"],
@@ -231,9 +230,8 @@ export default async function setup() {
           XDG_DATA_HOME: caddyHome,
           XDG_CONFIG_HOME: caddyHome,
         },
-      },
+      }),
     );
-    children.push(caddy);
 
     const ca = await NodeFSP.readFile(NodePath.join(root, "ca.crt"), "utf8");
     const labels = ["t3", ...users.map((user) => `t3-${user.name.toLowerCase()}`)];
