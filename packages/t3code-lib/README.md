@@ -357,7 +357,8 @@ for await (const item of client.rpc.stream("subscribeProjectClones", {})) {
 Each stream item lists every clone that the server tracks. `projectClone.cancel` and
 `projectClone.retry` answer `applied: false` when the clone is not in a phase that they
 can change. A clone source is `provider` with `repository`, or `remoteUrl`. A credential
-in a URL reaches Git, and the server removes it from what it reports.
+in a URL reaches Git. The server removes it from what it reports, and an error of this
+library keeps `[redacted]` in place of any string that holds such a URL.
 
 `sourceControl.signInStart` starts a forge's device flow and needs `settings:write`,
 since a sign-in replaces the server's credential for that forge. `signInWait` resolves

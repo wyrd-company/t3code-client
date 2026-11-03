@@ -16,6 +16,33 @@ describe("redactSecrets", () => {
     });
   });
 
+  it("replaces a string that holds a URL with a credential, at any depth", () => {
+    const secret = [
+      "https://sample:sample-password@forge.example.invalid/sample.git",
+      "https://sample-token@forge.example.invalid/sample.git",
+      "https://forge.example.invalid/sample.git?access_token=sample-token",
+      "https://forge.example.invalid/sample.git?private_token=sample-token",
+      "git clone https://sample:sample-password@forge.example.invalid/sample.git failed",
+    ];
+    for (const url of secret) {
+      expect(redactSecrets({ remoteUrl: url, args: ["clone", url] })).toEqual({
+        remoteUrl: "[redacted]",
+        args: ["clone", "[redacted]"],
+      });
+    }
+  });
+
+  it("keeps a URL with no credential, and an SSH login name", () => {
+    const kept = [
+      "https://forge.example.invalid/sample.git",
+      "https://forge.example.invalid/search?query=sample",
+      "git@forge.example.invalid:sample/repository.git",
+      "ssh://git@forge.example.invalid/sample/repository.git",
+      "sample@example.invalid",
+    ];
+    expect(redactSecrets({ kept })).toEqual({ kept });
+  });
+
   it("replaces string values under credential-like keys, at any depth", () => {
     const input = {
       access_token: "abc",

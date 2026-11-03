@@ -5,24 +5,29 @@
  */
 // `d` is the private part of a JSON Web Key.
 const SECRET_KEY = /token|credential|secret|authorization|password|ticket|usercode|^dpop$|^d$/iu;
-// A sign-in URL can carry a one-use code or an identity token in its query.
-const SECRET_QUERY = /[?&](?:code|id_token_hint)=/iu;
+// A URL can carry a one-use code or a token in its query.
+const SECRET_QUERY = /[?&](?:code|id_token_hint|\w*token)=/iu;
+// A URL's user information can hold a password or a token. `git@` is the name of an SSH login.
+const SECRET_USERINFO = /\b[a-z][a-z0-9+.-]*:\/\/(?!git@)[^\s/?#]+@/iu;
 // Each value of a request's header map can be a credential, under any name.
 const SECRET_MAP = /^headers$/iu;
 
 export const REDACTED = "[redacted]";
 
 /**
- * Deep-copies plain objects and arrays, replacing every string value whose
- * key matches a credential-like name, or that holds a sign-in query, with
- * `"[redacted]"`. Other values
- * (primitives, class instances) are returned as they are.
+ * Deep-copies plain objects and arrays, replacing with `"[redacted]"` every
+ * string value whose key matches a credential-like name, and every string that
+ * holds a URL with a credential. Other values (primitives, class instances) are
+ * returned as they are.
  */
 export function redactSecrets(value: unknown): unknown {
   return redact(value, new WeakSet());
 }
 
 function redact(value: unknown, seen: WeakSet<object>): unknown {
+  if (typeof value === "string") {
+    return SECRET_QUERY.test(value) || SECRET_USERINFO.test(value) ? REDACTED : value;
+  }
   if (Array.isArray(value)) {
     if (seen.has(value)) return undefined;
     seen.add(value);
@@ -37,10 +42,7 @@ function redact(value: unknown, seen: WeakSet<object>): unknown {
       out[key] = REDACTED;
       continue;
     }
-    out[key] =
-      typeof item === "string" && (SECRET_KEY.test(key) || SECRET_QUERY.test(item))
-        ? REDACTED
-        : redact(item, seen);
+    out[key] = typeof item === "string" && SECRET_KEY.test(key) ? REDACTED : redact(item, seen);
   }
   return out;
 }

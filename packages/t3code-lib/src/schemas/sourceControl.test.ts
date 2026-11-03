@@ -104,6 +104,11 @@ describe("source control results", () => {
     };
     expect(ProjectCloneListEvent.parse([clone, { ...clone, stalled: true }])).toHaveLength(2);
     expect(ProjectCloneListEvent.safeParse([{ ...clone, percent: 101 }]).success).toBe(false);
+    const decodes = (fields: object) =>
+      ProjectCloneListEvent.safeParse([{ ...clone, ...fields }]).success;
+    expect(decodes({ detail: "x".repeat(200), error: "x".repeat(1000) })).toBe(true);
+    expect(decodes({ detail: "x".repeat(201) })).toBe(false);
+    expect(decodes({ error: "x".repeat(1001) })).toBe(false);
   });
 
   it("decodes a candidate with and without its Git identity", () => {

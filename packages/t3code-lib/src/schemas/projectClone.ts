@@ -43,10 +43,10 @@ export const ProjectCloneSnapshot = z.looseObject({
   phase: ProjectClonePhase,
   stage: ProjectCloneStage,
   percent: z.number().int().min(0).max(100).nullable(),
-  detail: z.string().nullable(),
+  detail: z.string().max(200).nullable(),
   /** Git has printed nothing for a while, so `detail` is no longer current. */
   stalled: z.boolean().optional(),
-  error: z.string().nullable(),
+  error: z.string().max(1000).nullable(),
   startedAt: IsoDateTime,
   endedAt: IsoDateTime.nullable(),
   sequence: NonNegativeInt,
