@@ -1,6 +1,7 @@
 ---
 product: t3mcp
 title: Getting started
+install: true
 order: 1
 relationships:
   references: [mcp, automation-capabilities, profiles]
@@ -26,6 +27,13 @@ to launch the npm package with `npx`:
 
 You can also install the executable with `npm install -g
 @wyrd-company/t3code-mcp` and use `t3code-mcp --profile sample`.
+
+The install selector provides configurations for Claude Code, Claude Desktop,
+Codex, Cursor, OpenCode, Pi and Antigravity, plus generic JSON. Select your host
+and merge its configuration into the file described by that tab. Replace
+`sample` with your saved profile name. All entries launch the same stdio server
+with `npx -y @wyrd-company/t3code-mcp --profile sample`; Codex uses TOML and
+OpenCode uses a local command array.
 
 Pair the profile with `t3c auth pair` first. `--profile` selects an exact saved
 profile and ignores environment overrides. Alternatively, `--server` and
