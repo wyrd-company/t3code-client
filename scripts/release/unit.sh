@@ -14,7 +14,3 @@ release_unit() {
 is_docs_unit() {
   [[ "${1:-}" == t3c-docs || "${1:-}" == t3mcp-docs ]]
 }
-# The Feature unit has a release record and an OCI artifact, and no npm package.
-is_feature_unit() {
-  return 1
-}

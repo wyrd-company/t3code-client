@@ -8,11 +8,9 @@ set -euo pipefail
 event="${1:?event required}"
 ref="${2:?ref required}"
 sha="${3:?commit required}"
-publish_feature="${4:-false}"
 publish=false
 case "$event:$ref" in
-  # A Feature run publishes only the Feature.
-  workflow_dispatch:*) [[ "$publish_feature" == true ]] || publish=true ;;
+  workflow_dispatch:*) publish=true ;;
   push:*@0.0.0) ;; # baseline records establish authority without publication
   push:t3code-cli@*|push:t3code-mcp@*) publish=true ;;
   push:t3c-docs@*|push:t3mcp-docs@*)
