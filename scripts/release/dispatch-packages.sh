@@ -14,7 +14,7 @@ const plan = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
 if (!Array.isArray(plan.tags)) throw new Error('Saved plan must contain tags.');
 const names = new Set();
 for (const tag of plan.tags) {
-  if (typeof tag?.name !== 'string' || !/^(t3code-(lib|cli|mcp|proxy|proxy-feature)|t3c-docs|t3mcp-docs|t3c-proxy-docs)@\d+\.\d+\.\d+$/.test(tag.name)) {
+  if (typeof tag?.name !== 'string' || !/^(t3code-(lib|cli|mcp)|t3c-docs|t3mcp-docs)@\d+\.\d+\.\d+$/.test(tag.name)) {
     throw new Error('Saved plan must contain supported unit@X.Y.Z records.');
   }
   if (tag.name.split('@')[0] !== tag.release_unit || names.has(tag.name)) {

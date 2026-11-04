@@ -14,12 +14,6 @@ discovery:
     - detector: npm-package
       path: packages/t3code-mcp/package.json
       release-unit: t3code-mcp
-    - detector: npm-package
-      path: packages/t3code-proxy/package.json
-      release-unit: t3code-proxy
-    - detector: devcontainer-feature
-      path: features/src/t3code-proxy/devcontainer-feature.json
-      release-unit: t3code-proxy-feature
 release-units:
   t3code-lib:
     path: packages/t3code-lib
@@ -30,14 +24,13 @@ release-units:
     tags:
       primary:
         role: primary
-        template: '{id}@{version}'
+        template: "{id}@{version}"
   t3code-cli:
     path: packages/t3code-cli
     projections:
       - adapter: npm
         file: package.json
         mode: committed
-      # The wyrd.foo product page shows the installed version.
       - adapter: yaml
         file: /docs/user/docs.yml
         pointer: /products/t3c/version
@@ -45,7 +38,7 @@ release-units:
     tags:
       primary:
         role: primary
-        template: '{id}@{version}'
+        template: "{id}@{version}"
   t3code-mcp:
     path: packages/t3code-mcp
     projections:
@@ -59,34 +52,7 @@ release-units:
     tags:
       primary:
         role: primary
-        template: '{id}@{version}'
-  t3code-proxy:
-    path: packages/t3code-proxy
-    projections:
-      - adapter: npm
-        file: package.json
-        mode: committed
-      - adapter: yaml
-        file: /docs/user/docs.yml
-        pointer: /products/t3c-proxy/version
-        mode: committed
-    tags:
-      primary:
-        role: primary
-        template: '{id}@{version}'
-  t3code-proxy-feature:
-    path: features/src/t3code-proxy
-    projections:
-      - adapter: json
-        file: devcontainer-feature.json
-        mode: committed
-        pointer: /version
-    tags:
-      primary:
-        role: primary
-        template: '{id}@{version}'
-  # The public docs release on their own, so the docs footer can say which
-  # docs describe which t3c version. Docs units are tag-only.
+        template: "{id}@{version}"
   t3c-docs:
     path: docs/user/t3c
     depends-on:
@@ -99,7 +65,7 @@ release-units:
     tags:
       primary:
         role: primary
-        template: '{id}@{version}'
+        template: "{id}@{version}"
   t3mcp-docs:
     path: docs/user/t3mcp
     depends-on:
@@ -108,19 +74,6 @@ release-units:
       - adapter: yaml
         file: /docs/user/docs.yml
         pointer: /products/t3mcp/docs-version
-        mode: committed
-    tags:
-      primary:
-        role: primary
-        template: "{id}@{version}"
-  t3c-proxy-docs:
-    path: docs/user/t3c-proxy
-    depends-on:
-      - t3code-proxy
-    projections:
-      - adapter: yaml
-        file: /docs/user/docs.yml
-        pointer: /products/t3c-proxy/docs-version
         mode: committed
     tags:
       primary:

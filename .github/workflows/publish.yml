@@ -1,16 +1,8 @@
 name: Publish
 
-# Annotated `t3code-lib@X.Y.Z`, `t3code-cli@X.Y.Z`, `t3code-mcp@X.Y.Z` and
-# `t3code-proxy@X.Y.Z` records start package publication. A `t3code-proxy-feature@X.Y.Z` record
-# publishes the devcontainer Feature to GHCR. Every job is safe to rerun: an npm
-# version or GitHub Release that already exists is verified instead of
-# recreated. A library record publishes no documentation.
-#
-# Documentation publishes to wyrd.foo through the reusable workflow, on a CLI,
-# MCP or proxy record (after its GitHub Release exists), on a product docs
-# record, or on a manual run. Docs records pushed with one of those records are
-# published by those package runs. There is no publish on a plain push to main.
-# See docs/technical-designs/releasing.yml.
+# Annotated package records publish npm packages and GitHub Releases.
+# CLI and MCP records, product docs records and explicit manual runs publish
+# documentation to wyrd.foo. Plain pushes to main do not publish.
 
 on:
   push:
@@ -18,11 +10,8 @@ on:
       - "t3code-lib@*"
       - "t3code-cli@*"
       - "t3code-mcp@*"
-      - "t3code-proxy@*"
-      - "t3code-proxy-feature@*"
       - "t3c-docs@*"
       - "t3mcp-docs@*"
-      - "t3c-proxy-docs@*"
   workflow_dispatch:
     inputs:
       ref:
@@ -30,10 +19,6 @@ on:
         required: true
       publish-package:
         description: Publish the selected annotated npm release record as well as documentation
-        type: boolean
-        default: false
-      publish-devcontainer-feature:
-        description: Publish the selected annotated devcontainer Feature record
         type: boolean
         default: false
       feature:
@@ -67,7 +52,6 @@ jobs:
       publish: ${{ steps.plan.outputs.publish }}
       record: ${{ steps.plan.outputs.record }}
       build-package: ${{ steps.plan.outputs.build-package }}
-      feature-record: ${{ steps.plan.outputs.feature-record }}
     steps:
       - name: Checkout workflow source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -81,12 +65,10 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           REF_NAME: ${{ inputs.ref || github.ref_name }}
           PUBLISH_PACKAGE: ${{ inputs.publish-package || false }}
-          PUBLISH_FEATURE: ${{ inputs.publish-devcontainer-feature || false }}
         run: |
           {
             scripts/release/plan-package.sh "$EVENT_NAME" "$REF_NAME" "$PUBLISH_PACKAGE"
-            scripts/release/plan-docs.sh "$EVENT_NAME" "$REF_NAME" "$GITHUB_SHA" "$PUBLISH_FEATURE"
-            scripts/release/plan-feature.sh "$EVENT_NAME" "$REF_NAME" "$PUBLISH_FEATURE"
+            scripts/release/plan-docs.sh "$EVENT_NAME" "$REF_NAME" "$GITHUB_SHA"
           } >> "$GITHUB_OUTPUT"
 
   build:
@@ -211,39 +193,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RECORD: ${{ needs.plan.outputs.record }}
         run: scripts/release/ensure-github-release.sh "$RECORD" "$RUNNER_TEMP/package"
-
-  devcontainer-feature:
-    name: Publish the devcontainer Feature to GHCR
-    needs: plan
-    if: needs.plan.outputs.feature-record != ''
-    env:
-      RECORD: ${{ needs.plan.outputs.feature-record }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ needs.plan.outputs.feature-record }}
-          fetch-depth: 0
-          persist-credentials: false
-
-      - name: Require a release record on main for the Feature version
-        run: scripts/release/verify-feature-record.sh "$RECORD"
-
-      # The action skips a version that GHCR already holds, so a rerun changes nothing.
-      # The Intentional record is the release record, so the action adds no tag.
-      - name: Publish
-        uses: devcontainers/action@bef2cf2d1a019b00b45e184f83035e01bd1972f3 # v1.4.4
-        with:
-          publish-features: "true"
-          base-path-to-features: ./features/src
-          disable-repo-tagging: "true"
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
 
   docs:
     name: Publish documentation to wyrd.foo

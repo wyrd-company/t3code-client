@@ -41,32 +41,6 @@ afterEach(() => {
   for (const root of roots.splice(0)) NodeFS.rmSync(root, { recursive: true, force: true });
 });
 
-it("loads new planning helpers from the workflow source before any target checkout", () => {
-  const plan = publish.jobs["plan"]!;
-  const checkout = plan.steps.findIndex((step) => step.uses?.startsWith("actions/checkout@"));
-  const decision = plan.steps.findIndex((step) => step.id === "plan");
-  expect(checkout).toBe(0);
-  expect(decision).toBeGreaterThan(checkout);
-  // Omitting ref uses the workflow's commit (main for old-record recovery).
-  expect(plan.steps[checkout]!.with).toEqual({ "fetch-depth": 0, "persist-credentials": false });
-  expect(plan.steps[decision]!.env).toEqual({
-    EVENT_NAME: "${{ github.event_name }}",
-    REF_NAME: "${{ inputs.ref || github.ref_name }}",
-    PUBLISH_PACKAGE: "${{ inputs.publish-package || false }}",
-    PUBLISH_FEATURE: "${{ inputs.publish-devcontainer-feature || false }}",
-  });
-  expect(plan.outputs).toEqual({
-    publish: "${{ steps.plan.outputs.publish }}",
-    record: "${{ steps.plan.outputs.record }}",
-    "build-package": "${{ steps.plan.outputs.build-package }}",
-    "feature-record": "${{ steps.plan.outputs.feature-record }}",
-  });
-  expect(publish.on.workflow_dispatch.inputs["publish-package"]).toMatchObject({
-    type: "boolean",
-    default: false,
-  });
-});
-
 it.each([false, true])(
   "runs the actual plan step with --ref main and publish-package=%s",
   (optIn) => {
@@ -100,36 +74,10 @@ it.each([false, true])(
     });
     expect(result.status, result.stderr).toBe(0);
     expect(NodeFS.readFileSync(`${root}/outputs`, "utf8")).toBe(
-      `record=${optIn ? record : ""}\nbuild-package=${optIn}\npublish=true\nfeature-record=\n`,
+      `record=${optIn ? record : ""}\nbuild-package=${optIn}\npublish=true\n`,
     );
   },
 );
-
-it("publishes the Feature record alone on a manual Feature run", () => {
-  const root = fixture();
-  roots.push(root);
-  const record = "t3code-proxy-feature@0.1.0";
-  const env = fake(root, "git", `echo tag`);
-  const step = publish.jobs["plan"]!.steps.find((step) => step.id === "plan")!;
-  const result = NodeChildProcess.spawnSync("bash", ["-eo", "pipefail", "-c", step.run!], {
-    cwd: root,
-    encoding: "utf8",
-    env: {
-      ...process.env,
-      ...env,
-      GITHUB_OUTPUT: `${root}/outputs`,
-      GITHUB_SHA: "HEAD",
-      EVENT_NAME: "workflow_dispatch",
-      REF_NAME: record,
-      PUBLISH_PACKAGE: "false",
-      PUBLISH_FEATURE: "true",
-    },
-  });
-  expect(result.status, result.stderr).toBe(0);
-  expect(NodeFS.readFileSync(`${root}/outputs`, "utf8")).toBe(
-    `record=\nbuild-package=false\npublish=false\nfeature-record=${record}\n`,
-  );
-});
 
 it("checks out the validated record in all package jobs and keeps the full verifier before builds", () => {
   for (const name of ["build", "npm", "github-release"]) {

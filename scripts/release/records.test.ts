@@ -27,7 +27,7 @@ function setup() {
     ".intentional/config.yml",
     NodeFS.readFileSync(new URL("../../.intentional/config.yml", import.meta.url), "utf8"),
   );
-  for (const unit of ["t3code-lib", "t3code-cli", "t3code-mcp", "t3code-proxy"])
+  for (const unit of ["t3code-lib", "t3code-cli", "t3code-mcp"])
     write(
       root,
       `packages/${unit}/package.json`,
@@ -134,22 +134,6 @@ describe("Intentional record agreement", () => {
     expect(manifest).toContain("  t3mcp:\n    version: 0.1.0\n    docs-version: 0.1.0\n");
     expect(manifest).toContain("  t3c:\n    version: 0.0.0\n    docs-version: 0.1.0\n");
   });
-  it("projects the proxy code and docs versions into their own product", () => {
-    const root = setup();
-    command(root, "intentional", [
-      "add",
-      "--release-unit",
-      "t3code-proxy:minor",
-      "--release-unit",
-      "t3c-proxy-docs:minor",
-      "--message",
-      "Provide proxy docs.",
-    ]);
-    command(root, "intentional", ["apply"]);
-    const manifest = NodeFS.readFileSync(`${root}/docs/user/docs.yml`, "utf8");
-    expect(manifest).toContain("  t3c-proxy:\n    version: 0.1.0\n    docs-version: 0.1.0\n");
-    expect(manifest).toContain("  t3mcp:\n    version: 0.0.0\n    docs-version: 0.0.0\n");
-  });
   it("starts no detached maintenance that can write during fixture cleanup", () => {
     const root = setup();
     const trace = `${root}/git-trace.log`;
@@ -196,20 +180,10 @@ describe("Intentional record agreement", () => {
   });
   it("creates ephemeral zero baselines without tagging the source repository", () => {
     const root = setup();
-    command(root, "git", [
-      "tag",
-      "-d",
-      "t3code-lib@0.0.0",
-      "t3code-cli@0.0.0",
-      "t3code-mcp@0.0.0",
-      "t3code-proxy@0.0.0",
-      "t3code-proxy-feature@0.0.0",
-    ]);
+    command(root, "git", ["tag", "-d", "t3code-lib@0.0.0", "t3code-cli@0.0.0", "t3code-mcp@0.0.0"]);
     const result = run(root, "check-intents.sh");
     expect(result.status, result.stderr).toBe(0);
-    expect(command(root, "git", ["tag", "--list"]).trim()).toBe(
-      "t3c-docs@0.1.0\nt3c-proxy-docs@0.0.0\nt3mcp-docs@0.0.0",
-    );
+    expect(command(root, "git", ["tag", "--list"]).trim()).toBe("t3c-docs@0.1.0\nt3mcp-docs@0.0.0");
   });
   it("baselines a missing docs unit at its docs-version without tagging the source repository", () => {
     const root = setup();

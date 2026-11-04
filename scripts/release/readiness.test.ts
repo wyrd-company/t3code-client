@@ -33,15 +33,12 @@ describe("pre-apply package readiness", () => {
       expect(result.status).not.toBe(0);
     });
   }
-  it.each(["t3c-docs", "t3mcp-docs", "t3c-proxy-docs", "t3code-proxy-feature"])(
-    "accepts %s, which has no package",
-    (unit) => {
-      const root = fixture();
-      roots.push(root);
-      write(root, "plan.json", JSON.stringify({ tags: [{ release_unit: unit }] }));
-      expect(run(root, "verify-readiness.sh", ["plan.json"]).status).toBe(0);
-    },
-  );
+  it.each(["t3c-docs", "t3mcp-docs"])("accepts %s, which has no package", (unit) => {
+    const root = fixture();
+    roots.push(root);
+    write(root, "plan.json", JSON.stringify({ tags: [{ release_unit: unit }] }));
+    expect(run(root, "verify-readiness.sh", ["plan.json"]).status).toBe(0);
+  });
   it("rejects unsupported units before apply", () => {
     expect(ready("other").status).not.toBe(0);
   });
