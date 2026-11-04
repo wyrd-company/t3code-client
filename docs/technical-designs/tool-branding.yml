@@ -1,18 +1,20 @@
 $schema: https://refinery.systems/ontology/technical-design
 title: Tool marks
-objective: Identify t3c, t3mcp and t3c-proxy with matching SVG icons in their product documentation.
+objective: Identify t3c and t3mcp with matching SVG icons in their product documentation.
 relationships:
-  references: [documentation, command-line, mcp, proxy]
+  references:
+    - documentation
+    - command-line
+    - mcp
 proposed-design:
   marks: |
     All square marks use a dark blue-green rounded tile, white outlined lettering
     and a mint symbol. The t3c mark combines t3c with a command prompt. The t3mcp
-    mark combines t3mcp with the MCP symbol. The t3c-proxy mark combines t3c and proxy
-    with a message that ends in a signature line. Lettering is SVG path geometry, so no
+    mark combines t3mcp with the MCP symbol. Lettering is SVG path geometry, so no
     font download or platform font substitution affects the mark.
   assets: |
     Each product owns assets/logo.svg in its docs folder. docs/user/docs.yml
-    registers each file and selects it as logo and favicon. The MCP and proxy products
+    registers each file and selects it as logo and favicon. The MCP products
     also use their marks as catalog media. The same assets work on light and dark
     backgrounds and have accessible SVG titles and descriptions.
   attribution: |

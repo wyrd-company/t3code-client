@@ -15,7 +15,7 @@ const repositoryPrefixes = [
 const paths = [
   "README.md",
   "AGENTS.md",
-  ...["t3code-lib", "t3code-cli", "t3code-mcp", "t3code-proxy"].flatMap((name) => [
+  ...["t3code-lib", "t3code-cli", "t3code-mcp"].flatMap((name) => [
     `packages/${name}/README.md`,
     `packages/${name}/AGENTS.md`,
   ]),

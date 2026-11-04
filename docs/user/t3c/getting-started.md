@@ -57,7 +57,7 @@ asks for an explicit choice through a usage error.
 ## Shared servers
 
 `t3c` uses the direct route: pair its profile with the server's own address. If people
-share the server through [t3c-proxy](https://wyrd.foo/tools/t3c-proxy), do not pair `t3c`
+share the server through [t3c-proxy](https://github.com/wyrd-company/t3code-proxy), do not pair `t3c`
 with a person's hostname. A message that `t3c` sends there ends with that person's byline.
 
 Use [command behavior](commands.md), [output and exit codes](policy.md),

@@ -8,7 +8,7 @@ set -euo pipefail
 tarball="$(realpath "${1:?tarball is required}")"
 unit="${2:-t3code-lib}"
 case "$unit" in
-  t3code-lib|t3code-cli|t3code-mcp|t3code-proxy) ;;
+  t3code-lib|t3code-cli|t3code-mcp) ;;
   *) echo "Unknown release unit $unit." >&2; exit 1 ;;
 esac
 typescript="${CONSUMER_TYPESCRIPT:-typescript@5.9}"
@@ -17,52 +17,6 @@ trap 'rm -rf "$consumer"' EXIT
 
 cd "$consumer"
 printf '{ "name": "consumer", "private": true, "type": "module" }\n' > package.json
-if [[ "$unit" == t3code-proxy ]]; then
-  # The proxy has no runtime library dependency, so no library tarball is needed.
-  npm install --silent --no-audit --no-fund "$tarball"
-  version="$(node -p 'require("@wyrd-company/t3code-proxy/package.json").version')"
-  reported="$(./node_modules/.bin/t3c-proxy --version)"
-  if [[ "$reported" != "$version" ]]; then
-    echo "t3c-proxy --version reported '$reported', expected $version." >&2
-    exit 1
-  fi
-  printf 'upstream: http://127.0.0.1:1\nusers:\n  - name: Sample\n    port: 4101\n' > config.yml
-  listed="$(./node_modules/.bin/t3c-proxy --config config.yml --list-users)"
-  if [[ "$listed" != "$(printf '4101\tSample')" ]]; then
-    echo "t3c-proxy --list-users reported '$listed'." >&2
-    exit 1
-  fi
-  # The installed executable serves a request, then stops on SIGTERM with exit 0.
-  node --input-type=module - "$consumer/node_modules/.bin/t3c-proxy" <<'JS'
-import * as NodeChildProcess from 'node:child_process';
-import * as NodeHttp from 'node:http';
-import * as NodeNet from 'node:net';
-const fail = (message) => { console.error(message); process.exit(1); };
-const timer = setTimeout(() => fail('t3c-proxy did not answer.'), 30_000);
-const upstream = NodeHttp.createServer((_request, response) => response.end('sample'));
-await new Promise((resolve) => upstream.listen(0, '127.0.0.1', resolve));
-const probe = NodeNet.createServer();
-await new Promise((resolve) => probe.listen(0, '127.0.0.1', resolve));
-const { port } = probe.address();
-await new Promise((resolve) => probe.close(resolve));
-const service = NodeChildProcess.spawn(process.argv[2], [
-  '--upstream', `http://127.0.0.1:${upstream.address().port}`, '--user', `Sample=${port}`,
-], { stdio: ['ignore', 'ignore', 'pipe'] });
-service.stderr.setEncoding('utf8');
-await new Promise((resolve) => service.stderr.on('data', (line) => { if (line.includes('listening')) resolve(); }));
-const answer = await fetch(`http://127.0.0.1:${port}/`);
-if ((await answer.text()) !== 'sample') fail('t3c-proxy did not forward the request.');
-const exited = new Promise((resolve) => service.once('exit', (code, signal) => resolve({ code, signal })));
-service.kill('SIGTERM');
-const { code, signal } = await exited;
-if (code !== 0) fail(`t3c-proxy stopped with code ${code} and signal ${signal}.`);
-upstream.close();
-upstream.closeAllConnections();
-clearTimeout(timer);
-JS
-  echo "Proxy consumer check passed for $(basename "$tarball")."
-  exit 0
-fi
 if [[ "$unit" != t3code-lib ]]; then
   library="$(realpath "${3:?$unit verification requires the library tarball}")"
 fi
