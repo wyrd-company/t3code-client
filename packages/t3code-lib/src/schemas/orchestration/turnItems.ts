@@ -17,9 +17,9 @@ import {
   taggedUnionWithUnknown,
   type UnknownVariant,
 } from "../common.ts";
-import { OrchestrationV2TurnItemMembers } from "./turnItemMembers.ts";
+import { OrchestrationV2ModelSwitch, OrchestrationV2TurnItemMembers } from "./turnItemMembers.ts";
 
-export { OrchestrationV2TurnItemMembers };
+export { OrchestrationV2ModelSwitch, OrchestrationV2TurnItemMembers };
 
 /** A turn item of any type, including a type this build does not know. */
 export const OrchestrationV2TurnItem = taggedUnionWithUnknown(

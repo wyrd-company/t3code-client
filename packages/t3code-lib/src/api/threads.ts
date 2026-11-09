@@ -225,6 +225,12 @@ export type WatchOptions = Omit<ThreadWatchOptions, "snapshotLoader">;
  * message on a stopped thread; otherwise it fails with
  * `OrchestrationV2DispatchCommandError`. `startQueuedRun` sends it. Both it and
  * `resumeQueue` clear the hold on all queued runs; other queued messages may follow.
+ * `dispatch` accepts `thread.tag.set` with `commandId`, `threadId`, `tag` and
+ * boolean `tagged` (true adds, false removes). Tags are trimmed, nonempty, at
+ * most 64 characters and one line, and match by exact spelling and case;
+ * malformed fields fail before sending. The server records
+ * `thread.tags-updated` with the whole thread. Threads, shells and projections
+ * expose optional `tags`; a malformed stored list reads as empty.
  *
  * `watchCommandOutput` follows `orchestration.subscribeCommandOutput` for one
  * `command_execution` row (`{ threadId, itemId }`, trimmed nonempty ids). Each

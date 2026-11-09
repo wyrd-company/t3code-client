@@ -22,6 +22,7 @@ import {
 } from "../model.ts";
 import { OrchestrationV2ProviderThreadNativeMetadata } from "../providerState.ts";
 import { ThreadLinkedPullRequest } from "../pullRequest.ts";
+import { ThreadTag } from "../threadTags.ts";
 import { OrchestrationV2LimitRecoveryUpdate } from "../thread.ts";
 
 const stamped = { commandId: CommandId, threadId: ThreadId } as const;
@@ -128,6 +129,13 @@ export const ThreadActiveReorderCommand = z.looseObject({
   ...stamped,
   orderKey: TrimmedNonEmptyString,
 });
+/** Add (`tagged: true`) or remove one tag; the server records `thread.tags-updated`. */
+export const ThreadTagSetCommand = z.looseObject({
+  type: z.literal("thread.tag.set"),
+  ...stamped,
+  tag: ThreadTag,
+  tagged: z.boolean(),
+});
 export const ThreadVisitCommand = z.looseObject({
   type: z.literal("thread.visit"),
   ...stamped,
@@ -209,6 +217,7 @@ export const threadCommandMembers = [
   ThreadUnpinCommand,
   ThreadPinReorderCommand,
   ThreadActiveReorderCommand,
+  ThreadTagSetCommand,
   ThreadVisitCommand,
   ThreadMarkUnreadCommand,
   ThreadGuestShareCloseCommand,

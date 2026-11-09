@@ -68,6 +68,7 @@ export const THREAD_STATE_EVENT_TYPES = [
   "thread.unpinned",
   "thread.pin-reordered",
   "thread.active-reordered",
+  "thread.tags-updated",
   "thread.visited",
   "thread.marked-unread",
   "thread.metadata-updated",

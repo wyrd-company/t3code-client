@@ -54,6 +54,13 @@ import {
   OrchestrationV2WebSearchResult,
 } from "./turnItemParts.ts";
 
+/** A same-harness model or effort change that took effect with this message. */
+export const OrchestrationV2ModelSwitch = z.looseObject({
+  from: ModelSelection,
+  to: ModelSelection,
+});
+export type OrchestrationV2ModelSwitch = z.infer<typeof OrchestrationV2ModelSwitch>;
+
 const forkSource = taggedUnionWithUnknown("type", [
   z.looseObject({ type: z.literal("run"), threadId: ThreadId, runId: RunId }),
   z.looseObject({ type: z.literal("node"), nodeId: NodeId }),
@@ -79,6 +86,7 @@ export const OrchestrationV2TurnItemMembers = [
     text: z.string(),
     context: OrchestrationMessageContext.optional(),
     attachments: z.array(ChatAttachment),
+    modelSwitch: OrchestrationV2ModelSwitch.optional(),
   }),
   z.looseObject({
     ...base,
