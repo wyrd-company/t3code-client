@@ -147,7 +147,7 @@ it("documents every declared MCP tool without loading built packages", () => {
     "thread_stop",
   ]);
 });
-it.each(["t3mcp"])("retains one initial minor intent for each new %s unit", (key) => {
+it.each(["t3mcp"])("retains one initial major intent for each new %s unit", (key) => {
   const product = manifest.products[key]!;
   const initialUnits = [product["release-unit"], `${key}-docs`].filter(
     (unit) =>
@@ -159,7 +159,7 @@ it.each(["t3mcp"])("retains one initial minor intent for each new %s unit", (key
     (name) => NodeFS.readFileSync(NodePath.join(repository, ".intentional/intents", name), "utf8"),
   );
   for (const unit of initialUnits) {
-    const matches = intents.filter((intent) => new RegExp(`^${unit}: minor$`, "mu").test(intent));
+    const matches = intents.filter((intent) => new RegExp(`^${unit}: major$`, "mu").test(intent));
     expect(matches, unit).toHaveLength(1);
   }
 });

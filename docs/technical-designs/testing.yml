@@ -290,7 +290,7 @@ proposed-design:
     Released-unit checks run from a fresh source checkout after Intentional has
     consumed every intent. Empty directories are not Git artifacts, so an absent
     intents directory is normal once all units have a nonzero version. Initial
-    zero-version units still require their single minor intent.
+    zero-version units still require their single major intent.
 
     Publication tests validate default manual docs behavior, explicit package
     recovery, immutable record checkout and common artifact identities. A fake
