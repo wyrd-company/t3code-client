@@ -5,7 +5,7 @@ relationships:
 
 # @wyrd-company/t3code-mcp
 
-Complementary stdio MCP tools for stock T3 Code 0.1.6, orchestration protocol 2.
+Complementary stdio MCP tools for stock T3 Code 0.1.7, orchestration protocol 2.
 Node >=22.16 is required. The library owns server integration; the official MCP
 SDK owns protocol transport.
 

@@ -3,4 +3,4 @@
 //   implements: library
 // ---
 /** T3 Code release targeted by this library, independent of the library version. */
-export const TARGET_T3_CODE_VERSION = "0.1.6";
+export const TARGET_T3_CODE_VERSION = "0.1.7";

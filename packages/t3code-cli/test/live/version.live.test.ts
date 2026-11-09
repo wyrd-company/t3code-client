@@ -30,8 +30,8 @@ it("pairs the CLI, reports the real server and completes a Luna subject through 
     const result = JSON.parse(output);
     expect(result).toMatchObject({
       data: {
-        target: "0.1.6",
-        server: { version: "0.1.6", protocol: 2, verdict: "match" },
+        target: "0.1.7",
+        server: { version: "0.1.7", protocol: 2, verdict: "match" },
         sources: { server: "profile", credentials: "profile" },
       },
       exitCode: 0,
