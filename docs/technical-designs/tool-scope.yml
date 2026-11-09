@@ -59,9 +59,10 @@ proposed-design:
 
     1. For each capability the build adds or changes, run both gates for both
        tools and record the verdicts.
-    2. Run gate 1 again for every open `cli` and `mcp` issue and for every
-       existing tool, against the new stock command and tool set. Close issues
-       that stock now covers, and propose removing tools that stock now covers.
+    2. Run both gates again for every open `cli` and `mcp` issue and for every
+       existing tool, against the new stock command and tool set and our current
+       work, and record each verdict. Close issues that fail, and propose
+       removing tools that fail.
     3. Build the passing tool changes before the update merges to main, with the
        same tests, review and documentation as library changes.
     4. The update's pull request lists the tool changes made and each fail with
