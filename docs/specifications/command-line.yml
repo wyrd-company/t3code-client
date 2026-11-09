@@ -20,6 +20,7 @@ validation-criteria: >-
   Workspace task check is the handoff gate.
 relationships:
   references:
+    - tool-scope
     - cli-surface
     - cli-architecture
     - library

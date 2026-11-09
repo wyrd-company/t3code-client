@@ -1,0 +1,72 @@
+$schema: https://refinery.systems/ontology/technical-design
+title: Tool scope for t3c and t3code-mcp
+objective: >-
+  Decide which T3 Code capabilities t3c and t3code-mcp expose, so that each
+  tool adds what stock T3 Code lacks and what our own work uses.
+relationships:
+  related-to:
+    - cli-architecture
+    - mcp
+  references:
+    - command-line
+    - library
+    - automation-capabilities
+    - releasing
+proposed-design:
+  gates: |
+    A capability enters a tool only when it passes both gates for that tool.
+    Each tool is judged separately, so a capability can pass for one tool and
+    fail for the other.
+
+    | Tool | Gate 1: absent from stock | Gate 2: valuable to our work |
+    | --- | --- | --- |
+    | t3c | The stock `t3` command line cannot do it. | It helps automate our workflow, for example Dagu steps. |
+    | t3code-mcp | T3 Code's built-in MCP tools cannot do it. | Our agents need it to do their work. |
+
+    Gate 1 compares behavior, not names. A stock command or tool that reaches
+    the same outcome fails gate 1, even with different inputs. Gate 2 is a
+    judgment and always carries a written reason.
+  principles: |
+    1. Two gates per tool, as above.
+    2. Complement stock. A tool never duplicates a stock command or tool. When
+       stock gains an equivalent, the update that adopts that stock build
+       proposes removing the tool. Removal is a maintainer decision.
+    3. Library first. Every capability exists in @wyrd-company/t3code-lib before
+       a tool exposes it. Tools adapt inputs and outputs and hold no protocol or
+       domain logic.
+    4. The audience selects the tool. t3c serves people and unattended scripts:
+       it waits for outcomes, prints JSON and returns exit codes. t3code-mcp
+       serves agents in T3 Code: it lets them inspect and recover the threads
+       they manage and check provider budget before they delegate.
+    5. Value means recurring work. A one-time action or a display preference
+       fails gate 2.
+    6. The server stays the authority. The selected credential and its scopes
+       decide every operation. No tool raises permissions, and no agent tool
+       answers an approval.
+    7. Read first, write narrowly. A gap starts as a read. A write changes only
+       what stock cannot change, and stock keeps the rest of that object.
+    8. Re-run the gates at every upstream update and keep each verdict.
+  verdicts: |
+    A verdict names the capability, the tool, the result of each gate and the
+    reason. A pass becomes work: a GitHub issue labelled `cli` or `mcp`, or a
+    change in the same update. A fail is kept in the update's record with its
+    reason so that later updates do not judge it again without new facts. Each
+    open `cli` or `mcp` issue states its current verdict against the target
+    build.
+  upstream-updates: |
+    Tracking a new T3 Code build (see releasing) covers the tools as well as
+    the library:
+
+    1. For each capability the build adds or changes, run both gates for both
+       tools and record the verdicts.
+    2. Run gate 1 again for every open `cli` and `mcp` issue and for every
+       existing tool, against the new stock command and tool set. Close issues
+       that stock now covers, and propose removing tools that stock now covers.
+    3. Build the passing tool changes before the update merges to main, with the
+       same tests, review and documentation as library changes.
+    4. The update's pull request lists the tool changes made and each fail with
+       its reason.
+  verification: |
+    The t3code-mcp inventory tests reject names that collide with the pinned
+    stock tool set. Behavioral overlap is checked by the gate 1 review in each
+    upstream update.

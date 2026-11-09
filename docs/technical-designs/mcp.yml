@@ -5,6 +5,7 @@ objective: >-
   MCP surface, using the shared client library.
 relationships:
   references:
+    - tool-scope
     - library
     - automation-capabilities
     - profiles
@@ -51,6 +52,8 @@ proposed-design:
     - thread_queue_start: start a selected queued plain user message and release the hold.
     - provider_status: provider authentication, installation, availability and limits.
     - usage_summary: historical usage buckets, pricing and source diagnostics.
+
+    Tools enter this set by the gates in tool-scope.
 
     Stock MCP owns basic schedule CRUD, run-now, cross-thread search, question
     responses, ordinary launches, queued message CRUD/reordering/promotion and
