@@ -83,5 +83,5 @@ proposed-design:
     command checks use a fresh server/config home outside Git and gpt-6-luna
     subjects, with operational live overrides cleared. The Dagu verification
     exercises the custom harness against that real server. One consolidated
-    minor intent per unit records the release; manifests remain 0.0.0 until
+    major intent per unit records the release; manifests remain 0.0.0 until
     finalization. Intentional owns release versions and changelogs.

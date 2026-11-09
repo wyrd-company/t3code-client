@@ -139,9 +139,9 @@ describe("Intentional record agreement", () => {
     command(root, "intentional", [
       "add",
       "--release-unit",
-      "t3code-proxy:minor",
+      "t3code-proxy:major",
       "--release-unit",
-      "t3c-proxy-docs:minor",
+      "t3c-proxy-docs:major",
       "--message",
       "Provide proxy docs.",
     ]);
@@ -168,7 +168,7 @@ describe("Intentional record agreement", () => {
     command(root, "intentional", [
       "add",
       "--release-unit",
-      "t3code-lib:minor",
+      "t3code-lib:major",
       "--message",
       "Provide library.",
     ]);
@@ -176,7 +176,7 @@ describe("Intentional record agreement", () => {
     command(root, "intentional", [
       "add",
       "--release-unit",
-      "t3code-cli:minor",
+      "t3code-cli:major",
       "--message",
       "Provide command.",
     ]);

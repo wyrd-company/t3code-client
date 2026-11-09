@@ -242,7 +242,7 @@ proposed-design:
     t3code-server service exists, `t3code-proxy` also depends on it. A restart reads
     the config file and writes the Caddy files again.
   source-and-distribution: |
-    The package has its own release unit `t3code-proxy`, initial minor intent, package
+    The package has its own release unit `t3code-proxy`, initial major intent, package
     verification and CI check. It starts at version 0.0.0.
 
     The Feature is a separate release unit, `t3code-proxy-feature`, with its version in

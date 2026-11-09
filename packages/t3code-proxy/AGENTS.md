@@ -29,4 +29,4 @@ Read `docs/technical-designs/proxy.yml` at the repository root. It leads this co
 - `docs/user/t3c-proxy` holds the published guides. A change to an option or an accepted
   limit changes those guides, and `scripts/docs/publishedDocs.test.ts` checks them.
 - Run the workspace `task check` before handoff. Add consumer changes to the package's
-  single initial minor intent. Publication requires explicit user approval.
+  single initial major intent. Publication requires explicit user approval.
