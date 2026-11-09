@@ -103,6 +103,26 @@ keeps loose fields. `server.updateProvider` runs the provider's installer on the
 server host. `secrets.answerRequest` saves or declines an agent's secret request:
 the server keeps the value, and the thread learns only the status.
 
+### Managed policy
+
+An administrator can put a policy file on the server's machine. The server then sends
+`managedPolicy` in `server.getConfig`: the organization, the settings that users cannot change
+and the limits that the server enforces. `schemas.managedPolicy` holds its shapes. The summary
+carries no setting values.
+
+```ts
+const { managedPolicy } = await client.server.getConfig();
+if (managedPolicy?.limits?.maxRuntimeMode) {
+  // Create threads at or below this runtime mode.
+}
+```
+
+A patch that changes a locked setting fails with a `ServerSettingsError` whose `operation` is
+`write-managed-setting` and whose `managedSetting` is the locked path. A provider that the policy
+does not allow fails with `use-disallowed-provider`. A scheduled task that the policy stops has a
+`blockedByPolicy` reason. When the policy does not allow remote clients,
+`auth.createPairingCredential` fails with a 403 `EnvironmentHttpForbiddenError`.
+
 ## Diagnostics
 
 The server reads its traces, its process tree and its host. Most of these reads need

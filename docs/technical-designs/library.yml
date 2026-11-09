@@ -78,6 +78,7 @@ proposed-design:
         environment.ts          ExecutionEnvironmentDescriptor, repository identity, protocol constants
         httpErrors.ts           Environment*Error records
         keybindings.ts          resolved keybinding rules: commands, shortcuts, when nodes
+        managedPolicy.ts        the managed policy summary that clients see: locked settings and enforced limits
         rpcErrors.ts            RpcErrorRecord: every tagged error the registered RPC methods declare
         rpcErrors/              server, project, orchestration, peer and guest link, MCP app, file, preview, device, vcs, and terminal error records, shared tagged-error helpers
         assets.ts               asset resources and URLs, attachment upload URLs, and the bytes of an asset

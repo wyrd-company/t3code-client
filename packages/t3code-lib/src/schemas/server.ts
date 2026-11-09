@@ -16,6 +16,7 @@ import {
 import { EditorId } from "./editor.ts";
 import { ExecutionEnvironmentDescriptor } from "./environment.ts";
 import { ResolvedKeybindingsConfig } from "./keybindings.ts";
+import { ManagedPolicySummary } from "./managedPolicy.ts";
 import { ServerProviders, ServerProviderUsageLimits } from "./provider.ts";
 
 export { EditorId };
@@ -183,6 +184,8 @@ export const ServerConfig = z.looseObject({
   lastEventLoopStall: ServerEventLoopStall.optional(),
   environmentThemes: z.array(EnvironmentTheme).optional(),
   usageLimitSources: UsageLimitSourceSnapshots.optional(),
+  /** Present when an administrator's policy file manages the environment. */
+  managedPolicy: ManagedPolicySummary.optional(),
 });
 export type ServerConfig = z.infer<typeof ServerConfig>;
 export const ServerConfigEnvironmentThemesUpdatedPayload = z.looseObject({
