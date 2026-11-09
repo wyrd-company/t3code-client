@@ -36,6 +36,8 @@ function triggerDetail(task: ScheduledTask): string {
       return `interval\t${durationText(schedule.everyMs)}`;
     case "fixed_time":
       return `fixed_time\t${schedule.timeOfDay}${schedule.weekdays ? `\t${schedule.weekdays.join(",")}` : ""}`;
+    case "once":
+      return `once\t${schedule.runAt}`;
     case "webhook":
       return `webhook\t${schedule.signature === null ? "unsigned" : "signed"}`;
   }

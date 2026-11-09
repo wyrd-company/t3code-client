@@ -103,6 +103,27 @@ keeps loose fields. `server.updateProvider` runs the provider's installer on the
 server host. `secrets.answerRequest` saves or declines an agent's secret request:
 the server keeps the value, and the thread learns only the status.
 
+A credential setting, such as a usage limit source's `managementKey` or an EAS
+host's `accessToken`, takes either the literal or a secret provider reference
+(`schemas.providerInstance.SettingsSecretValue`). The client tells the server it
+reads references, so settings show a reference as written:
+
+```ts
+await client.rpc.call("server.updateSettings", {
+  patch: {
+    hiddenThreadTags: ["sample-tag"],
+    hideTaggedThreads: true,
+    usageLimitSources: {
+      sample: {
+        kind: "cliproxy",
+        url: "http://127.0.0.1:8317",
+        managementKey: { provider: "sample", reference: "op://vault/item/field" },
+      },
+    },
+  },
+});
+```
+
 ### Managed policy
 
 An administrator can put a policy file on the server's machine. The server then sends

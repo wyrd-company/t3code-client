@@ -42,6 +42,13 @@ relationships:
 <dt><a href="#ORCHESTRATION_PROTOCOL_HEADER">ORCHESTRATION_PROTOCOL_HEADER</a></dt>
 <dd><p>Header on orchestration HTTP routes that names the protocol.</p>
 </dd>
+<dt><a href="#CLIENT_CAPABILITIES_QUERY_PARAM">CLIENT_CAPABILITIES_QUERY_PARAM</a></dt>
+<dd><p>Query parameter on the <code>/ws</code> upgrade that lists the wire shapes a client understands, comma-separated.</p>
+</dd>
+<dt><a href="#SETTINGS_SECRET_REFERENCES_CAPABILITY">SETTINGS_SECRET_REFERENCES_CAPABILITY</a></dt>
+<dd><p>Secret settings fields may hold a secret provider reference in place of a
+string. A client that omits it sees a reference as a saved, redacted secret.</p>
+</dd>
 <dt><a href="#OrchestrationProjectShell">OrchestrationProjectShell</a></dt>
 <dd><p>Project summary shared by the shell and the application project APIs.</p>
 </dd>
@@ -131,6 +138,21 @@ Query parameter on the `/ws` upgrade that names the protocol.
 ## ORCHESTRATION\_PROTOCOL\_HEADER
 
 Header on orchestration HTTP routes that names the protocol.
+
+**Kind**: global constant  
+<a name="CLIENT_CAPABILITIES_QUERY_PARAM"></a>
+
+## CLIENT\_CAPABILITIES\_QUERY\_PARAM
+
+Query parameter on the `/ws` upgrade that lists the wire shapes a client understands, comma-separated.
+
+**Kind**: global constant  
+<a name="SETTINGS_SECRET_REFERENCES_CAPABILITY"></a>
+
+## SETTINGS\_SECRET\_REFERENCES\_CAPABILITY
+
+Secret settings fields may hold a secret provider reference in place of a
+string. A client that omits it sees a reference as a saved, redacted secret.
 
 **Kind**: global constant  
 <a name="OrchestrationProjectShell"></a>

@@ -45,6 +45,11 @@ it("lists and shows tasks with JSON envelopes and concise text", async () => {
   // The URL token stays out of show text.
   expect(shown.stdout).not.toContain("sample-token");
   expect((await run(["show", interval.id], false)).stdout).toContain("trigger\tinterval\t1h\n");
+  const once = { ...interval, schedule: { type: "once", runAt: "2030-01-31T07:30:00.000Z" } };
+  vi.spyOn(client.scheduledTasks, "get").mockResolvedValueOnce(once as ScheduledTask);
+  expect((await run(["show", interval.id], false)).stdout).toContain(
+    "trigger\tonce\t2030-01-31T07:30:00.000Z\n",
+  );
   const missing = await run(["show", "scheduled-task:absent"]);
   expect(missing).toMatchObject({ code: 10, result: { data: null, exitCode: 10 } });
 });

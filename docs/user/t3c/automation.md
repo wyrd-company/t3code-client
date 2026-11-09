@@ -44,7 +44,11 @@ Create and update accept a JSON object with `--input <file>` or `--input -` for
 stdin. Focused flags override matching JSON fields. Only one input can read
 stdin. The accepted fields are `title`, `prompt`, `enabled`, `schedule`,
 `projectId`, `threadId`, `workspaceStrategy`, `modelSelection`, `runtimeMode` and
-`interactionMode`. Identity and provenance fields are not input fields.
+`interactionMode`. Identity and provenance fields are not input fields. A
+one-time schedule, `{"type": "once", "runAt": "2030-01-31T09:30:00+02:00"}`,
+goes in `schedule` and needs an ISO date and time with an offset. Servers that
+report the `oneTimeSchedules` capability accept it; `schedule show` prints it as
+`once` and the run time.
 
 ```sh
 t3c schedule create --input - --project <project-id> --provider codex \

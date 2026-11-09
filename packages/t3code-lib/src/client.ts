@@ -32,8 +32,10 @@ import { defaultWebSocket, type WebSocketConstructor } from "./internal/websocke
 import { RpcClient } from "./rpc/client.ts";
 import { rpcMethods, type RpcMethods } from "./rpc/registry.ts";
 import {
+  CLIENT_CAPABILITIES_QUERY_PARAM,
   ORCHESTRATION_PROTOCOL_QUERY_PARAM,
   ORCHESTRATION_PROTOCOL_VERSION_TEXT,
+  SETTINGS_SECRET_REFERENCES_CAPABILITY,
 } from "./schemas/environment.ts";
 import { PreviewViewerTarget } from "./schemas/previewViewer.ts";
 import { HttpTransport } from "./transport/http.ts";
@@ -276,6 +278,8 @@ function socketUrl(options: T3ClientOptions): URL {
   // The server answers 426 to an upgrade that does not name the protocol it speaks.
   url.searchParams.set(ORCHESTRATION_PROTOCOL_QUERY_PARAM, ORCHESTRATION_PROTOCOL_VERSION_TEXT);
   url.searchParams.set("clientSurface", "cli");
+  // The settings schemas accept a secret provider reference in each secret field.
+  url.searchParams.set(CLIENT_CAPABILITIES_QUERY_PARAM, SETTINGS_SECRET_REFERENCES_CAPABILITY);
   if (options.clientAppVersion !== undefined) {
     url.searchParams.set("clientAppVersion", options.clientAppVersion);
   }

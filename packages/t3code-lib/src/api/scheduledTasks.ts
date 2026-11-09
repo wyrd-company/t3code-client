@@ -49,8 +49,9 @@ export interface ScheduledTasksApiOptions {
 const OPERATE_SCOPE = "orchestration:operate";
 
 /**
- * Scheduled tasks: interval, fixed-time and webhook triggers that start agent
- * runs. Reading needs orchestration:read; the server removes webhook endpoints
+ * Scheduled tasks: interval, fixed-time, one-time and webhook triggers that
+ * start agent runs. A one-time trigger needs the `oneTimeSchedules` capability.
+ * Reading needs orchestration:read; the server removes webhook endpoints
  * from a reader's results. Mutations, webhook endpoints and delivery records
  * need orchestration:operate. Signing secrets are write-only.
  */

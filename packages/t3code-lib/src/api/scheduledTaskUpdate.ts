@@ -97,6 +97,8 @@ function updatedSchedule(
         timeOfDay: current.timeOfDay,
         ...(current.weekdays === undefined ? {} : { weekdays: current.weekdays }),
       };
+    case "once":
+      return { type: "once", runAt: current.runAt };
     case "webhook":
       return {
         type: "webhook",

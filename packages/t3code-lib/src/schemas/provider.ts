@@ -69,6 +69,8 @@ export const SelectProviderOptionDescriptor = z.looseObject({
   options: z.array(ProviderOptionChoice),
   currentValue: TrimmedNonEmptyString.optional(),
   promptInjectedValues: z.array(TrimmedNonEmptyString).optional(),
+  /** Marks the reasoning control when its id is the agent's own, such as an ACP `thought_level`. */
+  role: forwardCompatibleLiteral(["reasoning"]).optional(),
 });
 export type SelectProviderOptionDescriptor = z.infer<typeof SelectProviderOptionDescriptor>;
 export const ProviderOptionDescriptor = taggedUnionWithUnknown("type", [
