@@ -199,7 +199,9 @@ proposed-design:
     `?wsTicket=<ticket>` (with `dpop=<proof>` for a bound ticket) or an
     `authorization` header. Optional query
     parameters `clientSurface=cli` and `clientAppVersion` label the connection in
-    the server's client list. Messages are JSON text, one envelope per frame (the
+    the server's client list. `clientCapabilities=settingsSecretReferences` tells
+    the server that secret settings fields may hold a secret provider reference;
+    without it the server shows a reference as a saved, redacted secret. Messages are JSON text, one envelope per frame (the
     server may also send a JSON array of envelopes). Envelopes:
 
     ```text

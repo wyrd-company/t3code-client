@@ -51,6 +51,14 @@ export const TurnTokenUsage = z.looseObject({
   cacheCreationTokens: NonNegativeInt.optional(),
   reasoningTokens: NonNegativeInt.optional(),
   hasSubagents: z.boolean(),
+  /** Native model ids the provider reported for the main agent's work. Absent means unknown. */
+  models: z.array(TrimmedNonEmptyString).optional(),
+  /** The provider ran a local command; the counts describe that result, not model work. */
+  localCommand: z.boolean().optional(),
+  /** Provider-ledger counts beyond the main agent, such as native subagents and compaction. */
+  otherUsage: z
+    .looseObject({ inputTokens: NonNegativeInt, outputTokens: NonNegativeInt })
+    .optional(),
 });
 export type TurnTokenUsage = z.infer<typeof TurnTokenUsage>;
 

@@ -33,9 +33,11 @@ export {
   scheduledTaskId,
 } from "./schemas/common.ts";
 export {
+  CLIENT_CAPABILITIES_QUERY_PARAM,
   ORCHESTRATION_PROTOCOL_HEADER,
   ORCHESTRATION_PROTOCOL_QUERY_PARAM,
   ORCHESTRATION_PROTOCOL_VERSION,
+  SETTINGS_SECRET_REFERENCES_CAPABILITY,
 } from "./schemas/environment.ts";
 export type {
   OrchestrationV2ThreadProjection,

@@ -21,6 +21,14 @@ export const SecretReference = z.looseObject({
 });
 export type SecretReference = z.infer<typeof SecretReference>;
 
+/**
+ * A credential setting: the literal, which the server keeps in its secret
+ * store and redacts for clients, or the secret provider reference to read it
+ * from, which the server stores and shows as written.
+ */
+export const SettingsSecretValue = z.union([TrimmedString, SecretReference]);
+export type SettingsSecretValue = z.infer<typeof SettingsSecretValue>;
+
 /** The wire form: a reference goes in `secret`, beside an empty or omitted `value`. */
 const ProviderInstanceEnvironmentVariable = z.looseObject({
   name: TrimmedNonEmptyString.max(128).regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/),
@@ -63,7 +71,7 @@ export const UsageLimitSourceConfig = z.looseObject({
   kind: z.literal("cliproxy"),
   label: TrimmedNonEmptyString.optional(),
   url: TrimmedNonEmptyString,
-  managementKey: TrimmedString.optional(),
+  managementKey: SettingsSecretValue.optional(),
   enabled: z.boolean().optional(),
 });
 export const SecretProviderConfig = z.looseObject({

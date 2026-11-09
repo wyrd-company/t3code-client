@@ -580,8 +580,9 @@ or <code>ref_not_found</code>. Omission means the server did not recognise the c
 an unknown reason string is preserved.</p>
 </dd>
 <dt><a href="#ScheduledTasksApi">ScheduledTasksApi</a></dt>
-<dd><p>Scheduled tasks: interval, fixed-time and webhook triggers that start agent
-runs. Reading needs orchestration:read; the server removes webhook endpoints
+<dd><p>Scheduled tasks: interval, fixed-time, one-time and webhook triggers that
+start agent runs. A one-time trigger needs the <code>oneTimeSchedules</code> capability.
+Reading needs orchestration:read; the server removes webhook endpoints
 from a reader&#39;s results. Mutations, webhook endpoints and delivery records
 need orchestration:operate. Signing secrets are write-only.</p>
 </dd>
@@ -682,6 +683,13 @@ report <code>scopes</code> filtered to these and the full grant as <code>permiss
 </dd>
 <dt><a href="#ORCHESTRATION_PROTOCOL_HEADER">ORCHESTRATION_PROTOCOL_HEADER</a></dt>
 <dd><p>Header on orchestration HTTP routes that names the protocol.</p>
+</dd>
+<dt><a href="#CLIENT_CAPABILITIES_QUERY_PARAM">CLIENT_CAPABILITIES_QUERY_PARAM</a></dt>
+<dd><p>Query parameter on the <code>/ws</code> upgrade that lists the wire shapes a client understands, comma-separated.</p>
+</dd>
+<dt><a href="#SETTINGS_SECRET_REFERENCES_CAPABILITY">SETTINGS_SECRET_REFERENCES_CAPABILITY</a></dt>
+<dd><p>Secret settings fields may hold a secret provider reference in place of a
+string. A client that omits it sees a reference as a saved, redacted secret.</p>
 </dd>
 <dt><a href="#OrchestrationV2ThreadBoundedSnapshot">OrchestrationV2ThreadBoundedSnapshot</a></dt>
 <dd><p>A bounded cold open: full control-plane arrays with a recent window of timeline rows.</p>
@@ -2991,7 +2999,9 @@ async providerStatus(instanceId?: string, signal?: AbortSignal): Promise<ServerP
 Historical token usage and cost from provider transcripts (diagnostics:read).
 Buckets keep provider, model and cost source; sources report scan status.
 The result has no grand total: costs from different sources, and tokens
-of different kinds, are not added together.
+of different kinds, are not added together. `modelFilter` keeps or drops
+records by provider and original model id; settings `usageModelFilter`
+holds the filter a user saved, and the result echoes the filter applied.
 
 ```ts
 usageSummary(input: UsageSummaryInput, signal?: AbortSignal): Promise<UsageSummary>;
@@ -3147,8 +3157,9 @@ watchStatus(
 
 ## ScheduledTasksApi
 
-Scheduled tasks: interval, fixed-time and webhook triggers that start agent
-runs. Reading needs orchestration:read; the server removes webhook endpoints
+Scheduled tasks: interval, fixed-time, one-time and webhook triggers that
+start agent runs. A one-time trigger needs the `oneTimeSchedules` capability.
+Reading needs orchestration:read; the server removes webhook endpoints
 from a reader's results. Mutations, webhook endpoints and delivery records
 need orchestration:operate. Signing secrets are write-only.
 
@@ -3987,6 +3998,21 @@ Query parameter on the `/ws` upgrade that names the protocol.
 ## ORCHESTRATION\_PROTOCOL\_HEADER
 
 Header on orchestration HTTP routes that names the protocol.
+
+**Kind**: global constant  
+<a name="CLIENT_CAPABILITIES_QUERY_PARAM"></a>
+
+## CLIENT\_CAPABILITIES\_QUERY\_PARAM
+
+Query parameter on the `/ws` upgrade that lists the wire shapes a client understands, comma-separated.
+
+**Kind**: global constant  
+<a name="SETTINGS_SECRET_REFERENCES_CAPABILITY"></a>
+
+## SETTINGS\_SECRET\_REFERENCES\_CAPABILITY
+
+Secret settings fields may hold a secret provider reference in place of a
+string. A client that omits it sees a reference as a saved, redacted secret.
 
 **Kind**: global constant  
 <a name="OrchestrationV2ThreadBoundedSnapshot"></a>

@@ -5,6 +5,7 @@
 /** The device hosts a settings patch can write. Mirrors `packages/contracts/src/device.ts`. */
 import { z } from "zod";
 import { TrimmedNonEmptyString } from "./common.ts";
+import { SettingsSecretValue } from "./providerInstance.ts";
 
 const TrimmedString = z.string().trim();
 const int = (minimum: number, maximum: number) => z.number().int().min(minimum).max(maximum);
@@ -30,7 +31,7 @@ const EasDeviceHost = z
     id: DeviceHostId,
     label: TrimmedNonEmptyString,
     appId: TrimmedNonEmptyString.optional(),
-    accessToken: TrimmedString.optional(),
+    accessToken: SettingsSecretValue.optional(),
     maxSessionMinutes: int(1, 115).optional(),
     idleMinutes: int(1, 60).optional(),
     maxConcurrentSessions: int(1, 20).optional(),

@@ -11,6 +11,7 @@
  */
 import { z } from "zod";
 import { ThreadId, TrimmedNonEmptyString, forwardCompatibleLiteral } from "./common.ts";
+import { SettingsSecretValue } from "./providerInstance.ts";
 
 const TrimmedString = z.string().trim();
 const DeviceHostId = TrimmedNonEmptyString.max(128);
@@ -40,7 +41,8 @@ export type DeviceConfigureInput = z.input<typeof DeviceConfigureInput>;
 export const DeviceEasAccountInput = z.looseObject({
   /** A saved EAS host whose stored token is checked when no new token is given. */
   hostId: DeviceHostId.optional(),
-  accessToken: TrimmedString.optional(),
+  /** A token, or the secret provider reference to read it from. */
+  accessToken: SettingsSecretValue.optional(),
 });
 export type DeviceEasAccountInput = z.input<typeof DeviceEasAccountInput>;
 

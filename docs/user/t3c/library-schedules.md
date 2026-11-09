@@ -14,8 +14,9 @@ relationships:
 
 <dl>
 <dt><a href="#ScheduledTasksApi">ScheduledTasksApi</a></dt>
-<dd><p>Scheduled tasks: interval, fixed-time and webhook triggers that start agent
-runs. Reading needs orchestration:read; the server removes webhook endpoints
+<dd><p>Scheduled tasks: interval, fixed-time, one-time and webhook triggers that
+start agent runs. A one-time trigger needs the <code>oneTimeSchedules</code> capability.
+Reading needs orchestration:read; the server removes webhook endpoints
 from a reader&#39;s results. Mutations, webhook endpoints and delivery records
 need orchestration:operate. Signing secrets are write-only.</p>
 </dd>
@@ -65,8 +66,9 @@ listed, disabled, edited or deleted. A newer trigger type decodes as
 
 ## ScheduledTasksApi
 
-Scheduled tasks: interval, fixed-time and webhook triggers that start agent
-runs. Reading needs orchestration:read; the server removes webhook endpoints
+Scheduled tasks: interval, fixed-time, one-time and webhook triggers that
+start agent runs. A one-time trigger needs the `oneTimeSchedules` capability.
+Reading needs orchestration:read; the server removes webhook endpoints
 from a reader's results. Mutations, webhook endpoints and delivery records
 need orchestration:operate. Signing secrets are write-only.
 

@@ -18,6 +18,7 @@ import { ExecutionEnvironmentDescriptor } from "./environment.ts";
 import { ResolvedKeybindingsConfig } from "./keybindings.ts";
 import { ManagedPolicySummary } from "./managedPolicy.ts";
 import { ServerProviders, ServerProviderUsageLimits } from "./provider.ts";
+import { UsageModelFilter } from "./usage.ts";
 
 export { EditorId };
 const EnvironmentThemeVariantColors = z.record(
@@ -102,6 +103,14 @@ export const ServerObservability = z.looseObject({
 export type ServerObservability = z.infer<typeof ServerObservability>;
 export const ServerSettings = z.looseObject({
   idleCompaction: forwardCompatibleLiteral(["onReturn", "beforeCacheExpires", "off"]).optional(),
+  /** Clients hide threads with these tags while `hideTaggedThreads` is on. Non-string entries drop alone. */
+  hiddenThreadTags: z
+    .array(z.unknown())
+    .transform((values) => values.filter((value): value is string => typeof value === "string"))
+    .optional(),
+  hideTaggedThreads: z.boolean().optional(),
+  /** Pass it as `modelFilter` to `server.getUsageSummary`. An invalid value reads as absent. */
+  usageModelFilter: UsageModelFilter.optional().catch(undefined),
 });
 export type ServerSettings = z.infer<typeof ServerSettings>;
 export const UsageLimitSourceAccount = z.looseObject({

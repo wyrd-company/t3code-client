@@ -126,6 +126,23 @@ export const UsagePricing = z.looseObject({
 });
 export type UsagePricing = z.infer<typeof UsagePricing>;
 
+/**
+ * Matches a provider's original model id, before usage model aliases apply. Omit
+ * `provider` to match any provider.
+ */
+export const UsageModelSelector = z.looseObject({
+  provider: TrimmedNonEmptyString.optional(),
+  model: TrimmedNonEmptyString,
+});
+export type UsageModelSelector = z.infer<typeof UsageModelSelector>;
+
+/** Keeps records that match `include` (all when omitted) and do not match `exclude`. */
+export const UsageModelFilter = z.looseObject({
+  include: z.array(UsageModelSelector).optional(),
+  exclude: z.array(UsageModelSelector).optional(),
+});
+export type UsageModelFilter = z.infer<typeof UsageModelFilter>;
+
 export const UsageSummaryInput = z.looseObject({
   sinceDay: UsageDay,
   untilDay: UsageDay,
@@ -136,6 +153,7 @@ export const UsageSummaryInput = z.looseObject({
   untilTime: TrimmedNonEmptyString.optional(),
   /** Wait for slow source refreshes instead of answering from their caches. */
   awaitRefresh: z.boolean().optional(),
+  modelFilter: UsageModelFilter.optional(),
 });
 export type UsageSummaryInput = z.infer<typeof UsageSummaryInput>;
 
@@ -149,5 +167,7 @@ export const UsageSummary = z.looseObject({
   sources: forwardCompatibleArray(UsageSource),
   pricing: UsagePricing,
   scanDurationMs: NonNegativeInt,
+  /** The filter the server applied. Absent means unfiltered. */
+  modelFilter: UsageModelFilter.optional(),
 });
 export type UsageSummary = z.infer<typeof UsageSummary>;

@@ -13,6 +13,13 @@ export const ORCHESTRATION_PROTOCOL_VERSION_TEXT = "2";
 export const ORCHESTRATION_PROTOCOL_QUERY_PARAM = "orchestrationProtocol";
 /** Header on orchestration HTTP routes that names the protocol. */
 export const ORCHESTRATION_PROTOCOL_HEADER = "x-t3-orchestration-protocol";
+/** Query parameter on the `/ws` upgrade that lists the wire shapes a client understands, comma-separated. */
+export const CLIENT_CAPABILITIES_QUERY_PARAM = "clientCapabilities";
+/**
+ * Secret settings fields may hold a secret provider reference in place of a
+ * string. A client that omits it sees a reference as a saved, redacted secret.
+ */
+export const SETTINGS_SECRET_REFERENCES_CAPABILITY = "settingsSecretReferences";
 
 export const ExecutionEnvironmentPlatformOs = z.enum(["darwin", "linux", "windows", "unknown"]);
 export type ExecutionEnvironmentPlatformOs = z.infer<typeof ExecutionEnvironmentPlatformOs>;
@@ -106,6 +113,8 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   npmReleaseLookup: z.boolean().optional(),
   /** Server answers `server.prepareTriage`. */
   triage: z.boolean().optional(),
+  /** Server accepts `{ type: "once" }` scheduled tasks. Older servers reject them on save. */
+  oneTimeSchedules: z.boolean().optional(),
   /** Server honors `workspaceSnapshotsOnDemand`. Older servers still send every snapshot. */
   providerWorkspaceSnapshotsOnDemand: z.boolean().optional(),
   /** Server links to other environments, and its agents can work in them. */

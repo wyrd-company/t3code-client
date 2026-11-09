@@ -133,4 +133,5 @@ proposed-design:
     }
     ```
 
-    The socket URL carries `orchestrationProtocol=2` and `clientSurface=cli`.
+    The socket URL carries `orchestrationProtocol=2`, `clientSurface=cli` and
+    `clientCapabilities=settingsSecretReferences`.

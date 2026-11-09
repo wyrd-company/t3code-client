@@ -4,7 +4,7 @@
 // ---
 /**
  * Mirrors the trigger half of `packages/contracts/src/scheduledTask.ts`: the
- * interval, fixed-time and webhook schedules, as stored (read) and as sent
+ * interval, fixed-time, one-time and webhook schedules, as stored (read) and as sent
  * (write). Read schemas keep newer trigger types, filter operators and
  * encodings; write schemas apply the server's input bounds before sending.
  */
@@ -113,6 +113,33 @@ export const ScheduledTaskFixedTimeSchedule = z.looseObject({
   /** Omit to run every day. */
   weekdays: z.array(Weekday).optional(),
 });
+const ISO_WITH_OFFSET =
+  /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/;
+const YEAR_0000 = Date.parse("0000-01-01T00:00:00Z");
+const YEAR_10000 = Date.parse("+010000-01-01T00:00:00Z");
+
+/**
+ * `true` for an ISO date and time with an offset, such as
+ * `2030-01-31T09:30:00+02:00`, on a real calendar day whose UTC form keeps a
+ * four-digit year.
+ */
+export function isIsoDateTimeWithOffset(value: string): boolean {
+  const match = ISO_WITH_OFFSET.exec(value);
+  const time = Date.parse(value);
+  if (!match || !(time >= YEAR_0000 && time < YEAR_10000)) return false;
+  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
+  return days !== undefined && day >= 1 && day <= days;
+}
+
+/** Runs once at `runAt`. Servers that report `oneTimeSchedules` accept it. */
+export const ScheduledTaskOnceSchedule = z.looseObject({
+  type: z.literal("once"),
+  runAt: TrimmedNonEmptyString.refine(isIsoDateTimeWithOffset, {
+    message: "Expected an ISO date and time with an offset",
+  }),
+});
 export const ScheduledTaskWebhookSchedule = z.looseObject({
   type: z.literal("webhook"),
   signature: ScheduledTaskWebhookSignature.nullable(),
@@ -130,6 +157,7 @@ export type ScheduledTaskWebhookSchedule = z.infer<typeof ScheduledTaskWebhookSc
 export const ScheduledTaskSchedule = taggedUnionWithUnknown("type", [
   ScheduledTaskIntervalSchedule,
   ScheduledTaskFixedTimeSchedule,
+  ScheduledTaskOnceSchedule,
   ScheduledTaskWebhookSchedule,
 ]);
 export type ScheduledTaskSchedule = z.infer<typeof ScheduledTaskSchedule>;
@@ -156,6 +184,7 @@ export const ScheduledTaskUpsertSchedule = z.discriminatedUnion("type", [
     everyMs: IntervalMs.min(MIN_SCHEDULED_TASK_INTERVAL_MS),
   }),
   ScheduledTaskFixedTimeSchedule,
+  ScheduledTaskOnceSchedule,
   ScheduledTaskUpsertWebhookSchedule,
 ]);
 export type ScheduledTaskUpsertSchedule = z.infer<typeof ScheduledTaskUpsertSchedule>;

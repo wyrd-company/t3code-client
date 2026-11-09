@@ -106,6 +106,9 @@ export const ServerSettingsPatch = z
     autoResumeLimitedThreads: z.boolean(),
     snoozeLimitedThreads: z.boolean(),
     snoozePresets: z.array(SnoozePreset).max(8),
+    /** Clients hide threads with these tags while `hideTaggedThreads` is on. */
+    hiddenThreadTags: z.array(z.string()),
+    hideTaggedThreads: z.boolean(),
     guestSharingEnabled: z.boolean(),
     linkedEnvironmentsEnabled: z.boolean(),
     backgroundActivity: z
@@ -143,7 +146,11 @@ export const ServerSettingsPatch = z
         otlpLogsUrl: TrimmedString,
       })
       .partial(),
-    /** Merges per host. Redaction markers keep a secret; an empty or omitted secret removes it. */
+    /**
+     * Merges per host, replacing patched fields whole. Redaction markers keep a
+     * secret; an empty secret removes it. A non-empty token map keeps the saved
+     * tokens of hosts it omits; an empty map clears them all.
+     */
     sourceControlHosts: z.record(z.string(), z.record(z.string(), z.unknown())),
     /** Replaces the whole map. `providerInstanceMutation` changes one instance. */
     providerInstances: z.record(ProviderSlug, ProviderInstanceConfig),

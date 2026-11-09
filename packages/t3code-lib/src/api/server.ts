@@ -539,7 +539,9 @@ export class ServerApi {
    * Historical token usage and cost from provider transcripts (diagnostics:read).
    * Buckets keep provider, model and cost source; sources report scan status.
    * The result has no grand total: costs from different sources, and tokens
-   * of different kinds, are not added together.
+   * of different kinds, are not added together. `modelFilter` keeps or drops
+   * records by provider and original model id; settings `usageModelFilter`
+   * holds the filter a user saved, and the result echoes the filter applied.
    */
   usageSummary(input: UsageSummaryInput, signal?: AbortSignal): Promise<UsageSummary> {
     return this.rpc.call("server.getUsageSummary", input, signal);
