@@ -80,6 +80,13 @@ export const sourceControlMethods = {
     stream: false,
     scope: "orchestration:read",
   }),
+  /** Stars it as the server's forge account. `false` when the forge refused or cannot star. */
+  "sourceControl.star": defineMethod({
+    payload: SourceControlRepositoryAccessInput,
+    success: z.boolean(),
+    stream: false,
+    scope: "source-control:write",
+  }),
   /** Returns when the project exists and the clone starts. `subscribeProjectClones` reports it. */
   "projectClone.start": defineMethod({
     payload: ProjectCloneStartInput,

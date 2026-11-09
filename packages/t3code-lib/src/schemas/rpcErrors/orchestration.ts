@@ -89,3 +89,8 @@ export const OrchestrationV2CommandOutputError = taggedError("OrchestrationV2Com
 export const OrchestrationV2SearchThreadError = taggedError("OrchestrationV2SearchThreadError", {
   cause: Defect,
 });
+/** Raised by `orchestration.getNativeChildWork` when the provider's records cannot be read. */
+export const OrchestrationV2GetNativeChildWorkError = taggedError(
+  "OrchestrationV2GetNativeChildWorkError",
+  { threadId: ThreadId, cause: Defect.optional() },
+);

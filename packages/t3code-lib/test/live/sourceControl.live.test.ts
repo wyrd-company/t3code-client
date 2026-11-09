@@ -172,6 +172,14 @@ describe.skipIf(!hasLiveServer)("source control methods with a local forge stub"
     }
   });
 
+  it("answers false to a star with no forge sign-in", async () => {
+    for (const forgeHost of [noDriver, github]) {
+      await expect(
+        client.rpc.call("sourceControl.star", { ...forgeHost, repository }),
+      ).resolves.toBe(false);
+    }
+  });
+
   it.each(["signInStart", "signInWait", "signInCancel"] as const)(
     "refuses %s for a provider with no driver",
     async (method) => {
@@ -210,6 +218,9 @@ describe.skipIf(!hasLiveServer)("source control methods with a local forge stub"
         }),
       ).rejects.toMatchObject({ requiredScope: "source-control:write" });
       expect(NodeFS.existsSync(destination("refused"))).toBe(false);
+      await expect(
+        reader.rpc.call("sourceControl.star", { ...github, repository }),
+      ).rejects.toMatchObject({ requiredScope: "source-control:write" });
     });
   });
 });

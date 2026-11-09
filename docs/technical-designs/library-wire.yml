@@ -237,6 +237,7 @@ proposed-design:
     | `orchestration.getThreadProjection`      | orch:read    | `{threadId}` → `OrchestrationV2ThreadProjection` with a bounded timeline window                                                                       |
     | `orchestration.getTurnItem`              | orch:read    | `{threadId, itemId}` → `{item}` with the full, size-bounded input and output                                                                          |
     | `orchestration.getWorkflowScript`        | orch:read    | unchanged                                                                                                                                             |
+    | `orchestration.getNativeChildWork`       | orch:read    | `{threadId}` → `{children}`; empty unless the thread is an Antigravity-native subagent's child; fails `OrchestrationV2GetNativeChildWorkError`        |
     | `orchestration.stopWorkflow`             | orch:operate | `{threadId, subagentId}` → nothing; fails `OrchestrationV2StopWorkflowError` with a `reason`                                                          |
     | `orchestration.forceStopThread`          | orch:operate | `{threadId, runId?}` → `{outcome, sharedWithThreadIds}`; fails `OrchestrationV2ForceStopThreadError`, `reason: "superseded"`                          |
     | `orchestration.getTurnDiff`              | orch:read    | unchanged                                                                                                                                             |

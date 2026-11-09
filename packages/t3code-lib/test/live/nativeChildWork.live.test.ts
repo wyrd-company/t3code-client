@@ -1,0 +1,56 @@
+// ---
+// relationships:
+//   verifies: library-wire
+// ---
+/**
+ * `orchestration.getNativeChildWork` on the stock server. Only an
+ * Antigravity-native subagent's child has children to read, and the harness
+ * has no Antigravity provider, so a stock thread answers no children.
+ */
+import * as NodeCrypto from "node:crypto";
+import { WebSocket as WsWebSocket } from "ws";
+import { describe, expect, it } from "vite-plus/test";
+import { T3Client, T3RpcError } from "../../src/index.ts";
+import type { WebSocketConstructor } from "../../src/internal/websocket.ts";
+import { ProviderInstanceId, threadId, type ThreadId } from "../../src/schemas/common.ts";
+
+const baseUrl = process.env["T3_LIVE_URL"];
+const token = process.env["T3_LIVE_TOKEN"];
+
+describe.skipIf(!baseUrl || !token)("live orchestration.getNativeChildWork", () => {
+  it("answers no children for a stock thread and types a missing thread", async () => {
+    const client = T3Client.create({
+      baseUrl: baseUrl ?? "",
+      accessToken: token ?? "",
+      webSocket: WsWebSocket as unknown as WebSocketConstructor,
+    });
+    let project: Awaited<ReturnType<typeof client.projects.createNew>> | undefined;
+    let id: ThreadId | undefined;
+    try {
+      project = await client.projects.createNew({ name: "Sample native children" });
+      const thread = await client.threads.create({
+        projectId: project.projectId,
+        title: "Sample native children",
+        modelSelection: { instanceId: ProviderInstanceId.parse("codex"), model: "gpt-6-luna" },
+      });
+      id = thread.id;
+      await expect(
+        client.rpc.call("orchestration.getNativeChildWork", { threadId: id }),
+      ).resolves.toEqual({ children: [] });
+
+      const missing = threadId(NodeCrypto.randomUUID());
+      const error = await client.rpc
+        .call("orchestration.getNativeChildWork", { threadId: missing })
+        .catch((caught: unknown) => caught);
+      expect(error).toBeInstanceOf(T3RpcError);
+      expect((error as T3RpcError).is("OrchestrationV2GetNativeChildWorkError")).toBe(true);
+    } finally {
+      try {
+        if (id) await client.threads.delete(id);
+        if (project) await client.projects.delete(project.projectId, { force: true });
+      } finally {
+        await client.close();
+      }
+    }
+  });
+});
