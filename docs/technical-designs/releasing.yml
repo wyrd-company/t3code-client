@@ -175,6 +175,8 @@ proposed-design:
     3. Capture library fixtures again (see [testing](library-testing.yml))
        and run `task lib:test:live`.
     4. Update the build named in the library design and the package intent.
+    5. Review and update t3c and t3code-mcp as
+       [tool-scope](tool-scope.yml) `upstream-updates` defines.
   recovery-and-verification: |
     - Release failed before its atomic push: fix main and dispatch again with the
       reviewed expected record set. No request tag needs deletion.
