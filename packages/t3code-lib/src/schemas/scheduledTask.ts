@@ -78,6 +78,8 @@ export const ScheduledTask = z.looseObject({
   lastRunError: z.string().nullable(),
   runCount: NonNegativeInt,
   webhook: ScheduledTaskWebhookEndpoint.optional(),
+  /** Why the task cannot run whatever `enabled` says, such as a managed policy that refuses webhooks. */
+  blockedByPolicy: z.string().optional(),
 });
 export type ScheduledTask = z.infer<typeof ScheduledTask>;
 

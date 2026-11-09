@@ -131,3 +131,15 @@ export const EnvironmentHttpCloudError = z.discriminatedUnion("_tag", [
   EnvironmentScopeRequiredError,
 ]);
 export type EnvironmentHttpCloudError = z.infer<typeof EnvironmentHttpCloudError>;
+
+/**
+ * The failures of `POST /api/auth/pairing-token`. The 403 `EnvironmentHttpForbiddenError` means
+ * that a managed policy does not allow remote clients.
+ */
+export const EnvironmentPairingCredentialError = z.discriminatedUnion("_tag", [
+  EnvironmentRequestInvalidError,
+  EnvironmentHttpForbiddenError,
+  EnvironmentScopeRequiredError,
+  EnvironmentInternalError,
+]);
+export type EnvironmentPairingCredentialError = z.infer<typeof EnvironmentPairingCredentialError>;

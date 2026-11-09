@@ -11,6 +11,7 @@ import { z } from "zod";
 
 import { AuthMcpClientAccess, AuthMcpClientGrantedAccess, AuthGrantedScope } from "./auth.ts";
 import { TrimmedNonEmptyString, forwardCompatibleLiteral } from "./common.ts";
+import { RuntimeMode } from "./provider.ts";
 
 const CodeResponseType = forwardCompatibleLiteral(["code"]);
 const AuthorizationCodeGrantType = forwardCompatibleLiteral(["authorization_code"]);
@@ -82,6 +83,10 @@ export const AuthMcpApprovalDetails = z.looseObject({
   csrfToken: z.string().optional(),
   /** The access that this browser session can approve. The rest needs a pairing code. */
   oneClickAccess: z.array(AuthMcpClientGrantedAccess).optional(),
+  /** A managed policy's runtime-mode ceiling, for a page that loads without the server config. */
+  runtimeModeCeiling: z
+    .looseObject({ organization: z.string(), maxRuntimeMode: RuntimeMode })
+    .optional(),
 });
 export type AuthMcpApprovalDetails = z.infer<typeof AuthMcpApprovalDetails>;
 

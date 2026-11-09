@@ -17,6 +17,7 @@ export * as filesystem from "./filesystem.ts";
 export * as git from "./git.ts";
 export * as httpErrors from "./httpErrors.ts";
 export * as keybindings from "./keybindings.ts";
+export * as managedPolicy from "./managedPolicy.ts";
 export * as mcpApps from "./mcpApps.ts";
 export * as peerLink from "./peerLink.ts";
 export * as preview from "./preview.ts";

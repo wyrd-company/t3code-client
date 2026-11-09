@@ -32,12 +32,20 @@ export const ServerSettingsOperation = forwardCompatibleLiteral([
   "write-secret-provider",
   "write-file",
   "prepare-directory",
+  "write-managed-setting",
+  "use-disallowed-provider",
 ]);
 export const ServerSettingsError = taggedError("ServerSettingsError", {
   settingsPath: z.string(),
   operation: ServerSettingsOperation,
   providerInstanceId: z.string().optional(),
   environmentVariable: z.string().optional(),
+  /** For `write-managed-setting`: the locked dot path. */
+  managedSetting: z.string().optional(),
+  /** For both policy operations: the organization that manages the setting or provider. */
+  managedBy: z.string().optional(),
+  /** For `use-disallowed-provider`: the provider's name as users know it. */
+  providerLabel: z.string().optional(),
   cause: Defect.optional(),
 });
 export const ProviderSetupError = taggedError("ProviderSetupError", {
@@ -105,6 +113,7 @@ export const RelayClientInstallFailedError = taggedError("RelayClientInstallFail
     "download_failed",
     "invalid_checksum",
     "install_locked",
+    "managed_by_policy",
     "override_missing",
     "unsupported_platform",
     "validation_failed",

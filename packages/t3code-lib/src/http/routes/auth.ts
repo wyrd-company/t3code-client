@@ -68,6 +68,7 @@ export const authRoutes = {
     input: z.strictObject({ params: z.strictObject({ use: AuthWebSocketTicketUse }) }),
     success: AuthWebSocketTicketResult,
   }),
+  /** Failure bodies are `schemas.httpErrors.EnvironmentPairingCredentialError`. */
   "auth.pairingCredential": defineRoute({
     method: "POST",
     path: "/api/auth/pairing-token",
