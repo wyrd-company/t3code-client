@@ -24,7 +24,6 @@ case "$unit" in
   t3code-lib) required+=(package/dist/index.js package/dist/index.d.ts) ;;
   t3code-cli) required+=(package/dist/cli.js package/npm-shrinkwrap.json package/commandSurface.json) ;;
   t3code-mcp) required+=(package/dist/cli.js package/dist/index.js package/dist/index.d.ts) ;;
-  t3code-proxy) required+=(package/dist/cli.js) ;;
 esac
 for file in "${required[@]}"; do
   if ! grep -qx "$file" <<<"$files"; then
@@ -50,21 +49,6 @@ if [[ "$unit" == t3code-mcp ]]; then
   '
   if [[ "$(tar -xOf "$tarball" package/dist/cli.js | sed -n 1p)" != "#!/usr/bin/env node" ]]; then
     echo "MCP executable has no node shebang." >&2
-    exit 1
-  fi
-fi
-if [[ "$unit" == t3code-proxy ]]; then
-  # The proxy is a service with no library API and no client session.
-  tar -xOf "$tarball" package/package.json | node --input-type=module -e '
-    let input = "";
-    for await (const chunk of process.stdin) input += chunk;
-    const manifest = JSON.parse(input);
-    if (manifest.bin?.["t3c-proxy"] !== "dist/cli.js") throw new Error("Proxy executable must be dist/cli.js.");
-    if (manifest.exports !== undefined || manifest.main !== undefined) throw new Error("Proxy package has a library API.");
-    if (manifest.dependencies?.["@wyrd-company/t3code-lib"] !== undefined) throw new Error("Proxy package depends on the library at runtime.");
-  '
-  if [[ "$(tar -xOf "$tarball" package/dist/cli.js | sed -n 1p)" != "#!/usr/bin/env node" ]]; then
-    echo "Proxy executable has no node shebang." >&2
     exit 1
   fi
 fi

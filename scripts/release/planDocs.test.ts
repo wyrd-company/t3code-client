@@ -39,10 +39,10 @@ it.each([
   ["workflow_dispatch", "main", true],
   ["push", "t3code-cli@0.2.0", true],
   ["push", "t3code-mcp@0.1.0", true],
-  ["push", "t3code-proxy@0.1.0", true],
+  ["push", "t3code-proxy@0.1.0", false],
   ["push", "t3c-docs@0.3.0", true],
   ["push", "t3mcp-docs@0.1.0", true],
-  ["push", "t3c-proxy-docs@0.1.0", true],
+  ["push", "t3c-proxy-docs@0.1.0", false],
   ["push", "t3code-cli@0.0.0", false],
   ["push", "t3code-mcp@0.0.0", false],
   ["push", "t3mcp-docs@0.0.0", false],
@@ -57,10 +57,10 @@ it.each([
   expect(result.status, result.stderr).toBe(0);
   expect(result.stdout).toBe(`publish=${publish}\n`);
 });
-it.each(["t3c-docs@0.3.0", "t3mcp-docs@0.1.0", "t3c-proxy-docs@0.1.0"])(
+it.each(["t3c-docs@0.3.0", "t3mcp-docs@0.1.0"])(
   "coalesces %s with either product package on the same commit",
   (ref) => {
-    for (const tag of ["t3code-cli@0.2.0", "t3code-mcp@0.1.0", "t3code-proxy@0.1.0"]) {
+    for (const tag of ["t3code-cli@0.2.0", "t3code-mcp@0.1.0"]) {
       const { root, sha } = setup([tag]);
       const result = run(root, "plan-docs.sh", ["push", ref, sha]);
       expect(result.status, result.stderr).toBe(0);

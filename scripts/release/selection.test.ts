@@ -32,10 +32,6 @@ describe("release selection", () => {
     expect(run(root, "verify-plan.sh", ["t3code-mcp@0.1.0", "plan.json"]).status).toBe(0);
     expect(run(root, "verify-plan.sh", ["t3code-lib@0.1.0", "plan.json"]).status).not.toBe(0);
   });
-  it("accepts the Feature record", () => {
-    const root = plan(["t3code-proxy-feature@0.1.0"]);
-    expect(run(root, "verify-plan.sh", ["t3code-proxy-feature@0.1.0", "plan.json"]).status).toBe(0);
-  });
   it("accepts the tag-only docs record with the package records", () => {
     const root = plan(["t3c-docs@0.1.1", "t3code-cli@0.1.1"]);
     expect(
@@ -44,15 +40,6 @@ describe("release selection", () => {
   });
   it("accepts independent MCP docs records alone or with the MCP package", () => {
     for (const records of [["t3mcp-docs@0.1.0"], ["t3code-mcp@0.1.0", "t3mcp-docs@0.1.0"]]) {
-      const root = plan(records);
-      expect(run(root, "verify-plan.sh", [records.join(" "), "plan.json"]).status).toBe(0);
-    }
-  });
-  it("accepts independent proxy docs records alone or with the proxy package", () => {
-    for (const records of [
-      ["t3c-proxy-docs@0.1.0"],
-      ["t3code-proxy@0.1.0", "t3c-proxy-docs@0.1.0"],
-    ]) {
       const root = plan(records);
       expect(run(root, "verify-plan.sh", [records.join(" "), "plan.json"]).status).toBe(0);
     }

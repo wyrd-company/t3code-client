@@ -13,7 +13,6 @@ const records = [
   "t3code-mcp@0.1.0",
   "t3c-docs@0.3.0",
   "t3mcp-docs@0.1.0",
-  "t3c-proxy-docs@0.1.0",
 ];
 afterEach(() => {
   for (const root of roots.splice(0)) NodeFS.rmSync(root, { recursive: true, force: true });
@@ -55,17 +54,6 @@ it("dispatches exactly three npm records for five atomically pushed records", ()
   );
 });
 
-it("dispatches the Feature record with its own input, and no package input", () => {
-  const record = "t3code-proxy-feature@0.1.0";
-  const { root, env, calls } = setup([...records.slice(0, 3), record]);
-  const result = run(root, "dispatch-packages.sh", ["plan.json"], env);
-  expect(result.status, result.stderr).toBe(0);
-  expect(calls()).toContain(
-    `workflow run publish.yml --ref ${record} -f ref=${record} -f publish-devcontainer-feature=true`,
-  );
-  expect(calls()).toHaveLength(4);
-});
-
 it.each([0, 1, 2, 3])("leaves %s records to ordinary push events without dispatch", (count) => {
   const { root, env, calls } = setup(records.slice(0, count));
   const result = run(root, "dispatch-packages.sh", ["plan.json"], env);
@@ -81,11 +69,11 @@ it("counts docs and baseline tags toward suppression but dispatches neither", ()
   expect(calls().join("\n")).not.toMatch(/t3code-lib|t3c-docs|t3mcp-docs|t3c-proxy-docs/);
 });
 
-const docsRecords = ["t3c-docs@0.3.1", "t3mcp-docs@0.1.1", "t3c-proxy-docs@0.1.0"];
-it.each(["t3code-lib@0.3.1", "t3code-proxy-feature@0.1.0", "t3code-mcp@0.0.0"])(
+const docsRecords = ["t3c-docs@0.3.1", "t3mcp-docs@0.1.1"];
+it.each(["t3code-lib@0.3.1", "t3code-mcp@0.0.0"])(
   "dispatches one docs-only run when %s carries no docs",
   (record) => {
-    const { root, env, calls } = setup([record, ...docsRecords]);
+    const { root, env, calls } = setup([record, ...docsRecords, "t3code-cli@0.0.0"]);
     const result = run(root, "dispatch-packages.sh", ["plan.json"], env);
     expect(result.status, result.stderr).toBe(0);
     const docsRun = "workflow run publish.yml --ref t3c-docs@0.3.1 -f ref=t3c-docs@0.3.1";
@@ -94,17 +82,14 @@ it.each(["t3code-lib@0.3.1", "t3code-proxy-feature@0.1.0", "t3code-mcp@0.0.0"])(
     expect(calls()).toHaveLength(record.endsWith("@0.0.0") ? 1 : 2);
   },
 );
-it.each(["t3code-cli@0.2.1", "t3code-mcp@0.1.2", "t3code-proxy@0.1.0"])(
-  "leaves the docs to the %s run",
-  (record) => {
-    const { root, env, calls } = setup([record, ...docsRecords]);
-    const result = run(root, "dispatch-packages.sh", ["plan.json"], env);
-    expect(result.status, result.stderr).toBe(0);
-    expect(calls()).toEqual([
-      `workflow run publish.yml --ref ${record} -f ref=${record} -f publish-package=true`,
-    ]);
-  },
-);
+it.each(["t3code-cli@0.2.1", "t3code-mcp@0.1.2"])("leaves the docs to the %s run", (record) => {
+  const { root, env, calls } = setup([record, ...docsRecords, "t3code-lib@0.0.0"]);
+  const result = run(root, "dispatch-packages.sh", ["plan.json"], env);
+  expect(result.status, result.stderr).toBe(0);
+  expect(calls()).toEqual([
+    `workflow run publish.yml --ref ${record} -f ref=${record} -f publish-package=true`,
+  ]);
+});
 
 it.each([
   {

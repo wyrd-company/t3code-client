@@ -1,8 +1,6 @@
 $schema: https://refinery.systems/ontology/technical-design
 title: Workspace verification and isolated command acceptance
-objective:
-  Verify package quality, real-server CLI contracts and reproducible consumer evidence through
-  isolated test and distribution boundaries.
+objective: Verify package quality, real-server CLI contracts and reproducible consumer evidence through isolated test and distribution boundaries.
 relationships:
   references:
     - library
@@ -11,19 +9,14 @@ relationships:
     - releasing
     - library-testing
     - mcp
-    - proxy
     - automation-capabilities
 proposed-design:
-  high-level-overview:
-    Workspace gates combine intent validation, static checks, unit tests, pinned-server
-    live tests and package consumers. Explicit agent acceptance retains sanitized command and server
-    lifecycle evidence in owned external directories.
+  high-level-overview: Workspace gates combine intent validation, static checks, unit tests, pinned-server live tests and package consumers. Explicit agent acceptance retains sanitized command and server lifecycle evidence in owned external directories.
   quality-gates: |
     `task check` runs release-intent validation, workspace formatting/linting,
     typechecks, unit tests, pinned-server live tests and local pack/consumer checks.
     `task lib:check` runs library gates; `task cli:check` runs the CLI build, lint, typecheck, unit, live and package gates.
     `task mcp:check` runs MCP build, static, protocol, live and package gates.
-    `task proxy:check` runs proxy build, static, unit, live and package gates.
     Registered placeholder commands do not count as implementation evidence.
 
     Library source, colocated tests, fixture data, fake server and live harness
@@ -53,73 +46,6 @@ proposed-design:
     step. After finalization, authoritative annotated baseline records supply the
     version history. Tag/main ancestry and registry provenance still require the
     finalization release jobs.
-  proxy-live-proof: |
-    `task proxy:test:proof` proves the proxy with real turns. It is separate from `task check`,
-    because it needs a provider, and CI has none. It starts the pinned stock server with a fresh
-    home, the built `t3c-proxy` executable and Caddy with a test CA, with one HTTPS hostname per
-    person. Tests resolve `example.test` names in their own process and change no host file.
-    It needs `CODEX_HOME` set to a test profile, and Caddy, `openssl` and `agent-browser` on
-    `PATH`. A missing one fails the proof.
-
-    An attachment test reads what the agent received from the session records under
-    `CODEX_HOME/sessions`, and reads nothing else in that folder. It requires the exact image bytes
-    in the input, or a path in the server's attachments to the exact file content, with a stored
-    message that has the correct byline, a completed turn and a reply. It does not assert what the
-    reply says. The model can answer without using an image that it received, also with no proxy and
-    no T3 server, so a reply's colour or text tests the model and not this delivery.
-
-    `T3_PROXY_PROOF_EVIDENCE_DIR` keeps the screenshots and the stream totals. Screenshots show the
-    machine name in the sidebar and right panel, so crop them before they leave the machine. Each `t3` update runs the proof.
-
-    | File | Proves |
-    | ---- | ------ |
-    | `messages.proof.test.ts` | First message, follow-up, steer, queue, queue edit, `/compact`, direct route |
-    | `agents.proof.test.ts` | `t3_thread_send`, outside-agent OAuth and `/mcp`, cookie session and origin refusal |
-    | `attachments.proof.test.ts` | Image-only first message and follow-up, `Ultrathink:` form and queue edit: the byline and the image that the agent receives |
-    | `stream.proof.test.ts` | A client that stops reading during a large turn gets every event of the run, in order |
-    | `web.proof.test.ts` | Pairing, both bylines, image and file in the stock web client in a real browser, and the attachments that the agent receives |
-    | `lifetime.proof.test.ts` | A completed or stopped run leaves no daemon, browser, namespace folder or temporary root |
-
-    The proof clears `T3CODE_PORT`, `T3CODE_HOST` and `T3CODE_HOME` before it starts a process, so
-    that a run inside another T3 Code process does not reach that server.
-
-    `agent-browser` keeps its sockets and state inside the proof's temporary root. A completed run
-    and a run stopped by SIGTERM or SIGINT stop their processes and browsers and remove the root.
-    `vp` does not forward a signal to Vitest, so the end of Vitest's parent process is also a stop.
-    A test worker ends with Vitest, because Vitest can start one after a signal to the group. The
-    setup runs every browser command for the workers, each in its own process group. A stop refuses
-    new commands, waits for the running ones and then closes the browsers, so that no command can
-    start a browser after the close. A process that setup starts after the stop began is ended, so
-    that a signal during setup also leaves nothing.
-    `lifetime.proof.test.ts` starts the proof's setup in a separate Vitest and proves this for a
-    completed run, a signal to the process group, a signal to the top process only and the end of
-    the run's owner, with a worker that sends browser commands during the stop. `pnpm` does
-    not forward a signal, so a signal to `task` alone does not stop the run, and it ends through its
-    normal teardown. SIGKILL of Vitest skips this: the daemon and its browser end at their idle
-    limit of 10 minutes.
-
-    The desktop client is a manual step on each `t3` update. Run the upstream desktop release of
-    that version under a display server, with a clean environment and its own home, `T3CODE_PORT`,
-    session bus and Secret Service keyring. A `T3CODE_PORT` inherited from another T3 Code process
-    makes the app treat that server as its backend. Pair it through a person's hostname and send
-    one message and one image-only message. The stored text must hold the byline. Mobile clients
-    are not proven. When a device with the development client is available, they follow the same
-    steps.
-  proxy-feature: |
-    `task feature:test` proves the devcontainer Feature. It needs Docker and the Dev Container CLI,
-    so CI has its own job for it, and `task check` runs only the unit tests of the Caddy writer. It
-    tests the package from this checkout: a test registry in a container serves the packed tarball for the package's
-    scope, and other packages come from npm. All names are `example.test` names.
-
-    | Script | Proves |
-    | ------ | ------ |
-    | `scripts/feature/test-feature.sh` | Option validation, installed version check, refusal with no s6-overlay, and Dev Container CLI scenarios for the options, the service definition and the Caddy files |
-    | `scripts/feature/test-feature-ansible.sh` | The `ansible-setup` dependency with a stand-in oneshot: present, absent and failed |
-    | `scripts/feature/test-feature-runtime.sh` | A bind-mounted config file, the service owner and arguments, Caddy with certificates from a test ACME CA, a stored byline on each person's hostname, none on the server's hostname, a restart that removes a person, and an invalid file |
-
-    The scenarios use the published t3code-server and Caddy Features. The runtime scenario reads the
-    server version from the pinned `t3` devDependency, and a test keeps `scenarios.json` on that
-    version.
   cli-isolated-acceptance: |
     `task cli:acceptance` builds the library and CLI, then starts the pinned stock
     server through the shared library live setup. Its fresh `/tmp/t3c-acceptance-*`
@@ -290,13 +216,7 @@ proposed-design:
     feed prompts on stdin, preserve reported thread ids, continue with `run --thread`,
     and test `--timeout 1s --on-timeout detach` before an explicit interrupt.
     Staged package versions remain `0.0.0` until release finalization.
-  lifecycle-evidence-scope: >-
-    The live harness records its process roster at readiness. Teardown evidence
-    checks absence of the recorded launcher, native server and monitor identities
-    and removal of owned homes. Provider descendants created after readiness are
-    outside that roster. This evidence does not establish exhaustive descendant
-    cleanup.
-
+  lifecycle-evidence-scope: The live harness records its process roster at readiness. Teardown evidence checks absence of the recorded launcher, native server and monitor identities and removal of owned homes. Provider descendants created after readiness are outside that roster. This evidence does not establish exhaustive descendant cleanup.
   dagu-fixture-verification: |
     The [Dagu guide](../user/t3c/dagu.md#run-the-committed-fixtures) owns the consumer
     invocation recipe for `scripts/dagu/verification.yaml` and
@@ -330,7 +250,6 @@ proposed-design:
     server and removes owned server/profile/project/Dagu roots. The readiness
     roster has the lifecycle-evidence-scope limit above. Shared Dagu workflows,
     services and operational server state are outside the verification boundary.
-
   complementary-automation: |
     Scheduler library tests cover native RPC payloads, read/operate permissions,
     omission and clearing semantics, endpoint resolution, future delivery outcomes
@@ -358,18 +277,15 @@ proposed-design:
     endpoint rotation, empty-thread inspection, provider status and usage through
     the built stdio executable. Local MCP and library tarballs install together
     for consumer verification.
-
   product-documentation: |
     Published-doc tests check each product's navigation, metadata, local links,
-    registered assets, code/docs projections, MCP tool inventory, and the agreement of the
-    proxy pages with its options, Feature options and accepted limits. All products
+    registered assets, code/docs projections and MCP tool inventory. All products
     use the wyrd.foo v2 contract with schemaVersion 1. The publisher's validate
     command checks the actual content tree without publication. An unreleased
     product can report missing release-tag/changelog prerequisites as local-mode
     warnings; schema, navigation, asset and cross-file errors remain failures.
-    Release fixtures verify independent MCP and proxy docs projection, tag-only readiness
+    Release fixtures verify independent MCP docs projection, tag-only readiness
     and documentation publication/coalescing on the exact tagged commit.
-
   release-transition: |
     Released-unit checks run from a fresh source checkout after Intentional has
     consumed every intent. Empty directories are not Git artifacts, so an absent

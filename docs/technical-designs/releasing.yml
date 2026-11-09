@@ -1,19 +1,14 @@
 $schema: https://refinery.systems/ontology/technical-design
 title: Independent package release and publication pipeline
-objective:
-  Build, verify and publish independent library, CLI and MCP release units with saved-plan agreement
-  and reproducible package artifacts.
+objective: Build, verify and publish independent library, CLI and MCP release units with saved-plan agreement and reproducible package artifacts.
 relationships:
   references:
     - testing
     - library
     - command-line
     - mcp
-    - proxy
 proposed-design:
-  high-level-overview: Intentional owns independent package versions and release records. Release
-    validates and applies one saved plan; Publish verifies the selected record and distributes the
-    same package bytes.
+  high-level-overview: Intentional owns independent package versions and release records. Release validates and applies one saved plan; Publish verifies the selected record and distributes the same package bytes.
   release-units: |
     [Intentional](https://github.com/wyrd-company/intentional) owns versions,
     changelogs, intents and annotated release records. The root package is private.
@@ -24,11 +19,8 @@ proposed-design:
     | `t3code-lib` | `packages/t3code-lib/package.json` | `@wyrd-company/t3code-lib` | `t3code-lib@X.Y.Z` |
     | `t3code-cli` | `packages/t3code-cli/package.json` | `@wyrd-company/t3code-cli` | `t3code-cli@X.Y.Z` |
     | `t3code-mcp` | `packages/t3code-mcp/package.json` | `@wyrd-company/t3code-mcp` | `t3code-mcp@X.Y.Z` |
-    | `t3code-proxy` | `packages/t3code-proxy/package.json` | `@wyrd-company/t3code-proxy` | `t3code-proxy@X.Y.Z` |
-    | `t3code-proxy-feature` | `features/src/t3code-proxy/devcontainer-feature.json` | none (GHCR Feature) | `t3code-proxy-feature@X.Y.Z` |
     | `t3c-docs`   | `docs/user/docs.yml`               | none (tag-only)            | `t3c-docs@X.Y.Z`   |
     | `t3mcp-docs` | `docs/user/docs.yml`               | none (tag-only)            | `t3mcp-docs@X.Y.Z` |
-    | `t3c-proxy-docs` | `docs/user/docs.yml`           | none (tag-only)            | `t3c-proxy-docs@X.Y.Z` |
 
     `t3c-docs` is the docs unit of the `t3c` product. Its path is `docs/user/t3c`
     and it depends on `t3code-cli`. It is tag-only: it has no package and no
@@ -37,9 +29,7 @@ proposed-design:
     `/products/t3c/docs-version` of `docs/user/docs.yml`, so `intentional apply`
     writes both. `t3mcp-docs` similarly owns `docs/user/t3mcp` and depends on
     `t3code-mcp`. The MCP code and docs units project `/products/t3mcp/version`
-    and `/products/t3mcp/docs-version`. `t3c-proxy-docs` owns `docs/user/t3c-proxy` and
-    depends on `t3code-proxy`, and those units project `/products/t3c-proxy/version` and
-    `/products/t3c-proxy/docs-version`. Each product has its own catalog entry,
+    and `/products/t3mcp/docs-version`. Each product has its own catalog entry,
     navigation and assets. A new docs unit has one initial minor intent.
 
     The root CHANGELOG.md and `t3code-client@*` tags are historical records for the
@@ -73,8 +63,6 @@ proposed-design:
     ```bash
     intentional tag --baseline --dry-run
     intentional tag --baseline
-    git push --atomic origin refs/tags/t3code-proxy@0.0.0 \
-      refs/tags/t3code-proxy-feature@0.0.0 refs/tags/t3c-proxy-docs@0.0.0
     intentional status
     intentional check
     intentional plan > release-plan.json
@@ -112,8 +100,7 @@ proposed-design:
     fails on any difference. To release only one unit, only that unit may be pending;
     name only its record. `depends-on` does not bump `t3c-docs`: a CLI intent
     names `t3c-docs` too, so a CLI release plans a `t3c-docs` record with it;
-    a docs-only change plans only `t3c-docs`. MCP docs use `t3mcp-docs` and proxy docs use
-    `t3c-proxy-docs` in the same way; a consumer change names its docs unit when its guides change.
+    a docs-only change plans only `t3c-docs`. MCP docs use `t3mcp-docs` in the same way; a consumer change names its docs unit when its guides change.
     No unrelated unit is bumped
     implicitly. Versions are independent even when a single dispatch releases
     several units.
@@ -129,7 +116,7 @@ proposed-design:
     when one push creates more than three tags. For a larger record set, Release
     explicitly dispatches Publish once per package record after the atomic push,
     using a job-scoped actions:write workflow token. The package tag selects the
-    workflow and immutable source commit. Docs records coalesce with CLI, MCP and proxy
+    workflow and immutable source commit. Docs records coalesce with CLI and MCP
     package runs. When the set has no such run, Release dispatches one docs-only Publish
     run on a docs record. This preserves one atomic release authority without depending on events
     the platform does not emit.
@@ -161,23 +148,14 @@ proposed-design:
     `wyrd-company/wyrd.foo/.github/workflows/publish-docs.yml@v2`, called by the
     `docs` job of **Publish**. A plan job decides whether a run publishes:
 
-    - a CLI, MCP or proxy code record publishes after its GitHub Release exists;
+    - a CLI or MCP code record publishes after its GitHub Release exists;
       each product page reads its own code Release;
-    - a `t3c-docs@X.Y.Z`, `t3mcp-docs@X.Y.Z` or `t3c-proxy-docs@X.Y.Z` record publishes alone
+    - a `t3c-docs@X.Y.Z`, `t3mcp-docs@X.Y.Z` record publishes alone
       for a docs-only release; pushed with a product code record, it waits for
       those package runs. `plan-docs.sh` checks records on the exact commit;
       zero-version baselines never publish;
     - a `t3code-lib` record and the zero baseline records publish nothing;
     - a manual run publishes the `ref` it is given, and may feature the product.
-
-    A `t3code-proxy-feature@X.Y.Z` record publishes the devcontainer Feature to
-    `ghcr.io/wyrd-company/t3code-client/t3code-proxy` through `devcontainers/action`, with
-    the workflow token and `packages: write`. `verify-feature-record.sh` requires an
-    annotated record on main that names the version in `devcontainer-feature.json`. The
-    action skips a version that GHCR already holds, and it adds no tag. The zero baseline
-    publishes nothing. A manual run with `publish-devcontainer-feature` recovers a failed
-    publication, and a release with over three tags dispatches the Feature in the same way.
-    A Feature record publishes no npm package and no documentation.
 
     A plain push to main does not publish. The package jobs run only for package
     records. The call passes only the two publisher secrets, not the repository's
@@ -230,10 +208,10 @@ proposed-design:
 
     The App needs Contents write. Publish requires an Intentional release record
     whose commit is on main. A tag ruleset allowing only the App to create
-    `t3code-lib@*`, `t3code-cli@*`, `t3code-mcp@*`, `t3code-proxy@*`, `t3code-proxy-feature@*`, `t3c-docs@*`, `t3mcp-docs@*` and `t3c-proxy-docs@*` records enforces that release
+    `t3code-lib@*`, `t3code-cli@*`, `t3code-mcp@*`, `t3c-docs@*`, `t3mcp-docs@*` records enforces that release
     authority.
   documentation-and-homebrew-finalization: |
-    The CLI/MCP/proxy code records, product docs records and manual runs publish `docs/user` to wyrd.foo
+    The CLI/MCP code records, product docs records and manual runs publish `docs/user` to wyrd.foo
     (see publication). Everything under `docs/user` is published, and assets are listed in
     `docs/user/docs.yml`; other `docs` folders stay private.
     `task docs` generates the library API source and published reference through
@@ -273,7 +251,6 @@ proposed-design:
     upgrade or remove existing dependency kegs to validate a local formula.
   library-release-identity: |
     The library release unit is `t3code-lib`, its manifest is `packages/t3code-lib/package.json`, and its changelog is `packages/t3code-lib/CHANGELOG.md`. The root historical changelog belongs to the retired package.
-
   complementary-mcp-package: |
     The MCP package starts at 0.0.0 with one initial minor intent. Its npm tarball
     contains the built stdio executable and public factory declarations. Consumer

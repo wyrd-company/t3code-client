@@ -84,28 +84,6 @@ importers:
         specifier: 2.4.0
         version: 2.4.0
 
-  packages/t3code-proxy:
-    dependencies:
-      httpxy:
-        specifier: ^0.5.6
-        version: 0.5.6
-      ws:
-        specifier: ^8.22.1
-        version: 8.22.1
-      yaml:
-        specifier: ^2.9.1
-        version: 2.9.1
-      zod:
-        specifier: ^4.6.5
-        version: 4.6.5
-    devDependencies:
-      '@types/ws':
-        specifier: ^8.18.2
-        version: 8.18.2
-      '@wyrd-company/t3code-lib':
-        specifier: workspace:*
-        version: link:../t3code-lib
-
 packages:
 
   '@babel/code-frame@7.29.7':
@@ -497,9 +475,6 @@ packages:
 
   '@types/ws@8.18.1':
     resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
-
-  '@types/ws@8.18.2':
-    resolution: {integrity: sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==}
 
   '@typescript/typescript-aix-ppc64@7.0.2':
     resolution: {integrity: sha512-MTKKkWB7p/0E9xi1d1tHtZ5PiLkGEMIq88pK2CubZjOsLtYTLqhgIgi6zepFa+9GHZ6h05NMCkQxGKiPXMxXtQ==}
@@ -1133,9 +1108,6 @@ packages:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
     engines: {node: '>=8'}
 
-  httpxy@0.5.6:
-    resolution: {integrity: sha512-iqc3nOxvNb5FxbhJozt8wNmHgjlmk4zzba512jMEXVwHCEBCbGAj49eGfy5PI8ts3/LFSFq8siiSNqwfY1AlfQ==}
-
   is-extglob@2.1.1:
     resolution: {integrity: sha512-SbKbANkN603Vi4jEZv49LeVJMn4yGwsbzZworEoyEiutsN3nJYdbO36zfhGJ6QEDpOZIFkDtnq5JRxmvl3jsoQ==}
     engines: {node: '>=0.10.0'}
@@ -1630,18 +1602,6 @@ packages:
       utf-8-validate:
         optional: true
 
-  ws@8.22.1:
-    resolution: {integrity: sha512-oyL6OPYme/CmiFvNuGzeoxCJ4nOrZE2O1FwM9MWM1AsGri6nLXB2pg+lNA8aLeXMSav0J6eIVS1j6vUPzUtK9g==}
-    engines: {node: '>=10.0.0'}
-    peerDependencies:
-      bufferutil: ^4.0.1
-      utf-8-validate: '>=5.0.2'
-    peerDependenciesMeta:
-      bufferutil:
-        optional: true
-      utf-8-validate:
-        optional: true
-
   xmlcreate@2.0.4:
     resolution: {integrity: sha512-nquOebG4sngPmGPICTS5EnxqhKbCmz5Ox5hsszI2T6U5qdrJizBc+0ilYSEjTSzU0yZcmvppztXe/5Al5fUwdg==}
 
@@ -1908,10 +1868,6 @@ snapshots:
   '@types/semver@7.8.0': {}
 
   '@types/ws@8.18.1':
-    dependencies:
-      '@types/node': 24.12.4
-
-  '@types/ws@8.18.2':
     dependencies:
       '@types/node': 24.12.4
 
@@ -2326,8 +2282,6 @@ snapshots:
       uglify-js: 3.19.3
 
   has-flag@4.0.0: {}
-
-  httpxy@0.5.6: {}
 
   is-extglob@2.1.1: {}
 
@@ -2800,8 +2754,6 @@ snapshots:
   wordwrapjs@5.1.1: {}
 
   ws@8.21.3: {}
-
-  ws@8.22.1: {}
 
   xmlcreate@2.0.4: {}
 

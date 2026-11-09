@@ -36,32 +36,17 @@ describe("workflow agreements", () => {
     const paths = [...publish().matchAll(/path: (\$\{\{ runner.temp \}\}\/package)/g)];
     expect(paths).toHaveLength(3);
   });
-  it("publishes only the package, Feature and docs unit tag families", () => {
+  it("publishes only the package and docs unit tag families", () => {
     const patterns = [...publish().matchAll(/^      - "([^"]+@\*)"$/gm)]
       .map((match) => match[1])
       .sort();
     expect(patterns).toEqual([
       "t3c-docs@*",
-      "t3c-proxy-docs@*",
       "t3code-cli@*",
       "t3code-lib@*",
       "t3code-mcp@*",
-      "t3code-proxy-feature@*",
-      "t3code-proxy@*",
       "t3mcp-docs@*",
     ]);
-  });
-  it("publishes the Feature only after its record check, with only the permissions it needs", () => {
-    const job = publish().split("\n  devcontainer-feature:")[1]!.split("\n  docs:")[0]!;
-    expect(job).toContain("if: needs.plan.outputs.feature-record != ''");
-    expect(job).toContain("packages: write");
-    expect(job).not.toContain("contents: write");
-    expect(job).toContain("base-path-to-features: ./features/src");
-    expect(job).toContain('disable-repo-tagging: "true"');
-    expect(job.indexOf("verify-feature-record.sh")).toBeGreaterThan(0);
-    expect(job.indexOf("verify-feature-record.sh")).toBeLessThan(
-      job.indexOf("devcontainers/action@"),
-    );
   });
   it("uses one saved plan for validation, apply and record creation", () => {
     const workflow = release();
@@ -93,7 +78,7 @@ describe("release foundation wiring", () => {
     }
     expect(foundation).toContain("name: Show Intentional status");
     expect(matrix).toContain("needs: release-foundation");
-    expect(matrix).toContain("unit: [t3code-lib, t3code-cli, t3code-mcp, t3code-proxy]");
+    expect(matrix).toContain("unit: [t3code-lib, t3code-cli, t3code-mcp]");
   });
   it("checks package readiness before applying the saved release plan", () => {
     const workflow = release();
@@ -106,8 +91,8 @@ describe("release foundation wiring", () => {
 });
 
 describe("package unit inventory", () => {
-  it("names exactly the library, CLI, MCP and proxy package units", () => {
-    expect(packageUnits).toEqual(["t3code-cli", "t3code-lib", "t3code-mcp", "t3code-proxy"]);
+  it("names exactly the library, CLI and MCP package units", () => {
+    expect(packageUnits).toEqual(["t3code-cli", "t3code-lib", "t3code-mcp"]);
   });
   it("checks every package unit in the CI matrix", () => {
     const matrix = /unit: \[([^\]]+)\]/.exec(ci())![1]!.split(/,\s*/).sort();

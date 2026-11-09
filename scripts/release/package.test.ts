@@ -16,14 +16,6 @@ const mcpFiles = {
   }),
   "dist/cli.js": "#!/usr/bin/env node\nexport {};",
 };
-const proxyFiles = {
-  "package.json": JSON.stringify({
-    name: "@wyrd-company/t3code-proxy",
-    version: "0.1.0",
-    bin: { "t3c-proxy": "dist/cli.js" },
-  }),
-  "dist/cli.js": "#!/usr/bin/env node\nexport {};",
-};
 afterEach(() => {
   for (const root of roots.splice(0)) NodeFS.rmSync(root, { recursive: true, force: true });
 });
@@ -207,38 +199,6 @@ describe("package boundary", () => {
     );
     expect(missingShebang.status).not.toBe(0);
     expect(missingShebang.stderr).toContain("MCP executable has no node shebang.");
-  });
-  it("accepts the proxy executable with no library API", () => {
-    const { root, env } = setup("t3code-proxy", proxyFiles);
-    const result = run(root, "verify-package.sh", ["t3code-proxy", root], env);
-    expect(result.status, result.stderr).toBe(0);
-    expect(result.stdout.trim()).toBe(`${root}/wyrd-company-t3code-proxy-0.1.0.tgz`);
-  });
-  it.each([
-    ["no bin entry", { bin: undefined }, "Proxy executable must be dist/cli.js."],
-    ["a library API", { exports: { ".": "./dist/index.js" } }, "Proxy package has a library API."],
-    [
-      "a runtime library dependency",
-      { dependencies: { "@wyrd-company/t3code-lib": "0.1.0" } },
-      "Proxy package depends on the library at runtime.",
-    ],
-  ])("rejects a proxy manifest with %s", (_name, fields, message) => {
-    const { root, env } = setup("t3code-proxy", {
-      ...proxyFiles,
-      "package.json": JSON.stringify({
-        ...(JSON.parse(proxyFiles["package.json"]) as object),
-        ...fields,
-      }),
-    });
-    const result = run(root, "verify-package.sh", ["t3code-proxy", root], env);
-    expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain(message);
-  });
-  it("rejects a proxy executable with no node shebang", () => {
-    const { root, env } = setup("t3code-proxy", { ...proxyFiles, "dist/cli.js": "export {};" });
-    const result = run(root, "verify-package.sh", ["t3code-proxy", root], env);
-    expect(result.status).not.toBe(0);
-    expect(result.stderr).toContain("Proxy executable has no node shebang.");
   });
   it("requires the library tarball before installing an MCP consumer", () => {
     const { root } = setup("t3code-mcp", mcpFiles);

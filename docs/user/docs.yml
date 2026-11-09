@@ -1,4 +1,3 @@
-# yaml-language-server: $schema=https://wyrd.foo/schemas/docs/v1.json
 schemaVersion: 1
 relationships:
   references: command-line
@@ -6,7 +5,6 @@ assets:
   - t3c/assets/demo.gif
   - t3c/assets/logo.svg
   - t3mcp/assets/logo.svg
-  - t3c-proxy/assets/logo.svg
 products:
   t3c:
     name: t3c
@@ -14,23 +12,25 @@ products:
     docs-version: 0.4.1
     release-unit: t3code-cli
     tagline: Run T3 Code conversations from your terminal and automation.
-    blurb: >-
-      A Node command-line client and TypeScript library for stock T3 Code. Pair named servers, run
-      or continue conversations, inspect threads, and preserve clear output and exit codes in
-      automation.
+    blurb: A Node command-line client and TypeScript library for stock T3 Code. Pair
+      named servers, run or continue conversations, inspect threads, and
+      preserve clear output and exit codes in automation.
     status: preview
     category: Agent Tooling
     highlights:
-      - Run a conversation on a stock T3 Code server from a terminal or an automation harness.
-      - Pair named server profiles, and keep session tokens out of the argument list by reading them
-        from stdin.
-      - Continue a thread, list threads and projects, and read a thread's last message.
-      - Answers go to stdout and progress to stderr, with --json for structured results and --stream
-        for incremental output.
+      - Run a conversation on a stock T3 Code server from a terminal or an
+        automation harness.
+      - Pair named server profiles, and keep session tokens out of the argument
+        list by reading them from stdin.
+      - Continue a thread, list threads and projects, and read a thread's last
+        message.
+      - Answers go to stdout and progress to stderr, with --json for structured
+        results and --stream for incremental output.
       - The same client ships as the TypeScript library @wyrd-company/t3code-lib.
     media:
       - src: assets/demo.gif
-        caption: Pairing a profile, starting and waiting for a thread, continuing it, and listing projects.
+        caption: Pairing a profile, starting and waiting for a thread, continuing it,
+          and listing projects.
     nav:
       - section: Get started
         groups:
@@ -95,11 +95,16 @@ products:
       - kind: cli
         install:
           - method: npm
-            os: [macos, linux, windows]
+            os:
+              - macos
+              - linux
+              - windows
             default: true
             command: npm install -g @wyrd-company/t3code-cli
           - method: homebrew
-            os: [macos, linux]
+            os:
+              - macos
+              - linux
             command: brew install wyrd-company/tools/t3c
     logo: assets/logo.svg
     favicon: assets/logo.svg
@@ -109,9 +114,10 @@ products:
     docs-version: 0.1.3
     release-unit: t3code-mcp
     tagline: Inspect and control T3 Code through complementary MCP tools.
-    blurb: A stdio MCP server for direct webhook addresses, delivery diagnostics, thread inspection,
-      queue recovery, provider status and historical usage. Connect through the same saved profiles
-      as t3c, beside the built-in T3 Code MCP server.
+    blurb: A stdio MCP server for direct webhook addresses, delivery diagnostics,
+      thread inspection, queue recovery, provider status and historical usage.
+      Connect through the same saved profiles as t3c, beside the built-in T3
+      Code MCP server.
     status: preview
     category: Agent Tooling
     logo: assets/logo.svg
@@ -204,49 +210,3 @@ products:
           - name: usage_summary
             description: Read historical usage buckets and source diagnostics.
             effect: Read-only
-  t3c-proxy:
-    name: t3c-proxy
-    version: 0.1.0
-    docs-version: 0.1.0
-    release-unit: t3code-proxy
-    tagline: Show who sent each message on a shared T3 Code server.
-    blurb: >-
-      A service in front of one stock T3 Code server. Each person has their own hostname, and each
-      message they send there ends with their name. Agents and the direct route stay clean, and the
-      server does not change.
-    status: preview
-    category: Agent Infrastructure
-    logo: assets/logo.svg
-    favicon: assets/logo.svg
-    highlights:
-      - Each person has one listener and their own HTTPS hostname.
-      - Each message that a person sends ends with a byline such as "— Sent by Alice".
-      - Agents, slash commands and the direct route have no byline.
-      - T3 pairing and sessions stay the only access control.
-      - A dev container Feature runs the service and writes one Caddy site for each person.
-    media:
-      - src: assets/logo.svg
-        caption: t3c-proxy adds the sender's name to a message.
-        alt: The letters t3c and proxy above a message with a signature line.
-    nav:
-      - section: Get started
-        groups:
-          - group: Setup
-            pages:
-              - getting-started
-              - reverse-proxy
-      - section: Reference
-        groups:
-          - group: Operating
-            pages:
-              - limits
-              - devcontainer-feature
-    kinds:
-      - kind: cli
-        install:
-          - method: npm
-            os: [macos, linux]
-            default: true
-            command: npm install -g @wyrd-company/t3code-proxy
-      - kind: devcontainer-feature
-        ref: ghcr.io/wyrd-company/t3code-client/t3code-proxy:0
