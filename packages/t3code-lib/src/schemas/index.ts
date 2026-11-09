@@ -54,6 +54,7 @@ export * as orchestrationEvents from "./orchestration/events.ts";
 export * as orchestrationMessageContext from "./orchestration/messageContext.ts";
 export * as orchestrationMessages from "./orchestration/messages.ts";
 export * as orchestrationModel from "./orchestration/model.ts";
+export * as orchestrationNativeChildWork from "./orchestration/nativeChildWork.ts";
 export * as orchestrationProjection from "./orchestration/projection.ts";
 export * as orchestrationProviderRuntime from "./orchestration/providerRuntime.ts";
 export * as orchestrationProviderState from "./orchestration/providerState.ts";
