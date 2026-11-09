@@ -136,6 +136,15 @@ describe("RpcErrorRecord", () => {
     expect(
       isRpcErrorOfTag(forceStop, "OrchestrationV2ForceStopThreadError") && forceStop.reason,
     ).toBe("superseded");
+    const nativeChildWork = decodeRpcErrorRecord({
+      _tag: "OrchestrationV2GetNativeChildWorkError",
+      threadId: "thread-1",
+      cause: { message: "unreadable" },
+    });
+    expect(
+      isRpcErrorOfTag(nativeChildWork, "OrchestrationV2GetNativeChildWorkError") &&
+        nativeChildWork.threadId,
+    ).toBe("thread-1");
     const app = decodeRpcErrorRecord({
       _tag: "McpAppRequestError",
       threadId: "thread-1",

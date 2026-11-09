@@ -49,6 +49,9 @@ since a sign-in replaces the server's credential for that forge. `signInWait` re
 when the sign-in ends, and `signInCancel` ends it. A server with no app for the forge
 refuses with `reason: "unsupported"`. `sourceControl.appAccess` and
 `sourceControl.starred` read what the server's forge account can reach.
+`sourceControl.star` stars a repository as that account and needs `source-control:write`.
+It answers `false` when the forge refuses, the account cannot star, or no driver serves
+the provider.
 
 `agentSessions.scan` reads the transcripts of the server's enabled providers on its host
 and lists the folders that they ran in. `agentSessions.import` makes threads from the

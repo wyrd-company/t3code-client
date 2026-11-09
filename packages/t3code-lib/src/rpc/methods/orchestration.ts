@@ -43,6 +43,10 @@ import {
   OrchestrationV2ThreadStreamItem,
 } from "../../schemas/orchestration/stream.ts";
 import {
+  OrchestrationV2GetNativeChildWorkInput,
+  OrchestrationV2GetNativeChildWorkResult,
+} from "../../schemas/orchestration/nativeChildWork.ts";
+import {
   OrchestrationV2SearchThreadInput,
   OrchestrationV2SearchThreadResult,
 } from "../../schemas/orchestration/threadFind.ts";
@@ -82,6 +86,13 @@ export const orchestrationMethods = {
   "orchestration.getWorkflowScript": defineMethod({
     payload: OrchestrationGetWorkflowScriptInput,
     success: OrchestrationGetWorkflowScriptResult,
+    stream: false,
+    scope: read,
+  }),
+  /** Reads an Antigravity-native subagent's children; other threads answer no children. */
+  "orchestration.getNativeChildWork": defineMethod({
+    payload: OrchestrationV2GetNativeChildWorkInput,
+    success: OrchestrationV2GetNativeChildWorkResult,
     stream: false,
     scope: read,
   }),
