@@ -37,6 +37,7 @@ import {
 } from "./providerState.ts";
 import { ThreadLinkedPullRequest, ThreadPullRequestLink } from "./pullRequest.ts";
 import { OrchestrationV2DelegatedFrom, OrchestrationV2LinkOrigin } from "./threadLink.ts";
+import { StoredThreadTags } from "./threadTags.ts";
 import {
   OrchestrationV2AppThreadLineage,
   OrchestrationV2LenientThreadOpens,
@@ -165,6 +166,8 @@ export const OrchestrationV2ThreadShell = z.looseObject({
   autoSettleDisabledAt: IsoDateTime.nullable().optional(),
   pinOrderKey: TrimmedNonEmptyString.nullable().optional(),
   activeOrderKey: TrimmedNonEmptyString.nullable().optional(),
+  /** Absent on threads written before tags existed; read as empty. */
+  tags: StoredThreadTags.optional(),
   lastVisitedAt: IsoDateTime.nullable().optional(),
   titleRegeneration: ThreadTitleRegeneration.nullable().optional(),
   deletedAt: IsoDateTime.nullable(),

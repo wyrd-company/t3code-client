@@ -416,6 +416,22 @@ proposed-design:
     `stopThread` dispatches directly, including when no active run exists; the
     server stops background work and holds queued successors.
 
+    `thread.tag.set` carries `commandId`, `threadId`, a `tag` and a boolean
+    `tagged`; true adds the tag and false removes it. `threads.dispatch` and
+    typed `rpc.call` validate and send it: a tag is trimmed, nonempty, at most
+    64 characters and one line, and tags match by exact spelling and case.
+    Malformed fields fail before sending. The server records
+    `thread.tags-updated`, a thread state event with the whole thread as its
+    payload. App and shell threads, projections and their events expose
+    optional `tags`; omission stays absent and a malformed stored list reads
+    as empty instead of failing the thread.
+
+    User-message turn items expose optional `modelSwitch` `{from, to}`, two
+    model selections, when the run that message starts changes the model or
+    its options on the same harness. Omission means no change. Provider turn
+    capabilities expose optional boolean `activeSteeringAcceptsAttachments`;
+    false means a steer with attachments restarts the turn instead.
+
     `queued-run.start` carries `commandId`, `threadId` and `runId`, all
     required. `threads.startQueuedRun`, `threads.dispatch` and typed `rpc.call`
     validate and send it:

@@ -27,6 +27,7 @@ import {
 } from "./model.ts";
 import { ThreadLinkedPullRequest, ThreadPullRequestLink } from "./pullRequest.ts";
 import { ThreadGuestShare } from "./guestShare.ts";
+import { StoredThreadTags } from "./threadTags.ts";
 import { OrchestrationV2DelegatedFrom, OrchestrationV2LinkOrigin } from "./threadLink.ts";
 
 export const OrchestrationV2AppThreadLineage = z.looseObject({
@@ -124,6 +125,8 @@ export const OrchestrationV2AppThread = z.looseObject({
   autoSettleDisabledAt: IsoDateTime.nullable().optional(),
   pinOrderKey: TrimmedNonEmptyString.nullable().optional(),
   activeOrderKey: TrimmedNonEmptyString.nullable().optional(),
+  /** Absent on threads written before tags existed; read as empty. */
+  tags: StoredThreadTags.optional(),
   lastVisitedAt: IsoDateTime.nullable().default(null),
   titleRegeneration: ThreadTitleRegeneration.nullable().optional(),
   /** Latest accepted rollback. Only its failure is recorded in `rollbackFailure`. */

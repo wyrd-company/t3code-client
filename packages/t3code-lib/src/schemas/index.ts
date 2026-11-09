@@ -69,5 +69,6 @@ export * as orchestrationGuestStream from "./orchestration/guestStream.ts";
 export * as orchestrationThread from "./orchestration/thread.ts";
 export * as orchestrationThreadFind from "./orchestration/threadFind.ts";
 export * as orchestrationThreadForceStop from "./orchestration/threadForceStop.ts";
+export * as orchestrationThreadTags from "./orchestration/threadTags.ts";
 export * as orchestrationTurnItems from "./orchestration/turnItems.ts";
 export * as orchestrationWorkflow from "./orchestration/workflow.ts";
