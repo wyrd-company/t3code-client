@@ -8,22 +8,14 @@
  * has no Antigravity provider, so a stock thread answers no children.
  */
 import * as NodeCrypto from "node:crypto";
-import { WebSocket as WsWebSocket } from "ws";
 import { describe, expect, it } from "vite-plus/test";
-import { T3Client, T3RpcError } from "../../src/index.ts";
-import type { WebSocketConstructor } from "../../src/internal/websocket.ts";
-import { ProviderInstanceId, threadId, type ThreadId } from "../../src/schemas/common.ts";
+import { T3RpcError } from "../../src/index.ts";
+import { threadId, type ThreadId } from "../../src/schemas/common.ts";
+import { connect, hasLiveServer, modelSelection } from "./liveClient.ts";
 
-const baseUrl = process.env["T3_LIVE_URL"];
-const token = process.env["T3_LIVE_TOKEN"];
-
-describe.skipIf(!baseUrl || !token)("live orchestration.getNativeChildWork", () => {
+describe.skipIf(!hasLiveServer)("live orchestration.getNativeChildWork", () => {
   it("answers no children for a stock thread and types a missing thread", async () => {
-    const client = T3Client.create({
-      baseUrl: baseUrl ?? "",
-      accessToken: token ?? "",
-      webSocket: WsWebSocket as unknown as WebSocketConstructor,
-    });
+    const client = connect();
     let project: Awaited<ReturnType<typeof client.projects.createNew>> | undefined;
     let id: ThreadId | undefined;
     try {
@@ -31,7 +23,7 @@ describe.skipIf(!baseUrl || !token)("live orchestration.getNativeChildWork", () 
       const thread = await client.threads.create({
         projectId: project.projectId,
         title: "Sample native children",
-        modelSelection: { instanceId: ProviderInstanceId.parse("codex"), model: "gpt-6-luna" },
+        modelSelection,
       });
       id = thread.id;
       await expect(
