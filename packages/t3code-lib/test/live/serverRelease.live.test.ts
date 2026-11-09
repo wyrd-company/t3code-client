@@ -35,13 +35,13 @@ describe.skipIf(!hasLiveServer)("live server release and on-demand inputs", () =
     const client = connect();
     try {
       const outcome = await client.server
-        .getNpmRelease({ spec: "0.1.6" })
+        .getNpmRelease({ spec: "0.1.7" })
         .catch((error: unknown) => error);
       if (outcome instanceof T3RpcError) {
         expect(outcome.tag).toBe("ServerNpmReleaseError");
         console.log("Release lookup failure", outcome.tag);
       } else {
-        expect(outcome).toMatchObject({ version: "0.1.6" });
+        expect(outcome).toMatchObject({ version: "0.1.7" });
         console.log("Release lookup", outcome);
       }
     } finally {

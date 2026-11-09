@@ -15,7 +15,7 @@
     "features": {
       "ghcr.io/wyrd-company/devcontainers/caddy:1": {},
       "ghcr.io/wyrd-company/devcontainers/t3code-server:2": {
-        "version": "0.1.6",
+        "version": "0.1.7",
         "dnsName": "t3.dev.example.test"
       },
       "t3code-proxy": {
@@ -29,7 +29,7 @@
     "features": {
       "ghcr.io/wyrd-company/devcontainers/caddy:1": {},
       "ghcr.io/wyrd-company/devcontainers/t3code-server:2": {
-        "version": "0.1.6"
+        "version": "0.1.7"
       },
       "t3code-proxy": {}
     }
