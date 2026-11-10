@@ -10,6 +10,7 @@
  * `close()` stops reconnecting and ends every stream.
  */
 import { DiagnosticsApi } from "./api/diagnostics.ts";
+import { LocalServersApi } from "./api/localServers.ts";
 import { GuestSharesApi } from "./api/guestShares.ts";
 import { previewViewerUrl, webSocketUrl, withMediaTicket } from "./api/mediaSockets.ts";
 import { PeerLinksApi } from "./api/peerLinks.ts";
@@ -88,6 +89,7 @@ export class T3Client {
   readonly vcs: VcsApi;
   readonly terminal: TerminalApi;
   readonly diagnostics: DiagnosticsApi;
+  readonly localServers: LocalServersApi;
   readonly scheduledTasks: ScheduledTasksApi;
   readonly peerLinks: PeerLinksApi;
   readonly guestShares: GuestSharesApi;
@@ -175,6 +177,7 @@ export class T3Client {
     this.vcs = new VcsApi(this.rpc);
     this.terminal = new TerminalApi(this.rpc);
     this.diagnostics = new DiagnosticsApi(this.rpc);
+    this.localServers = new LocalServersApi(this.rpc);
     this.peerLinks = new PeerLinksApi(this.rpc);
     this.guestShares = new GuestSharesApi(this.rpc, dispatcher);
     this.scheduledTasks = new ScheduledTasksApi(this.rpc, {

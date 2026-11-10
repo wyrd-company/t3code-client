@@ -14,7 +14,7 @@ it("negotiates and advertises only the complementary tool contract with accurate
   expect(client.getServerVersion()?.name).toBe("t3code-mcp");
   const { tools } = await client.listTools();
   expect(tools.map((tool) => tool.name)).toEqual(toolNames);
-  expect(tools).toHaveLength(28);
+  expect(tools).toHaveLength(30);
   for (const tool of tools) {
     const mutation = [
       "configure_scheduled_task",
@@ -23,6 +23,7 @@ it("negotiates and advertises only the complementary tool contract with accurate
       "thread_force_stop",
       "thread_queue_resume",
       "thread_queue_start",
+      "stop_local_server",
     ].includes(tool.name);
     if (tool.name === "thread_tag") {
       expect(tool.annotations).toMatchObject({

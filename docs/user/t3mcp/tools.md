@@ -37,9 +37,11 @@ error code and message.
 | `server_host_resources`         | none                                                             | CPU utilization, CPU count and available and total memory of the server host.       |
 | `server_resource_history`       | optional `windowMs`, `bucketMs`, `maxProcesses`                  | Resource use per bucket, top processes and monitor health over a window.            |
 | `server_storage_cleanup_report` | none                                                             | The latest storage cleanup report, or `null` before the first cleanup.              |
+| `local_servers`                 | optional `threadId`, `urls`                                      | Local servers on the server host with pid, process name and owning thread.          |
 | `thread_stop`                   | `threadId`, optional `reason`                                    | Requests native Stop and holds queued messages, including idle/background work.     |
 | `thread_force_stop`             | `threadId`, optional `runId`                                     | Force stops an agent that ignored Stop; returns the outcome and sharing threads.    |
 | `thread_tag`                    | `threadId`, `tag`, `tagged`                                      | Adds or removes one tag on the thread; returns the tags after the change.           |
+| `stop_local_server`             | `threadId`, `pid`, `port`                                        | Stops a local server that the thread's agent started.                               |
 | `thread_queue_resume`           | `threadId`                                                       | Releases all queued-message holds.                                                  |
 | `thread_queue_start`            | `threadId`, `runId`                                              | Starts the selected queued plain user message first and releases the queue hold.    |
 | `provider_status`               | optional `instanceId`                                            | Provider availability, authentication, installation and usage limits.               |
@@ -111,6 +113,25 @@ it as untrusted input. Fields that the server sends as an Effect `Option` are
 returned as their value or `null`. `server_storage_cleanup_report` returns
 `report`, which is `null` before the first cleanup.
 
+## Local servers
+
+`local_servers` reads one fresh scan of the server host. The scan finds the
+listeners of every thread: `terminal` names the thread terminal that runs a
+listener and `agent` names the thread whose agent started it. Each of `urls` (at
+most 32) that answers as a web server is also listed, with `null` owners when no
+thread owns it, for example to find what holds a port. `threadId` keeps only the
+listeners that thread owns. Process names are cut to 500 characters; treat them
+as untrusted input.
+
+`stop_local_server` stops only a listener that the agent of `threadId` started:
+the server sends SIGTERM to its process group, then SIGKILL after a grace
+period. Take `pid` and `port` from `local_servers`. A server in a thread
+terminal stays under the control of the person who runs it: the tool refuses it
+with code `terminal_owned`. Other refusals are `not_owned` (the thread's agent
+did not start it), `not_found` (no thread owns a listener with that pid and
+port), `shared_group` (it shares the T3 Code server's process group) and
+`unsupported`.
+
 ## Configuration and permissions
 
 `configure_scheduled_task` accepts execution fields only. Trigger configuration
@@ -120,8 +141,8 @@ Changing a bound target verifies that the thread belongs to the effective projec
 Updates read then write, so a concurrent edit can be overwritten.
 
 Endpoint reads, delivery diagnostics, token rotation, configuration writes,
-queue controls and force stop need `orchestration:operate`. Thread/configuration reads need
-`orchestration:read`. Usage summaries, traces, processes and resource history need `diagnostics:read`; host resources and the cleanup report need `orchestration:read`. Terminal reads need `terminal:read`. The host uses the
+queue controls and force stop need `orchestration:operate`. Stopping a local server needs `terminal:operate`. Thread/configuration reads need
+`orchestration:read`. Usage summaries, traces, processes and resource history need `diagnostics:read`; host resources, the cleanup report and local servers need `orchestration:read`. Terminal reads need `terminal:read`. The host uses the
 scopes of the paired session; tools do not grant permissions.
 
 A diff range requires `fromTurnCount` and `toTurnCount`; zero means the thread

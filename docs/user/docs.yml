@@ -322,6 +322,12 @@ products:
           - name: server_storage_cleanup_report
             description: Read the latest storage cleanup report.
             effect: Read-only
+          - name: local_servers
+            description: List the local servers on the server host and their owners.
+            effect: Read-only
+          - name: stop_local_server
+            description: Stop a local server that a thread's agent started.
+            effect: Writes
           - name: thread_stop
             description: Stop thread work and hold queued messages.
             effect: Writes

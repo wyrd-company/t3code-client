@@ -60,6 +60,7 @@ t3mcp with a person's hostname, because a hostname is for the messages of one pe
 | `server_traces`, `server_processes`                        | The server's trace summary, or its backend descendant processes                           |
 | `server_host_resources`, `server_resource_history`         | Host CPU and memory, or the server's resource use over a window                           |
 | `server_storage_cleanup_report`                            | The latest storage cleanup report                                                         |
+| `local_servers`, `stop_local_server`                       | Local servers and their owning threads, or stop one that a thread's agent started         |
 | `thread_stop`, `thread_queue_resume`, `thread_queue_start` | Native Stop, queue release or selected queued-message start                               |
 | `thread_force_stop`                                        | Force stop of an agent that ignored Stop                                                  |
 | `provider_status`, `usage_summary`                         | Current provider state/limits or historical usage buckets                                 |

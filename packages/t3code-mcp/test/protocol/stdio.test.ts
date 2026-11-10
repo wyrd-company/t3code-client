@@ -42,6 +42,8 @@ it("has no tool-name collisions with the complete pinned stock toolkit inventory
       "server_host_resources",
       "server_resource_history",
       "server_storage_cleanup_report",
+      "local_servers",
+      "stop_local_server",
       "provider_status",
       "usage_summary",
     ].sort(),

@@ -58,6 +58,8 @@ proposed-design:
     - server_host_resources: CPU and memory of the server host.
     - server_resource_history: resource use of the server's processes over a bounded window.
     - server_storage_cleanup_report: the latest storage cleanup report, or null.
+    - local_servers: the local servers on the server host and their owning terminal or agent thread.
+    - stop_local_server: stop a local server that the named thread's agent started.
     - thread_stop: native Stop with queue hold and background/delegated work cleanup.
     - thread_force_stop: force stop of an agent that ignored Stop, optionally for one run.
     - thread_queue_resume: release the queue hold so normal delivery continues.
@@ -93,6 +95,13 @@ proposed-design:
     characters; tool
     descriptions mark that text as untrusted. Effect Option fields become their
     value or null.
+    Local server tools compose client.localServers. The list is one fresh scan of
+    the listeners that the server attributes to a thread, of every thread, plus the
+    probed URLs that answer as web servers; process names are cut to 500
+    characters and marked untrusted. Stop needs terminal:operate and a named
+    thread. It reads the scan first and stops only a listener that the agent of
+    that thread started, so an agent cannot stop a person's terminal server or a
+    listener that it did not name. The server scans again before it signals.
   credentials-and-errors: |
     The selected T3 credential and its granted scopes remain the authority for
     every operation. Scheduler endpoint and delivery access preserve upstream

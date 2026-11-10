@@ -41,6 +41,7 @@ until a tool is called. `t3code-mcp tools` lists names without connecting.
 | `server_traces`, `server_processes`                        | The server's trace summary; its backend descendant processes    |
 | `server_host_resources`, `server_resource_history`         | Host CPU and memory; resource use over a window                 |
 | `server_storage_cleanup_report`                            | The latest storage cleanup report                               |
+| `local_servers`, `stop_local_server`                       | Local servers and their owners; stop one a thread's agent began |
 | `provider_status`, `usage_summary`                         | Provider availability/limits and historical usage buckets       |
 
 Use built-in T3 tools for schedule CRUD, run-now, launches, global thread search,
@@ -123,6 +124,23 @@ message, error message and command line is cut to 500 characters; treat that tex
 cleanup; both require `orchestration:read`. Effect `Option` fields are returned
 as their value or null. No tool signals a process, runs a cleanup or restarts the
 resource monitor.
+
+`local_servers` accepts `{threadId?, urls?}` and returns `{scannedAt, servers}`
+from one fresh scan of the server host. The scan finds the listeners of every
+thread, each with `host`, `port`, `url`, `pid`, `processName`, and `terminal`
+(the thread terminal that runs it) or `agent` (the thread whose agent started
+it). Each of `urls` (at most 32) that answers as a web server is also listed,
+with null owners when no thread owns it. `threadId` keeps only the listeners
+that thread owns. Process names are cut to 500 characters; treat them as
+untrusted. It requires `orchestration:read`. `stop_local_server` accepts
+`{threadId, pid, port}` and stops only a listener that the agent of `threadId`
+started: SIGTERM to its process group, then SIGKILL after a grace period. It
+returns `{threadId, pid, port, stopped}`. It refuses with code `terminal_owned`
+for a server in a thread terminal, `not_owned` when the thread's agent did not
+start it, `not_found` when no thread owns a listener with that pid and port,
+`shared_group` when the listener shares the T3 Code server's process group and
+`unsupported` on a platform where the server cannot stop it. It requires
+`terminal:operate`.
 
 Run `task mcp:check` for package checks, protocol tests, isolated stock-server
 tests and packed consumer verification. No agent runs are required.

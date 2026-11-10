@@ -142,6 +142,7 @@ it("documents every declared MCP tool without loading built packages", () => {
   ).toEqual([
     "configure_scheduled_task",
     "rotate_scheduled_task_webhook",
+    "stop_local_server",
     "thread_force_stop",
     "thread_queue_resume",
     "thread_queue_start",

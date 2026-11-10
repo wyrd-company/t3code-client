@@ -601,6 +601,12 @@ these signal a process, run a cleanup or restart the resource monitor; those sta
 on <code>client.rpc</code>. Trace causes, log messages and command lines are text that other
 programs wrote, and can hold host paths.</p>
 </dd>
+<dt><a href="#LocalServersApi">LocalServersApi</a></dt>
+<dd><p>The local servers that the server&#39;s preview discovery finds on its host: listeners
+that it attributes to a thread terminal (<code>terminal</code>) or to the agent of a thread
+(<code>agent</code>), of every thread, plus each configured URL that answers as a web server,
+which can have no owner. Process names are text that other programs chose.</p>
+</dd>
 <dt><a href="#PeerLinksApi">PeerLinksApi</a></dt>
 <dd><p>Links from this environment to other T3 Code environments (peers), so that
 its agents can work there. <code>capabilities.peerLinks</code> advertises them. A
@@ -3660,6 +3666,66 @@ storageCleanupReport(signal?: AbortSignal): Promise<StorageCleanupReportUpdate>;
 ```
 
 **Kind**: instance method of [<code>DiagnosticsApi</code>](#DiagnosticsApi)  
+<a name="LocalServersApi"></a>
+
+## LocalServersApi
+
+The local servers that the server's preview discovery finds on its host: listeners
+that it attributes to a thread terminal (`terminal`) or to the agent of a thread
+(`agent`), of every thread, plus each configured URL that answers as a web server,
+which can have no owner. Process names are text that other programs chose.
+
+**Kind**: global class
+
+- [LocalServersApi](#LocalServersApi)
+  - [.watch()](#LocalServersApi+watch)
+  - [.list()](#LocalServersApi+list)
+  - [.stop()](#LocalServersApi+stop)
+
+<a name="LocalServersApi+watch"></a>
+
+### localServersApi.watch()
+
+Follow the listeners (orchestration:read): a fresh scan, then each change. The
+server also probes `configuredUrls`.
+
+```ts
+watch(
+    input: SubscribeDiscoveredLocalServersInput = {},
+    options?: { readonly signal?: AbortSignal },
+  ): AsyncIterable<DecodedStreamItem<DiscoveredLocalServerList>>;
+```
+
+**Kind**: instance method of [<code>LocalServersApi</code>](#LocalServersApi)  
+<a name="LocalServersApi+list"></a>
+
+### localServersApi.list()
+
+The listeners of one fresh scan (orchestration:read), from the first watch item.
+
+```ts
+list(
+    input: SubscribeDiscoveredLocalServersInput = {},
+    signal?: AbortSignal,
+  ): Promise<DiscoveredLocalServerList>;
+```
+
+**Kind**: instance method of [<code>LocalServersApi</code>](#LocalServersApi)  
+<a name="LocalServersApi+stop"></a>
+
+### localServersApi.stop()
+
+Stop a listener's process group (terminal:operate): SIGTERM, then SIGKILL after a
+grace period. The server scans again and signals only a listener with this pid and
+port that it attributes to a terminal or an agent; otherwise it fails with
+`PreviewStopLocalServerError` reason `not-found`. A process group shared with the
+server fails with reason `shared-group`.
+
+```ts
+async stop(input: PreviewStopLocalServerInput, signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>LocalServersApi</code>](#LocalServersApi)  
 <a name="PeerLinksApi"></a>
 
 ## PeerLinksApi

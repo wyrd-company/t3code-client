@@ -237,6 +237,23 @@ for await (const item of client.rpc.stream("subscribeResourceTelemetry", {})) {
 }
 ```
 
+`client.localServers` reads the local servers that the server's preview discovery
+finds on its host: the listeners that it attributes to a thread terminal (`terminal`)
+or to the agent of a thread (`agent`), of every thread, plus each configured URL that
+answers as a web server. `list` returns one fresh scan and `watch` follows changes;
+both need `orchestration:read`. `stop({ pid, port })` needs `terminal:operate`: the
+server scans again, then sends SIGTERM and later SIGKILL to the process group of a
+listener that it attributes to a thread, and fails with a `PreviewStopLocalServerError`
+otherwise.
+
+```ts
+const { servers } = await client.localServers.list({
+  configuredUrls: ["http://127.0.0.1:5173/"],
+});
+const own = servers.find((server) => server.agent?.threadId === "thread-1");
+if (own?.pid != null) await client.localServers.stop({ pid: own.pid, port: own.port });
+```
+
 `server.signalProcess` sends `SIGINT` or `SIGKILL` to a process of
 `server.getProcessDiagnostics`, identified by its `pid` and `startTimeMs`. It needs
 `environment:maintain`. A refusal is a result: `signaled` is false and `message`
