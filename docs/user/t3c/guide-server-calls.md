@@ -86,6 +86,29 @@ status 422 and tag `CloudSpeechError`; `schemas.speech.CloudSpeechError` decodes
 its `body`. A local failure has reason `invalid_audio`, `speech_unavailable` or
 `speech_busy`.
 
+`T3Client.openSpeechStream` transcribes while the audio arrives, over its own
+socket. It needs `orchestration:operate`. Send at most one second of PCM in each
+`sendAudio` call; each call gets an `update` with the text so far. `finish` asks
+for the final text:
+
+```ts
+const stream = await client.openSpeechStream({
+  ...DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS,
+  speechLanguage: "en",
+});
+for (const chunk of chunks) stream.sendAudio(chunk);
+stream.finish();
+for await (const item of stream) {
+  if (item.kind !== "item") continue;
+  if (item.value.type === "update") console.log(item.value.text?.committed);
+  if (item.value.type === "finished") console.log(item.value.text);
+  if (item.value.type === "error") console.error(item.value.message);
+}
+```
+
+The server closes the socket after `finished` or `error`. `stream.closed` gives
+the close code: 1000 after `finished`, 1008 after `error`.
+
 ## Repositories and terminals
 
 `git.runStackedAction` streams progress until the action finishes or fails.

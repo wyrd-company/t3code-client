@@ -51,6 +51,13 @@ export type {
   PreviewViewerFrame,
   PreviewViewerOutput,
 } from "./transport/previewViewer.ts";
+export type { SpeechStream, SpeechStreamClose } from "./transport/speechStream.ts";
+export {
+  SPEECH_STREAM_MAX_CHUNK_BYTES,
+  SPEECH_STREAM_PATH,
+  type SpeechStreamEvent,
+  type SpeechStreamText,
+} from "./schemas/speechStream.ts";
 export { httpRoutes, type HttpRouteName, type HttpRoutes } from "./http/registry.ts";
 export { assetUrlParams, attachmentUploadUrlParams } from "./http/routes/assets.ts";
 export { webhookUrlParams } from "./http/routes/webhooks.ts";

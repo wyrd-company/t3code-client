@@ -85,6 +85,7 @@ proposed-design:
         editor.ts               editor ids and the editor launch input
         preview.ts              browser tabs, browser profiles and discovered local servers
         previewViewer.ts        viewer socket messages, and the bodies of the two routes beside it
+        speechStream.ts         live transcription socket messages
         device.ts               device hosts, simulators and emulators, their sessions and actions
         serverSelfUpdate.ts     what moves a server to another version, and its progress
         relayClient.ts          the tunnel client of T3 Connect, and its install progress
@@ -154,7 +155,9 @@ proposed-design:
         socket.ts               SocketTransport: WebSocket lifecycle, reconnect, send/receive
         keepalive.ts            Ping/Pong liveness for one open socket
         socketClose.ts          classifies a close event: credential rejection (fatal) or drop (retry)
+        mediaSocket.ts          the open handshake of a socket with a media ticket in its URL
         previewViewer.ts        PreviewViewer: the viewer socket of a server browser tab
+        speechStream.ts         SpeechStream: one live transcription over /ws/voice
         rpcConnection.ts        RpcConnection: request ids, correlation, Chunk→AsyncIterable with Ack, Interrupt
       http/
         registry.ts             httpRoutes: route name → { method, path, input, success, auth, scope }
@@ -195,6 +198,7 @@ proposed-design:
         peerLinks.ts            list, link, unlink, answerRequest
         guestShares.ts          create, close, sendMessage, dismissMessage
         dispatch.ts             CommandDispatcher: validate and send OrchestrationV2Command
+        mediaSockets.ts         media socket URLs: scope check, media ticket, DPoP proof
       internal/
         asyncIterable.ts        channel/queue helpers, withAbort, merge
         ids.ts                  newId (uuid v4 via node:crypto)

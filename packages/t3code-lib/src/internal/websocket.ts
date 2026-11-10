@@ -10,7 +10,8 @@ const WS_MESSAGE_TOO_LARGE = "WS_ERR_UNSUPPORTED_MESSAGE_LENGTH";
 const CLOSE_MESSAGE_TOO_BIG = 1009;
 export interface WebSocketLike {
   readonly readyState: number;
-  send(data: string): void;
+  /** Text is a JSON message; bytes are one binary message. */
+  send(data: string | Uint8Array): void;
   close(code?: number, reason?: string): void;
   addEventListener(type: string, listener: (event: never) => void): void;
 }

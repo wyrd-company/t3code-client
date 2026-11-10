@@ -6,52 +6,11 @@ import { describe, expect, it } from "vite-plus/test";
 import { memoryCredentialStore } from "../auth/credentialStore.ts";
 import { T3Client } from "../client.ts";
 import { T3AuthError, T3ConnectionError, T3PreconditionError } from "../errors.ts";
-import type { WebSocketConstructor } from "../internal/websocket.ts";
 import type { AuthGrantedScope } from "../schemas/auth.ts";
 import { threadId } from "../schemas/common.ts";
+import { FakeSocket, fakeWebSocket as webSocket } from "../../test/support/fakeSocket.ts";
 import { connectPreviewViewer } from "./previewViewer.ts";
 
-type Listener = (event: never) => void;
-
-/** A socket that the test drives. */
-class FakeSocket {
-  static last: FakeSocket;
-  readyState = 0;
-  readonly url: string;
-  readonly sent: string[] = [];
-  binaryType = "blob";
-  readonly #listeners = new Map<string, Listener[]>();
-
-  constructor(url: string) {
-    this.url = url;
-    FakeSocket.last = this;
-  }
-  addEventListener(type: string, listener: Listener): void {
-    this.#listeners.set(type, [...(this.#listeners.get(type) ?? []), listener]);
-  }
-  send(data: string): void {
-    this.sent.push(data);
-  }
-  close(code = 1000, reason = ""): void {
-    this.drop(code, reason);
-  }
-  open(): void {
-    this.readyState = 1;
-    this.#emit("open", {});
-  }
-  message(data: unknown): void {
-    this.#emit("message", { data });
-  }
-  drop(code: number, reason: string): void {
-    this.readyState = 3;
-    this.#emit("close", { code, reason });
-  }
-  #emit(type: string, event: unknown): void {
-    for (const listener of this.#listeners.get(type) ?? []) listener(event as never);
-  }
-}
-
-const webSocket = FakeSocket as unknown as WebSocketConstructor;
 const url = new URL("ws://127.0.0.1:1/api/preview-stream/ws?wsTicket=sample-ticket");
 
 async function opened() {

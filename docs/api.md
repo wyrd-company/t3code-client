@@ -643,6 +643,19 @@ its thread; set <code>threadMode: &quot;new_thread&quot;</code> to leave it.</p>
 ## Constants
 
 <dl>
+<dt><a href="#SPEECH_STREAM_PATH">SPEECH_STREAM_PATH</a></dt>
+<dd><p>The socket path.</p>
+</dd>
+<dt><a href="#SPEECH_STREAM_MAX_CHUNK_BYTES">SPEECH_STREAM_MAX_CHUNK_BYTES</a></dt>
+<dd><p>The largest binary audio message the server reads: one second of 16 kHz mono Float32 PCM.</p>
+</dd>
+<dt><a href="#SpeechStreamText">SpeechStreamText</a></dt>
+<dd><p>The text so far: <code>committed</code> does not change again, <code>tentative</code> can.</p>
+</dd>
+<dt><a href="#SpeechStreamEvent">SpeechStreamEvent</a></dt>
+<dd><p>A text message that the server sends. <code>ready</code> answers <code>start</code>, <code>update</code> answers each audio
+message, <code>finished</code> answers <code>finish</code>, and <code>error</code> comes before the server closes with 1008.</p>
+</dd>
 <dt><a href="#httpRoutes">httpRoutes</a></dt>
 <dd><p>Every HTTP route of the target build that has an entry, by upstream group and endpoint name.</p>
 </dd>
@@ -1001,6 +1014,7 @@ Client composition root for HTTP, auth, RPC and server facades.
 - [T3Client](#T3Client)
   - _instance_
     - [.openPreviewViewer()](#T3Client+openPreviewViewer)
+    - [.openSpeechStream()](#T3Client+openSpeechStream)
     - [.connect()](#T3Client+connect)
     - [.close()](#T3Client+close)
   - _static_
@@ -1019,6 +1033,22 @@ async openPreviewViewer(
     target: PreviewViewerTarget,
     signal?: AbortSignal,
   ): Promise<PreviewViewer>;
+```
+
+**Kind**: instance method of [<code>T3Client</code>](#T3Client)  
+<a name="T3Client+openSpeechStream"></a>
+
+### t3Client.openSpeechStream()
+
+Start one live transcription on `/ws/voice`, with a new ticket for the `media` use and
+`orchestration:operate`. Each stream is its own socket, and `close()` of this client does
+not end it.
+
+```ts
+async openSpeechStream(
+    options: SpeechTranscriptionOptions = DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS,
+    signal?: AbortSignal,
+  ): Promise<SpeechStream>;
 ```
 
 **Kind**: instance method of [<code>T3Client</code>](#T3Client)  
@@ -3924,6 +3954,35 @@ run. On an existing task, null or omitted keeps a stored one-thread mode and
 its thread; set `threadMode: "new_thread"` to leave it.
 
 **Kind**: global variable  
+<a name="SPEECH_STREAM_PATH"></a>
+
+## SPEECH\_STREAM\_PATH
+
+The socket path.
+
+**Kind**: global constant  
+<a name="SPEECH_STREAM_MAX_CHUNK_BYTES"></a>
+
+## SPEECH\_STREAM\_MAX\_CHUNK\_BYTES
+
+The largest binary audio message the server reads: one second of 16 kHz mono Float32 PCM.
+
+**Kind**: global constant  
+<a name="SpeechStreamText"></a>
+
+## SpeechStreamText
+
+The text so far: `committed` does not change again, `tentative` can.
+
+**Kind**: global constant  
+<a name="SpeechStreamEvent"></a>
+
+## SpeechStreamEvent
+
+A text message that the server sends. `ready` answers `start`, `update` answers each audio
+message, `finished` answers `finish`, and `error` comes before the server closes with 1008.
+
+**Kind**: global constant  
 <a name="httpRoutes"></a>
 
 ## httpRoutes

@@ -10,6 +10,7 @@
  * `close()` stops reconnecting and ends every stream.
  */
 import { GuestSharesApi } from "./api/guestShares.ts";
+import { previewViewerUrl, webSocketUrl, withMediaTicket } from "./api/mediaSockets.ts";
 import { PeerLinksApi } from "./api/peerLinks.ts";
 import { ProjectsApi } from "./api/projects.ts";
 import { ScheduledTasksApi } from "./api/scheduledTasks.ts";
@@ -21,7 +22,6 @@ import { VcsApi } from "./api/vcs.ts";
 import { CommandDispatcher } from "./api/dispatch.ts";
 import { AuthClient } from "./auth/authClient.ts";
 import { createDpopProof } from "./auth/dpop.ts";
-import { ensureScopes } from "./auth/scopes.ts";
 import { memoryCredentialStore, type CredentialStore } from "./auth/credentialStore.ts";
 import { T3AuthError, T3PreconditionError } from "./errors.ts";
 import { HttpRouteClient } from "./http/client.ts";
@@ -37,10 +37,18 @@ import {
   ORCHESTRATION_PROTOCOL_VERSION_TEXT,
   SETTINGS_SECRET_REFERENCES_CAPABILITY,
 } from "./schemas/environment.ts";
+import { DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS } from "./http/speechAudio.ts";
 import { PreviewViewerTarget } from "./schemas/previewViewer.ts";
+import type { SpeechTranscriptionOptions } from "./schemas/speech.ts";
+import { SPEECH_STREAM_PATH } from "./schemas/speechStream.ts";
 import { HttpTransport } from "./transport/http.ts";
 import { connectPreviewViewer, type PreviewViewer } from "./transport/previewViewer.ts";
 import { RpcConnection } from "./transport/rpcConnection.ts";
+import {
+  connectSpeechStream,
+  speechStreamStart,
+  type SpeechStream,
+} from "./transport/speechStream.ts";
 import { SocketTransport } from "./transport/socket.ts";
 
 export interface T3ClientOptions {
@@ -190,23 +198,34 @@ export class T3Client {
     if (!parsed.success) {
       throw new T3PreconditionError(`Preview viewer target is invalid: ${parsed.error.message}`);
     }
-    const granted = await this.auth.currentScopes();
-    if (granted !== undefined) ensureScopes(granted, ["orchestration:read"], "openPreviewViewer");
-    const { ticket } = await this.routes.call(
-      "auth.webSocketTicketFor",
-      { params: { use: "media" } },
+    const url = await withMediaTicket(
+      this.auth,
+      this.routes,
+      previewViewerUrl(this.#baseUrl, parsed.data),
+      { scope: "orchestration:read", operation: "openPreviewViewer" },
       signal,
     );
-    const url = previewViewerUrl(this.#baseUrl, parsed.data);
-    url.searchParams.set("wsTicket", ticket);
-    const key = await this.auth.currentDpopKey();
-    if (key !== undefined) {
-      url.searchParams.set(
-        "dpop",
-        createDpopProof({ key, method: "GET", url, accessToken: ticket }),
-      );
-    }
     return connectPreviewViewer(this.#webSocket ?? (await defaultWebSocket()), url, signal);
+  }
+
+  /**
+   * Start one live transcription on `/ws/voice`, with a new ticket for the `media` use and
+   * `orchestration:operate`. Each stream is its own socket, and `close()` of this client does
+   * not end it.
+   */
+  async openSpeechStream(
+    options: SpeechTranscriptionOptions = DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS,
+    signal?: AbortSignal,
+  ): Promise<SpeechStream> {
+    const start = speechStreamStart(options);
+    const url = await withMediaTicket(
+      this.auth,
+      this.routes,
+      webSocketUrl(SPEECH_STREAM_PATH, this.#baseUrl),
+      { scope: "orchestration:operate", operation: "openSpeechStream" },
+      signal,
+    );
+    return connectSpeechStream(this.#webSocket ?? (await defaultWebSocket()), url, start, signal);
   }
 
   /** Optional eager connect; every RPC connects on demand otherwise. */
@@ -252,25 +271,6 @@ function socketAuthError(reason: string, message: string): T3AuthError {
     body: undefined,
     reason,
   });
-}
-
-function webSocketUrl(path: string, baseUrl: string): URL {
-  let url: URL;
-  try {
-    url = new URL(path, baseUrl);
-  } catch (cause) {
-    throw new T3PreconditionError(`baseUrl is not a valid URL: ${baseUrl}`, { cause });
-  }
-  url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
-  return url;
-}
-
-function previewViewerUrl(baseUrl: string, target: PreviewViewerTarget): URL {
-  const url = webSocketUrl("/api/preview-stream/ws", baseUrl);
-  for (const [name, value] of Object.entries(target)) {
-    if (value !== undefined) url.searchParams.set(name, String(value));
-  }
-  return url;
 }
 
 function socketUrl(options: T3ClientOptions): URL {

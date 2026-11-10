@@ -56,6 +56,7 @@ Client composition root for HTTP, auth, RPC and server facades.
 - [T3Client](#T3Client)
   - _instance_
     - [.openPreviewViewer()](#T3Client+openPreviewViewer)
+    - [.openSpeechStream()](#T3Client+openSpeechStream)
     - [.connect()](#T3Client+connect)
     - [.close()](#T3Client+close)
   - _static_
@@ -74,6 +75,22 @@ async openPreviewViewer(
     target: PreviewViewerTarget,
     signal?: AbortSignal,
   ): Promise<PreviewViewer>;
+```
+
+**Kind**: instance method of [<code>T3Client</code>](#T3Client)  
+<a name="T3Client+openSpeechStream"></a>
+
+### t3Client.openSpeechStream()
+
+Start one live transcription on `/ws/voice`, with a new ticket for the `media` use and
+`orchestration:operate`. Each stream is its own socket, and `close()` of this client does
+not end it.
+
+```ts
+async openSpeechStream(
+    options: SpeechTranscriptionOptions = DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS,
+    signal?: AbortSignal,
+  ): Promise<SpeechStream>;
 ```
 
 **Kind**: instance method of [<code>T3Client</code>](#T3Client)  

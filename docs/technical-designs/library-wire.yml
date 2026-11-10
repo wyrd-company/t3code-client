@@ -126,6 +126,18 @@ proposed-design:
     The `upgrade` is 503 when the browser fails in another way. Upstream has no contract for these
     messages, so `schemas/previewViewer.ts` mirrors `ServerBrowser.ts`.
 
+    `GET /ws/voice` is one live transcription. `T3Client.openSpeechStream` opens it with a
+    ticket for the `media` use and `orchestration:operate`; the upgrade is 401 without a
+    valid ticket and 403 without that scope. The first text message is
+    `{"type":"start","options"}` with the recognition options of `voice.transcribe`, at most
+    `SPEECH_MAX_OPTIONS_BYTES`. Each binary message is 16 kHz mono Float32 PCM, at most
+    `SPEECH_STREAM_MAX_CHUNK_BYTES`. `{"type":"finish"}` asks for the final text. The server
+    answers in arrival order: `ready` for `start`, `update` with `revision` and
+    `{committed, tentative}` (or `null`) for each audio message, and `finished` with `text`,
+    then close 1000. Any failure sends `error` with a generic `message` and closes with 1008.
+    The server ends a stream after ten minutes. `schemas/speechStream.ts` mirrors
+    `SpeechStreamCommand` and `SpeechStreamEvent`.
+
     In this table "bearer" is any access token. A proof-bound session sends
     `authorization: DPoP <token>` and a `dpop` header in place of
     `authorization: Bearer <token>`. `POST /oauth/token` with a `dpop` header binds

@@ -8,16 +8,9 @@
  * acknowledgement when the consumer asks for the next item, so that a slow consumer
  * gets only the newest frame.
  */
-import {
-  T3ConnectionError,
-  T3DecodeError,
-  T3InterruptedError,
-  T3PreconditionError,
-} from "../errors.ts";
+import { T3ConnectionError, T3DecodeError, T3PreconditionError } from "../errors.ts";
 import {
   closeWebSocket,
-  openWebSocket,
-  terminateWebSocket,
   type WebSocketCloseInfo,
   type WebSocketConstructor,
   type WebSocketLike,
@@ -28,7 +21,7 @@ import {
   PreviewViewerInput,
   PreviewViewerMessage,
 } from "../schemas/previewViewer.ts";
-import { closeError } from "./socketClose.ts";
+import { binaryBytes, connectMediaSocket, parseText } from "./mediaSocket.ts";
 
 const SOCKET_OPEN = 1;
 const CLOSE_TAB_GONE = 4404;
@@ -174,52 +167,13 @@ export function connectPreviewViewer(
   url: URL,
   signal?: AbortSignal,
 ): Promise<PreviewViewer> {
-  return new Promise((resolve, reject) => {
-    if (signal?.aborted === true) {
-      reject(new T3InterruptedError("The preview viewer did not open: the signal is aborted."));
-      return;
-    }
-    let opened = false;
-    const viewer = new ViewerSession(() => socket);
-    const onAbort = () => {
-      reject(new T3InterruptedError("The preview viewer did not open: the signal is aborted."));
-      terminateWebSocket(socket);
-    };
-    const socket = openWebSocket(webSocket, url.toString(), undefined, {
-      onOpen: () => {
-        opened = true;
-        signal?.removeEventListener("abort", onAbort);
-        resolve(viewer);
-      },
-      onMessage: (data) => viewer.receive(data),
-      onError: () => {},
-      onClose: (info) => {
-        signal?.removeEventListener("abort", onAbort);
-        viewer.end(info);
-        if (!opened) reject(closeError(info, false).error);
-      },
-    });
-    (socket as { binaryType?: string }).binaryType = "arraybuffer";
-    signal?.addEventListener("abort", onAbort, { once: true });
-  });
-}
-
-function binaryBytes(data: unknown): Uint8Array | undefined {
-  if (data instanceof ArrayBuffer) return new Uint8Array(data);
-  if (ArrayBuffer.isView(data)) {
-    return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-  }
-  return undefined;
-}
-
-/** Text that is not JSON stays a string, which the schema then refuses. */
-function parseText(data: unknown): unknown {
-  if (typeof data !== "string") return data;
-  try {
-    return JSON.parse(data) as unknown;
-  } catch {
-    return data;
-  }
+  return connectMediaSocket(
+    webSocket,
+    url,
+    "preview viewer",
+    (socket) => new ViewerSession(socket),
+    signal,
+  );
 }
 
 function closeDetails(info: WebSocketCloseInfo): PreviewViewerClose {

@@ -40,6 +40,7 @@ export * as settingsPatch from "./settingsPatch.ts";
 export * as pullRequests from "./pullRequests.ts";
 export * as sourceControl from "./sourceControl.ts";
 export * as speech from "./speech.ts";
+export * as speechStream from "./speechStream.ts";
 export * as projectClone from "./projectClone.ts";
 export * as agentSessions from "./agentSessions.ts";
 export * as storageCleanup from "./storageCleanup.ts";

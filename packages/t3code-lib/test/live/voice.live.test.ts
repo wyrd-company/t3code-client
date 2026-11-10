@@ -4,12 +4,13 @@
 // ---
 /**
  * The voice routes on a real stock server. No model is downloaded and no cloud provider is called:
- * the cloud transcription has no key, and the model writes name a model that does not exist.
+ * the cloud transcription has no key, the model writes name a model that does not exist, and a
+ * live transcription finds no model.
  */
 import { afterAll, describe, expect, it } from "vite-plus/test";
-import { T3HttpError, encodeSpeechPcmRequest } from "../../src/index.ts";
+import { T3AuthError, T3HttpError, encodeSpeechPcmRequest } from "../../src/index.ts";
 import { SpeechAcceleration, SpeechModelUnloadTimeout } from "../../src/schemas/speech.ts";
-import { connect, hasLiveServer } from "./liveClient.ts";
+import { connect, connectWithScopes, hasLiveServer } from "./liveClient.ts";
 
 const refusal = async (promise: Promise<unknown>) => {
   const outcome = await promise.then(
@@ -92,5 +93,27 @@ describe.skipIf(!hasLiveServer)("voice routes", () => {
     await client.routes.call("voice.updateModelUnloadTimeout", {
       body: { timeout: SpeechModelUnloadTimeout.parse(before.modelUnloadTimeout) },
     });
+  });
+
+  it("opens /ws/voice and ends the stream when no model is installed", async () => {
+    // The server decodes `start` and then fails with SpeechModelNotFoundError: it sends one
+    // `error` and closes with 1008.
+    const stream = await client.openSpeechStream();
+    const events = [];
+    for await (const item of stream) {
+      if (item.kind === "decode-error") throw item.error;
+      events.push(item.value);
+    }
+    expect(events).toEqual([{ type: "error", message: expect.any(String) }]);
+    expect(await stream.closed).toEqual({ code: 1008, reason: "Speech stream ended" });
+  });
+
+  it("refuses a live transcription without orchestration:operate", async () => {
+    const reader = await connectWithScopes(client, ["orchestration:read"]);
+    try {
+      await expect(reader.openSpeechStream()).rejects.toBeInstanceOf(T3AuthError);
+    } finally {
+      await reader.close();
+    }
   });
 });
