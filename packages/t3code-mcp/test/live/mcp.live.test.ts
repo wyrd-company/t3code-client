@@ -80,6 +80,7 @@ it("serves additive tools through stdio against an isolated stock server without
       configuration: { threadId: null, runtimeMode: "full-access" },
     });
     expect(changed["threadId"]).toBeNull();
+    expect(changed["threadMode"]).toBe("new_thread");
     const config = await call("scheduled_task_configuration", { id });
     expect(config["enabled"]).toBe(false);
     expect(config["runtimeMode"]).toBe("full-access");

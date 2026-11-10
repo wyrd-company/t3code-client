@@ -16,4 +16,29 @@ describe("scheduledTaskUpdateInput", () => {
       schedule,
     });
   });
+
+  const bound = { ...intervalTask, threadId: "thread-sample" };
+
+  it("leaves a one-thread mode when the patch unbinds the thread", () => {
+    for (const threadMode of [undefined, "continue", "fresh_session"] as const) {
+      const stored = ScheduledTask.parse({ ...bound, ...(threadMode ? { threadMode } : {}) });
+      expect(scheduledTaskUpdateInput(stored, { threadId: null })).toMatchObject({
+        threadId: null,
+        threadMode: "new_thread",
+      });
+    }
+  });
+
+  it("sends a mode only when the patch sets one or unbinds the thread", () => {
+    const stored = ScheduledTask.parse({ ...bound, threadMode: "continue" });
+    expect(scheduledTaskUpdateInput(stored, { title: "Renamed task" })).not.toHaveProperty(
+      "threadMode",
+    );
+    expect(
+      scheduledTaskUpdateInput(ScheduledTask.parse(intervalTask), { threadId: null }),
+    ).not.toHaveProperty("threadMode");
+    expect(
+      scheduledTaskUpdateInput(stored, { threadId: null, threadMode: "fresh_session" }),
+    ).toMatchObject({ threadMode: "fresh_session" });
+  });
 });

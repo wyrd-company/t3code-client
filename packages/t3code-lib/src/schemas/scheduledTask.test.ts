@@ -11,8 +11,10 @@ import {
 } from "../../test/support/scheduledTaskFixtures.ts";
 import { decodeRpcErrorRecord } from "./rpcErrors.ts";
 import {
+  ScheduledTask,
   ScheduledTaskListResult,
   ScheduledTaskSchedule,
+  ScheduledTaskUpsertInput,
   ScheduledTaskUpsertSchedule,
   ScheduledTaskWebhookDeliverySummary,
   isWebhookDedupeTemplate,
@@ -94,6 +96,26 @@ describe("scheduled task schemas", () => {
     expect(
       ScheduledTaskWebhookDeliverySummary.parse({ ...deliverySummary, outcome: "quarantined" }),
     ).toMatchObject({ outcome: "quarantined" });
+  });
+
+  it("reads thread modes as a growing set and sends only known ones", () => {
+    expect(ScheduledTask.parse(intervalTask).threadMode).toBeUndefined();
+    expect(ScheduledTask.parse({ ...intervalTask, threadMode: "fresh_session" })).toMatchObject({
+      threadMode: "fresh_session",
+    });
+    expect(ScheduledTask.parse({ ...intervalTask, threadMode: "sample_mode" })).toMatchObject({
+      threadMode: "sample_mode",
+    });
+    const { id: _id, ...input } = {
+      ...intervalTask,
+      schedule: { type: "interval", everyMs: 60_000 },
+    };
+    expect(ScheduledTaskUpsertInput.safeParse({ ...input, threadMode: "continue" }).success).toBe(
+      true,
+    );
+    expect(
+      ScheduledTaskUpsertInput.safeParse({ ...input, threadMode: "sample_mode" }).success,
+    ).toBe(false);
   });
 
   it("registers ScheduledTaskError and UsageReadError as known RPC failures", () => {

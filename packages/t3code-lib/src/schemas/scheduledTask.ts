@@ -40,6 +40,16 @@ export const ScheduledTaskRunStatus = forwardCompatibleLiteral([
 ]);
 export type ScheduledTaskRunStatus = z.infer<typeof ScheduledTaskRunStatus>;
 
+const SCHEDULED_TASK_THREAD_MODES = ["new_thread", "continue", "fresh_session"] as const;
+
+/**
+ * Where runs go. `new_thread` launches a thread per run. The one-thread modes
+ * launch their thread on the first run and keep it; `fresh_session` starts each
+ * later run in a new provider session there. The set grows; newer modes stay strings.
+ */
+export const ScheduledTaskThreadMode = forwardCompatibleLiteral(SCHEDULED_TASK_THREAD_MODES);
+export type ScheduledTaskThreadMode = z.infer<typeof ScheduledTaskThreadMode>;
+
 /**
  * A webhook task's endpoint. `path` carries the URL token and is relative to
  * the environment; `url` is the T3 Connect relay URL, null without one. The
@@ -64,6 +74,8 @@ export const ScheduledTask = z.looseObject({
   schedule: ScheduledTaskSchedule,
   projectId: ProjectId,
   threadId: ThreadId.nullable(),
+  /** Absent from servers before thread modes; their bound tasks continue the thread. */
+  threadMode: ScheduledTaskThreadMode.optional(),
   workspaceStrategy: OrchestrationV2ThreadLaunchWorkspaceStrategy,
   modelSelection: ModelSelection,
   runtimeMode: RuntimeMode,
@@ -100,8 +112,17 @@ export const ScheduledTaskUpsertInput = z.looseObject({
   enabled: z.boolean(),
   schedule: ScheduledTaskUpsertSchedule,
   projectId: ProjectId,
-  /** Omit or null to start a new thread per run. */
+  /**
+   * The thread runs go to. A new task with no thread starts a new thread per
+   * run. On an existing task, null or omitted keeps a stored one-thread mode and
+   * its thread; set `threadMode: "new_thread"` to leave it.
+   */
   threadId: ThreadId.nullable().optional(),
+  /**
+   * Omit to keep the stored mode, or to derive it from `threadId` for a new
+   * task or one bound to a thread for the first time.
+   */
+  threadMode: z.enum(SCHEDULED_TASK_THREAD_MODES).optional(),
   workspaceStrategy: OrchestrationV2ThreadLaunchWorkspaceStrategy,
   modelSelection: ModelSelection,
   runtimeMode: RuntimeMode,

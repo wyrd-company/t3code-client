@@ -28,6 +28,7 @@ export type ScheduledTaskPatch = Partial<
     | "schedule"
     | "projectId"
     | "threadId"
+    | "threadMode"
     | "workspaceStrategy"
     | "modelSelection"
     | "runtimeMode"
@@ -49,6 +50,7 @@ export function scheduledTaskUpdateInput(
     schedule: updatedSchedule(stored, patch.schedule),
     projectId: patch.projectId ?? stored.projectId,
     threadId: patch.threadId === undefined ? stored.threadId : patch.threadId,
+    ...threadModeUpdate(stored, patch),
     workspaceStrategy: patch.workspaceStrategy ?? stored.workspaceStrategy,
     modelSelection: patch.modelSelection ?? stored.modelSelection,
     runtimeMode: patch.runtimeMode ?? stored.runtimeMode,
@@ -57,6 +59,22 @@ export function scheduledTaskUpdateInput(
     // The server stamps an omitted creation source as "web".
     creationSource: stored.creationSource,
   };
+}
+
+/**
+ * An omitted mode keeps the stored one, so a null thread alone would not leave
+ * a one-thread mode. A stored task without a mode is a pre-mode server's: bound
+ * means `continue`. A patch with `threadId: null` and no mode sends
+ * `new_thread`; any other patch sends only the mode it sets.
+ */
+function threadModeUpdate(
+  stored: ScheduledTask,
+  patch: ScheduledTaskPatch,
+): Pick<ScheduledTaskUpsertInput, "threadMode"> {
+  if (patch.threadMode !== undefined) return { threadMode: patch.threadMode };
+  const storedMode = stored.threadMode ?? (stored.threadId === null ? "new_thread" : "continue");
+  if (patch.threadId === null && storedMode !== "new_thread") return { threadMode: "new_thread" };
+  return {};
 }
 
 /**

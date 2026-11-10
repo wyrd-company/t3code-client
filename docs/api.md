@@ -634,7 +634,9 @@ transport failures retain connection and rejected credentials retain auth_invali
 <dd><p>The run that ignored Stop; the server refuses once a newer run has started.</p>
 </dd>
 <dt><a href="#threadId">threadId</a></dt>
-<dd><p>Omit or null to start a new thread per run.</p>
+<dd><p>The thread runs go to. A new task with no thread starts a new thread per
+run. On an existing task, null or omitted keeps a stored one-thread mode and
+its thread; set <code>threadMode: &quot;new_thread&quot;</code> to leave it.</p>
 </dd>
 </dl>
 
@@ -3898,7 +3900,9 @@ The run that ignored Stop; the server refuses once a newer run has started.
 
 ## threadId
 
-Omit or null to start a new thread per run.
+The thread runs go to. A new task with no thread starts a new thread per
+run. On an existing task, null or omitted keeps a stored one-thread mode and
+its thread; set `threadMode: "new_thread"` to leave it.
 
 **Kind**: global variable  
 <a name="httpRoutes"></a>
