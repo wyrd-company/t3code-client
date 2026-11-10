@@ -130,7 +130,10 @@ terminal stays under the control of the person who runs it: the tool refuses it
 with code `terminal_owned`. Other refusals are `not_owned` (the thread's agent
 did not start it), `not_found` (no thread owns a listener with that pid and
 port), `shared_group` (it shares the T3 Code server's process group) and
-`unsupported`.
+`unsupported`. The owner check uses the tool's scan. The server scans again
+before it signals and requires only that some thread owns the listener with that
+pid and port, so a process that reuses the pid on that port between the two
+scans is not checked against `threadId`.
 
 ## Configuration and permissions
 

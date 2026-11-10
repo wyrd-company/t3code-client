@@ -140,7 +140,10 @@ for a server in a thread terminal, `not_owned` when the thread's agent did not
 start it, `not_found` when no thread owns a listener with that pid and port,
 `shared_group` when the listener shares the T3 Code server's process group and
 `unsupported` on a platform where the server cannot stop it. It requires
-`terminal:operate`.
+`terminal:operate`. The owner check uses the tool's scan. The server scans
+again and stops the listener with that pid and port when any thread owns it,
+so a process that reuses the pid on that port between the two scans is not
+checked against `threadId`.
 
 Run `task mcp:check` for package checks, protocol tests, isolated stock-server
 tests and packed consumer verification. No agent runs are required.

@@ -101,7 +101,10 @@ proposed-design:
     characters and marked untrusted. Stop needs terminal:operate and a named
     thread. It reads the scan first and stops only a listener that the agent of
     that thread started, so an agent cannot stop a person's terminal server or a
-    listener that it did not name. The server scans again before it signals.
+    listener that it did not name. The server scans again before it signals and
+    requires only that some thread owns the listener with that pid and port; the
+    stock stop takes no expected owner, so a process that reuses the pid on that
+    port between the two scans is not checked against the named thread.
   credentials-and-errors: |
     The selected T3 credential and its granted scopes remain the authority for
     every operation. Scheduler endpoint and delivery access preserve upstream
