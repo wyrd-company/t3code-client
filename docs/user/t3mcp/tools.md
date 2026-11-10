@@ -27,6 +27,8 @@ error code and message.
 | `thread_usage`                  | `threadId`                                                       | Context, token and cost records with owning provider/run ids.                       |
 | `thread_diff`                   | `threadId`, optional `range`                                     | Full-thread or explicit checkpoint-range diff.                                      |
 | `thread_search_content`         | `threadId`, `query`                                              | Native within-thread match count and selected match.                                |
+| `thread_family`                 | `threadId`                                                       | The root, forks and subagent trees of the thread's family, in any run state.        |
+| `worktree_threads`              | `worktreePath`                                                   | Ids of the active threads on the path, subagent children included.                  |
 | `thread_stop`                   | `threadId`, optional `reason`                                    | Requests native Stop and holds queued messages, including idle/background work.     |
 | `thread_force_stop`             | `threadId`, optional `runId`                                     | Force stops an agent that ignored Stop; returns the outcome and sharing threads.    |
 | `thread_queue_resume`           | `threadId`                                                       | Releases all queued-message holds.                                                  |
@@ -49,6 +51,14 @@ and kills or releases the agent process. `outcome` is `killed`, `released`,
 in `sharedWithThreadIds`, so only this thread's turn ended. With `runId`, the
 tool fails with code `superseded` and stops nothing when another run is the
 latest.
+
+## Thread families and worktrees
+
+`thread_family` returns `snapshotSequence` and `threads`: every active thread
+with the same root as the given thread, in any run state, including forks and
+idle subagent children. An unknown thread has an empty family. `worktree_threads` returns `threadIds`: the active threads
+whose worktree path equals `worktreePath`, subagent children included. Check it
+before you remove a worktree. Both need `orchestration:read`.
 
 ## Configuration and permissions
 

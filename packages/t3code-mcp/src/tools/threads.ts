@@ -77,6 +77,20 @@ export const threadTools = [
     ({ threadId }, client, signal) => client.threads.status(threadId, signal),
   ),
   defineTool(
+    "thread_family",
+    "Read a thread's whole family in one read: the root, its forks and their subagent trees, in any run state, including idle subagent children. Returns thread summaries and snapshotSequence; an unknown thread has an empty family.",
+    threadInput,
+    ({ threadId }, client, signal) => client.shell.threadFamily(threadId, signal),
+  ),
+  defineTool(
+    "worktree_threads",
+    "List the ids of the active threads on a worktree path, including subagent children. Check it before you remove a worktree. The path must equal the thread's stored worktree path.",
+    z.strictObject({ worktreePath: schemas.common.TrimmedNonEmptyString }),
+    async ({ worktreePath }, client, signal) => ({
+      threadIds: await client.shell.worktreeThreadIds(worktreePath, signal),
+    }),
+  ),
+  defineTool(
     "thread_approvals",
     "Read pending approvals and their full prompts for human review. Does not answer approvals or change permissions. Use stock tools for questions.",
     threadInput,

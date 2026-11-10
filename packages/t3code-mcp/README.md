@@ -35,6 +35,7 @@ until a tool is called. `t3code-mcp tools` lists names without connecting.
 | `thread_force_stop`                                        | Force stop of an agent that ignored Stop                        |
 | `thread_status`, `thread_approvals`                        | Active/queued runs, background work and pending human approvals |
 | `thread_usage`, `thread_diff`, `thread_search_content`     | Usage records, checkpoint diffs and within-thread search        |
+| `thread_family`, `worktree_threads`                        | A thread's whole family; the active threads on a worktree path  |
 | `provider_status`, `usage_summary`                         | Provider availability/limits and historical usage buckets       |
 
 Use built-in T3 tools for schedule CRUD, run-now, launches, global thread search,
@@ -78,6 +79,13 @@ agent process. It returns `outcome` (`killed`, `released`, `releasing` or
 those threads, so only this thread's turn ended. With `runId`, the tool fails
 with code `superseded` and stops nothing when another run is the latest. It
 requires `orchestration:operate`.
+
+`thread_family` accepts `{threadId}` and returns `{snapshotSequence, threads}`:
+every active thread with the same root, in any run state, including forks and
+idle subagent children. An unknown thread has an empty family.
+`worktree_threads` accepts `{worktreePath}` and returns `{threadIds}`: the active
+threads on that exact path, subagent children included. Check it before you
+remove a worktree. Both require `orchestration:read`.
 
 Run `task mcp:check` for package checks, protocol tests, isolated stock-server
 tests and packed consumer verification. No agent runs are required.

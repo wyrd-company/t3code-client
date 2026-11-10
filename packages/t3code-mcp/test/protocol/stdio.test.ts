@@ -31,6 +31,8 @@ it("has no tool-name collisions with the complete pinned stock toolkit inventory
       "thread_usage",
       "thread_diff",
       "thread_search_content",
+      "thread_family",
+      "worktree_threads",
       "provider_status",
       "usage_summary",
     ].sort(),

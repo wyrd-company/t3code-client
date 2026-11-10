@@ -31,6 +31,7 @@ it("serves additive tools through stdio against an isolated stock server without
   const root = await mkdtemp(join(tmpdir(), "t3code-mcp-live-"));
   let project: Awaited<ReturnType<T3Client["projects"]["ensure"]>> | undefined;
   let thread: Awaited<ReturnType<T3Client["threads"]["create"]>> | undefined;
+  let treeThread: Awaited<ReturnType<T3Client["threads"]["create"]>> | undefined;
   let task: Awaited<ReturnType<T3Client["scheduledTasks"]["upsert"]>> | undefined;
   async function call(name: string, args: Record<string, unknown>) {
     const result = await mcp.callTool({ name, arguments: args });
@@ -123,6 +124,25 @@ it("serves additive tools through stdio against an isolated stock server without
         "totalMatches"
       ],
     ).toBe(0);
+    const family = await call("thread_family", threadInput);
+    expect((family["threads"] as { id: string }[]).map((row) => row.id)).toEqual([thread.id]);
+    expect((await call("thread_family", { threadId: "sample-absent-thread" }))["threads"]).toEqual(
+      [],
+    );
+    expect(await call("worktree_threads", { worktreePath: join(root, "sample-absent") })).toEqual({
+      threadIds: [],
+    });
+    const worktreePath = join(root, "sample-tree");
+    treeThread = await upstream.threads.create({
+      projectId: project.id,
+      title: "Sample tree",
+      modelSelection: selection,
+      worktreePath,
+      branch: "sample-tree",
+    });
+    expect(await call("worktree_threads", { worktreePath })).toEqual({
+      threadIds: [treeThread.id],
+    });
     const providers = await call("provider_status", {});
     expect(Array.isArray(providers["providers"])).toBe(true);
     const day = new Date().toISOString().slice(0, 10);
@@ -147,6 +167,7 @@ it("serves additive tools through stdio against an isolated stock server without
     await mcp.close();
     try {
       if (task) await upstream.scheduledTasks.delete(task.id);
+      if (treeThread) await upstream.threads.delete(treeThread.id);
       if (thread) await upstream.threads.delete(thread.id);
       if (project) await upstream.projects.delete(project.id, { force: true });
     } finally {

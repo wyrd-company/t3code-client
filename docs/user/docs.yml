@@ -292,6 +292,12 @@ products:
           - name: thread_search_content
             description: Search within one thread.
             effect: Read-only
+          - name: thread_family
+            description: Read a thread's root, forks and subagent trees.
+            effect: Read-only
+          - name: worktree_threads
+            description: List the active threads on a worktree path.
+            effect: Read-only
           - name: thread_stop
             description: Stop thread work and hold queued messages.
             effect: Writes

@@ -47,6 +47,8 @@ proposed-design:
     - thread_usage: context, token and cost records with ownership and provenance.
     - thread_diff: full-thread or turn-range diff.
     - thread_search_content: search within one thread with server result bounds.
+    - thread_family: a thread's root, forks and subagent trees in one read.
+    - worktree_threads: the active threads on a worktree path, subagent children included.
     - thread_stop: native Stop with queue hold and background/delegated work cleanup.
     - thread_force_stop: force stop of an agent that ignored Stop, optionally for one run.
     - thread_queue_resume: release the queue hold so normal delivery continues.
