@@ -298,6 +298,12 @@ products:
           - name: worktree_threads
             description: List the active threads on a worktree path.
             effect: Read-only
+          - name: thread_terminals
+            description: List the server terminals of a thread.
+            effect: Read-only
+          - name: terminal_output
+            description: Read the recent output of one terminal.
+            effect: Read-only
           - name: thread_stop
             description: Stop thread work and hold queued messages.
             effect: Writes

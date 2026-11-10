@@ -33,6 +33,8 @@ it("has no tool-name collisions with the complete pinned stock toolkit inventory
       "thread_search_content",
       "thread_family",
       "worktree_threads",
+      "thread_terminals",
+      "terminal_output",
       "provider_status",
       "usage_summary",
     ].sort(),

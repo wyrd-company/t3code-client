@@ -141,6 +141,10 @@ open streams. Both need `orchestration:read`.
 
 `terminal.observe` follows a terminal with only `terminal:read`, and it cannot
 start one. `subscribeTerminalMetadata` lists every terminal and then follows them.
+`client.terminal.observe` and `client.terminal.watchMetadata` wrap these streams.
+`client.terminal.read` returns one terminal's snapshot with its retained history,
+and `client.terminal.list` returns every terminal; both close their stream after
+the first item.
 
 ## Settings
 

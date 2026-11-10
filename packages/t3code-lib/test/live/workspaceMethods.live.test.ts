@@ -84,6 +84,18 @@ describe.skipIf(!hasLiveServer)("workspace methods", () => {
         "the observed output",
         { timeoutMs: 20_000, intervalMs: 100 },
       );
+      const read = await waitFor(
+        async () => {
+          const snapshot = await client.terminal.read(session);
+          return snapshot.history.includes("sample-output") ? snapshot : undefined;
+        },
+        "the read history",
+        { timeoutMs: 20_000, intervalMs: 100 },
+      );
+      expect(read).toMatchObject({ ...session, status: "running" });
+      expect((await client.terminal.list()).map((row) => row.terminalId)).toContain(
+        session.terminalId,
+      );
       await client.rpc.call("terminal.clear", session);
       await waitFor(
         async () => seen.find((event) => event.type === "cleared"),

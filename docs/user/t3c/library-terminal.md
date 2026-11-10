@@ -42,6 +42,10 @@ retain ordinary attach behavior; unknown IDs without `cwd` fail lookup.
   - [.write()](#TerminalApi+write)
   - [.resize()](#TerminalApi+resize)
   - [.close()](#TerminalApi+close)
+  - [.observe()](#TerminalApi+observe)
+  - [.watchMetadata()](#TerminalApi+watchMetadata)
+  - [.list()](#TerminalApi+list)
+  - [.read()](#TerminalApi+read)
 
 <a name="TerminalApi+open"></a>
 
@@ -110,6 +114,62 @@ close(
     input: RpcPayload<RpcMethods, "terminal.close">,
     signal?: AbortSignal,
   ): Promise<RpcSuccess<RpcMethods, "terminal.close">>;
+```
+
+**Kind**: instance method of [<code>TerminalApi</code>](#TerminalApi)  
+<a name="TerminalApi+observe"></a>
+
+### terminalApi.observe()
+
+Follow one terminal without starting it: a `snapshot` with its retained history,
+then output and state events. Needs only `terminal:read`. An unknown terminal fails
+with `TerminalSessionLookupError`.
+
+```ts
+observe(
+    input: RpcPayload<RpcMethods, "terminal.observe">,
+    options?: { readonly signal?: AbortSignal },
+  ): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "terminal.observe">>>;
+```
+
+**Kind**: instance method of [<code>TerminalApi</code>](#TerminalApi)  
+<a name="TerminalApi+watchMetadata"></a>
+
+### terminalApi.watchMetadata()
+
+Follow every terminal: a `snapshot` of all of them, then `upsert` and `remove` events.
+
+```ts
+watchMetadata(options?: {
+    readonly signal?: AbortSignal;
+  }): AsyncIterable<DecodedStreamItem<RpcSuccess<RpcMethods, "subscribeTerminalMetadata">>>;
+```
+
+**Kind**: instance method of [<code>TerminalApi</code>](#TerminalApi)  
+<a name="TerminalApi+list"></a>
+
+### terminalApi.list()
+
+Every terminal the server keeps, from the first metadata snapshot.
+
+```ts
+async list(signal?: AbortSignal): Promise<TerminalSummary[]>;
+```
+
+**Kind**: instance method of [<code>TerminalApi</code>](#TerminalApi)  
+<a name="TerminalApi+read"></a>
+
+### terminalApi.read()
+
+One terminal's current snapshot, with the history the server retains. Does not
+start or attach to the terminal. An unknown terminal fails with
+`TerminalSessionLookupError`.
+
+```ts
+async read(
+    input: RpcPayload<RpcMethods, "terminal.observe">,
+    signal?: AbortSignal,
+  ): Promise<TerminalSessionSnapshot>;
 ```
 
 **Kind**: instance method of [<code>TerminalApi</code>](#TerminalApi)

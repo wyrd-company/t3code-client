@@ -195,7 +195,7 @@ proposed-design:
         threadDerived.ts        pendingRequests, runOutcome, activeRun, threadPhase
         shell.ts                snapshot, archivedSnapshot, watch
         vcs.ts                  listRefs, status, createWorktree, removeWorktree, createRef, switchRef
-        terminal.ts             open, attach, write, resize, close
+        terminal.ts             open, attach, observe, watchMetadata, list, read, write, resize, close
         peerLinks.ts            list, link, unlink, answerRequest
         guestShares.ts          create, close, sendMessage, dismissMessage
         dispatch.ts             CommandDispatcher: validate and send OrchestrationV2Command

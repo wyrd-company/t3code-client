@@ -49,6 +49,8 @@ proposed-design:
     - thread_search_content: search within one thread with server result bounds.
     - thread_family: a thread's root, forks and subagent trees in one read.
     - worktree_threads: the active threads on a worktree path, subagent children included.
+    - thread_terminals: the server terminals of a thread, with status and running state.
+    - terminal_output: bounded recent output of one terminal as plain text, read-only.
     - thread_stop: native Stop with queue hold and background/delegated work cleanup.
     - thread_force_stop: force stop of an agent that ignored Stop, optionally for one run.
     - thread_queue_resume: release the queue hold so normal delivery continues.
@@ -72,6 +74,10 @@ proposed-design:
     the stock queue tools. Force stop uses the server's force stop with operate
     scope and returns its outcome and the threads that share the agent process.
     With a run id, a newer latest run refuses it with the stable code superseded.
+    Terminal tools read with terminal:read and never start, attach to or write to a
+    terminal, so a person's shell stays under that person's control. Output is the
+    tail of the server's retained history, without escape sequences, bounded by
+    maxChars; tool descriptions mark it as untrusted program text.
   credentials-and-errors: |
     The selected T3 credential and its granted scopes remain the authority for
     every operation. Scheduler endpoint and delivery access preserve upstream

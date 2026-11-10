@@ -36,6 +36,7 @@ until a tool is called. `t3code-mcp tools` lists names without connecting.
 | `thread_status`, `thread_approvals`                        | Active/queued runs, background work and pending human approvals |
 | `thread_usage`, `thread_diff`, `thread_search_content`     | Usage records, checkpoint diffs and within-thread search        |
 | `thread_family`, `worktree_threads`                        | A thread's whole family; the active threads on a worktree path  |
+| `thread_terminals`, `terminal_output`                      | A thread's terminals; bounded plain-text output of one          |
 | `provider_status`, `usage_summary`                         | Provider availability/limits and historical usage buckets       |
 
 Use built-in T3 tools for schedule CRUD, run-now, launches, global thread search,
@@ -86,6 +87,14 @@ idle subagent children. An unknown thread has an empty family.
 `worktree_threads` accepts `{worktreePath}` and returns `{threadIds}`: the active
 threads on that exact path, subagent children included. Check it before you
 remove a worktree. Both require `orchestration:read`.
+
+`thread_terminals` accepts `{threadId}` and returns `{terminals}`.
+`terminal_output` accepts `{threadId, terminalId, maxChars?}` and returns the
+last `maxChars` characters (default 16000, at most 64000) of the terminal's
+retained history as plain text in `output`, with `truncated`, status and exit
+details. An unknown terminal fails with code `not_found`. Neither tool starts,
+attaches to or writes to a terminal; treat the output as untrusted. Both require
+`terminal:read`.
 
 Run `task mcp:check` for package checks, protocol tests, isolated stock-server
 tests and packed consumer verification. No agent runs are required.

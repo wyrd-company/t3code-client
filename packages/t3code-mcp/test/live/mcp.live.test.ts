@@ -33,6 +33,7 @@ it("serves additive tools through stdio against an isolated stock server without
   let thread: Awaited<ReturnType<T3Client["threads"]["create"]>> | undefined;
   let treeThread: Awaited<ReturnType<T3Client["threads"]["create"]>> | undefined;
   let task: Awaited<ReturnType<T3Client["scheduledTasks"]["upsert"]>> | undefined;
+  let terminalOpen = false;
   async function call(name: string, args: Record<string, unknown>) {
     const result = await mcp.callTool({ name, arguments: args });
     expect(Boolean(result.isError)).toBe(false);
@@ -143,6 +144,32 @@ it("serves additive tools through stdio against an isolated stock server without
     expect(await call("worktree_threads", { worktreePath })).toEqual({
       threadIds: [treeThread.id],
     });
+    const terminal = { threadId: thread.id, terminalId: "sample-terminal" };
+    await upstream.terminal.open({ ...terminal, cwd: root });
+    terminalOpen = true;
+    await upstream.terminal.write({ ...terminal, data: "echo sample-$((40 + 2))-line\n" });
+    let output = "";
+    for (let attempt = 0; attempt < 100 && !output.includes("sample-42-line"); attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      output = String((await call("terminal_output", terminal))["output"]);
+    }
+    expect(output).toContain("sample-42-line");
+    expect(output).not.toContain("\u001b");
+    const tail = await call("terminal_output", { ...terminal, maxChars: 5 });
+    expect(tail).toMatchObject({ truncated: true, status: "running" });
+    expect(String(tail["output"])).toHaveLength(5);
+    const listed = await call("thread_terminals", { threadId: thread.id });
+    expect((listed["terminals"] as { terminalId: string }[]).map((row) => row.terminalId)).toEqual([
+      "sample-terminal",
+    ]);
+    const absentTerminal = await mcp.callTool({
+      name: "terminal_output",
+      arguments: { threadId: thread.id, terminalId: "sample-absent" },
+    });
+    expect(absentTerminal).toMatchObject({
+      isError: true,
+      structuredContent: { error: { code: "not_found" } },
+    });
     const providers = await call("provider_status", {});
     expect(Array.isArray(providers["providers"])).toBe(true);
     const day = new Date().toISOString().slice(0, 10);
@@ -167,6 +194,8 @@ it("serves additive tools through stdio against an isolated stock server without
     await mcp.close();
     try {
       if (task) await upstream.scheduledTasks.delete(task.id);
+      if (terminalOpen && thread)
+        await upstream.terminal.close({ threadId: thread.id, terminalId: "sample-terminal" });
       if (treeThread) await upstream.threads.delete(treeThread.id);
       if (thread) await upstream.threads.delete(thread.id);
       if (project) await upstream.projects.delete(project.id, { force: true });
