@@ -12,9 +12,19 @@ const terminalId = schemas.terminal.TerminalIdSchema;
 export const defaultOutputChars = 16_000;
 export const maxOutputChars = 64_000;
 
-// CSI, OSC (BEL or ST end), other two-byte ESC sequences, then C0 controls except tab and newline.
-const escapes =
-  /\u001b\[[0-?]*[ -/]*[@-~]|\u001b\][^\u0007\u001b]*(?:\u0007|\u001b\\)?|\u001b[@-Z\\-_]|[\u0000-\u0008\u000b-\u001f\u007f]/g;
+// In order: string sequences (DCS, SOS, OSC, PM, APC) up to ST, BEL or the end; CSI;
+// other ESC sequences with intermediates (character sets, modes); a lone ESC; then C0
+// controls except tab and newline, DEL and C1 controls.
+const escapes = new RegExp(
+  [
+    String.raw`\u001b[PX\]^_][\s\S]*?(?:\u0007|\u001b\\|$)`,
+    String.raw`\u001b\[[0-?]*[ -/]*[@-~]`,
+    String.raw`\u001b[ -/]*[0-~]`,
+    String.raw`\u001b`,
+    String.raw`[\u0000-\u0008\u000b-\u001f\u007f-\u009f]`,
+  ].join("|"),
+  "g",
+);
 
 /** Terminal text without escape sequences or control characters, with `\r\n` as `\n`. */
 export function plainText(history: string): string {
