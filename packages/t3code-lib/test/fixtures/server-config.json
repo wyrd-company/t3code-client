@@ -1,6 +1,6 @@
 {
   "environment": {
-    "environmentId": "dc8eb329-6b4a-4e76-aa36-cc1ec62b73be",
+    "environmentId": "b558bcba-54e5-4dc3-b4d5-19040cd34b91",
     "label": "sample-environment",
     "platform": {
       "os": "linux",
@@ -83,7 +83,7 @@
     "policy": "loopback-browser",
     "bootstrapMethods": ["one-time-token"],
     "sessionMethods": ["browser-session-cookie", "bearer-access-token", "dpop-access-token"],
-    "sessionCookieName": "t3_session_38277_10cd3e34bd97",
+    "sessionCookieName": "t3_session_37551_65bc6bc5e969",
     "serverUpdateScope": "environment:maintain"
   },
   "cwd": "/srv/sample",
@@ -1671,12 +1671,12 @@
       "status": "ready",
       "auth": {
         "status": "authenticated",
-        "type": "chatgpt",
-        "label": "ChatGPT Pro 200 Subscription",
+        "type": "sample-plan",
+        "label": "Sample subscription",
         "email": "user@example.test",
         "workspaceId": "00000000-0000-4000-8000-000000000001"
       },
-      "checkedAt": "2026-11-10T05:54:48.091Z",
+      "checkedAt": "2026-11-10T06:24:12.175Z",
       "models": [
         {
           "slug": "gpt-6.1-sol",
@@ -2159,24 +2159,35 @@
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-11-10T05:54:48.091Z",
+        "checkedAt": "2026-11-10T06:24:12.175Z",
         "windows": [
           {
             "id": "primary",
             "kind": "weekly",
             "label": "Weekly",
-            "usedPercent": 3,
-            "resetsAt": "2026-11-11T11:35:39.000Z",
+            "usedPercent": 0,
+            "resetsAt": "2030-01-01T00:00:00.000Z",
             "windowDurationMins": 10080
           }
         ],
         "resetCredits": {
-          "availableCount": 2,
-          "nextExpiresAt": "2026-11-30T20:17:22.000Z"
+          "availableCount": 1,
+          "nextExpiresAt": "2030-01-01T00:00:00.000Z"
         }
+      },
+      "versionAdvisory": {
+        "status": "current",
+        "currentVersion": "0.167.0",
+        "latestVersion": "0.167.0",
+        "updateCommand": "/home/sample/.local/bin/codex update",
+        "canUpdate": true,
+        "canInstallVersion": false,
+        "checkedAt": "2026-11-10T06:24:12.973Z",
+        "message": null
       },
       "compatibilityAdvisory": {
         "status": "supported",
+        "latestVersionStatus": "supported",
         "message": null,
         "recommendedVersion": null,
         "recommendedRange": ">=0.159.0"
@@ -2201,12 +2212,12 @@
       "status": "ready",
       "auth": {
         "status": "authenticated",
-        "type": "Claude Ultra",
-        "label": "Claude Ultra Subscription",
+        "type": "sample-plan",
+        "label": "Sample subscription",
         "email": "user@example.test",
         "workspaceId": "00000000-0000-4000-8000-000000000001"
       },
-      "checkedAt": "2026-11-10T05:54:48.108Z",
+      "checkedAt": "2026-11-10T06:24:12.165Z",
       "models": [
         {
           "slug": "claude-opus-5-5",
@@ -2881,14 +2892,14 @@
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-11-10T05:54:48.438Z",
+        "checkedAt": "2026-11-10T06:24:11.566Z",
         "windows": [
           {
             "id": "seven_day",
             "kind": "weekly",
             "label": "Weekly",
-            "usedPercent": 11,
-            "resetsAt": "2026-11-11T16:59:59.582Z",
+            "usedPercent": 0,
+            "resetsAt": "2030-01-01T00:00:00.000Z",
             "windowDurationMins": 10080
           },
           {
@@ -2896,18 +2907,24 @@
             "kind": "weekly",
             "label": "Weekly · Fable",
             "usedPercent": 0,
-            "resetsAt": "2026-11-11T17:00:00.000Z",
+            "resetsAt": "2030-01-01T00:00:00.000Z",
             "windowDurationMins": 10080
           }
-        ],
-        "resetCredits": {
-          "availableCount": 2,
-          "nextExpiresAt": "2027-03-09T07:59:00.000Z",
-          "nextCreditId": "launch-2610-fable"
-        }
+        ]
+      },
+      "versionAdvisory": {
+        "status": "behind_latest",
+        "currentVersion": "2.1.319",
+        "latestVersion": "2.1.322",
+        "updateCommand": "/home/sample/.local/bin/claude update",
+        "canUpdate": true,
+        "canInstallVersion": false,
+        "checkedAt": "2026-11-10T06:24:12.216Z",
+        "message": "Install the update now or review provider settings."
       },
       "compatibilityAdvisory": {
         "status": "supported",
+        "latestVersionStatus": "supported",
         "message": null,
         "recommendedVersion": null,
         "recommendedRange": ">=2.1.301"
@@ -2934,7 +2951,7 @@
         "status": "unknown",
         "canLogout": true
       },
-      "checkedAt": "2026-11-10T05:54:48.120Z",
+      "checkedAt": "2026-11-10T06:24:12.161Z",
       "message": "Cursor is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -2961,7 +2978,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-10T05:54:48.119Z",
+      "checkedAt": "2026-11-10T06:24:12.166Z",
       "message": "Grok is disabled in T3 Code settings.",
       "models": [
         {
@@ -2995,13 +3012,13 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-10T05:54:48.119Z",
+      "checkedAt": "2026-11-10T06:24:12.158Z",
       "message": "OpenCode is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-11-10T05:54:48.120Z",
+        "checkedAt": "2026-11-10T06:24:12.158Z",
         "windows": [],
         "unavailable": {
           "reason": "unsupported"
@@ -3029,9 +3046,9 @@
       "status": "disabled",
       "auth": {
         "status": "unknown",
-        "type": "oauth-personal"
+        "type": "sample-plan"
       },
-      "checkedAt": "2026-11-10T05:54:48.121Z",
+      "checkedAt": "2026-11-10T06:24:11.233Z",
       "message": "Antigravity is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -3059,7 +3076,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-10T05:54:48.119Z",
+      "checkedAt": "2026-11-10T06:24:12.158Z",
       "message": "fx is disabled in T3 Code settings.",
       "models": [
         {
@@ -3114,7 +3131,7 @@
         "updateCommand": null,
         "canUpdate": false,
         "canInstallVersion": false,
-        "checkedAt": "2026-11-10T05:54:48.119Z",
+        "checkedAt": "2026-11-10T06:24:12.158Z",
         "message": null
       }
     },
@@ -3138,7 +3155,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-10T05:54:48.126Z",
+      "checkedAt": "2026-11-10T06:24:12.160Z",
       "message": "Kiro is disabled in T3 Code settings.",
       "models": [
         {
@@ -3159,7 +3176,7 @@
         "updateCommand": null,
         "canUpdate": false,
         "canInstallVersion": false,
-        "checkedAt": "2026-11-10T05:54:48.126Z",
+        "checkedAt": "2026-11-10T06:24:12.160Z",
         "message": null
       }
     },
@@ -3184,7 +3201,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-10T05:54:48.127Z",
+      "checkedAt": "2026-11-10T06:24:12.246Z",
       "message": "Muse Code is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -3211,7 +3228,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-10T05:54:48.126Z",
+      "checkedAt": "2026-11-10T06:24:12.185Z",
       "message": "Pi is disabled in T3 Code settings.",
       "models": [
         {

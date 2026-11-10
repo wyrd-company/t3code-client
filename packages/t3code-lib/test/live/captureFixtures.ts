@@ -3,7 +3,8 @@
  * tests do, creates a sample project and thread, reads the environment
  * descriptor, server config, shell snapshot, and thread detail, and writes
  * them with paths, host names, and provider accounts replaced by generic
- * values and skill and command listings emptied.
+ * values, skill and command listings emptied, and account usage replaced by
+ * sample values.
  *
  *   node test/live/captureFixtures.ts
  */
@@ -29,11 +30,38 @@ function sanitizeProviders(config: { [key: string]: Json }): void {
     if (provider === null || typeof provider !== "object" || Array.isArray(provider)) continue;
     provider["skills"] = [];
     provider["slashCommands"] = [];
+    sanitizeUsageLimits(provider["usageLimits"]);
     const auth = provider["auth"];
     if (auth === null || typeof auth !== "object" || Array.isArray(auth)) continue;
     if ("email" in auth) auth["email"] = "user@example.test";
+    if ("label" in auth) auth["label"] = "Sample subscription";
+    if ("type" in auth) auth["type"] = "sample-plan";
     if ("workspaceId" in auth) auth["workspaceId"] = SAMPLE_WORKSPACE_ID;
   }
+}
+
+const SAMPLE_TIME = "2030-01-01T00:00:00.000Z";
+
+function isRecord(value: Json | undefined): value is { [key: string]: Json } {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+/** Usage windows and reset credits describe this machine's provider accounts. */
+function sanitizeUsageLimits(limits: Json | undefined): void {
+  if (!isRecord(limits)) return;
+  const windows = limits["windows"];
+  if (Array.isArray(windows)) {
+    for (const window of windows) {
+      if (!isRecord(window)) continue;
+      if ("usedPercent" in window) window["usedPercent"] = 0;
+      if ("resetsAt" in window) window["resetsAt"] = SAMPLE_TIME;
+    }
+  }
+  const credits = limits["resetCredits"];
+  if (!isRecord(credits)) return;
+  if ("availableCount" in credits) credits["availableCount"] = 1;
+  if ("nextExpiresAt" in credits) credits["nextExpiresAt"] = SAMPLE_TIME;
+  if ("nextCreditId" in credits) credits["nextCreditId"] = "sample-credit";
 }
 
 function genericText(text: string, liveHome: string, workspaceRoot: string): string {
@@ -77,6 +105,8 @@ try {
     if (!response.ok) throw new Error(`GET ${path} answered ${response.status}.`);
     return (await response.json()) as Json;
   };
+  // Probe every provider first, so that no listing reads as not checked yet.
+  await client.server.refreshProviders();
   const config = (await client.rpc.callRaw("server.getConfig", {})) as { [key: string]: Json };
   sanitizeProviders(config);
   const captured: Record<string, Json> = {
