@@ -16,8 +16,9 @@ function environmentLines(environment: Environment): string[] {
   const { platform } = environment;
   const capabilities = Object.entries(environment.capabilities ?? {});
   const disabled = capabilities.filter(([, value]) => value === false).map(([name]) => name);
+  const protocol = environment.orchestrationProtocolVersion ?? "-";
   return [
-    `server\t${environment.label}\t${environment.serverVersion}\tprotocol ${environment.orchestrationProtocolVersion}`,
+    `server\t${environment.label}\t${environment.serverVersion}\tprotocol ${protocol}`,
     `environment\t${environment.environmentId}`,
     `platform\t${platform.os}\t${platform.arch}${platform.machine ? `\t${platform.machine}` : ""}`,
     ...(environment.databaseMigration === undefined

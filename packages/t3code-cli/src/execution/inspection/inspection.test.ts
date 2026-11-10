@@ -138,11 +138,10 @@ it("renders boolean, free-form, unknown and update-required catalog entries", as
     label: "sample",
     platform: { os: "linux", arch: "x64" },
     serverVersion: "0.1.8",
-    orchestrationProtocolVersion: 2,
     capabilities: { repositoryIdentity: true },
   });
   expect(serverInfoText(environment, [provider]).split("\n")).toEqual([
-    "server\tsample\t0.1.8\tprotocol 2",
+    "server\tsample\t0.1.8\tprotocol -",
     "environment\tsample-id",
     "platform\tlinux\tx64",
     "capabilities\t1 of 1 enabled",

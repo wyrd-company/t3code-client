@@ -84,7 +84,8 @@ it("inspects projects, server and Luna conversations through the built CLI", asy
     ).stdout.trimEnd();
     expect(text.split("\n")[0]).toMatch(/^server\t\S+\t\S+\tprotocol 2$/u);
     expect(text).toMatch(/^provider\tcodex\tcodex\t/mu);
-    expect(text).toMatch(/^ {2}model\tgpt-6-luna\t/mu);
+    // The model catalog needs an installed provider, which only the agent path has.
+    if (process.env["T3_LIVE_AGENT"] === "1") expect(text).toMatch(/^ {2}model\tgpt-6-luna\t/mu);
     if (process.env["T3C_SERVER_INFO_EVIDENCE"])
       await NodeFSP.writeFile(process.env["T3C_SERVER_INFO_EVIDENCE"], `${text}\n`);
     await cli(["thread", "read", "missing-thread"], 10);
