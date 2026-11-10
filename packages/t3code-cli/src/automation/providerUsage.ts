@@ -10,8 +10,7 @@ import {
   type UsageSummaryInput,
 } from "@wyrd-company/t3code-lib";
 import type { InvocationHandler } from "../main.ts";
-
-type ServerProvider = Awaited<ReturnType<T3Client["server"]["providers"]>>[number];
+import type { ServerProvider } from "../execution/providerCatalog.ts";
 
 function providerText(provider: ServerProvider): string {
   const head = [

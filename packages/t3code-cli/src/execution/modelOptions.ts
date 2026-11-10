@@ -2,20 +2,10 @@
 // relationships:
 //   implements: command-line
 // ---
-import { T3PreconditionError, type ModelSelection, type T3Client } from "@wyrd-company/t3code-lib";
+import { T3PreconditionError, type ModelSelection } from "@wyrd-company/t3code-lib";
+import { descriptorId, isUnknownDescriptor, type ServerModel } from "./providerCatalog.ts";
 
-type ServerProvider = Awaited<ReturnType<T3Client["server"]["providers"]>>[number];
-type ServerModel = ServerProvider["models"][number];
 type OptionSelection = NonNullable<ModelSelection["options"]>[number];
-type Descriptor = NonNullable<
-  NonNullable<ServerModel["capabilities"]>["optionDescriptors"]
->[number];
-type UnknownDescriptor = Extract<Descriptor, { readonly unknown: true }>;
-
-/** Growing descriptor types decode as `{ unknown: true, raw }`. */
-function isUnknownDescriptor(descriptor: Descriptor): descriptor is UnknownDescriptor {
-  return (descriptor as { unknown?: unknown }).unknown === true;
-}
 
 export interface ModelOptionInput {
   modelOption?: string[];
@@ -48,8 +38,8 @@ export function changesModelOptions(input: ModelOptionInput): boolean {
 
 /** Convert one entry with the live model's advertised descriptor. */
 function selectionFor(model: ServerModel, entry: ModelOptionEntry): OptionSelection {
-  const descriptor = (model.capabilities?.optionDescriptors ?? []).find((candidate) =>
-    isUnknownDescriptor(candidate) ? candidate.raw["id"] === entry.id : candidate.id === entry.id,
+  const descriptor = (model.capabilities?.optionDescriptors ?? []).find(
+    (candidate) => descriptorId(candidate) === entry.id,
   );
   if (descriptor === undefined)
     throw new T3PreconditionError(`Model option ${entry.id} is not advertised.`);

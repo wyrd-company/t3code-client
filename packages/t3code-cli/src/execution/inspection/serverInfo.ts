@@ -2,15 +2,17 @@
 // relationships:
 //   implements: command-line
 // ---
-import type { T3Client } from "@wyrd-company/t3code-lib";
+import type { schemas } from "@wyrd-company/t3code-lib";
 import type { InvocationHandler } from "../../main.ts";
+import {
+  descriptorId,
+  isUnknownDescriptor,
+  type OptionDescriptor,
+  type ServerModel,
+  type ServerProvider,
+} from "../providerCatalog.ts";
 
-type Environment = Awaited<ReturnType<T3Client["server"]["environment"]>>;
-type ServerProvider = Awaited<ReturnType<T3Client["server"]["providers"]>>[number];
-type ServerModel = ServerProvider["models"][number];
-type Descriptor = NonNullable<
-  NonNullable<ServerModel["capabilities"]>["optionDescriptors"]
->[number];
+type Environment = schemas.environment.ExecutionEnvironmentDescriptor;
 
 function environmentLines(environment: Environment): string[] {
   const { platform } = environment;
@@ -30,14 +32,12 @@ function environmentLines(environment: Environment): string[] {
   ];
 }
 
-/** Growing descriptor types decode as `{ unknown: true, raw }`. */
-function optionLine(descriptor: Descriptor): string {
-  const unknown = descriptor as { unknown?: unknown; raw?: Record<string, unknown> };
-  if (unknown.unknown === true) return `    option\t${String(unknown.raw?.["id"])}\tunsupported`;
-  const known = descriptor as Exclude<Descriptor, { readonly unknown: true }>;
-  if (known.type === "boolean") return `    option\t${known.id}\ttrue|false`;
-  const choices = known.options.map((choice) => `${choice.id}${choice.isDefault ? "*" : ""}`);
-  return `    option\t${known.id}\t${choices.length > 0 ? choices.join("|") : "any"}`;
+function optionLine(descriptor: OptionDescriptor): string {
+  if (isUnknownDescriptor(descriptor))
+    return `    option\t${String(descriptorId(descriptor))}\tunsupported`;
+  if (descriptor.type === "boolean") return `    option\t${descriptor.id}\ttrue|false`;
+  const choices = descriptor.options.map((choice) => `${choice.id}${choice.isDefault ? "*" : ""}`);
+  return `    option\t${descriptor.id}\t${choices.length > 0 ? choices.join("|") : "any"}`;
 }
 
 function modelLines(model: ServerModel): string[] {

@@ -13,8 +13,7 @@ import {
   type T3Client,
 } from "@wyrd-company/t3code-lib";
 import { parseModelOptions, resolveModelOptions, type ModelOptionInput } from "./modelOptions.ts";
-
-type ServerProvider = Awaited<ReturnType<T3Client["server"]["providers"]>>[number];
+import type { ServerProvider } from "./providerCatalog.ts";
 
 export interface DispatchOptions extends ModelOptionInput {
   project?: string;
