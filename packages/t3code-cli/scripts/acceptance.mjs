@@ -6,6 +6,7 @@
 import * as NodeChildProcess from "node:child_process";
 import * as NodeFSP from "node:fs/promises";
 import assert from "node:assert/strict";
+import { TARGET_T3_CODE_VERSION } from "@wyrd-company/t3code-lib";
 import { verifyServerEvidence } from "./acceptanceEvidence.ts";
 // /tmp is intentional: inherited TMPDIR may be inside a Git checkout.
 const root = await NodeFSP.mkdtemp("/tmp/t3c-acceptance-");
@@ -52,7 +53,7 @@ try {
     child.once("exit", (code, signal) => resolve(signal ? 1 : (code ?? 1)));
   });
   process.exitCode = code;
-  await verifyServerEvidence(`${evidence}/server`);
+  await verifyServerEvidence(`${evidence}/server`, TARGET_T3_CODE_VERSION);
   try {
     console.log(await NodeFSP.readFile(`${evidence}/version.json`, "utf8"));
   } catch (error) {

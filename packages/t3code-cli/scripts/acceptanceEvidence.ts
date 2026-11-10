@@ -5,10 +5,12 @@
 import assert from "node:assert/strict";
 import * as NodeFSP from "node:fs/promises";
 import * as NodePath from "node:path";
-import { TARGET_T3_CODE_VERSION } from "@wyrd-company/t3code-lib";
 
-/** A successful acceptance must prove the actual native server and launcher ended. */
-export async function verifyServerEvidence(directory: string) {
+/**
+ * A successful acceptance must prove the actual native server and launcher ended, and that
+ * each owned server reported `serverVersion`.
+ */
+export async function verifyServerEvidence(directory: string, serverVersion: string) {
   const names = await NodeFSP.readdir(directory);
   const ready = names.filter((name) => name.endsWith("-ready.json"));
   assert(ready.length > 0, "No owned server evidence.");
@@ -35,7 +37,7 @@ export async function verifyServerEvidence(directory: string) {
     assert.equal(start.pid, server.pid);
     assert.equal(stop.pid, server.pid);
     assert.equal(cleanup.root, server.root);
-    assert.equal(server.serverVersion, TARGET_T3_CODE_VERSION);
+    assert.equal(server.serverVersion, serverVersion);
     assert.equal(server.protocol, 2);
     assert.equal(stop.pidAbsent, true);
     assert.equal(cleanup.rootAbsent, true);
