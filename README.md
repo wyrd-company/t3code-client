@@ -19,7 +19,7 @@ A pnpm workspace for stock T3 Code 0.1.8, orchestration protocol 2.
   tools for scheduler endpoints, webhook diagnostics, inspection and usage.
 
 The release units have independent versions.
-Node >=22.16 and pnpm 11 are required. The root package is private.
+Node >=22.16 and pnpm 12 are required. The root package is private.
 
 `t3c thread find --provider <instanceId> --session <nativeSessionId>` resolves a
 provider's native session to a T3 Code thread id or `null`, including archived

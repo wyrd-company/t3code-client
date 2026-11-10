@@ -31,7 +31,7 @@ Read `docs/technical-designs/tool-scope.yml` before adding, changing or removing
 
 ## Conventions
 
-Node >=22.16, pnpm 11, vite-plus 1.5.1 and TypeScript 7. ESM/NodeNext,
+Node >=22.16, pnpm 12, vite-plus 1.5.1 and TypeScript 7. ESM/NodeNext,
 `.ts` relative imports, `erasableSyntaxOnly`, camelCase files, colocated
 `vite-plus/test` tests, no `any`, files about 300 lines or less.
 Use generic example/test values. Follow Conventional Commits.
