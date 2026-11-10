@@ -52,7 +52,7 @@ proposed-design:
     - thread_terminals: the server terminals of a thread, with status and running state.
     - terminal_output: bounded recent output of one terminal as plain text, read-only.
     - server_traces: the server's trace summary, with bounded causes and log messages.
-    - server_processes: the server's process tree, bounded in count and command length.
+    - server_processes: the server's backend descendants, bounded in count and command length.
     - server_host_resources: CPU and memory of the server host.
     - server_resource_history: resource use of the server's processes over a bounded window.
     - server_storage_cleanup_report: the latest storage cleanup report, or null.
@@ -87,7 +87,8 @@ proposed-design:
     process, running a storage cleanup, restarting the resource monitor and
     checking an OTLP endpoint stay with a person in the app. Process lists are
     capped by maxProcesses, the history window by an hour and 120 buckets, and
-    each command line, failure cause and log message by 500 characters; tool
+    each command line, failure cause, log message and error message by 500
+    characters; tool
     descriptions mark that text as untrusted. Effect Option fields become their
     value or null.
   credentials-and-errors: |

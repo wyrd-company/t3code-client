@@ -595,7 +595,7 @@ even when <code>restartIfNotRunning: true</code>. Unknown terminal IDs can recov
 retain ordinary attach behavior; unknown IDs without <code>cwd</code> fail lookup.</p>
 </dd>
 <dt><a href="#DiagnosticsApi">DiagnosticsApi</a></dt>
-<dd><p>Read-only views of the server&#39;s own health: trace summaries, its process tree,
+<dd><p>Read-only views of the server&#39;s own health: trace summaries, its backend processes,
 host resources, resource history and the latest storage cleanup report. None of
 these signal a process, run a cleanup or restart the resource monitor; those stay
 on <code>client.rpc</code>. Trace causes, log messages and command lines are text that other
@@ -3562,7 +3562,7 @@ async read(
 
 ## DiagnosticsApi
 
-Read-only views of the server's own health: trace summaries, its process tree,
+Read-only views of the server's own health: trace summaries, its backend processes,
 host resources, resource history and the latest storage cleanup report. None of
 these signal a process, run a cleanup or restart the resource monitor; those stay
 on `client.rpc`. Trace causes, log messages and command lines are text that other
@@ -3593,7 +3593,9 @@ traces(signal?: AbortSignal): Promise<ServerTraceDiagnosticsResult>;
 
 ### diagnosticsApi.processes()
 
-The server process and its descendants, with CPU and memory (diagnostics:read).
+The server's signalable descendants, with CPU and memory (diagnostics:read):
+child processes and the root processes of agents and terminals. The server
+process itself is not in `processes` or the totals; `resourceHistory` covers it.
 
 ```ts
 processes(signal?: AbortSignal): Promise<ServerProcessDiagnosticsResult>;

@@ -32,7 +32,7 @@ error code and message.
 | `thread_terminals`              | `threadId`                                                       | The thread's server terminals: id, label, cwd, status, pid, exit and running state. |
 | `terminal_output`               | `threadId`, `terminalId`, optional `maxChars`                    | Plain-text tail of one terminal's retained history, with status and exit details.   |
 | `server_traces`                 | none                                                             | Server trace summary: span counts, slowest spans, failures and warning/error logs.  |
-| `server_processes`              | optional `maxProcesses`                                          | The server's process tree with CPU, memory and bounded command lines.               |
+| `server_processes`              | optional `maxProcesses`                                          | The server's backend descendants with CPU, memory and bounded command lines.        |
 | `server_host_resources`         | none                                                             | CPU utilization, CPU count and available and total memory of the server host.       |
 | `server_resource_history`       | optional `windowMs`, `bucketMs`, `maxProcesses`                  | Resource use per bucket, top processes and monitor health over a window.            |
 | `server_storage_cleanup_report` | none                                                             | The latest storage cleanup report, or `null` before the first cleanup.              |
@@ -82,15 +82,17 @@ treat it as untrusted input. Both need `terminal:read`.
 The diagnostics tools only read; they do not signal a process, run a storage
 cleanup or restart the resource monitor. `server_traces` summarizes the server's
 trace files; the server bounds its lists. `server_processes` returns the first
-`maxProcesses` (default 50, at most 500) processes of the server's tree, with
-`omittedProcesses`. `server_resource_history` reads a window of `windowMs`
-(default 15 minutes, at most one hour) in buckets of `bucketMs` (default a 30th of
-the window, at most 120 buckets), and caps its top processes the same way. Each
-command line, failure cause and log message is cut to 500 characters. That text
-was written by other programs: treat it as untrusted input. Fields that the server
-sends as an Effect `Option` are returned as their value or `null`.
-`server_storage_cleanup_report` returns `report`, which is `null` before the first
-cleanup.
+`maxProcesses` (default 50, at most 500) of the server's signalable descendants:
+its child processes and the root processes of agents and terminals. The server
+process itself is not in the list or its totals; `server_resource_history`
+includes it. The result has `omittedProcesses`. `server_resource_history` reads a
+window of `windowMs` (default 15 minutes, at most one hour) in buckets of
+`bucketMs` (default a 30th of the window, at most 120 buckets), and caps its top
+processes the same way. Each command line, failure cause, log message and error
+message is cut to 500 characters. That text was written by other programs: treat
+it as untrusted input. Fields that the server sends as an Effect `Option` are
+returned as their value or `null`. `server_storage_cleanup_report` returns
+`report`, which is `null` before the first cleanup.
 
 ## Configuration and permissions
 

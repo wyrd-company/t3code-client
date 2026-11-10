@@ -308,7 +308,7 @@ products:
             description: Summarize the server's trace files.
             effect: Read-only
           - name: server_processes
-            description: List the server's process tree.
+            description: List the server's backend descendant processes.
             effect: Read-only
           - name: server_host_resources
             description: Read CPU and memory of the server host.

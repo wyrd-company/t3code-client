@@ -17,7 +17,7 @@ import type { StorageCleanupReportUpdate } from "../schemas/storageCleanup.ts";
 import { firstItem, unwrapStreamItems } from "./streamItems.ts";
 
 /**
- * Read-only views of the server's own health: trace summaries, its process tree,
+ * Read-only views of the server's own health: trace summaries, its backend processes,
  * host resources, resource history and the latest storage cleanup report. None of
  * these signal a process, run a cleanup or restart the resource monitor; those stay
  * on `client.rpc`. Trace causes, log messages and command lines are text that other
@@ -38,7 +38,11 @@ export class DiagnosticsApi {
     return this.rpc.call("server.getTraceDiagnostics", {}, signal);
   }
 
-  /** The server process and its descendants, with CPU and memory (diagnostics:read). */
+  /**
+   * The server's signalable descendants, with CPU and memory (diagnostics:read):
+   * child processes and the root processes of agents and terminals. The server
+   * process itself is not in `processes` or the totals; `resourceHistory` covers it.
+   */
   processes(signal?: AbortSignal): Promise<ServerProcessDiagnosticsResult> {
     return this.rpc.call("server.getProcessDiagnostics", {}, signal);
   }

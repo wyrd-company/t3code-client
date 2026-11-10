@@ -27,6 +27,11 @@ function optional<T>(
   return option._tag === "Some" ? option.value : null;
 }
 
+/** A failure record with its message clipped, or null. */
+function clipMessage<T extends { readonly message: string }>(error: T | null): T | null {
+  return error === null ? null : { ...error, message: clip(error.message) };
+}
+
 function capped<T>(rows: readonly T[], limit: number) {
   return { rows: rows.slice(0, limit), omitted: Math.max(0, rows.length - limit) };
 }
@@ -36,7 +41,7 @@ const processLimit = z.number().int().min(1).max(maxProcesses).optional();
 export const diagnosticsTools = [
   defineTool(
     "server_traces",
-    `Summarize the server's trace files: span counts, slowest spans, common and latest failures, and latest warning and error logs. Needs diagnostics:read. Lists are bounded by the server; each cause and message is cut to ${maxTextChars} characters. ${untrusted}`,
+    `Summarize the server's trace files: span counts, slowest spans, common and latest failures, and latest warning and error logs. Needs diagnostics:read. Lists are bounded by the server; each cause, log message and error message is cut to ${maxTextChars} characters. ${untrusted}`,
     z.strictObject({}),
     async (_args, client, signal) => {
       const result = await client.diagnostics.traces(signal);
@@ -45,7 +50,7 @@ export const diagnosticsTools = [
         firstSpanAt: optional(result.firstSpanAt),
         lastSpanAt: optional(result.lastSpanAt),
         partialFailure: optional(result.partialFailure),
-        error: optional(result.error),
+        error: clipMessage(optional(result.error)),
         commonFailures: result.commonFailures.map((row) => ({ ...row, cause: clip(row.cause) })),
         latestFailures: result.latestFailures.map((row) => ({ ...row, cause: clip(row.cause) })),
         latestWarningAndErrorLogs: result.latestWarningAndErrorLogs.map((row) => ({
@@ -57,14 +62,14 @@ export const diagnosticsTools = [
   ),
   defineTool(
     "server_processes",
-    `List the server process and its descendants, for example agent and terminal processes, with CPU, memory, status and command line, in the server's tree order. Needs diagnostics:read. Returns the first maxProcesses (default ${defaultProcesses}, at most ${maxProcesses}); each command is cut to ${maxTextChars} characters. Read-only; does not signal a process. ${untrusted}`,
+    `List the server's signalable descendants: its child processes and the root processes of agents and terminals, with CPU, memory, status and command line, in the server's tree order. The server process itself is not in the list or the totals; server_resource_history includes it. Needs diagnostics:read. Returns the first maxProcesses (default ${defaultProcesses}, at most ${maxProcesses}); each command and the error message is cut to ${maxTextChars} characters. Read-only; does not signal a process. ${untrusted}`,
     z.strictObject({ maxProcesses: processLimit }),
     async ({ maxProcesses = defaultProcesses }, client, signal) => {
       const result = await client.diagnostics.processes(signal);
       const { rows, omitted } = capped(result.processes, maxProcesses);
       return {
         ...result,
-        error: optional(result.error),
+        error: clipMessage(optional(result.error)),
         processes: rows.map((row) => ({
           ...row,
           pgid: optional(row.pgid),

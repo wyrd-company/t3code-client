@@ -55,6 +55,23 @@ it("bounds the process list and command lines and unwraps options", async () => 
   expect(content.error).toBeNull();
 });
 
+it("clips the process read error message", async () => {
+  const { client, upstream } = await fixture();
+  vi.spyOn(upstream.diagnostics, "processes").mockResolvedValue({
+    serverPid: 1,
+    readAt: at,
+    processCount: 0,
+    totalRssBytes: 0,
+    totalCpuPercent: 0,
+    processes: [],
+    error: some({ message: long }),
+  });
+  const result = await client.callTool({ name: "server_processes", arguments: {} });
+  expect(result.structuredContent).toMatchObject({
+    error: { message: `${"x".repeat(maxTextChars - 1)}…` },
+  });
+});
+
 it("clips trace causes and log messages", async () => {
   const { client, upstream } = await fixture();
   const ids = { traceId: "trace-1", spanId: "span-1" };
@@ -79,13 +96,13 @@ it("clips trace causes and log messages", async () => {
       { spanName: "sample", level: "Warning", message: long, seenAt: at, ...ids },
     ],
     partialFailure: none,
-    error: some({ kind: "trace-file-read-failed", message: "sample" }),
+    error: some({ kind: "trace-file-read-failed", message: long }),
   });
   const result = await client.callTool({ name: "server_traces", arguments: {} });
   expect(result.structuredContent).toMatchObject({
     firstSpanAt: at,
     partialFailure: null,
-    error: { kind: "trace-file-read-failed", message: "sample" },
+    error: { kind: "trace-file-read-failed", message: `${"x".repeat(maxTextChars - 1)}…` },
     commonFailures: [{ cause: `${"x".repeat(maxTextChars - 1)}…` }],
     latestFailures: [{ cause: "short" }],
     latestWarningAndErrorLogs: [{ message: `${"x".repeat(maxTextChars - 1)}…` }],
