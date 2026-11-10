@@ -31,6 +31,9 @@ A person opens the URL. If the browser cannot reach the server's callback, pass 
 address it ended on to `provider.auth.complete`, with the `flowId`. An interaction
 that needs an answer goes to `provider.auth.respond`. `provider.auth.cancel` ends a
 flow and `provider.auth.logout` signs the instance out and stops its sessions.
+`provider.auth.removeMethod` forgets one saved method of the instance, such as an
+incomplete ChatGPT connection. Only a method whose `canRemove` is true can go; the
+server refuses others with `ProviderSetupError`.
 
 `provider.chatgpt.handoff.subscribe` runs a sign-in for another environment. The
 `profile` of its `finished` item holds live tokens, so handle it as a credential and

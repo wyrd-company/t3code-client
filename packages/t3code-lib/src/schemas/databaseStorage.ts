@@ -14,6 +14,10 @@ export const DatabaseStorageStatus = z.looseObject({
   incrementalVacuumEnabled: z.boolean(),
   /** Command to run on the host to reclaim the space offline. */
   compactCommand: z.string(),
+  /** The server can run the repair itself, as `server.reclaimDatabaseSpace`: a supervisor restarts it. */
+  canReclaim: z.boolean().optional(),
+  /** Why the last `server.reclaimDatabaseSpace` repair failed. */
+  reclaimFailure: z.string().optional(),
 });
 export type DatabaseStorageStatus = z.infer<typeof DatabaseStorageStatus>;
 

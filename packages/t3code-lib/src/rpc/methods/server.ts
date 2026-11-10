@@ -38,6 +38,10 @@ import {
   requiredScopesForSettingsUpdate,
   ServerUpdateSettingsInput,
 } from "../../schemas/settingsPatch.ts";
+import {
+  ListTextGeneratorModelsInput,
+  ListTextGeneratorModelsResult,
+} from "../../schemas/textGenerator.ts";
 import { SourceControlDiscoveryResult } from "../../schemas/sourceControl.ts";
 import { UsagePricing, UsageSummary, UsageSummaryInput } from "../../schemas/usage.ts";
 
@@ -61,12 +65,19 @@ export const serverMethods = {
       /** With `instanceId` and `cwd`: rescan the workspace's skills and slash commands. */
       fresh: z.boolean().optional(),
       refreshModels: z.boolean().optional(),
+      /**
+       * A model picker opened: refetch a stale model manifest and probe providers only when it
+       * changed. The server ignores the other fields; the config stream carries the result.
+       */
+      modelCatalogOnly: z.boolean().optional(),
       /** Read secret references again. Unlocking a vault can prompt on the host. */
       reloadSecrets: z.boolean().optional(),
       /** Reply without snapshots, or with only the snapshot of `instanceId` and `cwd`. */
       workspaceSnapshotsOnDemand: z.boolean().optional(),
       /** With `workspaceSnapshotsOnDemand`: add /usage-limits to the replied providers. */
       usageLimitsCommand: z.boolean().optional(),
+      /** A failed workspace scan replies with the machine catalog as a pending snapshot. */
+      providerCatalogsOnDemand: z.boolean().optional(),
     }),
     success: ServerProviderUpdatedPayload,
     stream: false,
@@ -89,6 +100,23 @@ export const serverMethods = {
     success: DatabaseStorageStatusUpdate,
     stream: true,
     scope: "orchestration:read",
+  }),
+  /**
+   * Restarts the server to return free database pages to disk. Only when the status says
+   * `canReclaim`; otherwise it fails with `DatabaseReclaimError`. The connection closes.
+   */
+  "server.reclaimDatabaseSpace": defineMethod({
+    payload: z.looseObject({}),
+    success: VoidSuccess,
+    stream: false,
+    scope: "environment:maintain",
+  }),
+  /** Lists a text generator's models. It spends the stored API key, so it needs `settings:write`. */
+  "server.listTextGeneratorModels": defineMethod({
+    payload: ListTextGeneratorModelsInput,
+    success: ListTextGeneratorModelsResult,
+    stream: false,
+    scope: "settings:write",
   }),
   "server.getUsageSummary": defineMethod({
     payload: UsageSummaryInput,
@@ -189,6 +217,8 @@ export const serverMethods = {
       usageLimitsCommand: z.boolean().optional(),
       /** Omit per-cwd provider snapshots. `server.refreshProviders` then supplies them. */
       workspaceSnapshotsOnDemand: z.boolean().optional(),
+      /** With `workspaceSnapshotsOnDemand`: also omit the machine slash commands and skills. */
+      providerCatalogsOnDemand: z.boolean().optional(),
     }),
     success: ServerConfigStreamEvent,
     stream: true,

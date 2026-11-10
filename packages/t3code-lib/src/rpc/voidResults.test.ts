@@ -31,6 +31,7 @@ const cases = [
       observedAt: "2026-01-01T00:00:00.000Z",
     },
   ],
+  ["server.reclaimDatabaseSpace", {}],
   [
     "secrets.answerRequest",
     { threadId: "thread-1", turnItemId: "item-1", answer: { type: "decline" } },

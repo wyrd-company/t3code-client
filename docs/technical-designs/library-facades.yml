@@ -180,10 +180,10 @@ proposed-design:
       probe();
       getConfig();
       getSettings(); // the settings field of getConfig
-      refreshProviders(input?); // reloadSecrets, workspaceSnapshotsOnDemand, usageLimitsCommand
+      refreshProviders(input?); // reloadSecrets, workspaceSnapshotsOnDemand, usageLimitsCommand, providerCatalogsOnDemand, modelCatalogOnly
       getNpmRelease(input: { spec }): Promise<ServerNpmRelease | null>;
       prepareTriage(input: { client }): Promise<ServerPrepareTriageResult>; // writes session files on the server
-      watchConfig(options?); // usageLimitsCommand, workspaceSnapshotsOnDemand and more
+      watchConfig(options?); // usageLimitsCommand, workspaceSnapshotsOnDemand, providerCatalogsOnDemand and more
       watchLifecycle();
       watchDatabaseStorage(options?); // server.getDatabaseStorage stream
       environment();

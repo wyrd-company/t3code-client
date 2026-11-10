@@ -104,6 +104,10 @@ export const ServerProviderUpdateError = taggedError("ServerProviderUpdateError"
   reason: z.string(),
   cause: Defect.optional(),
 });
+/** `reason` is a sentence for the user, such as the offline command to run instead. */
+export const DatabaseReclaimError = taggedError("DatabaseReclaimError", { reason: z.string() });
+/** A text generator API refused, was unreachable, or is not configured. */
+export const TextGeneratorError = taggedError("TextGeneratorError", { detail: z.string() });
 export const ServerSelfUpdateError = taggedError("ServerSelfUpdateError", {
   reason: z.string(),
   cause: Defect.optional(),

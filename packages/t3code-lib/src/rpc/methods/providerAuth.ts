@@ -11,6 +11,7 @@ import {
   ChatGptReconnectProfileInput,
   ProviderAuthCancelInput,
   ProviderAuthCompleteInput,
+  ProviderAuthRemoveMethodInput,
   ProviderAuthRespondInput,
   ProviderAuthStartInput,
   ProviderAuthState,
@@ -43,6 +44,13 @@ export const providerAuthMethods = {
   }),
   "provider.auth.cancel": defineMethod({
     payload: ProviderAuthCancelInput,
+    success: ProviderAuthState,
+    stream: false,
+    scope: "providers:manage",
+  }),
+  /** Forgets a saved method whose `canRemove` is true. Other methods fail with `ProviderSetupError`. */
+  "provider.auth.removeMethod": defineMethod({
+    payload: ProviderAuthRemoveMethodInput,
     success: ProviderAuthState,
     stream: false,
     scope: "providers:manage",

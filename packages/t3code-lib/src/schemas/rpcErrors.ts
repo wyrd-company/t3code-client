@@ -36,6 +36,8 @@ import {
   ServerProviderUpdateError,
   ServerSelfUpdateError,
   ServerSettingsError,
+  DatabaseReclaimError,
+  TextGeneratorError,
   UsageLimitSourceError,
 } from "./rpcErrors/server.ts";
 import {
@@ -135,6 +137,8 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   ServerPrepareTriageError,
   ServerProviderUpdateError,
   ServerSelfUpdateError,
+  DatabaseReclaimError,
+  TextGeneratorError,
   RelayClientInstallFailedError,
   SecretRequestError,
   PeerLinkError,

@@ -2876,6 +2876,9 @@ references again and can prompt on the host. `workspaceSnapshotsOnDemand`
 replies without snapshots or, with `instanceId` and `cwd`, with only that
 instance's snapshot of that folder and empty `models`, `slashCommands` and
 `skills`. `usageLimitsCommand` adds /usage-limits to that reply.
+`providerCatalogsOnDemand` replies with the machine catalog as a pending
+snapshot when the workspace scan fails. `modelCatalogOnly` refetches a stale
+model manifest and ignores the other fields; `watchConfig` carries the result.
 
 ```ts
 refreshProviders(

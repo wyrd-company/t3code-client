@@ -25,6 +25,8 @@ export interface WatchServerConfigOptions {
    * `providerWorkspaceSnapshotsOnDemand` capability honor it.
    */
   readonly workspaceSnapshotsOnDemand?: boolean;
+  /** With `workspaceSnapshotsOnDemand`: also omit the machine slash commands and skills. */
+  readonly providerCatalogsOnDemand?: boolean;
   readonly signal?: AbortSignal;
 }
 
@@ -427,6 +429,9 @@ export class ServerApi {
    * replies without snapshots or, with `instanceId` and `cwd`, with only that
    * instance's snapshot of that folder and empty `models`, `slashCommands` and
    * `skills`. `usageLimitsCommand` adds /usage-limits to that reply.
+   * `providerCatalogsOnDemand` replies with the machine catalog as a pending
+   * snapshot when the workspace scan fails. `modelCatalogOnly` refetches a stale
+   * model manifest and ignores the other fields; `watchConfig` carries the result.
    */
   refreshProviders(
     input: RpcPayload<RpcMethods, "server.refreshProviders"> = {},
@@ -471,6 +476,7 @@ export class ServerApi {
       usageLimitSources,
       usageLimitsCommand,
       workspaceSnapshotsOnDemand,
+      providerCatalogsOnDemand,
     } = options;
     return unwrapStreamItems(
       this.rpc.stream(
@@ -480,6 +486,7 @@ export class ServerApi {
           ...(usageLimitSources === undefined ? {} : { usageLimitSources }),
           ...(usageLimitsCommand === undefined ? {} : { usageLimitsCommand }),
           ...(workspaceSnapshotsOnDemand === undefined ? {} : { workspaceSnapshotsOnDemand }),
+          ...(providerCatalogsOnDemand === undefined ? {} : { providerCatalogsOnDemand }),
         },
         signal === undefined ? undefined : { signal },
       ),

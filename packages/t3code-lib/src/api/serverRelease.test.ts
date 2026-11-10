@@ -115,7 +115,14 @@ describe("server release, triage and on-demand inputs", () => {
     };
     await drain(api.watchConfig());
     await drain(api.watchConfig({ workspaceSnapshotsOnDemand: true, usageLimitsCommand: false }));
-    expect(received).toEqual([{}, { workspaceSnapshotsOnDemand: true, usageLimitsCommand: false }]);
+    await drain(
+      api.watchConfig({ workspaceSnapshotsOnDemand: true, providerCatalogsOnDemand: true }),
+    );
+    expect(received).toEqual([
+      {},
+      { workspaceSnapshotsOnDemand: true, usageLimitsCommand: false },
+      { workspaceSnapshotsOnDemand: true, providerCatalogsOnDemand: true },
+    ]);
   });
 
   it("sends the local-only status flag", async () => {

@@ -43,6 +43,7 @@ export * as projectClone from "./projectClone.ts";
 export * as agentSessions from "./agentSessions.ts";
 export * as storageCleanup from "./storageCleanup.ts";
 export * as terminal from "./terminal.ts";
+export * as textGenerator from "./textGenerator.ts";
 export * as usage from "./usage.ts";
 export * as vcs from "./vcs.ts";
 export * as worktreeSetup from "./worktreeSetup.ts";

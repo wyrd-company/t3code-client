@@ -57,6 +57,13 @@ export const ProviderAuthResponse = z.discriminatedUnion("type", [
 ]);
 export type ProviderAuthResponse = z.infer<typeof ProviderAuthResponse>;
 
+/** Forgets one saved sign-in method of the instance, such as an incomplete ChatGPT connection. */
+export const ProviderAuthRemoveMethodInput = z.looseObject({
+  instanceId: ProviderInstanceId,
+  methodId: SetupOperationId,
+});
+export type ProviderAuthRemoveMethodInput = z.infer<typeof ProviderAuthRemoveMethodInput>;
+
 export const ProviderAuthRespondInput = z.looseObject({
   instanceId: ProviderInstanceId,
   flowId: SetupOperationId,
@@ -81,6 +88,8 @@ export type ProviderAuthCancelInput = z.infer<typeof ProviderAuthCancelInput>;
 export const ProviderAuthMethod = z.looseObject({
   id: TrimmedNonEmptyString,
   accountEmail: TrimmedNonEmptyString.optional(),
+  /** The server can forget this method with `provider.auth.removeMethod`. */
+  canRemove: z.boolean().optional(),
   name: TrimmedNonEmptyString,
   description: z.string().nullable(),
   type: forwardCompatibleLiteral(["agent", "terminal", "credentials"]),

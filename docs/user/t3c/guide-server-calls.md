@@ -172,3 +172,22 @@ says why. `server.runStorageCleanup` needs `settings:write` and removes what the
 needs `settings:write`: the server sends an empty export to the URL, and the answer
 is `Accepted`, `Rejected` or `Unreachable`. `server.retryResourceTelemetry` needs
 `diagnostics:read` and `environment:maintain`.
+
+`server.getDatabaseStorage` reports `canReclaim` when a supervisor, such as the
+desktop app or the background service, can restart the server. Then
+`server.reclaimDatabaseSpace` (`environment:maintain`) restarts the server to return
+free database pages to disk, and the connection closes. Otherwise it fails with
+`DatabaseReclaimError`, whose `reason` names the offline command to run instead. A
+failed repair shows as `reclaimFailure` on the next status.
+
+`server.listTextGeneratorModels` (`settings:write`) lists the models of a text
+generator: a saved one by `id`, or unsaved settings in `config`. `test: true` also
+sends one short prompt and returns the `testedModel`. Both spend the API key. A
+failure is a `TextGeneratorError` with a `detail`.
+
+```ts
+const { models } = await client.rpc.call("server.listTextGeneratorModels", {
+  id: schemas.common.providerInstanceId("sample-generator"),
+  config: { kind: "openaiCompatible", baseUrl: "https://models.example.invalid/v1" },
+});
+```
