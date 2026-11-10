@@ -182,6 +182,21 @@ it("serves additive tools through stdio against an isolated stock server without
     expect(Array.isArray(usage["buckets"])).toBe(true);
     expect(Array.isArray(usage["sources"])).toBe(true);
     expect(typeof usage["contractVersion"]).toBe("number");
+    // Do not print process command lines, trace paths or causes, including on failure.
+    const tree = await call("server_processes", { maxProcesses: 1 });
+    expect(typeof tree["serverPid"]).toBe("number");
+    expect((tree["processes"] as unknown[]).length).toBeLessThanOrEqual(1);
+    expect(typeof tree["omittedProcesses"]).toBe("number");
+    const traces = await call("server_traces", {});
+    expect(typeof traces["recordCount"]).toBe("number");
+    expect(Array.isArray(traces["latestFailures"])).toBe(true);
+    const host = await call("server_host_resources", {});
+    expect(host["cpuCount"]).toBeGreaterThan(0);
+    const history = await call("server_resource_history", { windowMs: 60_000, bucketMs: 10_000 });
+    expect(history["windowMs"]).toBe(60_000);
+    expect(Array.isArray(history["buckets"])).toBe(true);
+    const cleanup = await call("server_storage_cleanup_report", {});
+    expect("report" in cleanup).toBe(true);
     const missing = await mcp.callTool({
       name: "thread_status",
       arguments: { threadId: "sample-absent-thread" },

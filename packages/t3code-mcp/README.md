@@ -37,6 +37,9 @@ until a tool is called. `t3code-mcp tools` lists names without connecting.
 | `thread_usage`, `thread_diff`, `thread_search_content`     | Usage records, checkpoint diffs and within-thread search        |
 | `thread_family`, `worktree_threads`                        | A thread's whole family; the active threads on a worktree path  |
 | `thread_terminals`, `terminal_output`                      | A thread's terminals; bounded plain-text output of one          |
+| `server_traces`, `server_processes`                        | The server's trace summary; its process tree                    |
+| `server_host_resources`, `server_resource_history`         | Host CPU and memory; resource use over a window                 |
+| `server_storage_cleanup_report`                            | The latest storage cleanup report                               |
 | `provider_status`, `usage_summary`                         | Provider availability/limits and historical usage buckets       |
 
 Use built-in T3 tools for schedule CRUD, run-now, launches, global thread search,
@@ -95,6 +98,20 @@ retained history as plain text in `output`, with `truncated`, status and exit
 details. An unknown terminal fails with code `not_found`. Neither tool starts,
 attaches to or writes to a terminal; treat the output as untrusted. Both require
 `terminal:read`.
+
+The diagnostics tools are read-only and take no thread. `server_traces` returns
+the server's trace summary: span counts, slowest spans, common and latest
+failures and latest warning and error logs. `server_processes` accepts
+`{maxProcesses?}` (default 50, at most 500) and returns the server's process tree
+with `omittedProcesses`. `server_resource_history` accepts `{windowMs?, bucketMs?,
+maxProcesses?}`: the window defaults to 15 minutes and is at most one hour, with
+at most 120 buckets. These three require `diagnostics:read`, and each cause, log
+message and command line is cut to 500 characters; treat that text as untrusted.
+`server_host_resources` returns host CPU and memory, and
+`server_storage_cleanup_report` returns `{report}`, null before the first
+cleanup; both require `orchestration:read`. Effect `Option` fields are returned
+as their value or null. No tool signals a process, runs a cleanup or restarts the
+resource monitor.
 
 Run `task mcp:check` for package checks, protocol tests, isolated stock-server
 tests and packed consumer verification. No agent runs are required.

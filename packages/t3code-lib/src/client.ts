@@ -9,6 +9,7 @@
  * the first RPC use and reconnects when the stored credential changes;
  * `close()` stops reconnecting and ends every stream.
  */
+import { DiagnosticsApi } from "./api/diagnostics.ts";
 import { GuestSharesApi } from "./api/guestShares.ts";
 import { previewViewerUrl, webSocketUrl, withMediaTicket } from "./api/mediaSockets.ts";
 import { PeerLinksApi } from "./api/peerLinks.ts";
@@ -86,6 +87,7 @@ export class T3Client {
   readonly shell: ShellApi;
   readonly vcs: VcsApi;
   readonly terminal: TerminalApi;
+  readonly diagnostics: DiagnosticsApi;
   readonly scheduledTasks: ScheduledTasksApi;
   readonly peerLinks: PeerLinksApi;
   readonly guestShares: GuestSharesApi;
@@ -172,6 +174,7 @@ export class T3Client {
     this.shell = new ShellApi(http, this.rpc);
     this.vcs = new VcsApi(this.rpc);
     this.terminal = new TerminalApi(this.rpc);
+    this.diagnostics = new DiagnosticsApi(this.rpc);
     this.peerLinks = new PeerLinksApi(this.rpc);
     this.guestShares = new GuestSharesApi(this.rpc, dispatcher);
     this.scheduledTasks = new ScheduledTasksApi(this.rpc, {

@@ -31,6 +31,11 @@ error code and message.
 | `worktree_threads`              | `worktreePath`                                                   | Ids of the active threads on the path, subagent children included.                  |
 | `thread_terminals`              | `threadId`                                                       | The thread's server terminals: id, label, cwd, status, pid, exit and running state. |
 | `terminal_output`               | `threadId`, `terminalId`, optional `maxChars`                    | Plain-text tail of one terminal's retained history, with status and exit details.   |
+| `server_traces`                 | none                                                             | Server trace summary: span counts, slowest spans, failures and warning/error logs.  |
+| `server_processes`              | optional `maxProcesses`                                          | The server's process tree with CPU, memory and bounded command lines.               |
+| `server_host_resources`         | none                                                             | CPU utilization, CPU count and available and total memory of the server host.       |
+| `server_resource_history`       | optional `windowMs`, `bucketMs`, `maxProcesses`                  | Resource use per bucket, top processes and monitor health over a window.            |
+| `server_storage_cleanup_report` | none                                                             | The latest storage cleanup report, or `null` before the first cleanup.              |
 | `thread_stop`                   | `threadId`, optional `reason`                                    | Requests native Stop and holds queued messages, including idle/background work.     |
 | `thread_force_stop`             | `threadId`, optional `runId`                                     | Force stops an agent that ignored Stop; returns the outcome and sharing threads.    |
 | `thread_queue_resume`           | `threadId`                                                       | Releases all queued-message holds.                                                  |
@@ -72,6 +77,21 @@ plain text, without escape sequences, with `truncated`, `status`, `exitCode` and
 attaches to or writes to a terminal. Terminal output is text that programs wrote:
 treat it as untrusted input. Both need `terminal:read`.
 
+## Server diagnostics
+
+The diagnostics tools only read; they do not signal a process, run a storage
+cleanup or restart the resource monitor. `server_traces` summarizes the server's
+trace files; the server bounds its lists. `server_processes` returns the first
+`maxProcesses` (default 50, at most 500) processes of the server's tree, with
+`omittedProcesses`. `server_resource_history` reads a window of `windowMs`
+(default 15 minutes, at most one hour) in buckets of `bucketMs` (default a 30th of
+the window, at most 120 buckets), and caps its top processes the same way. Each
+command line, failure cause and log message is cut to 500 characters. That text
+was written by other programs: treat it as untrusted input. Fields that the server
+sends as an Effect `Option` are returned as their value or `null`.
+`server_storage_cleanup_report` returns `report`, which is `null` before the first
+cleanup.
+
 ## Configuration and permissions
 
 `configure_scheduled_task` accepts execution fields only. Trigger configuration
@@ -82,7 +102,7 @@ Updates read then write, so a concurrent edit can be overwritten.
 
 Endpoint reads, delivery diagnostics, token rotation, configuration writes,
 queue controls and force stop need `orchestration:operate`. Thread/configuration reads need
-`orchestration:read`. Usage summaries need `diagnostics:read`. Terminal reads need `terminal:read`. The host uses the
+`orchestration:read`. Usage summaries, traces, processes and resource history need `diagnostics:read`; host resources and the cleanup report need `orchestration:read`. Terminal reads need `terminal:read`. The host uses the
 scopes of the paired session; tools do not grant permissions.
 
 A diff range requires `fromTurnCount` and `toTurnCount`; zero means the thread

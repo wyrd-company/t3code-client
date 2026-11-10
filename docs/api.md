@@ -594,6 +594,13 @@ even when <code>restartIfNotRunning: true</code>. Unknown terminal IDs can recov
 <code>cwd</code> is supplied, including after a server restart. Omission and <code>false</code>
 retain ordinary attach behavior; unknown IDs without <code>cwd</code> fail lookup.</p>
 </dd>
+<dt><a href="#DiagnosticsApi">DiagnosticsApi</a></dt>
+<dd><p>Read-only views of the server&#39;s own health: trace summaries, its process tree,
+host resources, resource history and the latest storage cleanup report. None of
+these signal a process, run a cleanup or restart the resource monitor; those stay
+on <code>client.rpc</code>. Trace causes, log messages and command lines are text that other
+programs wrote, and can hold host paths.</p>
+</dd>
 <dt><a href="#PeerLinksApi">PeerLinksApi</a></dt>
 <dd><p>Links from this environment to other T3 Code environments (peers), so that
 its agents can work there. <code>capabilities.peerLinks</code> advertises them. A
@@ -3551,6 +3558,86 @@ async read(
 ```
 
 **Kind**: instance method of [<code>TerminalApi</code>](#TerminalApi)  
+<a name="DiagnosticsApi"></a>
+
+## DiagnosticsApi
+
+Read-only views of the server's own health: trace summaries, its process tree,
+host resources, resource history and the latest storage cleanup report. None of
+these signal a process, run a cleanup or restart the resource monitor; those stay
+on `client.rpc`. Trace causes, log messages and command lines are text that other
+programs wrote, and can hold host paths.
+
+**Kind**: global class
+
+- [DiagnosticsApi](#DiagnosticsApi)
+  - [.traces()](#DiagnosticsApi+traces)
+  - [.processes()](#DiagnosticsApi+processes)
+  - [.hostResources()](#DiagnosticsApi+hostResources)
+  - [.resourceHistory()](#DiagnosticsApi+resourceHistory)
+  - [.storageCleanupReport()](#DiagnosticsApi+storageCleanupReport)
+
+<a name="DiagnosticsApi+traces"></a>
+
+### diagnosticsApi.traces()
+
+Span and failure summaries from the server's trace files (diagnostics:read). A
+read failure keeps the partial counts and sets `error`.
+
+```ts
+traces(signal?: AbortSignal): Promise<ServerTraceDiagnosticsResult>;
+```
+
+**Kind**: instance method of [<code>DiagnosticsApi</code>](#DiagnosticsApi)  
+<a name="DiagnosticsApi+processes"></a>
+
+### diagnosticsApi.processes()
+
+The server process and its descendants, with CPU and memory (diagnostics:read).
+
+```ts
+processes(signal?: AbortSignal): Promise<ServerProcessDiagnosticsResult>;
+```
+
+**Kind**: instance method of [<code>DiagnosticsApi</code>](#DiagnosticsApi)  
+<a name="DiagnosticsApi+hostResources"></a>
+
+### diagnosticsApi.hostResources()
+
+CPU and memory of the server host (orchestration:read).
+
+```ts
+hostResources(signal?: AbortSignal): Promise<HostResourcesSnapshot>;
+```
+
+**Kind**: instance method of [<code>DiagnosticsApi</code>](#DiagnosticsApi)  
+<a name="DiagnosticsApi+resourceHistory"></a>
+
+### diagnosticsApi.resourceHistory()
+
+Resource use of the server's processes over `windowMs`, in buckets of
+`bucketMs`, with the top processes and monitor health (diagnostics:read).
+
+```ts
+resourceHistory(
+    input: ResourceTelemetryHistoryInput,
+    signal?: AbortSignal,
+  ): Promise<ResourceTelemetryHistory>;
+```
+
+**Kind**: instance method of [<code>DiagnosticsApi</code>](#DiagnosticsApi)  
+<a name="DiagnosticsApi+storageCleanupReport"></a>
+
+### diagnosticsApi.storageCleanupReport()
+
+The latest storage cleanup report, or `null` before the first cleanup
+(orchestration:read). Reads the first item of the report stream and closes it.
+
+```ts
+storageCleanupReport(signal?: AbortSignal): Promise<StorageCleanupReportUpdate>;
+```
+
+**Kind**: instance method of [<code>DiagnosticsApi</code>](#DiagnosticsApi)  
 <a name="PeerLinksApi"></a>
 
 ## PeerLinksApi

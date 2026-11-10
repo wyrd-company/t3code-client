@@ -51,6 +51,11 @@ proposed-design:
     - worktree_threads: the active threads on a worktree path, subagent children included.
     - thread_terminals: the server terminals of a thread, with status and running state.
     - terminal_output: bounded recent output of one terminal as plain text, read-only.
+    - server_traces: the server's trace summary, with bounded causes and log messages.
+    - server_processes: the server's process tree, bounded in count and command length.
+    - server_host_resources: CPU and memory of the server host.
+    - server_resource_history: resource use of the server's processes over a bounded window.
+    - server_storage_cleanup_report: the latest storage cleanup report, or null.
     - thread_stop: native Stop with queue hold and background/delegated work cleanup.
     - thread_force_stop: force stop of an agent that ignored Stop, optionally for one run.
     - thread_queue_resume: release the queue hold so normal delivery continues.
@@ -78,6 +83,13 @@ proposed-design:
     terminal, so a person's shell stays under that person's control. Output is the
     tail of the server's retained history, without escape sequences, bounded by
     maxChars; tool descriptions mark it as untrusted program text.
+    Diagnostics tools compose client.diagnostics and only read. Signalling a
+    process, running a storage cleanup, restarting the resource monitor and
+    checking an OTLP endpoint stay with a person in the app. Process lists are
+    capped by maxProcesses, the history window by an hour and 120 buckets, and
+    each command line, failure cause and log message by 500 characters; tool
+    descriptions mark that text as untrusted. Effect Option fields become their
+    value or null.
   credentials-and-errors: |
     The selected T3 credential and its granted scopes remain the authority for
     every operation. Scheduler endpoint and delivery access preserve upstream

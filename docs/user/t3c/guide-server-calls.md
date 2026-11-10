@@ -218,11 +218,16 @@ The server reads its traces, its process tree and its host. Most of these reads 
 `diagnostics:read`. A failed read is part of the result: `error` is an `Option`
 record and the result keeps what the server could read.
 
+`client.diagnostics` wraps the reads: `traces`, `processes`, `hostResources`,
+`resourceHistory` and `storageCleanupReport`. The last one returns the first item of
+`server.getStorageCleanupReport`, `null` before the first cleanup, and closes the
+stream. The facade has no method that signals, cleans up or restarts.
+
 ```ts
-const { processes, error } = await client.rpc.call("server.getProcessDiagnostics", {});
+const { processes, error } = await client.diagnostics.processes();
 if (error._tag === "Some") console.warn(error.value.message);
 
-const history = await client.rpc.call("server.getResourceTelemetryHistory", {
+const history = await client.diagnostics.resourceHistory({
   windowMs: 60_000,
   bucketMs: 10_000,
 });

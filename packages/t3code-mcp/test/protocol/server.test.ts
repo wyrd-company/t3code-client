@@ -14,7 +14,7 @@ it("negotiates and advertises only the complementary tool contract with accurate
   expect(client.getServerVersion()?.name).toBe("t3code-mcp");
   const { tools } = await client.listTools();
   expect(tools.map((tool) => tool.name)).toEqual(toolNames);
-  expect(tools).toHaveLength(21);
+  expect(tools).toHaveLength(26);
   for (const tool of tools) {
     const mutation = [
       "configure_scheduled_task",

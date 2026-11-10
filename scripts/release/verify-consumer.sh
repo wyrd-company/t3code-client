@@ -45,9 +45,11 @@ import * as NodeReadline from 'node:readline';
 const expected = [
   'configure_scheduled_task', 'provider_status', 'rotate_scheduled_task_webhook',
   'scheduled_task_configuration', 'scheduled_task_deliveries', 'scheduled_task_delivery',
-  'scheduled_task_endpoint', 'terminal_output', 'thread_approvals', 'thread_diff', 'thread_family', 'thread_force_stop',
-  'thread_queue_resume', 'thread_queue_start', 'thread_search_content',
-  'thread_status', 'thread_stop', 'thread_terminals', 'thread_usage', 'usage_summary', 'worktree_threads',
+  'scheduled_task_endpoint', 'server_host_resources', 'server_processes',
+  'server_resource_history', 'server_storage_cleanup_report', 'server_traces', 'terminal_output',
+  'thread_approvals', 'thread_diff', 'thread_family', 'thread_force_stop', 'thread_queue_resume',
+  'thread_queue_start', 'thread_search_content', 'thread_status', 'thread_stop',
+  'thread_terminals', 'thread_usage', 'usage_summary', 'worktree_threads',
 ];
 const server = NodeChildProcess.spawn(process.argv[2], [], { stdio: ['pipe', 'pipe', 'inherit'] });
 const lines = NodeReadline.createInterface({ input: server.stdout })[Symbol.asyncIterator]();

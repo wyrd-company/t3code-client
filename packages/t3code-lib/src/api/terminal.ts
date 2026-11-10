@@ -8,7 +8,7 @@ import type { RpcMethods } from "../rpc/registry.ts";
 import type { RpcPayload, RpcSuccess } from "../rpc/spec.ts";
 import { isUnknownVariant } from "../schemas/common.ts";
 import type { TerminalSessionSnapshot, TerminalSummary } from "../schemas/terminal.ts";
-import { unwrapStreamItems, type DecodedStreamItem } from "./streamItems.ts";
+import { firstItem, unwrapStreamItems, type DecodedStreamItem } from "./streamItems.ts";
 
 /**
  * Server terminal operations and event streams.
@@ -86,7 +86,10 @@ export class TerminalApi {
 
   /** Every terminal the server keeps, from the first metadata snapshot. */
   async list(signal?: AbortSignal): Promise<TerminalSummary[]> {
-    const first = await firstItem(this.watchMetadata(signal === undefined ? {} : { signal }));
+    const first = await firstItem(
+      this.watchMetadata(signal === undefined ? {} : { signal }),
+      "terminal",
+    );
     if (isUnknownVariant<"type">(first) || first.type !== "snapshot")
       throw new T3ConnectionError("protocol", "The terminal list did not start with a snapshot.");
     return first.terminals;
@@ -101,19 +104,12 @@ export class TerminalApi {
     input: RpcPayload<RpcMethods, "terminal.observe">,
     signal?: AbortSignal,
   ): Promise<TerminalSessionSnapshot> {
-    const first = await firstItem(this.observe(input, signal === undefined ? {} : { signal }));
+    const first = await firstItem(
+      this.observe(input, signal === undefined ? {} : { signal }),
+      "terminal",
+    );
     if (isUnknownVariant<"type">(first) || first.type !== "snapshot")
       throw new T3ConnectionError("protocol", "The terminal stream did not start with a snapshot.");
     return first.snapshot;
   }
-}
-
-/** The first decoded item; the stream is closed after it. */
-async function firstItem<T>(source: AsyncIterable<DecodedStreamItem<T>>): Promise<T> {
-  for await (const item of source) {
-    if (typeof item === "object" && item !== null && "kind" in item && item.kind === "decode-error")
-      throw item.error;
-    return item as T;
-  }
-  throw new T3ConnectionError("protocol", "The terminal stream ended before its first item.");
 }

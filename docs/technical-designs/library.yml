@@ -196,6 +196,7 @@ proposed-design:
         shell.ts                snapshot, archivedSnapshot, watch
         vcs.ts                  listRefs, status, createWorktree, removeWorktree, createRef, switchRef
         terminal.ts             open, attach, observe, watchMetadata, list, read, write, resize, close
+        diagnostics.ts          traces, processes, hostResources, resourceHistory, storageCleanupReport (read-only)
         peerLinks.ts            list, link, unlink, answerRequest
         guestShares.ts          create, close, sendMessage, dismissMessage
         dispatch.ts             CommandDispatcher: validate and send OrchestrationV2Command

@@ -56,6 +56,9 @@ t3mcp with a person's hostname, because a hostname is for the messages of one pe
 | `thread_usage`, `thread_diff`, `thread_search_content`     | Usage ownership, checkpoint diff or within-thread search                                  |
 | `thread_family`, `worktree_threads`                        | A thread's whole family, or the active threads on a worktree path                         |
 | `thread_terminals`, `terminal_output`                      | A thread's terminals, or the recent plain-text output of one                              |
+| `server_traces`, `server_processes`                        | The server's trace summary, or its process tree                                           |
+| `server_host_resources`, `server_resource_history`         | Host CPU and memory, or the server's resource use over a window                           |
+| `server_storage_cleanup_report`                            | The latest storage cleanup report                                                         |
 | `thread_stop`, `thread_queue_resume`, `thread_queue_start` | Native Stop, queue release or selected queued-message start                               |
 | `thread_force_stop`                                        | Force stop of an agent that ignored Stop                                                  |
 | `provider_status`, `usage_summary`                         | Current provider state/limits or historical usage buckets                                 |

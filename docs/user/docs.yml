@@ -304,6 +304,21 @@ products:
           - name: terminal_output
             description: Read the recent output of one terminal.
             effect: Read-only
+          - name: server_traces
+            description: Summarize the server's trace files.
+            effect: Read-only
+          - name: server_processes
+            description: List the server's process tree.
+            effect: Read-only
+          - name: server_host_resources
+            description: Read CPU and memory of the server host.
+            effect: Read-only
+          - name: server_resource_history
+            description: Read resource use of the server's processes over a window.
+            effect: Read-only
+          - name: server_storage_cleanup_report
+            description: Read the latest storage cleanup report.
+            effect: Read-only
           - name: thread_stop
             description: Stop thread work and hold queued messages.
             effect: Writes

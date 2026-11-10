@@ -148,6 +148,7 @@ export {
   type WatchScheduledTasksOptions,
 } from "./api/scheduledTasks.ts";
 export { TerminalApi } from "./api/terminal.ts";
+export { DiagnosticsApi } from "./api/diagnostics.ts";
 export { PeerLinksApi } from "./api/peerLinks.ts";
 export { GuestSharesApi } from "./api/guestShares.ts";
 export type { DecodedStreamItem } from "./api/streamItems.ts";

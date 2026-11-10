@@ -20,6 +20,7 @@ TypeScript declarations ship with the package.
 - [Authentication API](https://wyrd.foo/docs/t3c/library-authentication)
 - [Profiles and credentials](https://wyrd.foo/docs/t3c/library-profiles)
 - [Errors](https://wyrd.foo/docs/t3c/library-errors)
+- [Shared types and constants](https://wyrd.foo/docs/t3c/library-types)
 - [Projects API](https://wyrd.foo/docs/t3c/library-projects)
 - [Threads API](https://wyrd.foo/docs/t3c/library-threads)
 - [Shell API](https://wyrd.foo/docs/t3c/library-shell)
