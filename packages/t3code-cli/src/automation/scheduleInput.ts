@@ -155,7 +155,8 @@ function flagFields(options: Record<string, unknown>): ScheduleFields {
   if (text("thread") !== undefined && options["newThread"] === true)
     throw new T3PreconditionError("Choose --thread or --new-thread.");
   if (text("thread") !== undefined) fields.threadId = threadId(text("thread")!);
-  if (options["newThread"] === true) fields.threadId = null;
+  if (options["newThread"] === true)
+    Object.assign(fields, { threadId: null, threadMode: "new_thread" });
   if (text("threadMode") !== undefined && options["newThread"] === true)
     throw new T3PreconditionError("Choose --thread-mode or --new-thread.");
   if (text("threadMode") !== undefined)

@@ -181,7 +181,7 @@ it("applies model options to the stored model and clears them on request", async
       },
     },
     { modelSelection: { instanceId: "sample-provider", model: "sample-model", options: [] } },
-    { threadId: null, runtimeMode: "auto" },
+    { threadId: null, threadMode: "new_thread", runtimeMode: "auto" },
   ]);
   expect((await run(["update", "scheduled-task:absent", "--prompt", "Sample"])).code).toBe(10);
 });

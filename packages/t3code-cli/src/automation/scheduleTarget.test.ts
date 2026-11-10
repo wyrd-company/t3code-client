@@ -11,7 +11,8 @@ import { runWith, sampleProvider } from "../../test/support/automationHarness.ts
 import { scheduleHandlers } from "./schedule.ts";
 
 const client = T3Client.create({ baseUrl: "http://127.0.0.1:1" });
-const handlers = scheduleHandlers();
+const files: Record<string, string> = {};
+const handlers = scheduleHandlers(async (path) => files[path] ?? "");
 const run = (args: string[]) => runWith(client, handlers, ["schedule", ...args]);
 const task = schemas.scheduledTask.ScheduledTask.parse(intervalTask);
 const project = {
@@ -127,6 +128,13 @@ it("sends a selected thread mode and refuses one that contradicts the thread", a
   expect((await run(["update", task.id, "--thread-mode", "new_thread"])).code).toBe(0);
   expect(vi.mocked(client.scheduledTasks.upsert).mock.lastCall?.[0]).toMatchObject({
     threadId: "thread-sample",
+    threadMode: "new_thread",
+  });
+  // The focused flag overrides a JSON mode, as other flags override JSON fields.
+  files["continue.json"] = JSON.stringify({ threadMode: "continue" });
+  expect((await run(["update", task.id, "--input", "continue.json", "--new-thread"])).code).toBe(0);
+  expect(vi.mocked(client.scheduledTasks.upsert).mock.lastCall?.[0]).toMatchObject({
+    threadId: null,
     threadMode: "new_thread",
   });
   vi.mocked(client.scheduledTasks.upsert).mockClear();
