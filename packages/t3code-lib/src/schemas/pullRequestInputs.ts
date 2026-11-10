@@ -57,6 +57,13 @@ const pullRequestRefFields = {
 export const PullRequestRef = z.looseObject(pullRequestRefFields);
 export type PullRequestRef = z.infer<typeof PullRequestRef>;
 
+/** `query` asks the host for matches past the first page of candidates. */
+export const PullRequestReviewerCandidatesInput = z.looseObject({
+  ...pullRequestRefFields,
+  query: TrimmedNonEmptyString.max(100).optional(),
+});
+export type PullRequestReviewerCandidatesInput = z.infer<typeof PullRequestReviewerCandidatesInput>;
+
 export const PullRequestRoutingIdentityInput = z.looseObject({ host: TrimmedNonEmptyString });
 export type PullRequestRoutingIdentityInput = z.infer<typeof PullRequestRoutingIdentityInput>;
 
@@ -67,11 +74,13 @@ export type PullRequestListStatsInput = z.infer<typeof PullRequestListStatsInput
 
 /** Scoped like `PullRequestListInput`, so the options come from the repositories it lists. */
 export const PullRequestFilterOptionsInput = z.looseObject({
-  kind: z.enum(["labels", "authors"]),
+  kind: z.enum(["labels", "authors", "references"]),
   projectId: ProjectId.optional(),
   projectIds: z.array(ProjectId).max(100).optional(),
   host: TrimmedNonEmptyString.optional(),
   query: TrimmedNonEmptyString.max(100).optional(),
+  /** For `references`, the sigil typed, so that a host can search only what it links. */
+  sigil: z.enum(["#", "!"]).optional(),
 });
 export type PullRequestFilterOptionsInput = z.infer<typeof PullRequestFilterOptionsInput>;
 

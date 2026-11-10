@@ -204,6 +204,17 @@ describe.skipIf(!hasLiveServer)("pull request writes with a local forge stub", (
     ]);
   });
 
+  it("answers an action with the summary only when asked", async () => {
+    // Of the GitLab actions, only the cancel of auto-merge reads the merge request back.
+    const action = { ...ref, action: "disable-auto-merge" } as const;
+    await expect(client.rpc.call("pullRequests.runAction", action)).resolves.toBeUndefined();
+    await expect(
+      client.rpc.call("pullRequests.runAction", { ...action, replyWithSummary: true }),
+    ).resolves.toMatchObject({ provider: "gitlab", repository, number: 7, state: "open" });
+    const cancel = { method: "POST", path: `${mergeRequest}/cancel_merge_when_pipeline_succeeds` };
+    await expect(peer.takeForgeCalls()).resolves.toEqual([cancel, cancel]);
+  });
+
   it("refuses when the host refuses the credential", async () => {
     await expect(
       refusal(client.rpc.call("pullRequests.comment", { ...ref, number: 9, body: "Sample" })),

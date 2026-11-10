@@ -88,8 +88,13 @@ The diff is a route, not an RPC method, and it pages with `cursor`.
 `changeBreakdown` read one part of a pull request. `threadComments` reads the next
 comments of a review thread from its `nextCommentsCursor`, and `diffFileContents` reads
 the two sides of one file. `reviewGuide` reads the stored guide and generates nothing.
-`linkedThreads` lists the threads linked to a pull request. `filterOptions`,
-`reviewerCandidates` and `labelCandidates` list the values that a client can offer.
+`linkedThreads` lists the threads linked to a pull request, with `settled` for each.
+`filterOptions`, `reviewerCandidates` and `labelCandidates` list the values that a client
+can offer. `filterOptions` with kind `references` and a `sigil` (`#` or `!`) lists the
+issues and change requests that a comment can reference, in `references`. The sigils are in
+`capabilities.referenceSigils`, and `capabilities.mentions` says if the host completes
+`@login`. `reviewerCandidates` takes a `query` that the host matches past the first page
+when `capabilities.reviewers.searchCandidates` is on.
 `pullRequests.subscribeRefreshes` sends a new revision after which a client reads again.
 `pullRequests.invalidate` drops cached reads, so that the next read asks the host: those
 of one pull request with `reference`, listings and viewers without it, and only viewed
@@ -110,6 +115,10 @@ await client.rpc.call("pullRequests.submitReview", {
 });
 await client.rpc.call("pullRequests.runAction", { ...ref, action: "merge", mergeMethod: "squash" });
 ```
+
+A write answers with nothing, except `pullRequests.runAction` with `replyWithSummary: true`.
+It answers with the pull request's summary when the host's reply has one, and `undefined`
+when it does not.
 
 `update`, `updateComment`, `replyToThread`, `setThreadResolution`, `setReaction`,
 `requestReviewers`, `setLabels` and `setFilesViewed` change one part of a pull request.

@@ -30,6 +30,7 @@ import {
   PullRequestRef,
   PullRequestReportStateInput,
   PullRequestReviewerCandidateList,
+  PullRequestReviewerCandidatesInput,
   PullRequestReviewerRequestInput,
   PullRequestReviewGuideResult,
   PullRequestRoutingIdentityInput,
@@ -163,8 +164,9 @@ export const pullRequestsMethods = {
     stream: false,
     scope: "orchestration:read",
   }),
+  /** `query` needs `capabilities.reviewers.searchCandidates`. */
   "pullRequests.reviewerCandidates": defineMethod({
-    payload: PullRequestRef,
+    payload: PullRequestReviewerCandidatesInput,
     success: PullRequestReviewerCandidateList,
     stream: false,
     scope: "orchestration:read",
@@ -212,7 +214,17 @@ export const pullRequestsMethods = {
   }),
   /** Marks are on the host or on this server, as `capabilities.viewedFiles` says. */
   "pullRequests.setFilesViewed": hostWrite(PullRequestSetFilesViewedInput),
-  "pullRequests.runAction": hostWrite(PullRequestActionInput),
+  /** The summary after the action with `replyWithSummary`, else undefined. */
+  "pullRequests.runAction": defineMethod({
+    payload: PullRequestActionInput,
+    success: z
+      .null()
+      .or(z.undefined())
+      .transform(() => undefined)
+      .or(PullRequestSummary),
+    stream: false,
+    scope: "source-control:write",
+  }),
   "pullRequests.update": hostWrite(PullRequestUpdateInput),
   "pullRequests.comment": hostWrite(PullRequestCommentInput),
   "pullRequests.updateComment": hostWrite(PullRequestCommentUpdateInput),

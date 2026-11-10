@@ -29,6 +29,10 @@ export {
 export const PullRequestMergeMethod = forwardCompatibleLiteral(["merge", "squash", "rebase"]);
 export type PullRequestMergeMethod = z.infer<typeof PullRequestMergeMethod>;
 
+/** `#` references issues and GitHub pull requests. `!` references GitLab merge requests. */
+export const PullRequestReferenceSigil = forwardCompatibleLiteral(["#", "!"]);
+export type PullRequestReferenceSigil = z.infer<typeof PullRequestReferenceSigil>;
+
 export const PullRequestAction = forwardCompatibleLiteral(PULL_REQUEST_ACTIONS);
 export type PullRequestAction = z.infer<typeof PullRequestAction>;
 

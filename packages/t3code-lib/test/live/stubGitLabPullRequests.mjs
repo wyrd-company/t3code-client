@@ -131,7 +131,9 @@ if (methodFlag !== -1 && path !== "graphql") {
     path,
     ...(rest.includes("--input") ? { body: JSON.parse(NodeFS.readFileSync(0, "utf8")) } : {}),
   });
-  process.stdout.write("{}");
+  // GitLab answers the cancel of auto-merge with the merge request.
+  const cancelsAutoMerge = path.endsWith("/cancel_merge_when_pipeline_succeeds");
+  process.stdout.write(cancelsAutoMerge ? JSON.stringify(mergeRequest) : "{}");
   process.exit(0);
 }
 

@@ -29,6 +29,7 @@ import {
   PullRequestMergeMethod,
   PullRequestMergeability,
   PullRequestReaction,
+  PullRequestReferenceSigil,
   PullRequestReviewDecision,
   PullRequestReviewThread,
   PullRequestReviewVerdict,
@@ -58,7 +59,12 @@ export const PullRequestCapabilities = z.looseObject({
     resolve: z.boolean(),
     verdicts: forwardCompatibleArray(PullRequestReviewVerdict),
   }),
-  reviewers: z.looseObject({ request: z.boolean(), listCandidates: z.boolean() }),
+  reviewers: z.looseObject({
+    request: z.boolean(),
+    listCandidates: z.boolean(),
+    /** `reviewerCandidates` matches `query` past the first page. Absent means that it does not. */
+    searchCandidates: z.boolean().optional(),
+  }),
   edit: z
     .looseObject({
       changeRequest: z.boolean(),
@@ -69,6 +75,10 @@ export const PullRequestCapabilities = z.looseObject({
   stacks: z.boolean().optional(),
   stackActions: z.boolean().optional(),
   labels: z.boolean().optional(),
+  /** The host searches the repository's users, so that a composer can complete `@login`. */
+  mentions: z.boolean().optional(),
+  /** The sigils whose issue and change request references a composer can complete. */
+  referenceSigils: forwardCompatibleArray(PullRequestReferenceSigil).optional(),
   /** Absent means that an empty check list says nothing. */
   checksAlwaysReport: z.boolean().optional(),
 });
@@ -160,6 +170,10 @@ export const PullRequestSummary = z.looseObject({
   mergeability: PullRequestMergeability.optional(),
   /** `null` when the host says that it is in no stack. Absent when the read did not ask. */
   stack: PullRequestStackMembership.nullable().optional(),
+  headSha: TrimmedNonEmptyString.optional(),
+  /** Absent means that the read did not report auto-merge, not that it is off. */
+  autoMergeEnabled: z.boolean().optional(),
+  autoMergeMethod: PullRequestMergeMethod.optional(),
 });
 export type PullRequestSummary = z.infer<typeof PullRequestSummary>;
 
@@ -173,6 +187,8 @@ export const PullRequestPreview = z.looseObject({
   state: PullRequestState,
   isDraft: z.boolean(),
   createdAt: IsoDateTime,
+  updatedAt: IsoDateTime.optional(),
+  observedAt: z.number().optional(),
 });
 export type PullRequestPreview = z.infer<typeof PullRequestPreview>;
 
@@ -217,6 +233,8 @@ export type PullRequestActivity = z.infer<typeof PullRequestActivity>;
 export const PullRequestThreadCommentsResult = z.looseObject({
   comments: z.array(PullRequestThreadComment),
   nextCursor: TrimmedNonEmptyString.nullable(),
+  /** Comments that the host hid and this page left out. The thread's `commentCount` counts them. */
+  hiddenCount: NonNegativeInt.optional(),
 });
 export type PullRequestThreadCommentsResult = z.infer<typeof PullRequestThreadCommentsResult>;
 
@@ -245,6 +263,7 @@ export const PullRequestLinkedThreadsResult = z.looseObject({
       projectId: ProjectId,
       title: z.string(),
       archivedAt: IsoDateTime.nullable(),
+      settled: z.boolean().optional(),
     }),
   ),
 });

@@ -14,6 +14,7 @@ import {
   ProjectId,
   TrimmedNonEmptyString,
   forwardCompatibleArray,
+  forwardCompatibleLiteral,
 } from "./common.ts";
 import { PullRequestListCursors } from "./pullRequestInputs.ts";
 import {
@@ -99,9 +100,21 @@ export const PullRequestListStatsResult = z.looseObject({
 });
 export type PullRequestListStatsResult = z.infer<typeof PullRequestListStatsResult>;
 
+/** An issue or change request that a composer can reference, with the text that the host links. */
+export const PullRequestReferenceCandidate = z.looseObject({
+  reference: TrimmedNonEmptyString,
+  kind: forwardCompatibleLiteral(["issue", "change-request"]),
+  number: PositiveInt,
+  title: z.string(),
+  state: forwardCompatibleLiteral(["open", "closed", "merged"]),
+});
+export type PullRequestReferenceCandidate = z.infer<typeof PullRequestReferenceCandidate>;
+
 export const PullRequestFilterOptions = z.looseObject({
   labels: z.array(PullRequestLabel),
   authors: z.array(PullRequestActor),
+  /** Filled for kind `references`. A server without reference completion sends no key. */
+  references: z.array(PullRequestReferenceCandidate).default([]),
   truncated: z.boolean(),
 });
 export type PullRequestFilterOptions = z.infer<typeof PullRequestFilterOptions>;

@@ -65,6 +65,17 @@ describe.skipIf(!hasLiveServer)("pull request reads with a local forge stub", ()
     expect(authors.authors.map((author) => author.login)).toContain("sample-author");
   });
 
+  it("reads the reference candidates of a sigil", async () => {
+    const options = await client.rpc.call("pullRequests.filterOptions", {
+      kind: "references",
+      projectId: project,
+      sigil: "!",
+    });
+    expect(options.references).toContainEqual(
+      expect.objectContaining({ reference: "!7", kind: "change-request", number: 7 }),
+    );
+  });
+
   it("reads the summary, detail, preview and checks", async () => {
     await expect(client.rpc.call("pullRequests.summary", ref)).resolves.toMatchObject({
       provider: "gitlab",
@@ -81,6 +92,11 @@ describe.skipIf(!hasLiveServer)("pull request reads with a local forge stub", ()
       viewerPermissions: { comment: true },
     });
     expect(detail.capabilities.review.verdicts).toContain("approve");
+    expect(detail.capabilities).toMatchObject({
+      mentions: true,
+      referenceSigils: ["#", "!"],
+      reviewers: { searchCandidates: true },
+    });
     await expect(client.rpc.call("pullRequests.preview", ref)).resolves.toMatchObject({
       title: "Sample change",
       isDraft: false,
@@ -141,6 +157,11 @@ describe.skipIf(!hasLiveServer)("pull request reads with a local forge stub", ()
     expect(reviewers.candidates).toContainEqual(
       expect.objectContaining({ login: "sample-reviewer", kind: "user", isRequested: true }),
     );
+    const searched = await client.rpc.call("pullRequests.reviewerCandidates", {
+      ...ref,
+      query: "sample",
+    });
+    expect(searched.candidates.map((candidate) => candidate.login)).toContain("sample-reviewer");
   });
 
   it("reads the threads linked to the merge request", async () => {
@@ -167,6 +188,7 @@ describe.skipIf(!hasLiveServer)("pull request reads with a local forge stub", ()
       return answer.threads.length > 0 ? answer : undefined;
     }, "the linked thread");
     expect(linked.threads).toMatchObject([{ id, projectId: project, archivedAt: null }]);
+    expect(linked.threads[0]?.settled).toBeTypeOf("boolean");
   });
 
   it("reaches the refusal or empty answer of what the driver does not have", async () => {

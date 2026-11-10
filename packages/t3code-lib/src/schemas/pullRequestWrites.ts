@@ -54,6 +54,8 @@ export const PullRequestActionInput = z.looseObject({
   /** Acts on a native stack. Send it only when `pullRequestStackActions` is on. */
   stackNumber: PositiveInt.optional(),
   expectedStackHeads: z.array(PullRequestStackHead).optional(),
+  /** Asks for the pull request's summary as the success. Without it, the success is void. */
+  replyWithSummary: z.literal(true).optional(),
 });
 export type PullRequestActionInput = z.infer<typeof PullRequestActionInput>;
 
