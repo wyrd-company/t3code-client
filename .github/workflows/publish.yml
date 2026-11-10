@@ -44,7 +44,7 @@ concurrency:
 jobs:
   plan:
     name: Plan publication
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
     permissions:
       contents: read
@@ -78,7 +78,7 @@ jobs:
     if: needs.plan.outputs.build-package == 'true'
     env:
       RECORD: ${{ needs.plan.outputs.record }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     permissions:
       contents: read
@@ -137,7 +137,7 @@ jobs:
   npm:
     name: Publish to npmjs
     needs: [plan, build]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -171,7 +171,7 @@ jobs:
   github-release:
     name: Create the GitHub Release
     needs: [plan, build, npm]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: write
