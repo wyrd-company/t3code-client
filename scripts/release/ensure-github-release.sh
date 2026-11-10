@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Create the GitHub Release for a release tag with the packed tarball and the
-# changelog section as notes. On a rerun, upload the tarball if an earlier run
-# stopped before it, and fail if the release carries different bytes.
+# changelog section as notes. Only a CLI release is marked latest, so that the
+# repository's latest release is the installable t3c. On a rerun, upload the
+# tarball if an earlier run stopped before it, and fail if the release carries
+# different bytes.
 set -euo pipefail
 
 tag="${1:?tag is required}"
@@ -20,10 +22,16 @@ for file in "$tarball" "$notes"; do
   fi
 done
 
+latest=false
+if [[ "$unit" == t3code-cli ]]; then
+  latest=true
+fi
+
 if ! gh release view "$tag" > /dev/null 2>&1; then
   gh release create "$tag" "$tarball" \
     --title "$tag" \
     --notes-file "$notes" \
+    --latest="$latest" \
     --verify-tag
 fi
 

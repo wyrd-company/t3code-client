@@ -143,8 +143,11 @@ proposed-design:
     The package upload/download artifact is named `package-<selected-record>`;
     all jobs consume that same artifact. Publish checks tarball identity again,
     publishes with npm provenance, and creates the GitHub Release with the same
-    tarball and the package's changelog section. A rerun verifies an existing npm
-    integrity value and GitHub asset bytes instead of replacing them.
+    tarball and the package's changelog section. Only a `t3code-cli` Release is
+    marked latest; library and MCP Releases are created with latest set to false,
+    so the repository's latest Release is the installable `t3c`. A rerun verifies
+    an existing npm integrity value and GitHub asset bytes instead of replacing
+    them, and does not change which Release is latest.
 
     Documentation publishes to wyrd.foo through the reusable workflow
     `wyrd-company/wyrd.foo/.github/workflows/publish-docs.yml@v2`, called by the
