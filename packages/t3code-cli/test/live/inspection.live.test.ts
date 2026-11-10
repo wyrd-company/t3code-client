@@ -79,6 +79,14 @@ it("inspects projects, server and Luna conversations through the built CLI", asy
     expect(info.data.providers).toEqual(
       expect.arrayContaining([expect.objectContaining({ instanceId: "codex" })]),
     );
+    const text = (
+      await execFile(process.execPath, ["dist/cli.js", "server", "info"], { env })
+    ).stdout.trimEnd();
+    expect(text.split("\n")[0]).toMatch(/^server\t\S+\t\S+\tprotocol 2$/u);
+    expect(text).toMatch(/^provider\tcodex\tcodex\t/mu);
+    expect(text).toMatch(/^ {2}model\tgpt-6-luna\t/mu);
+    if (process.env["T3C_SERVER_INFO_EVIDENCE"])
+      await NodeFSP.writeFile(process.env["T3C_SERVER_INFO_EVIDENCE"], `${text}\n`);
     await cli(["thread", "read", "missing-thread"], 10);
     if (process.env["T3_LIVE_AGENT"] !== "1") return;
     const thread = await client.threads.create({

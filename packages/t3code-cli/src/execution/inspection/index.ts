@@ -7,6 +7,7 @@ import { T3PreconditionError, threadId } from "@wyrd-company/t3code-lib";
 import type { InvocationHandler } from "../../main.ts";
 import { lastAssistantMessage, readConversation } from "../transcript.ts";
 import { respond } from "./respond.ts";
+import { serverInfo } from "./serverInfo.ts";
 import { threadFind } from "./threadFind.ts";
 import { threadControlHandlers } from "./threadControls.ts";
 import { threadInspectionHandlers } from "./threadInspection.ts";
@@ -30,15 +31,6 @@ const projectEnsure: InvocationHandler = async ([directory], _command, invocatio
     { data, exitCode: 0 },
     `${data.id}\t${data.title}\t${data.workspaceRoot}`,
   );
-};
-const serverInfo: InvocationHandler = async (_, _command, invocation) => {
-  const client = await invocation.client();
-  const [environment, providers] = await Promise.all([
-    client.server.environment(),
-    client.server.providers(),
-  ]);
-  const data = { environment, providers };
-  invocation.output.finish({ data, exitCode: 0 }, JSON.stringify(data, null, 2));
 };
 const threadList: InvocationHandler = async (_, _command, invocation) => {
   const client = await invocation.client();

@@ -86,7 +86,75 @@ it("prints the complete environment descriptor and live catalog", async () => {
     data: { environment, providers: config.providers },
     exitCode: 0,
   });
-  expect((await run(["server", "info"], false)).stdout).toContain("models");
+  const text = (await run(["server", "info"], false)).stdout;
+  expect(text).not.toContain("{");
+  expect(text).toContain(`server\tsample-environment\t0.1.8\tprotocol 2`);
+  expect(text).toContain(`environment\t${environment.environmentId}`);
+  expect(text).toContain("capabilities\t");
+  expect(text).toContain("disabled agentActivityPublishing");
+  expect(text).not.toContain("user@example.test");
+  for (const provider of config.providers) {
+    expect(text).toContain(`provider\t${provider.instanceId}\t${provider.driver}\t`);
+    for (const model of provider.models) expect(text).toContain(`  model\t${model.slug}\t`);
+  }
+  expect(text).toMatch(/ {2}model\tgpt-6-astra\tGPT-6-Astra\tdefault/u);
+  expect(text).toContain("    option\treasoningEffort\tlow*|medium|high|xhigh|max|ultra");
+});
+it("renders boolean, free-form, unknown and update-required catalog entries", async () => {
+  const { serverInfoText } = await import("./serverInfo.ts");
+  const config = schemas.server.ServerConfig.parse(
+    JSON.parse(
+      await NodeFSP.readFile(
+        new URL("../../../../t3code-lib/test/fixtures/server-config.json", import.meta.url),
+        "utf8",
+      ),
+    ),
+  );
+  const base = config.providers[0]!;
+  const provider = schemas.server.ServerProvider.parse({
+    ...base,
+    installed: false,
+    version: null,
+    message: "Sample message.",
+    models: [
+      {
+        slug: "sample-model",
+        name: "Sample Model",
+        isCustom: true,
+        isLegacy: true,
+        capabilities: {
+          optionDescriptors: [
+            { id: "fast", label: "Fast", type: "boolean" },
+            { id: "tier", label: "Tier", type: "select", options: [] },
+            { id: "future", label: "Future", type: "sample-future-type" },
+          ],
+        },
+      },
+    ],
+    updateRequiredModels: [{ slug: "sample-next", name: "Sample Next", minVersion: "9.0.0" }],
+  });
+  const environment = schemas.environment.ExecutionEnvironmentDescriptor.parse({
+    environmentId: "sample-id",
+    label: "sample",
+    platform: { os: "linux", arch: "x64" },
+    serverVersion: "0.1.8",
+    orchestrationProtocolVersion: 2,
+    capabilities: { repositoryIdentity: true },
+  });
+  expect(serverInfoText(environment, [provider]).split("\n")).toEqual([
+    "server\tsample\t0.1.8\tprotocol 2",
+    "environment\tsample-id",
+    "platform\tlinux\tx64",
+    "capabilities\t1 of 1 enabled",
+    `provider\t${base.instanceId}\t${base.driver}\tready enabled not installed\t-\tCodex`,
+    "  message\tSample message.",
+    "  auth\tauthenticated",
+    "  model\tsample-model\tSample Model\tlegacy",
+    "    option\tfast\ttrue|false",
+    "    option\ttier\tany",
+    "    option\tfuture\tunsupported",
+    "  model\tsample-next\tSample Next\tneeds version 9.0.0",
+  ]);
 });
 it("reports live environment and providers without filtering models", async () => {
   const environment = vi

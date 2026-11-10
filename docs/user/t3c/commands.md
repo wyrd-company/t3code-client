@@ -123,7 +123,23 @@ A user-input response is explicit; approval policy never supplies question answe
 
 `project list` lists projects. `project ensure <dir>` resolves or creates the
 workspace project through `projects.ensure`. Paths refer to the server workspace.
-`server info` prints the environment descriptor and the live providers/models.
+`server info` prints the server details and the live providers and models. Each
+line starts with a label and its fields are tab-separated. Use the `model` slug
+with `--model`, the `provider` instance id with `--provider`, and an `option` id
+and choice with `--model-option`. `*` marks a default choice. Text output omits
+account details. `--json` returns `{environment, providers}` as the server
+returns them.
+
+```text
+server	sample-environment	0.1.8	protocol 2
+environment	00000000-0000-4000-8000-000000000000
+platform	linux	x64
+capabilities	64 of 65 enabled	disabled agentActivityPublishing
+provider	codex	codex	ready enabled	0.167.0	Codex
+  auth	authenticated
+  model	sample-model	Sample Model	default
+    option	reasoningEffort	low|medium*|high
+```
 
 ## Stop and queue recovery
 
