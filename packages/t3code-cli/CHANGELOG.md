@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.2
+
+### Features
+
+- Add `--thread-mode new_thread|continue|fresh_session` to `t3c schedule create` and `update`, and `threadMode` to their JSON input. `fresh_session` keeps one thread and starts each later run in a new provider session. `t3c schedule show` prints the mode and the thread on its `thread` line, with `-` before a one-thread task's first run.
+- Target stock T3 Code 0.1.7, orchestration protocol 2. `TARGET_T3_CODE_VERSION` is `0.1.7`, and `t3c version` compares the server with 0.1.7.
+- Add thread tags. The library adds `threads.setTag(threadId, tag, tagged)`, which sends `thread.tag.set` and returns the tags read back from the shell, and a `tag` filter on `threads.list`. `t3code-mcp` adds `thread_tag` and `tagged_threads` (bounded summaries, default 100, at most 500). `t3c` adds `thread tag <threadId> <tag> [--remove]` and `thread list --tag <tag>`. Tags match by exact spelling and case after trimming; the web client can hide tagged threads.
+- t3c server info prints readable, labelled lines by default: server, environment, platform, database and capabilities, then each provider with its auth status, its selectable models (slug, name, default) and their `--model-option` ids and choices (`*` marks the default). Text output omits account details. `--json` output is unchanged.
+- Target stock T3 Code 0.1.8, orchestration protocol 2. `TARGET_T3_CODE_VERSION` is `0.1.8`, and `t3c version` compares the server with 0.1.8.
+
+### Fixes
+
+- Ship commander 15.1.0 with `t3c`.
+- Add the remaining T3 Code 0.1.7 fields: one-time scheduled tasks (`{ type: "once", runAt }`, capability `oneTimeSchedules`), settings `hiddenThreadTags`, `hideTaggedThreads` and `usageModelFilter`, a usage `modelFilter` on `server.getUsageSummary` input and result, turn usage `models`, `localCommand` and `otherUsage`, and the select descriptor `role: "reasoning"`. Credential settings (`managementKey`, EAS `accessToken`) accept a secret provider reference (`SettingsSecretValue`), and the socket declares `clientCapabilities=settingsSecretReferences` so that settings show references as written. `t3c schedule show` prints a one-time trigger.
+
 ## 0.2.1
 
 ### Fixes

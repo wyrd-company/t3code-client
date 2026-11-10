@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.4
+
+### Features
+
+- Publish t3mcp setup configurations, and the configuration file of each host, for Claude Code, Claude Desktop, Codex, Cursor, OpenCode, Pi and Antigravity.
+
+### Fixes
+
+- Add read-only terminal reads. The library adds `TerminalApi.observe`, `TerminalApi.watchMetadata`, `TerminalApi.list` (every terminal, from the first metadata snapshot) and `TerminalApi.read` (one terminal snapshot with its retained history), all with `terminal:read`. `t3code-mcp` adds `thread_terminals`, which lists the server terminals of a thread, and `terminal_output`, which returns the bounded plain-text tail of one terminal's history with its status and exit details. Neither tool starts, attaches to or writes to a terminal.
+- Add local server reads and stop. The library adds `client.localServers` (`LocalServersApi`): `list` returns one fresh scan of the local servers that the server finds on its host (listeners that it attributes to a thread terminal or a thread's agent, plus configured URLs that answer as web servers), `watch` follows changes, both with `orchestration:read`, and `stop({ pid, port })` stops a thread-attributed listener's process group with `terminal:operate`. `t3code-mcp` adds `local_servers` (optional `threadId` filter and `urls` to probe) and `stop_local_server`, which stops only a listener that the named thread's agent started and refuses servers in thread terminals with code `terminal_owned`.
+- Add thread tags. The library adds `threads.setTag(threadId, tag, tagged)`, which sends `thread.tag.set` and returns the tags read back from the shell, and a `tag` filter on `threads.list`. `t3code-mcp` adds `thread_tag` and `tagged_threads` (bounded summaries, default 100, at most 500). `t3c` adds `thread tag <threadId> <tag> [--remove]` and `thread list --tag <tag>`. Tags match by exact spelling and case after trimming; the web client can hide tagged threads.
+- Add the read-only tools `thread_family` and `worktree_threads`. `thread_family` returns every active thread with the same root as a thread, in any run state, including forks and idle subagent children. `worktree_threads` returns the ids of the active threads on a worktree path, so an agent can check a worktree before it removes it.
+- Add read-only server diagnostics. The library adds `client.diagnostics` (`DiagnosticsApi`) with `traces`, `processes`, `hostResources`, `resourceHistory` and `storageCleanupReport` (the first report stream item, `null` before the first cleanup). `t3code-mcp` adds `server_traces`, `server_processes`, `server_host_resources`, `server_resource_history` and `server_storage_cleanup_report`. Process lists, the history window and each command line, failure cause and log message are bounded, and Effect `Option` fields are returned as their value or null. No tool signals a process, runs a cleanup or restarts the resource monitor.
+- Add the `thread_force_stop` tool. It force stops a thread whose agent ignored Stop, through `orchestration.forceStopThread`, and returns `outcome` (`killed`, `released`, `releasing` or `shared`) and `sharedWithThreadIds`. With `runId`, it fails with code `superseded` and stops nothing when another run is the latest.
+- Link sender identity proxy setup to its independent repository.
+
 ## 0.1.3
 
 ### Fixes
