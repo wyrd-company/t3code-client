@@ -81,8 +81,8 @@ threads with chosen tags, so a tag can change what a person sees.
 `tagged_threads` returns `threads`, `total` and `truncated`. Each summary has
 `threadId`, `title`, `projectId`, `status`, `archived` and `tags`. It lists
 active threads unless `includeArchived` is `true`, and returns at most `limit`
-threads (default 100, at most 500). `thread_tag` needs `orchestration:operate`;
-`tagged_threads` needs `orchestration:read`.
+threads (default 100, at most 500). `thread_tag` needs `orchestration:operate` and
+`orchestration:read`; `tagged_threads` needs `orchestration:read`.
 
 ## Terminals
 

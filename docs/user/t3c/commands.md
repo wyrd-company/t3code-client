@@ -107,7 +107,8 @@ It prints the thread's tags after the change, one per line; `--json` returns
 match by exact spelling and case. A malformed tag exits `2`. Adding a present tag
 or removing an absent one changes nothing. Tags group the threads a workflow
 starts, so a later step can find them with `thread list --tag`. The web client
-can hide threads with chosen tags. Tagging requires `orchestration:operate`.
+can hide threads with chosen tags. Tagging requires `orchestration:operate`
+and `orchestration:read`; `thread list` requires `orchestration:read`.
 
 `thread find --provider <instanceId> --session <nativeSessionId>` prints the
 matching T3 Code thread id, or literal `null` if none exists. Both outcomes exit

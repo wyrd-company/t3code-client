@@ -94,7 +94,7 @@ remove a worktree. Both require `orchestration:read`.
 
 `thread_tag` accepts `{threadId, tag, tagged}`: `true` adds the tag and `false`
 removes it. It returns `{threadId, tags}` after the change and requires
-`orchestration:operate`. Tags are trimmed, one line and at most 64 characters,
+`orchestration:operate` and `orchestration:read`. Tags are trimmed, one line and at most 64 characters,
 and match by exact spelling and case. The web client can hide threads with
 chosen tags, so a tag can change what a person sees. `tagged_threads` accepts
 `{tag, includeArchived?, limit?}` and returns at most `limit` (default 100, at
