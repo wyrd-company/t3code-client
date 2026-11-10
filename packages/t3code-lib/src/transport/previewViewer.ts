@@ -8,12 +8,11 @@
  * acknowledgement when the consumer asks for the next item, so that a slow consumer
  * gets only the newest frame.
  */
-import { T3ConnectionError, T3DecodeError, T3PreconditionError } from "../errors.ts";
-import {
-  closeWebSocket,
-  type WebSocketCloseInfo,
-  type WebSocketConstructor,
-  type WebSocketLike,
+import { T3DecodeError, T3PreconditionError } from "../errors.ts";
+import type {
+  WebSocketCloseInfo,
+  WebSocketConstructor,
+  WebSocketLike,
 } from "../internal/websocket.ts";
 import type { StreamItem } from "../rpc/client.ts";
 import {
@@ -21,9 +20,9 @@ import {
   PreviewViewerInput,
   PreviewViewerMessage,
 } from "../schemas/previewViewer.ts";
+import { MediaSession } from "./mediaSession.ts";
 import { binaryBytes, connectMediaSocket, parseText } from "./mediaSocket.ts";
 
-const SOCKET_OPEN = 1;
 const CLOSE_TAB_GONE = 4404;
 const CLOSE_HOST_SETUP = 4503;
 const CLOSE_RECONNECT = 1012;
@@ -61,40 +60,32 @@ export interface PreviewViewer extends AsyncIterable<Item> {
   close(): Promise<void>;
 }
 
-class ViewerSession implements PreviewViewer {
-  readonly #socket: () => WebSocketLike;
-  readonly #items: Item[] = [];
-  #waiting: (() => void)[] = [];
-  #ended = false;
+class ViewerSession
+  extends MediaSession<PreviewViewerOutput, PreviewViewerClose>
+  implements PreviewViewer
+{
   #frameToAck = false;
-  #resolveClosed!: (close: PreviewViewerClose) => void;
-  readonly closed = new Promise<PreviewViewerClose>((resolve) => {
-    this.#resolveClosed = resolve;
-  });
 
   constructor(socket: () => WebSocketLike) {
-    this.#socket = socket;
+    super(socket, "preview viewer", "viewer closed");
   }
 
   receive(data: unknown): void {
     const bytes = binaryBytes(data);
     if (bytes !== undefined) {
-      this.#push({ kind: "item", value: { type: "frame", bytes } });
+      this.push({ kind: "item", value: { type: "frame", bytes } });
       return;
     }
     const raw = parseText(data);
     const decoded = PreviewViewerMessage.safeParse(raw);
-    this.#push(
+    this.push(
       decoded.success
         ? { kind: "item", value: decoded.data }
-        : { kind: "decode-error", error: new T3DecodeError(DECODE_SOURCE, decoded.error, raw) },
+        : {
+            kind: "decode-error",
+            error: new T3DecodeError(DECODE_SOURCE, decoded.error, raw),
+          },
     );
-  }
-
-  end(info: WebSocketCloseInfo): void {
-    this.#ended = true;
-    this.#resolveClosed(closeDetails(info));
-    this.#wakeAll();
   }
 
   send(input: PreviewViewerInput): void {
@@ -102,62 +93,29 @@ class ViewerSession implements PreviewViewer {
     if (!parsed.success) {
       throw new T3PreconditionError(`Preview viewer input is invalid: ${parsed.error.message}`);
     }
-    this.#sendJson(parsed.data);
+    this.sendOpen(JSON.stringify(parsed.data));
   }
 
-  async close(): Promise<void> {
-    await closeWebSocket(this.#socket(), "viewer closed");
-  }
-
-  [Symbol.asyncIterator](): AsyncIterator<Item> {
+  protected closeDetails(info: WebSocketCloseInfo): PreviewViewerClose {
+    const hostSetup = info.code === CLOSE_HOST_SETUP ? parseHostSetup(info.reason) : undefined;
     return {
-      next: () => this.#next(),
-      return: async () => {
-        await this.close();
-        return { done: true, value: undefined };
-      },
+      code: info.code,
+      reason: info.reason,
+      tabGone: info.code === CLOSE_TAB_GONE,
+      reconnect: info.code === CLOSE_RECONNECT,
+      ...(hostSetup === undefined ? {} : { hostSetup }),
     };
   }
 
-  async #next(): Promise<IteratorResult<Item>> {
-    for (;;) {
-      // A call that waits also asks for more, so it acknowledges a frame that another call took.
-      this.#acknowledgeFrame();
-      const item = this.#items.shift();
-      if (item !== undefined) {
-        if (item.kind === "item" && "bytes" in item.value) this.#frameToAck = true;
-        return { done: false, value: item };
-      }
-      if (this.#ended) return { done: true, value: undefined };
-      await new Promise<void>((resolve) => {
-        this.#waiting.push(resolve);
-      });
-    }
-  }
-
-  #acknowledgeFrame(): void {
+  /** A call that waits also asks for more, so it acknowledges a frame that another call took. */
+  protected override beforeTake(): void {
     if (!this.#frameToAck) return;
     this.#frameToAck = false;
-    if (this.#socket().readyState === SOCKET_OPEN) this.#sendJson({ type: "ack" });
+    if (this.isOpen()) this.sendOpen(JSON.stringify({ type: "ack" }));
   }
 
-  #sendJson(message: { readonly type: string }): void {
-    const socket = this.#socket();
-    if (socket.readyState !== SOCKET_OPEN) {
-      throw new T3ConnectionError("closed", "The preview viewer socket is closed.");
-    }
-    socket.send(JSON.stringify(message));
-  }
-
-  #push(item: Item): void {
-    this.#items.push(item);
-    this.#wakeAll();
-  }
-
-  #wakeAll(): void {
-    const waiting = this.#waiting;
-    this.#waiting = [];
-    for (const wake of waiting) wake();
+  protected override afterTake(item: Item): void {
+    if (item.kind === "item" && "bytes" in item.value) this.#frameToAck = true;
   }
 }
 
@@ -174,17 +132,6 @@ export function connectPreviewViewer(
     (socket) => new ViewerSession(socket),
     signal,
   );
-}
-
-function closeDetails(info: WebSocketCloseInfo): PreviewViewerClose {
-  const hostSetup = info.code === CLOSE_HOST_SETUP ? parseHostSetup(info.reason) : undefined;
-  return {
-    code: info.code,
-    reason: info.reason,
-    tabGone: info.code === CLOSE_TAB_GONE,
-    reconnect: info.code === CLOSE_RECONNECT,
-    ...(hostSetup === undefined ? {} : { hostSetup }),
-  };
 }
 
 function parseHostSetup(reason: string): PreviewStreamHostSetup | undefined {

@@ -156,6 +156,7 @@ proposed-design:
         keepalive.ts            Ping/Pong liveness for one open socket
         socketClose.ts          classifies a close event: credential rejection (fatal) or drop (retry)
         mediaSocket.ts          the open handshake of a socket with a media ticket in its URL
+        mediaSession.ts         MediaSession: items in arrival order, close details and sends of one media socket
         previewViewer.ts        PreviewViewer: the viewer socket of a server browser tab
         speechStream.ts         SpeechStream: one live transcription over /ws/voice
         rpcConnection.ts        RpcConnection: request ids, correlation, Chunk→AsyncIterable with Ack, Interrupt

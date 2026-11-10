@@ -7,13 +7,12 @@
  * options, then 16 kHz mono Float32 PCM in binary messages, then `finish`. The server answers
  * each in arrival order and closes the socket after `finished` or `error`.
  */
-import { T3ConnectionError, T3DecodeError, T3PreconditionError } from "../errors.ts";
+import { T3DecodeError, T3PreconditionError } from "../errors.ts";
 import { SPEECH_MAX_OPTIONS_BYTES } from "../http/speechAudio.ts";
-import {
-  closeWebSocket,
-  type WebSocketCloseInfo,
-  type WebSocketConstructor,
-  type WebSocketLike,
+import type {
+  WebSocketCloseInfo,
+  WebSocketConstructor,
+  WebSocketLike,
 } from "../internal/websocket.ts";
 import type { StreamItem } from "../rpc/client.ts";
 import { SpeechTranscriptionOptions } from "../schemas/speech.ts";
@@ -22,9 +21,8 @@ import {
   SPEECH_STREAM_PATH,
   SpeechStreamEvent,
 } from "../schemas/speechStream.ts";
+import { MediaSession } from "./mediaSession.ts";
 import { binaryBytes, connectMediaSocket, parseText } from "./mediaSocket.ts";
-
-const SOCKET_OPEN = 1;
 
 /** Why the socket ended. 1000 follows `finished`; 1008 follows `error`. */
 export interface SpeechStreamClose {
@@ -65,25 +63,19 @@ export function speechStreamStart(options: SpeechTranscriptionOptions): string {
   return text;
 }
 
-class SpeechSession implements SpeechStream {
-  readonly #socket: () => WebSocketLike;
-  readonly #items: Item[] = [];
-  #waiting: (() => void)[] = [];
-  #ended = false;
-  #resolveClosed!: (close: SpeechStreamClose) => void;
-  readonly closed = new Promise<SpeechStreamClose>((resolve) => {
-    this.#resolveClosed = resolve;
-  });
-
+class SpeechSession
+  extends MediaSession<SpeechStreamEvent, SpeechStreamClose>
+  implements SpeechStream
+{
   constructor(socket: () => WebSocketLike) {
-    this.#socket = socket;
+    super(socket, "speech stream", "speech stream closed");
   }
 
   receive(data: unknown): void {
     // The server sends no binary message, so one is refused like any other unknown message.
     const raw = binaryBytes(data) === undefined ? parseText(data) : data;
     const decoded = SpeechStreamEvent.safeParse(raw);
-    this.#push(
+    this.push(
       decoded.success
         ? { kind: "item", value: decoded.data }
         : {
@@ -91,12 +83,6 @@ class SpeechSession implements SpeechStream {
             error: new T3DecodeError(SPEECH_STREAM_PATH, decoded.error, raw),
           },
     );
-  }
-
-  end(info: WebSocketCloseInfo): void {
-    this.#ended = true;
-    this.#resolveClosed({ code: info.code, reason: info.reason });
-    this.#wakeAll();
   }
 
   sendAudio(pcm: Uint8Array): void {
@@ -108,55 +94,19 @@ class SpeechSession implements SpeechStream {
         `Speech audio is over ${SPEECH_STREAM_MAX_CHUNK_BYTES} bytes in one message.`,
       );
     }
-    this.send(pcm);
+    this.sendOpen(pcm);
   }
 
   finish(): void {
-    this.send(JSON.stringify({ type: "finish" }));
+    this.sendOpen(JSON.stringify({ type: "finish" }));
   }
 
-  send(data: string | Uint8Array): void {
-    const socket = this.#socket();
-    if (socket.readyState !== SOCKET_OPEN) {
-      throw new T3ConnectionError("closed", "The speech stream socket is closed.");
-    }
-    socket.send(data);
+  sendStart(start: string): void {
+    this.sendOpen(start);
   }
 
-  async close(): Promise<void> {
-    await closeWebSocket(this.#socket(), "speech stream closed");
-  }
-
-  [Symbol.asyncIterator](): AsyncIterator<Item> {
-    return {
-      next: () => this.#next(),
-      return: async () => {
-        await this.close();
-        return { done: true, value: undefined };
-      },
-    };
-  }
-
-  async #next(): Promise<IteratorResult<Item>> {
-    for (;;) {
-      const item = this.#items.shift();
-      if (item !== undefined) return { done: false, value: item };
-      if (this.#ended) return { done: true, value: undefined };
-      await new Promise<void>((resolve) => {
-        this.#waiting.push(resolve);
-      });
-    }
-  }
-
-  #push(item: Item): void {
-    this.#items.push(item);
-    this.#wakeAll();
-  }
-
-  #wakeAll(): void {
-    const waiting = this.#waiting;
-    this.#waiting = [];
-    for (const wake of waiting) wake();
+  protected closeDetails(info: WebSocketCloseInfo): SpeechStreamClose {
+    return { code: info.code, reason: info.reason };
   }
 }
 
@@ -177,6 +127,6 @@ export async function connectSpeechStream(
     (socket) => new SpeechSession(socket),
     signal,
   );
-  stream.send(start);
+  stream.sendStart(start);
   return stream;
 }
