@@ -59,8 +59,8 @@ importers:
         specifier: 7.0.2
         version: 7.0.2
       typescript-api:
-        specifier: npm:typescript@5.9.3
-        version: typescript@5.9.3
+        specifier: npm:typescript@6.0.3
+        version: typescript@6.0.3
       vite-plus:
         specifier: 0.3.3
         version: 0.3.3(@types/node@24.19.2)(typescript@7.0.2)(yaml@2.9.1)
@@ -1478,8 +1478,8 @@ packages:
     resolution: {integrity: sha512-sf4i37nQ2LBx4m3wB74y+ubopq6W/dIzXg0FDGjsYnZHVa1Da8FH853wlL2gtUhg+xJXjfk3kUZS3BRoQeoQBQ==}
     engines: {node: '>=6'}
 
-  typescript@5.9.3:
-    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
+  typescript@6.0.3:
+    resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -2627,7 +2627,7 @@ snapshots:
 
   totalist@3.0.1: {}
 
-  typescript@5.9.3: {}
+  typescript@6.0.3: {}
 
   typescript@7.0.2:
     optionalDependencies:

@@ -1,4 +1,11 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>wyrd-company/.github:renovate-config"]
+  "extends": ["github>wyrd-company/.github:renovate-config"],
+  "packageRules": [
+    {
+      "description": "The reference generator needs the classic compiler API, which TypeScript 7 does not ship.",
+      "matchDepNames": ["typescript-api"],
+      "allowedVersions": "<7"
+    }
+  ]
 }

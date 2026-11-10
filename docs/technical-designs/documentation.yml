@@ -15,8 +15,10 @@ proposed-design:
     Generate [the public API reference](../api.md) with `task lib:docs` and verify
     it with `task lib:docs:check`. The generator uses `jsdoc-to-markdown` on
     compiled public JavaScript and adds TypeScript source signatures and profile
-    types. The `typescript-api` development alias supplies the 5.9 compiler API;
-    build and typecheck remain TypeScript 7. Missing public JSDoc fails generation.
+    types. The `typescript-api` development alias supplies the TypeScript 6 compiler
+    API, because TypeScript 7 does not ship the classic API; Renovate keeps the
+    alias below 7. Build and typecheck remain TypeScript 7. Missing public JSDoc
+    fails generation.
   publication-and-generation: |
     `docs/user/t3c/getting-started.md`, `auth.md`, `commands.md`, `policy.md` and `dagu.md`
     are authored usage guides, in navigation orders 1 through 5. `task docs` invokes
