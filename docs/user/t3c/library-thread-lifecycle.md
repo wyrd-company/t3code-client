@@ -107,6 +107,24 @@ async unsettle(threadId: ThreadId, signal?: AbortSignal): Promise<void>;
 ```
 
 **Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
+<a name="ThreadsApi+setTag"></a>
+
+### threadsApi.setTag()
+
+Add (`tagged: true`) or remove one tag, then return the thread's tags read
+back from the shell. Adding a present tag or removing an absent one changes
+nothing. Clients can hide tagged threads (`hiddenThreadTags`).
+
+```ts
+async setTag(
+    threadId: ThreadId,
+    tag: string,
+    tagged: boolean,
+    signal?: AbortSignal,
+  ): Promise<string[]>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](https://wyrd.foo/docs/t3c/library-threads#ThreadsApi)  
 <a name="ThreadsApi+delete"></a>
 
 ### threadsApi.delete()

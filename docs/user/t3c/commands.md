@@ -98,7 +98,16 @@ assistant message and `--full` selects the full transcript; the flags are
 mutually exclusive. When the transcript route refuses an oversized transcript
 with `thread_transcript_too_large`, the CLI reads the library's detail route
 and derives the equivalent visible conversation. Other read failures retain
-their mapped errors. `thread list` lists server thread summaries.
+their mapped errors. `thread list` lists server thread summaries, one per line:
+id, phase and title. `--tag <tag>` keeps only the threads that carry the tag.
+
+`thread tag <threadId> <tag>` adds a tag to the thread and `--remove` removes it.
+It prints the thread's tags after the change, one per line; `--json` returns
+`{threadId, tags}`. Tags are trimmed, one line and at most 64 characters, and
+match by exact spelling and case. A malformed tag exits `2`. Adding a present tag
+or removing an absent one changes nothing. Tags group the threads a workflow
+starts, so a later step can find them with `thread list --tag`. The web client
+can hide threads with chosen tags. Tagging requires `orchestration:operate`.
 
 `thread find --provider <instanceId> --session <nativeSessionId>` prints the
 matching T3 Code thread id, or literal `null` if none exists. Both outcomes exit

@@ -298,6 +298,9 @@ products:
           - name: worktree_threads
             description: List the active threads on a worktree path.
             effect: Read-only
+          - name: tagged_threads
+            description: List the threads that carry a tag.
+            effect: Read-only
           - name: thread_terminals
             description: List the server terminals of a thread.
             effect: Read-only
@@ -324,6 +327,9 @@ products:
             effect: Writes
           - name: thread_force_stop
             description: Force stop an agent that ignored Stop.
+            effect: Writes
+          - name: thread_tag
+            description: Add or remove one tag on a thread.
             effect: Writes
           - name: thread_queue_resume
             description: Release held queued messages.

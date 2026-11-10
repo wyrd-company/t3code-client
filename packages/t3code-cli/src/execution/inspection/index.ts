@@ -32,9 +32,12 @@ const projectEnsure: InvocationHandler = async ([directory], _command, invocatio
     `${data.id}\t${data.title}\t${data.workspaceRoot}`,
   );
 };
-const threadList: InvocationHandler = async (_, _command, invocation) => {
+const threadList: InvocationHandler = async (_, command, invocation) => {
+  const tag: unknown = command.optsWithGlobals()["tag"];
+  if (tag !== undefined && typeof tag !== "string")
+    throw new T3PreconditionError("The tag must be a string.");
   const client = await invocation.client();
-  const data = await client.threads.list();
+  const data = await client.threads.list(tag === undefined ? {} : { tag });
   invocation.output.finish(
     { data, exitCode: 0 },
     data

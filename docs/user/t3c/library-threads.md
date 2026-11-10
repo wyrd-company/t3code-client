@@ -289,6 +289,7 @@ older server. The library does not render terminal output.
   - [.unarchive()](https://wyrd.foo/docs/t3c/library-thread-lifecycle#ThreadsApi+unarchive)
   - [.settle()](https://wyrd.foo/docs/t3c/library-thread-lifecycle#ThreadsApi+settle)
   - [.unsettle()](https://wyrd.foo/docs/t3c/library-thread-lifecycle#ThreadsApi+unsettle)
+  - [.setTag()](https://wyrd.foo/docs/t3c/library-thread-lifecycle#ThreadsApi+setTag)
   - [.delete()](https://wyrd.foo/docs/t3c/library-thread-lifecycle#ThreadsApi+delete)
   - [.setRuntimeMode()](https://wyrd.foo/docs/t3c/library-thread-lifecycle#ThreadsApi+setRuntimeMode)
   - [.setInteractionMode()](https://wyrd.foo/docs/t3c/library-thread-lifecycle#ThreadsApi+setInteractionMode)
@@ -319,7 +320,8 @@ older server. The library does not render terminal output.
 ### threadsApi.list()
 
 Active threads from the shell; with `includeArchived`, archived threads
-as well, read from the archived shell over RPC.
+as well, read from the archived shell over RPC. With `tag`, only threads
+that carry it, matched by exact spelling and case after trimming.
 
 ```ts
 list(

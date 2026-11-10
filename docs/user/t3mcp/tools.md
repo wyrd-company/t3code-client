@@ -29,6 +29,7 @@ error code and message.
 | `thread_search_content`         | `threadId`, `query`                                              | Native within-thread match count and selected match.                                |
 | `thread_family`                 | `threadId`                                                       | The root, forks and subagent trees of the thread's family, in any run state.        |
 | `worktree_threads`              | `worktreePath`                                                   | Ids of the active threads on the path, subagent children included.                  |
+| `tagged_threads`                | `tag`, optional `includeArchived`, `limit`                       | Summaries of the threads that carry the tag, with the total.                        |
 | `thread_terminals`              | `threadId`                                                       | The thread's server terminals: id, label, cwd, status, pid, exit and running state. |
 | `terminal_output`               | `threadId`, `terminalId`, optional `maxChars`                    | Plain-text tail of one terminal's retained history, with status and exit details.   |
 | `server_traces`                 | none                                                             | Server trace summary: span counts, slowest spans, failures and warning/error logs.  |
@@ -38,6 +39,7 @@ error code and message.
 | `server_storage_cleanup_report` | none                                                             | The latest storage cleanup report, or `null` before the first cleanup.              |
 | `thread_stop`                   | `threadId`, optional `reason`                                    | Requests native Stop and holds queued messages, including idle/background work.     |
 | `thread_force_stop`             | `threadId`, optional `runId`                                     | Force stops an agent that ignored Stop; returns the outcome and sharing threads.    |
+| `thread_tag`                    | `threadId`, `tag`, `tagged`                                      | Adds or removes one tag on the thread; returns the tags after the change.           |
 | `thread_queue_resume`           | `threadId`                                                       | Releases all queued-message holds.                                                  |
 | `thread_queue_start`            | `threadId`, `runId`                                              | Starts the selected queued plain user message first and releases the queue hold.    |
 | `provider_status`               | optional `instanceId`                                            | Provider availability, authentication, installation and usage limits.               |
@@ -66,6 +68,21 @@ with the same root as the given thread, in any run state, including forks and
 idle subagent children. An unknown thread has an empty family. `worktree_threads` returns `threadIds`: the active threads
 whose worktree path equals `worktreePath`, subagent children included. Check it
 before you remove a worktree. Both need `orchestration:read`.
+
+## Thread tags
+
+Use tags to group the threads you launch, for example all steps of one job.
+`thread_tag` adds the tag when `tagged` is `true` and removes it when `false`,
+and returns the thread's `tags` after the change. Adding a present tag or
+removing an absent one changes nothing. Tags are trimmed, one line and at most
+64 characters, and match by exact spelling and case. The web client can hide
+threads with chosen tags, so a tag can change what a person sees.
+
+`tagged_threads` returns `threads`, `total` and `truncated`. Each summary has
+`threadId`, `title`, `projectId`, `status`, `archived` and `tags`. It lists
+active threads unless `includeArchived` is `true`, and returns at most `limit`
+threads (default 100, at most 500). `thread_tag` needs `orchestration:operate`;
+`tagged_threads` needs `orchestration:read`.
 
 ## Terminals
 

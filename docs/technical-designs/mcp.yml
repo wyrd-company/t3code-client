@@ -49,6 +49,8 @@ proposed-design:
     - thread_search_content: search within one thread with server result bounds.
     - thread_family: a thread's root, forks and subagent trees in one read.
     - worktree_threads: the active threads on a worktree path, subagent children included.
+    - thread_tag: add or remove one tag on a thread; returns the tags after the change.
+    - tagged_threads: bounded summaries of the threads that carry a tag.
     - thread_terminals: the server terminals of a thread, with status and running state.
     - terminal_output: bounded recent output of one terminal as plain text, read-only.
     - server_traces: the server's trace summary, with bounded causes and log messages.

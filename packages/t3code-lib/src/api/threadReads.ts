@@ -19,6 +19,8 @@ import { loadShellSnapshot } from "./shell.ts";
 export interface ThreadListOptions {
   readonly projectId?: ProjectId;
   readonly includeArchived?: boolean;
+  /** Keep only threads with this tag, matched exactly after trimming. */
+  readonly tag?: string;
 }
 
 export interface ThreadHistoryPageOptions {
@@ -45,9 +47,12 @@ export async function listThreads(
       if (!known.has(thread.id)) threads.push(thread);
     }
   }
-  return options.projectId === undefined
-    ? threads
-    : threads.filter((thread) => thread.projectId === options.projectId);
+  const tag = options.tag?.trim();
+  return threads.filter(
+    (thread) =>
+      (options.projectId === undefined || thread.projectId === options.projectId) &&
+      (tag === undefined || (thread.tags ?? []).includes(tag)),
+  );
 }
 
 /** Active threads first; archived threads are consulted only when the id is not active. */

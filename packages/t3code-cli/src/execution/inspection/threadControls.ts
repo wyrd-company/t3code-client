@@ -46,8 +46,20 @@ const start: InvocationHandler = async ([id, selected], _command, invocation) =>
   );
 };
 
+const tag: InvocationHandler = async ([id, value], command, invocation) => {
+  const threadId = requiredThreadId(id);
+  const parsed = schemas.orchestrationThreadTags.ThreadTag.safeParse(value);
+  if (!parsed.success)
+    throw new T3PreconditionError("A tag is one line of 1 to 64 characters after trimming.");
+  const tagged = command.optsWithGlobals()["remove"] !== true;
+  invocation.errorContext = "dispatch";
+  const tags = await (await invocation.client()).threads.setTag(threadId, parsed.data, tagged);
+  invocation.output.finish({ data: { threadId, tags }, exitCode: 0 }, tags.join("\n"));
+};
+
 export const threadControlHandlers: Record<string, InvocationHandler> = {
   "thread stop": stop,
+  "thread tag": tag,
   "thread queue resume": resume,
   "thread queue start": start,
 };

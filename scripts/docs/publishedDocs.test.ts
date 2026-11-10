@@ -146,6 +146,7 @@ it("documents every declared MCP tool without loading built packages", () => {
     "thread_queue_resume",
     "thread_queue_start",
     "thread_stop",
+    "thread_tag",
   ]);
 });
 it.each(["t3mcp"])("retains one initial major intent for each new %s unit", (key) => {

@@ -77,6 +77,7 @@ describe("normative CLI surface content", () => {
       "thread diff": "Print a thread's checkpoint diff.",
       "thread search": "Search thread messages across threads or within one thread.",
       "thread stop": "Request native Stop for the thread.",
+      "thread tag": "Add or remove one tag on a thread.",
       "thread queue": "Control queued messages.",
       "thread queue resume": "Request Resume for all held queued messages.",
       "thread queue start": "Request Start for a selected queued message.",

@@ -60,7 +60,7 @@ proposed-design:
     }
 
     export class ThreadsApi {
-      list(options?: { projectId?: ProjectId; includeArchived?: boolean }): Promise<OrchestrationV2ThreadShell[]>  // archived ones from the RPC archived shell
+      list(options?: { projectId?: ProjectId; includeArchived?: boolean; tag?: string }): Promise<OrchestrationV2ThreadShell[]>  // archived ones from the RPC archived shell; tag matched exactly after trimming
       get(threadId): Promise<OrchestrationV2ThreadShell | undefined>  // active first, then the archived shell
       detail(threadId): Promise<OrchestrationV2ThreadDetailSnapshot>  // HTTP, the full projection; T3NotFoundError
       projection(threadId): Promise<OrchestrationV2ThreadProjection>  // RPC, bounded timeline window
@@ -76,6 +76,7 @@ proposed-design:
       launch(input: ThreadLaunchInput): Promise<OrchestrationV2ThreadLaunchResult>  // thread + workspace + optional first message
       update(threadId, patch: ThreadMetadataUpdatePayload): Promise<void>
       archive / unarchive / settle / unsettle / delete (threadId): Promise<void>  // archive and delete idempotent
+      setTag(threadId, tag, tagged, signal?): Promise<string[]>                   // thread.tag.set, then the tags read back from the shell
       setRuntimeMode(threadId, mode) / setInteractionMode(threadId, mode) / setModelSelection(threadId, selection)
       startTurn(input: StartTurnInput): Promise<TurnHandle>
       interrupt(threadId, runId?, options?: { reason?; holdQueue? }): Promise<void>  // active run when runId omitted; no-op when idle

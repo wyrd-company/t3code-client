@@ -13,7 +13,11 @@ export interface ToolRegistration {
   register(server: McpServer, clients: ClientProvider): void;
 }
 
-/** Each registration retains its own schema and typed callback. */
+/**
+ * Each registration retains its own schema and typed callback. `readOnly`
+ * false marks a destructive write; "idempotentWrite" marks a write that is
+ * neither destructive nor different when repeated.
+ */
 export function defineTool<Shape extends z.ZodRawShape>(
   name: string,
   description: string,
@@ -23,8 +27,9 @@ export function defineTool<Shape extends z.ZodRawShape>(
     client: T3Client,
     signal: AbortSignal,
   ) => Promise<unknown>,
-  readOnly = true,
+  readOnly: boolean | "idempotentWrite" = true,
 ): ToolRegistration {
+  const idempotentWrite = readOnly === "idempotentWrite";
   return {
     name,
     register(server, clients) {
@@ -34,9 +39,9 @@ export function defineTool<Shape extends z.ZodRawShape>(
           description,
           inputSchema: input,
           annotations: {
-            readOnlyHint: readOnly,
-            destructiveHint: !readOnly,
-            idempotentHint: readOnly,
+            readOnlyHint: readOnly === true,
+            destructiveHint: readOnly === false,
+            idempotentHint: readOnly === true || idempotentWrite,
             openWorldHint: true,
           },
         },

@@ -1871,6 +1871,7 @@ older server. The library does not render terminal output.
   - [.unarchive()](#ThreadsApi+unarchive)
   - [.settle()](#ThreadsApi+settle)
   - [.unsettle()](#ThreadsApi+unsettle)
+  - [.setTag()](#ThreadsApi+setTag)
   - [.delete()](#ThreadsApi+delete)
   - [.setRuntimeMode()](#ThreadsApi+setRuntimeMode)
   - [.setInteractionMode()](#ThreadsApi+setInteractionMode)
@@ -1901,7 +1902,8 @@ older server. The library does not render terminal output.
 ### threadsApi.list()
 
 Active threads from the shell; with `includeArchived`, archived threads
-as well, read from the archived shell over RPC.
+as well, read from the archived shell over RPC. With `tag`, only threads
+that carry it, matched by exact spelling and case after trimming.
 
 ```ts
 list(
@@ -2088,6 +2090,24 @@ Mark a thread unsettled.
 
 ```ts
 async unsettle(threadId: ThreadId, signal?: AbortSignal): Promise<void>;
+```
+
+**Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  
+<a name="ThreadsApi+setTag"></a>
+
+### threadsApi.setTag()
+
+Add (`tagged: true`) or remove one tag, then return the thread's tags read
+back from the shell. Adding a present tag or removing an absent one changes
+nothing. Clients can hide tagged threads (`hiddenThreadTags`).
+
+```ts
+async setTag(
+    threadId: ThreadId,
+    tag: string,
+    tagged: boolean,
+    signal?: AbortSignal,
+  ): Promise<string[]>;
 ```
 
 **Kind**: instance method of [<code>ThreadsApi</code>](#ThreadsApi)  

@@ -36,6 +36,7 @@ until a tool is called. `t3code-mcp tools` lists names without connecting.
 | `thread_status`, `thread_approvals`                        | Active/queued runs, background work and pending human approvals |
 | `thread_usage`, `thread_diff`, `thread_search_content`     | Usage records, checkpoint diffs and within-thread search        |
 | `thread_family`, `worktree_threads`                        | A thread's whole family; the active threads on a worktree path  |
+| `thread_tag`, `tagged_threads`                             | Add or remove a thread tag; the threads that carry a tag        |
 | `thread_terminals`, `terminal_output`                      | A thread's terminals; bounded plain-text output of one          |
 | `server_traces`, `server_processes`                        | The server's trace summary; its backend descendant processes    |
 | `server_host_resources`, `server_resource_history`         | Host CPU and memory; resource use over a window                 |
@@ -90,6 +91,15 @@ idle subagent children. An unknown thread has an empty family.
 `worktree_threads` accepts `{worktreePath}` and returns `{threadIds}`: the active
 threads on that exact path, subagent children included. Check it before you
 remove a worktree. Both require `orchestration:read`.
+
+`thread_tag` accepts `{threadId, tag, tagged}`: `true` adds the tag and `false`
+removes it. It returns `{threadId, tags}` after the change and requires
+`orchestration:operate`. Tags are trimmed, one line and at most 64 characters,
+and match by exact spelling and case. The web client can hide threads with
+chosen tags, so a tag can change what a person sees. `tagged_threads` accepts
+`{tag, includeArchived?, limit?}` and returns at most `limit` (default 100, at
+most 500) summaries `{threadId, title, projectId, status, archived, tags}` with
+`total` and `truncated`. It requires `orchestration:read`.
 
 `thread_terminals` accepts `{threadId}` and returns `{terminals}`.
 `terminal_output` accepts `{threadId, terminalId, maxChars?}` and returns the

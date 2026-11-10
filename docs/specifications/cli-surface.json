@@ -887,7 +887,21 @@
         },
         {
           "name": "list",
-          "summary": "List server threads."
+          "summary": "List server threads.",
+          "options": [
+            {
+              "name": "tag",
+              "flags": ["--tag"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "description": "Keep only threads with this tag, matched by exact spelling and case after trimming."
+            }
+          ],
+          "notes": [
+            "Text output is one thread per line: id, phase and title, tab separated. JSON data is the thread summaries. --tag filters active threads by tag."
+          ]
         },
         {
           "name": "find",
@@ -1142,6 +1156,39 @@
           ],
           "notes": [
             "Send thread.stop directly without an active-run lookup, capability gate or fallback. Works for idle, queued and background work. Success acknowledges the request; it does not assert terminal state. JSON data is {threadId}. Existing interrupt, signal and timeout behavior is unchanged."
+          ]
+        },
+        {
+          "name": "tag",
+          "summary": "Add or remove one tag on a thread.",
+          "positional-arguments": [
+            {
+              "name": "threadId",
+              "position": 0,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "tag",
+              "position": 1,
+              "required": true,
+              "value": {
+                "type": "string"
+              }
+            }
+          ],
+          "options": [
+            {
+              "name": "remove",
+              "flags": ["--remove"],
+              "kind": "flag",
+              "description": "Remove the tag instead of adding it."
+            }
+          ],
+          "notes": [
+            "Send thread.tag.set and print the thread's tags after the change, one per line. JSON data is {threadId, tags}. Tags are trimmed, one line and at most 64 characters, and match by exact spelling and case; a malformed tag is a precondition error (exit 2). Adding a present tag or removing an absent one changes nothing. The web client can hide threads with chosen tags (hiddenThreadTags)."
           ]
         },
         {

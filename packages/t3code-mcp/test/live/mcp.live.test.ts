@@ -144,6 +144,25 @@ it("serves additive tools through stdio against an isolated stock server without
     expect(await call("worktree_threads", { worktreePath })).toEqual({
       threadIds: [treeThread.id],
     });
+    const tag = `sample-tag-${Date.now()}`;
+    expect(await call("thread_tag", { ...threadInput, tag: ` ${tag} `, tagged: true })).toEqual({
+      threadId: thread.id,
+      tags: [tag],
+    });
+    expect(await upstream.threads.setTag(treeThread.id, tag, true)).toEqual([tag]);
+    const tagged = await call("tagged_threads", { tag, limit: 1 });
+    expect(tagged).toMatchObject({ total: 2, truncated: true });
+    expect(tagged["threads"]).toHaveLength(1);
+    expect(
+      ((await call("tagged_threads", { tag }))["threads"] as { threadId: string }[])
+        .map((row) => row.threadId)
+        .sort(),
+    ).toEqual([thread.id, treeThread.id].sort());
+    expect(await call("thread_tag", { ...threadInput, tag, tagged: false })).toEqual({
+      threadId: thread.id,
+      tags: [],
+    });
+    expect(await call("tagged_threads", { tag: tag.toUpperCase() })).toMatchObject({ total: 0 });
     const terminal = { threadId: thread.id, terminalId: "sample-terminal" };
     await upstream.terminal.open({ ...terminal, cwd: root });
     terminalOpen = true;

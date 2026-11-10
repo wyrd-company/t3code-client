@@ -263,7 +263,8 @@ export class ThreadsApi {
 
   /**
    * Active threads from the shell; with `includeArchived`, archived threads
-   * as well, read from the archived shell over RPC.
+   * as well, read from the archived shell over RPC. With `tag`, only threads
+   * that carry it, matched by exact spelling and case after trimming.
    */
   list(
     options: ThreadListOptions = {},
@@ -400,6 +401,28 @@ export class ThreadsApi {
   /** Mark a thread unsettled. */
   async unsettle(threadId: ThreadId, signal?: AbortSignal): Promise<void> {
     await this.dispatch(this.#commands.unsettle(threadId), signal);
+  }
+
+  /**
+   * Add (`tagged: true`) or remove one tag, then return the thread's tags read
+   * back from the shell. Adding a present tag or removing an absent one changes
+   * nothing. Clients can hide tagged threads (`hiddenThreadTags`).
+   */
+  async setTag(
+    threadId: ThreadId,
+    tag: string,
+    tagged: boolean,
+    signal?: AbortSignal,
+  ): Promise<string[]> {
+    await this.dispatch(
+      { type: "thread.tag.set", commandId: this.dispatcher.newCommandId(), threadId, tag, tagged },
+      signal,
+    );
+    const thread = await this.get(threadId, signal);
+    if (!thread) {
+      throw new T3PreconditionError(`Thread ${threadId} was tagged but is not in the shell.`);
+    }
+    return thread.tags ?? [];
   }
 
   /** Resolves when the thread is gone, including when it never existed. */

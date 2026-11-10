@@ -57,6 +57,17 @@ it("acknowledges idle Stop and empty Resume and rejects invalid selected Start w
     expect(
       (await cli(["thread", "queue", "start", thread.id, "sample-absent-run"], 1)).error.code,
     ).toBe("rpc_failed");
+    const tag = `sample-tag-${Date.now()}`;
+    expect((await cli(["thread", "tag", thread.id, ` ${tag} `])).data).toEqual({
+      threadId: thread.id,
+      tags: [tag],
+    });
+    expect(
+      (await cli(["thread", "list", "--tag", tag])).data.map((row: { id: string }) => row.id),
+    ).toEqual([thread.id]);
+    expect((await cli(["thread", "tag", thread.id, tag, "--remove"])).data.tags).toEqual([]);
+    expect((await cli(["thread", "list", "--tag", tag])).data).toEqual([]);
+    expect((await cli(["thread", "tag", thread.id, " "], 2)).error.code).toBe("precondition");
     const projection = await client.threads.projection(thread.id);
     expect(projection.runs).toEqual([]);
     expect(projection.providerThreads).toEqual([]);
