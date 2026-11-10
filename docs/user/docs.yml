@@ -295,6 +295,9 @@ products:
           - name: thread_stop
             description: Stop thread work and hold queued messages.
             effect: Writes
+          - name: thread_force_stop
+            description: Force stop an agent that ignored Stop.
+            effect: Writes
           - name: thread_queue_resume
             description: Release held queued messages.
             effect: Writes

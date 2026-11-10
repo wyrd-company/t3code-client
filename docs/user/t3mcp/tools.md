@@ -28,6 +28,7 @@ error code and message.
 | `thread_diff`                   | `threadId`, optional `range`                                     | Full-thread or explicit checkpoint-range diff.                                      |
 | `thread_search_content`         | `threadId`, `query`                                              | Native within-thread match count and selected match.                                |
 | `thread_stop`                   | `threadId`, optional `reason`                                    | Requests native Stop and holds queued messages, including idle/background work.     |
+| `thread_force_stop`             | `threadId`, optional `runId`                                     | Force stops an agent that ignored Stop; returns the outcome and sharing threads.    |
 | `thread_queue_resume`           | `threadId`                                                       | Releases all queued-message holds.                                                  |
 | `thread_queue_start`            | `threadId`, `runId`                                              | Starts the selected queued plain user message first and releases the queue hold.    |
 | `provider_status`               | optional `instanceId`                                            | Provider availability, authentication, installation and usage limits.               |
@@ -42,6 +43,13 @@ other messages can follow the selected one. Invalid selections preserve the
 server dispatch error. The optional Stop reason passes unchanged, including
 empty or padded strings.
 
+Use `thread_force_stop` only after Stop did not stop the agent. It ends the turn
+and kills or releases the agent process. `outcome` is `killed`, `released`,
+`releasing` or `shared`; `shared` means the process also works for the threads
+in `sharedWithThreadIds`, so only this thread's turn ended. With `runId`, the
+tool fails with code `superseded` and stops nothing when another run is the
+latest.
+
 ## Configuration and permissions
 
 `configure_scheduled_task` accepts execution fields only. Trigger configuration
@@ -50,8 +58,8 @@ remain unchanged; null and empty lists retain their distinct clearing meanings.
 Changing a bound target verifies that the thread belongs to the effective project.
 Updates read then write, so a concurrent edit can be overwritten.
 
-Endpoint reads, delivery diagnostics, token rotation, configuration writes and
-queue controls need `orchestration:operate`. Thread/configuration reads need
+Endpoint reads, delivery diagnostics, token rotation, configuration writes,
+queue controls and force stop need `orchestration:operate`. Thread/configuration reads need
 `orchestration:read`. Usage summaries need `diagnostics:read`. The host uses the
 scopes of the paired session; tools do not grant permissions.
 

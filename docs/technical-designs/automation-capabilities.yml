@@ -97,7 +97,7 @@ proposed-design:
     `thread stop <threadId> [--reason text]`, `thread queue resume <threadId>`
     and `thread queue start <threadId> <runId>` expose the controls. Queued run
     identities come from thread status. MCP exposes `thread_stop`,
-    `thread_queue_resume` and `thread_queue_start`; stock tools retain queued
+    `thread_force_stop`, `thread_queue_resume` and `thread_queue_start`; stock tools retain queued
     message listing, reading, editing, cancellation, reordering and promotion.
     All three commands require orchestration:operate and add no user deadline.
   cli: |

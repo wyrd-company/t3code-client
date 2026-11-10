@@ -48,6 +48,7 @@ proposed-design:
     - thread_diff: full-thread or turn-range diff.
     - thread_search_content: search within one thread with server result bounds.
     - thread_stop: native Stop with queue hold and background/delegated work cleanup.
+    - thread_force_stop: force stop of an agent that ignored Stop, optionally for one run.
     - thread_queue_resume: release the queue hold so normal delivery continues.
     - thread_queue_start: start a selected queued plain user message and release the hold.
     - provider_status: provider authentication, installation, availability and limits.
@@ -66,7 +67,9 @@ proposed-design:
     Their results acknowledge the request; they do not invent a terminal run
     state. Selected start releases the queue hold, so other queued messages may
     follow the selected run. Queued run ids are available from thread_status or
-    the stock queue tools.
+    the stock queue tools. Force stop uses the server's force stop with operate
+    scope and returns its outcome and the threads that share the agent process.
+    With a run id, a newer latest run refuses it with the stable code superseded.
   credentials-and-errors: |
     The selected T3 credential and its granted scopes remain the authority for
     every operation. Scheduler endpoint and delivery access preserve upstream

@@ -2,8 +2,9 @@
 // relationships:
 //   implements: mcp
 // ---
-import { pendingRequests, schemas } from "@wyrd-company/t3code-lib";
+import { T3RpcError, pendingRequests, schemas } from "@wyrd-company/t3code-lib";
 import { z } from "zod";
+import { ToolRefusal } from "../errors.ts";
 import { defineTool } from "../tool.ts";
 
 const threadId = schemas.common.ThreadId;
@@ -23,6 +24,29 @@ export const threadTools = [
     async ({ threadId, reason }, client, signal) => {
       await client.threads.stopThread(threadId, reason === undefined ? {} : { reason }, signal);
       return { threadId };
+    },
+    false,
+  ),
+  defineTool(
+    "thread_force_stop",
+    "Force stop a thread whose agent ignored thread_stop: ends the turn and kills or releases its agent process. Use only after native Stop failed. With runId, refuses with code superseded once another run is the latest. Returns outcome killed, released, releasing or shared, and sharedWithThreadIds.",
+    z.strictObject({ threadId, runId: schemas.common.RunId.optional() }),
+    async ({ threadId, runId }, client, signal) => {
+      try {
+        return await client.threads.forceStop(
+          threadId,
+          runId === undefined ? {} : { runId },
+          signal,
+        );
+      } catch (error) {
+        if (
+          error instanceof T3RpcError &&
+          error.is("OrchestrationV2ForceStopThreadError") &&
+          error.record.reason === "superseded"
+        )
+          throw new ToolRefusal("superseded", "Another run is the latest; nothing was stopped.");
+        throw error;
+      }
     },
     false,
   ),

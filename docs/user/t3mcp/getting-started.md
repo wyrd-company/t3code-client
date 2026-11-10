@@ -55,6 +55,7 @@ t3mcp with a person's hostname, because a hostname is for the messages of one pe
 | `thread_status`, `thread_approvals`                        | Run/queue/background-work state and pending approvals for human review                    |
 | `thread_usage`, `thread_diff`, `thread_search_content`     | Usage ownership, checkpoint diff or within-thread search                                  |
 | `thread_stop`, `thread_queue_resume`, `thread_queue_start` | Native Stop, queue release or selected queued-message start                               |
+| `thread_force_stop`                                        | Force stop of an agent that ignored Stop                                                  |
 | `provider_status`, `usage_summary`                         | Current provider state/limits or historical usage buckets                                 |
 
 Every tool returns matching structured data and JSON text. Failures set
@@ -88,6 +89,11 @@ other queued messages can follow. Get ids from `thread_status` or the stock
 queue tools. These tools require `orchestration:operate` and return dispatch
 acknowledgements; inspect status for subsequent state. Stock queue editing,
 cancellation, reordering and promotion remain in the built-in MCP server.
+
+`thread_force_stop` is for an agent that ignored `thread_stop`. It ends the turn
+and kills or releases the agent process, and returns the outcome and the threads
+that share that process. With `runId`, it fails with code `superseded` when
+another run is the latest.
 
 ## Build from source
 

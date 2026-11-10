@@ -24,6 +24,7 @@ it("has no tool-name collisions with the complete pinned stock toolkit inventory
       "configure_scheduled_task",
       "thread_status",
       "thread_stop",
+      "thread_force_stop",
       "thread_queue_resume",
       "thread_queue_start",
       "thread_approvals",

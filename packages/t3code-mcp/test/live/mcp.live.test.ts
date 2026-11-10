@@ -102,6 +102,14 @@ it("serves additive tools through stdio against an isolated stock server without
       isError: true,
       structuredContent: { error: { code: "rpc_failed" } },
     });
+    const superseded = await mcp.callTool({
+      name: "thread_force_stop",
+      arguments: { ...threadInput, runId: "sample-absent-run" },
+    });
+    expect(superseded).toMatchObject({
+      isError: true,
+      structuredContent: { error: { code: "superseded" } },
+    });
     const afterControls = await upstream.threads.projection(thread.id);
     expect(afterControls.runs).toEqual([]);
     expect(afterControls.providerThreads).toEqual([]);

@@ -45,7 +45,7 @@ import * as NodeReadline from 'node:readline';
 const expected = [
   'configure_scheduled_task', 'provider_status', 'rotate_scheduled_task_webhook',
   'scheduled_task_configuration', 'scheduled_task_deliveries', 'scheduled_task_delivery',
-  'scheduled_task_endpoint', 'thread_approvals', 'thread_diff',
+  'scheduled_task_endpoint', 'thread_approvals', 'thread_diff', 'thread_force_stop',
   'thread_queue_resume', 'thread_queue_start', 'thread_search_content',
   'thread_status', 'thread_stop', 'thread_usage', 'usage_summary',
 ];

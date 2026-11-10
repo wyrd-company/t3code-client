@@ -20,10 +20,21 @@ const messages: Readonly<Record<T3ErrorCode, string>> = {
   timeout: "The upstream operation exceeded its deadline.",
 };
 
+/** A tool-level refusal with a stable code and fixed text. */
+export class ToolRefusal extends Error {
+  readonly code: string;
+  constructor(code: string, message: string) {
+    super(message);
+    this.name = "ToolRefusal";
+    this.code = code;
+  }
+}
+
 /** Error text is fixed so upstream response bodies and credentials cannot enter diagnostics. */
 export function safeError(error: unknown): { code: string; message: string } {
   if (error instanceof z.ZodError)
     return { code: "invalid_input", message: "Arguments do not match the tool schema." };
+  if (error instanceof ToolRefusal) return { code: error.code, message: error.message };
   if (error instanceof T3Error) return { code: error.code, message: messages[error.code] };
   return { code: "upstream_error", message: "The upstream operation failed." };
 }

@@ -32,6 +32,7 @@ until a tool is called. `t3code-mcp tools` lists names without connecting.
 | `rotate_scheduled_task_webhook`                            | Replace the URL token; the previous URL stops working           |
 | `scheduled_task_configuration`, `configure_scheduled_task` | Full read and execution-only updates                            |
 | `thread_stop`, `thread_queue_resume`, `thread_queue_start` | Native Stop, queue Resume and selected queued-message Start     |
+| `thread_force_stop`                                        | Force stop of an agent that ignored Stop                        |
 | `thread_status`, `thread_approvals`                        | Active/queued runs, background work and pending human approvals |
 | `thread_usage`, `thread_diff`, `thread_search_content`     | Usage records, checkpoint diffs and within-thread search        |
 | `provider_status`, `usage_summary`                         | Provider availability/limits and historical usage buckets       |
@@ -69,6 +70,14 @@ Start chooses that message first; other messages may follow. These tools return
 request acknowledgement IDs, not a terminal state or completion guarantee.
 They require `orchestration:operate`. Stock tools retain queue list/read/edit/
 cancel/reorder/promote ownership.
+
+`thread_force_stop` accepts `{threadId, runId?}`. Use it only after
+`thread_stop` did not stop the agent. It ends the turn and kills or releases the
+agent process. It returns `outcome` (`killed`, `released`, `releasing` or
+`shared`) and `sharedWithThreadIds`; `shared` means the process also works for
+those threads, so only this thread's turn ended. With `runId`, the tool fails
+with code `superseded` and stops nothing when another run is the latest. It
+requires `orchestration:operate`.
 
 Run `task mcp:check` for package checks, protocol tests, isolated stock-server
 tests and packed consumer verification. No agent runs are required.
