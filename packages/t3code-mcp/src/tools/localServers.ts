@@ -61,7 +61,7 @@ export const localServerTools = [
   ),
   defineTool(
     "stop_local_server",
-    "Stop a local server that the agent of threadId started, for example a dev server from an earlier run that holds a port: SIGTERM to its process group, then SIGKILL after a grace period. Take pid and port from local_servers. Refuses with code terminal_owned for a server in a thread terminal (a person stops it there), not_owned when the thread's agent did not start it, and not_found when no thread owns a listener with this pid and port. The owner check uses the tool's own scan; the server then scans again and stops the listener with this pid and port when any thread owns it, so a process that reuses the pid on that port between the two scans is not checked against threadId.",
+    "Stop a local server that the agent of threadId started, for example a dev server from an earlier run that holds a port: SIGTERM to its process group, then SIGKILL after a grace period. Take pid and port from local_servers. Refuses with code terminal_owned for a server in a thread terminal (a person stops it there), not_owned when the thread's agent did not start it, and not_found when no thread owns a listener with this pid and port. The owner checks are best effort: they use the tool's scan, which can keep the cached owner of a reused pid, and the server's own scan before it signals accepts a listener with this pid and port that any thread or terminal owns.",
     z.strictObject({ threadId, pid, port }),
     async ({ threadId, pid, port }, client, signal) => {
       const scan = await client.localServers.list({}, signal);

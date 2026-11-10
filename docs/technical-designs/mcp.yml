@@ -99,12 +99,12 @@ proposed-design:
     the listeners that the server attributes to a thread, of every thread, plus the
     probed URLs that answer as web servers; process names are cut to 500
     characters and marked untrusted. Stop needs terminal:operate and a named
-    thread. It reads the scan first and stops only a listener that the agent of
-    that thread started, so an agent cannot stop a person's terminal server or a
-    listener that it did not name. The server scans again before it signals and
-    requires only that some thread owns the listener with that pid and port; the
-    stock stop takes no expected owner, so a process that reuses the pid on that
-    port between the two scans is not checked against the named thread.
+    thread. It reads the scan first and refuses a listener that a terminal owns
+    or that the agent of that thread did not start, so that an agent does not stop
+    a person's terminal server or a listener that it did not name. These checks
+    are best effort: discovery can keep the cached owner of a pid that another
+    process reused, and the stock stop takes no expected owner. Its own scan
+    accepts a listener with that pid and port that any thread or terminal owns.
   credentials-and-errors: |
     The selected T3 credential and its granted scopes remain the authority for
     every operation. Scheduler endpoint and delivery access preserve upstream

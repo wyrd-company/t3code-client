@@ -125,15 +125,15 @@ as untrusted input.
 
 `stop_local_server` stops only a listener that the agent of `threadId` started:
 the server sends SIGTERM to its process group, then SIGKILL after a grace
-period. Take `pid` and `port` from `local_servers`. A server in a thread
-terminal stays under the control of the person who runs it: the tool refuses it
-with code `terminal_owned`. Other refusals are `not_owned` (the thread's agent
+period. Take `pid` and `port` from `local_servers`. When its scan shows a
+server in a thread terminal, the tool refuses it with code `terminal_owned`, so
+that the person who runs it stays in control. Other refusals are `not_owned` (the thread's agent
 did not start it), `not_found` (no thread owns a listener with that pid and
 port), `shared_group` (it shares the T3 Code server's process group) and
-`unsupported`. The owner check uses the tool's scan. The server scans again
-before it signals and requires only that some thread owns the listener with that
-pid and port, so a process that reuses the pid on that port between the two
-scans is not checked against `threadId`.
+`unsupported`. The owner checks are best effort. They use the tool's scan,
+which can keep the cached owner of a pid that another process reused, before or
+after the scan. The server scans again before it signals and accepts a listener
+with that pid and port that any thread or terminal owns.
 
 ## Configuration and permissions
 
