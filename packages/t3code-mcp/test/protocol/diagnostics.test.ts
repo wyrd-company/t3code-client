@@ -139,13 +139,15 @@ it("returns report null before the first cleanup", async () => {
 it("marks every diagnostics tool read-only", async () => {
   const { client } = await fixture();
   const { tools } = await client.listTools();
-  const names = [
+  const names = new Set([
     "server_traces",
     "server_processes",
     "server_host_resources",
     "server_resource_history",
     "server_storage_cleanup_report",
-  ];
-  for (const tool of tools.filter((row) => names.includes(row.name)))
+  ]);
+  const diagnostics = tools.filter((row) => names.has(row.name));
+  expect(diagnostics).toHaveLength(names.size);
+  for (const tool of diagnostics)
     expect(tool.annotations).toMatchObject({ readOnlyHint: true, destructiveHint: false });
 });
