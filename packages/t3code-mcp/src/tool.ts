@@ -26,7 +26,10 @@ const accessHints = {
   idempotentWrite: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
 } as const satisfies Record<ToolAccess, object>;
 
-/** Each registration retains its own schema and typed callback. */
+/**
+ * Each registration retains its own schema and typed callback. `access` is a
+ * `ToolAccess`; `true` is the same as "read" and `false` as "destructive".
+ */
 export function defineTool<Shape extends z.ZodRawShape>(
   name: string,
   description: string,
@@ -36,8 +39,9 @@ export function defineTool<Shape extends z.ZodRawShape>(
     client: T3Client,
     signal: AbortSignal,
   ) => Promise<unknown>,
-  access: ToolAccess = "read",
+  access: ToolAccess | boolean = "read",
 ): ToolRegistration {
+  const hints = accessHints[access === true ? "read" : access === false ? "destructive" : access];
   return {
     name,
     register(server, clients) {
@@ -46,7 +50,7 @@ export function defineTool<Shape extends z.ZodRawShape>(
         {
           description,
           inputSchema: input,
-          annotations: { ...accessHints[access], openWorldHint: true },
+          annotations: { ...hints, openWorldHint: true },
         },
         async (args, context) => {
           try {
