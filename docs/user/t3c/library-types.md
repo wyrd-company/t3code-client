@@ -24,6 +24,12 @@ relationships:
 ## Constants
 
 <dl>
+<dt><a href="#SPEECH_MAX_OPTIONS_BYTES">SPEECH_MAX_OPTIONS_BYTES</a></dt>
+<dd><p>The largest options JSON the server reads.</p>
+</dd>
+<dt><a href="#DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS">DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS</a></dt>
+<dd><p>The default recognition preferences, as upstream&#39;s clients send them.</p>
+</dd>
 <dt><a href="#DpopPrivateJwk">DpopPrivateJwk</a></dt>
 <dd><p>The P-256 key that a proof-bound session signs with. <code>d</code> is the private part.</p>
 </dd>
@@ -82,6 +88,16 @@ tokens. <code>reasoningTokens</code> is a subset of <code>outputTokens</code>; n
 <pre><code class="language-ts">export function webhookUrlParams(path: string): { hookId: string; token: string };
 </code></pre>
 </dd>
+<dt><a href="#encodeSpeechPcmRequest">encodeSpeechPcmRequest()</a></dt>
+<dd><p>Frames 16 kHz mono Float32 <code>pcm</code> with its recognition options as the body of <code>voice.transcribe</code>
+or <code>voice.transcribeCloud</code>. Raises <code>T3PreconditionError</code> for invalid options, for audio that is
+not whole samples and for options over <code>SPEECH_MAX_OPTIONS_BYTES</code>.</p>
+<pre><code class="language-ts">export function encodeSpeechPcmRequest(
+  pcm: Uint8Array,
+  options: SpeechTranscriptionOptions = DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS,
+): Uint8Array&lt;ArrayBuffer&gt;;
+</code></pre>
+</dd>
 </dl>
 
 <a name="messageId"></a>
@@ -98,6 +114,20 @@ The message the snippet is from. Older servers omit it.
 The run that ignored Stop; the server refuses once a newer run has started.
 
 **Kind**: global variable  
+<a name="SPEECH_MAX_OPTIONS_BYTES"></a>
+
+## SPEECH\_MAX\_OPTIONS\_BYTES
+
+The largest options JSON the server reads.
+
+**Kind**: global constant  
+<a name="DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS"></a>
+
+## DEFAULT\_SPEECH\_TRANSCRIPTION\_OPTIONS
+
+The default recognition preferences, as upstream's clients send them.
+
+**Kind**: global constant  
 <a name="DpopPrivateJwk"></a>
 
 ## DpopPrivateJwk
@@ -214,6 +244,22 @@ The route params of a webhook endpoint's `path`, from `scheduledTasks.webhookEnd
 
 ```ts
 export function webhookUrlParams(path: string): { hookId: string; token: string };
+```
+
+**Kind**: global function  
+<a name="encodeSpeechPcmRequest"></a>
+
+## encodeSpeechPcmRequest()
+
+Frames 16 kHz mono Float32 `pcm` with its recognition options as the body of `voice.transcribe`
+or `voice.transcribeCloud`. Raises `T3PreconditionError` for invalid options, for audio that is
+not whole samples and for options over `SPEECH_MAX_OPTIONS_BYTES`.
+
+```ts
+export function encodeSpeechPcmRequest(
+  pcm: Uint8Array,
+  options: SpeechTranscriptionOptions = DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS,
+): Uint8Array<ArrayBuffer>;
 ```
 
 **Kind**: global function

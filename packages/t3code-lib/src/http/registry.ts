@@ -12,6 +12,7 @@ import { orchestrationRoutes } from "./routes/orchestration.ts";
 import { previewRoutes } from "./routes/preview.ts";
 import { projectRoutes } from "./routes/projects.ts";
 import { pullRequestRoutes } from "./routes/pullRequests.ts";
+import { voiceRoutes } from "./routes/voice.ts";
 import { webhookRoutes } from "./routes/webhooks.ts";
 
 /** Every HTTP route of the target build that has an entry, by upstream group and endpoint name. */
@@ -25,6 +26,7 @@ export const httpRoutes = {
   ...previewRoutes,
   ...projectRoutes,
   ...pullRequestRoutes,
+  ...voiceRoutes,
   ...webhookRoutes,
 };
 

@@ -19,6 +19,7 @@ import {
   ProviderInstanceMutation,
   SecretProviderConfig,
   SecretProviderSlug,
+  SettingsSecretValue,
   UsageLimitSourceConfig,
 } from "./providerInstance.ts";
 import {
@@ -48,6 +49,7 @@ import {
   WorktreeSubmodules,
   WritingStylePatch,
 } from "./settingsPatchFields.ts";
+import { SpeechAcceleration, SpeechCustomWords, SpeechModelUnloadTimeout } from "./speech.ts";
 
 /** Keys that the server treats as provider management in place of a settings write. */
 const PROVIDER_PATCH_KEYS: ReadonlySet<string> = new Set([
@@ -80,6 +82,20 @@ export const ServerSettingsPatch = z
     enableProviderUpdateChecks: z.boolean(),
     continueThreadsAfterServerUpdate: z.boolean(),
     enableAgentBrowserAccess: z.boolean(),
+    /** A literal key goes to the server's secret store; an empty string removes it. */
+    cloudSpeechCredentials: z
+      .looseObject({
+        openai: SettingsSecretValue,
+        xai: SettingsSecretValue,
+        openrouter: SettingsSecretValue,
+      })
+      .partial(),
+    speechModelId: z.string(),
+    speechAcceleration: SpeechAcceleration,
+    speechModelUnloadTimeout: SpeechModelUnloadTimeout,
+    speechProjectCustomWords: SpeechCustomWords,
+    /** Null follows `textGenerationModelSelection`. */
+    speechPostProcessingModelSelection: ModelSelection.nullable(),
     projectAgentBrowserAccessOverrides: z.record(ProjectKey, z.boolean().nullable()),
     defaultAutoPull: z.boolean(),
     defaultProjectScripts: z.array(ProjectScriptInput),

@@ -12,6 +12,9 @@ export const EnvironmentRequestInvalidError = z.looseObject({
     "invalid_command",
     "invalid_history_cursor",
     "thread_transcript_too_large",
+    "invalid_audio",
+    "speech_unavailable",
+    "speech_busy",
   ]),
   traceId: TrimmedNonEmptyString,
 });

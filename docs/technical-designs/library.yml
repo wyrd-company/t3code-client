@@ -99,6 +99,7 @@ proposed-design:
         serverActions.ts        keybinding, provider update, client activity and secret request inputs and results
         sourceControl.ts        version control systems and source control hosts the server can use, repository lookup, clone and publish, forge sign-in
         projectClone.ts         the tracked clone of a new project and its progress
+        speech.ts               voice transcription: local speech models, cloud speech providers, transcript cleanup
         agentSessions.ts        the scan and import of another agent's sessions on the host
         pullRequests.ts         the pull request reads and writes, from pullRequestInputs.ts, pullRequestWrites.ts, pullRequestParts.ts, pullRequestList.ts, pullRequestDetail.ts and pullRequestDiff.ts; pullRequestValues.ts holds the value lists that a result leaves open and a write closes, and is not exported
         diagnostics.ts          trace and process diagnostics, process resource history, the process signal and the OTLP endpoint check
@@ -157,8 +158,9 @@ proposed-design:
         rpcConnection.ts        RpcConnection: request ids, correlation, Chunk→AsyncIterable with Ack, Interrupt
       http/
         registry.ts             httpRoutes: route name → { method, path, input, success, auth, scope }
-        routes/*.ts             one file per family (assets, auth, cloudLink, orchestration, preview, projects, pullRequests)
+        routes/*.ts             one file per family (assets, auth, cloudLink, guest, mcpOAuth, orchestration, preview, projects, pullRequests, voice, webhooks)
         spec.ts                 the shape of one route entry
+        speechAudio.ts          the framed options and PCM body of a voice transcription
         client.ts               HttpRouteClient: typed call by route name; callRoute for the facades
       rpc/
         registry.ts             RpcMethodTable: method name → { payload, success, stream } zod schemas + scope
@@ -248,7 +250,7 @@ proposed-design:
     method, HTTP route and orchestration command that the build exposes to a
     client has a schema-validated entry. This covers pull requests, previews,
     devices, cloud relay, DPoP, desktop bootstrap, a guest's own `/api/guest`
-    routes, attachment upload signing, source-control repository, clone and
+    routes, attachment upload signing, voice transcription, source-control repository, clone and
     sign-in flows, MCP OAuth, forks and merge-backs, delegated tasks and settings
     mutation. Commands that the server accepts only from itself are not client
     surface.

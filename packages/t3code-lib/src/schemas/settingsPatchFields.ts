@@ -11,6 +11,7 @@ import { ProviderInstanceId, ProviderSlug, TrimmedNonEmptyString } from "./commo
 import { ModelSelection } from "./orchestration/model.ts";
 import { ProjectScript } from "./projects.ts";
 import { ProviderOptionSelections } from "./provider.ts";
+import { SpeechCustomWords } from "./speech.ts";
 
 export const TrimmedString = z.string().trim();
 export const ProjectKey = TrimmedNonEmptyString;
@@ -182,6 +183,7 @@ export const ProjectSettingsOverride = z
     sidebarAutoSettleKeepPullRequests: z.boolean(),
     continueThreadsAfterServerUpdate: z.boolean(),
     responseStreamingMode: ResponseStreamingMode,
+    speechProjectCustomWords: SpeechCustomWords,
     providerInstances: z.record(ProviderSlug, z.looseObject({ enabled: z.boolean().optional() })),
   })
   .partial();

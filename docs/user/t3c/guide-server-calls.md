@@ -53,6 +53,39 @@ const { bytes, contentType } = await client.routes.call("assets.read", {
 `assets.read` holds the whole file in memory. To read part of a large file, fetch
 `relativeUrl` yourself with a `range` header.
 
+## Voice
+
+The `voice.*` routes transcribe on the server machine with a local speech model,
+or forward a recording to a cloud speech provider. `voice.status` says if the
+machine can transcribe and which model is selected. `voice.models` lists the
+catalog; `voice.downloadModel` and `voice.selectModel` need `settings:write`.
+A transcription body is up to five minutes of 16 kHz mono Float32 PCM, framed
+with its recognition options:
+
+```ts
+import {
+  DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS,
+  encodeSpeechPcmRequest,
+} from "@wyrd-company/t3code-lib";
+
+const status = await client.routes.call("voice.status");
+if (status.supported && status.state === "ready") {
+  const { text } = await client.routes.call("voice.transcribe", {
+    body: encodeSpeechPcmRequest(new Uint8Array(samples.buffer), {
+      ...DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS,
+      speechLanguage: "en",
+    }),
+  });
+}
+```
+
+`voice.transcribeCloud` sends the recording to the provider in `params`. Set the
+provider's key first with `voice.setCloudKey`, as a literal or a secret
+reference; `key: null` removes it. A cloud failure is a `T3HttpError` with
+status 422 and tag `CloudSpeechError`; `schemas.speech.CloudSpeechError` decodes
+its `body`. A local failure has reason `invalid_audio`, `speech_unavailable` or
+`speech_busy`.
+
 ## Repositories and terminals
 
 `git.runStackedAction` streams progress until the action finishes or fails.

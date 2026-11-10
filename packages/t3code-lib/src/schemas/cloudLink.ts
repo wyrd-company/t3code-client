@@ -104,6 +104,10 @@ export const EnvironmentCloudLinkStateResult = z.looseObject({
   linkRevoked: z.boolean().nullish(),
   /** The latest check that the server ran by itself. Absent until one finishes. */
   reachability: EnvironmentConnectReachability.nullish(),
+  /** The tunnel's public hostname, once the tunnel has connected. Older servers omit it. */
+  tunnelHostname: z.string().nullish(),
+  /** Whether this is the desktop app's own session, which may link from where it is. */
+  linkableHere: z.boolean().nullish(),
 });
 export type EnvironmentCloudLinkStateResult = z.infer<typeof EnvironmentCloudLinkStateResult>;
 

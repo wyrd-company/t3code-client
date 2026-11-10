@@ -54,6 +54,11 @@ export type {
 export { httpRoutes, type HttpRouteName, type HttpRoutes } from "./http/registry.ts";
 export { assetUrlParams, attachmentUploadUrlParams } from "./http/routes/assets.ts";
 export { webhookUrlParams } from "./http/routes/webhooks.ts";
+export {
+  DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS,
+  SPEECH_MAX_OPTIONS_BYTES,
+  encodeSpeechPcmRequest,
+} from "./http/speechAudio.ts";
 export type {
   HttpRouteAuth,
   HttpRouteInput,

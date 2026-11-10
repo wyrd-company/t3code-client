@@ -123,6 +123,10 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   mcpModeLimitHeader: z.boolean().optional(),
   /** Work a linked environment starts here stays within its link. A peer needs it to link. */
   linkFence: z.boolean().optional(),
+  /** Server can transcribe 16 kHz mono PCM audio on the environment machine (`voice.transcribe`). */
+  voiceTranscription: z.boolean().optional(),
+  /** Server forwards recordings to cloud speech providers (`voice.transcribeCloud`). */
+  cloudVoiceTranscription: z.boolean().optional(),
   /** Side chats: hidden `lineage.sideChat` forks. Older servers ignore the fork flag. */
   sideChats: z.boolean().optional(),
   /** Server answers `orchestration.forceStopThread`. */
