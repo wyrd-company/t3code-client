@@ -176,7 +176,8 @@ products:
                   }
                 }
               }
-          - method: codex
+          - method: other
+            label: Codex
             command: |-
               [mcp_servers.t3mcp]
               command = "npx"
@@ -196,7 +197,8 @@ products:
                   }
                 }
               }
-          - method: opencode
+          - method: other
+            label: OpenCode
             command: |-
               {
                 "mcp": {
@@ -213,7 +215,8 @@ products:
                   }
                 }
               }
-          - method: pi
+          - method: other
+            label: Pi
             command: |-
               {
                 "mcpServers": {
@@ -228,7 +231,8 @@ products:
                   }
                 }
               }
-          - method: antigravity
+          - method: other
+            label: Antigravity
             command: |-
               {
                 "mcpServers": {

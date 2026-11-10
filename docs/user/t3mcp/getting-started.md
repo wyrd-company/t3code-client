@@ -30,10 +30,21 @@ You can also install the executable with `npm install -g
 
 The install selector provides configurations for Claude Code, Claude Desktop,
 Codex, Cursor, OpenCode, Pi and Antigravity, plus generic JSON. Select your host
-and merge its configuration into the file described by that tab. Replace
-`sample` with your saved profile name. All entries launch the same stdio server
-with `npx -y @wyrd-company/t3code-mcp --profile sample`; Codex uses TOML and
-OpenCode uses a local command array.
+and merge its configuration into the host's MCP configuration file:
+
+| Host           | Configuration file                                                              |
+| -------------- | ------------------------------------------------------------------------------- |
+| Claude Code    | `.mcp.json` in the project                                                      |
+| Claude Desktop | `claude_desktop_config.json` (Settings, Developer, Edit Config)                 |
+| Codex          | `~/.codex/config.toml`                                                          |
+| Cursor         | `.cursor/mcp.json` in the project, or `~/.cursor/mcp.json`                      |
+| OpenCode       | `opencode.json` in the project                                                  |
+| Pi             | `~/.pi/agent/mcp.json`, or `.pi/mcp.json` in the project                        |
+| Antigravity    | `~/.gemini/config/mcp_config.json`, or `.agents/mcp_config.json` in the project |
+
+Replace `sample` with your saved profile name. All entries launch the same stdio
+server with `npx -y @wyrd-company/t3code-mcp --profile sample`; Codex uses TOML
+and OpenCode uses a local command array.
 
 Pair the profile with `t3c auth pair` first. `--profile` selects an exact saved
 profile and ignores environment overrides. Alternatively, `--server` and
