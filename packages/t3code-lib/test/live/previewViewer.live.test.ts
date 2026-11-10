@@ -87,10 +87,16 @@ describe.skipIf(!hasLiveServer)("preview viewer", () => {
   let viewer: PreviewViewer;
   let until: ReturnType<typeof reader>;
 
-  const tabUrl = async () => {
+  /**
+   * The address of the loaded page. The server reports `Loading` with the target address when
+   * the request starts, before the page commits; history input sent then acts on the old entry.
+   */
+  const loadedUrl = async () => {
     const { sessions } = await client.rpc.call("preview.list", { threadId: SAMPLE_THREAD });
     const status = sessions.find((session) => session.tabId === tabId)?.navStatus;
-    return status !== undefined && "url" in status ? status.url : undefined;
+    return status !== undefined && "_tag" in status && status._tag === "Success"
+      ? status.url
+      : undefined;
   };
 
   beforeAll(async () => {
@@ -205,10 +211,10 @@ describe.skipIf(!hasLiveServer)("preview viewer", () => {
   it("navigates, goes back and changes the viewport", async () => {
     const next = `${page.url}next`;
     viewer.send({ type: "navigate", url: next });
-    await waitFor(async () => ((await tabUrl()) === next ? true : undefined), "the new address");
+    await waitFor(async () => ((await loadedUrl()) === next ? true : undefined), "the new address");
     viewer.send({ type: "history", delta: -1 });
     await waitFor(
-      async () => ((await tabUrl()) === page.url ? true : undefined),
+      async () => ((await loadedUrl()) === page.url ? true : undefined),
       "the earlier address",
     );
     viewer.send({ type: "reload" });
