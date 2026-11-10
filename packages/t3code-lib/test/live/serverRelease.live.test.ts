@@ -11,7 +11,7 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { describe, expect, it } from "vite-plus/test";
-import { T3RpcError } from "../../src/index.ts";
+import { T3RpcError, TARGET_T3_CODE_VERSION } from "../../src/index.ts";
 import { ServerConfigStreamEvent } from "../../src/schemas/server.ts";
 import { TRIAGE_PROMPT_FILE_NAME } from "../../src/schemas/serverRelease.ts";
 import { connect, hasLiveServer } from "./liveClient.ts";
@@ -35,13 +35,13 @@ describe.skipIf(!hasLiveServer)("live server release and on-demand inputs", () =
     const client = connect();
     try {
       const outcome = await client.server
-        .getNpmRelease({ spec: "0.1.8" })
+        .getNpmRelease({ spec: TARGET_T3_CODE_VERSION })
         .catch((error: unknown) => error);
       if (outcome instanceof T3RpcError) {
         expect(outcome.tag).toBe("ServerNpmReleaseError");
         console.log("Release lookup failure", outcome.tag);
       } else {
-        expect(outcome).toMatchObject({ version: "0.1.8" });
+        expect(outcome).toMatchObject({ version: TARGET_T3_CODE_VERSION });
         console.log("Release lookup", outcome);
       }
     } finally {

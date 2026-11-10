@@ -7,7 +7,12 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { expect, it } from "vite-plus/test";
-import { ProfileManager, T3Client, providerInstanceId } from "@wyrd-company/t3code-lib";
+import {
+  ProfileManager,
+  T3Client,
+  TARGET_T3_CODE_VERSION,
+  providerInstanceId,
+} from "@wyrd-company/t3code-lib";
 
 it("pairs the CLI, reports the real server and completes a Luna subject through the library", async () => {
   const directory = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3c-version-profile-"));
@@ -30,8 +35,8 @@ it("pairs the CLI, reports the real server and completes a Luna subject through 
     const result = JSON.parse(output);
     expect(result).toMatchObject({
       data: {
-        target: "0.1.8",
-        server: { version: "0.1.8", protocol: 2, verdict: "match" },
+        target: TARGET_T3_CODE_VERSION,
+        server: { version: TARGET_T3_CODE_VERSION, protocol: 2, verdict: "match" },
         sources: { server: "profile", credentials: "profile" },
       },
       exitCode: 0,

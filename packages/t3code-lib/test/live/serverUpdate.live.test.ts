@@ -10,13 +10,18 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodePath from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { WebSocket as WsWebSocket } from "ws";
-import { T3Client, type T3RpcError, memoryCredentialStore } from "../../src/index.ts";
+import {
+  T3Client,
+  type T3RpcError,
+  TARGET_T3_CODE_VERSION,
+  memoryCredentialStore,
+} from "../../src/index.ts";
 import type { WebSocketConstructor } from "../../src/internal/websocket.ts";
 import { startDesktopServer } from "./desktopServer.ts";
 import { hasLiveServer, refusal } from "./liveClient.ts";
 import { type PeerServer, startScratchServer, withScopes } from "./peerServer.ts";
 
-const UPDATE = { targetVersion: "0.1.8" };
+const UPDATE = { targetVersion: TARGET_T3_CODE_VERSION };
 const webSocket = WsWebSocket as unknown as WebSocketConstructor;
 
 /** What a stream sends before it ends, and the failure or decode error that ends it. */

@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import * as NodeFSP from "node:fs/promises";
 import * as NodePath from "node:path";
+import { TARGET_T3_CODE_VERSION } from "@wyrd-company/t3code-lib";
 
 /** A successful acceptance must prove the actual native server and launcher ended. */
 export async function verifyServerEvidence(directory: string) {
@@ -34,7 +35,7 @@ export async function verifyServerEvidence(directory: string) {
     assert.equal(start.pid, server.pid);
     assert.equal(stop.pid, server.pid);
     assert.equal(cleanup.root, server.root);
-    assert.equal(server.serverVersion, "0.1.8");
+    assert.equal(server.serverVersion, TARGET_T3_CODE_VERSION);
     assert.equal(server.protocol, 2);
     assert.equal(stop.pidAbsent, true);
     assert.equal(cleanup.rootAbsent, true);

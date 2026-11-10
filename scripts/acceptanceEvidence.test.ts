@@ -6,6 +6,7 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { expect, it } from "vite-plus/test";
+import { TARGET_T3_CODE_VERSION } from "../packages/t3code-lib/src/version.ts";
 import { verifyServerEvidence } from "../packages/t3code-cli/scripts/acceptanceEvidence.ts";
 
 it("requires matching lifecycle identities, native process absence and home removal", async () => {
@@ -20,7 +21,7 @@ it("requires matching lifecycle identities, native process absence and home remo
       pid: 101,
       root: "/sample/home",
       platform: "linux",
-      serverVersion: "0.1.8",
+      serverVersion: TARGET_T3_CODE_VERSION,
       protocol: 2,
       ownedProcesses: identities,
     },

@@ -9,6 +9,7 @@ import { T3Client } from "../../src/client.ts";
 import { ProviderInstanceId } from "../../src/schemas/common.ts";
 import type { WebSocketConstructor } from "../../src/internal/websocket.ts";
 import { decodeServerFrame } from "../../src/wire/envelope.ts";
+import { TARGET_T3_CODE_VERSION } from "../../src/version.ts";
 
 const ownedHome = process.env["T3_LIVE_HOME"];
 const enabled = process.env["T3_LIVE_AGENT"] === "1" && Boolean(ownedHome);
@@ -45,7 +46,10 @@ it.skipIf(!enabled)(
     let worktreePath: string | undefined;
     try {
       const descriptor = await client.auth.descriptor();
-      expect(descriptor).toMatchObject({ serverVersion: "0.1.8", orchestrationProtocolVersion: 2 });
+      expect(descriptor).toMatchObject({
+        serverVersion: TARGET_T3_CODE_VERSION,
+        orchestrationProtocolVersion: 2,
+      });
       project = await client.projects.createNew({ name: "Sample cleanup" });
       const status = await client.vcs.status({ cwd: project.workspaceRoot });
       const created = await client.vcs.createWorktree({

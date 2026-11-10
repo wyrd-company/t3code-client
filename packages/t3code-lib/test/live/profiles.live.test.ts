@@ -6,7 +6,12 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { expect, it, vi } from "vite-plus/test";
-import { ProfileManager, T3Client, providerInstanceId } from "../../src/index.ts";
+import {
+  ProfileManager,
+  T3Client,
+  TARGET_T3_CODE_VERSION,
+  providerInstanceId,
+} from "../../src/index.ts";
 
 it("composes profiles, issued-token import, pairing and resolved auth against the pinned server", async () => {
   const directory = await NodeFSP.mkdtemp(
@@ -35,7 +40,7 @@ it("composes profiles, issued-token import, pairing and resolved auth against th
     try {
       expect((await client.auth.sessionState()).authenticated).toBe(true);
       expect(await client.auth.hasScope("orchestration:read")).toBe(true);
-      expect((await client.auth.descriptor()).serverVersion).toBe("0.1.8");
+      expect((await client.auth.descriptor()).serverVersion).toBe(TARGET_T3_CODE_VERSION);
       await client.shell.snapshot();
       if (process.env["T3_LIVE_AGENT"] === "1") {
         const { projectId } = await client.projects.ensureScratch();

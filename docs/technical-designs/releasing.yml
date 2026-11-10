@@ -167,7 +167,9 @@ proposed-design:
     a preparation branch targets the newest nightly. Upstream release tags are
     `vX.Y.Z`; nightly tags are `vX.Y.Z-nightly.YYYYMMDD.N`.
 
-    1. Read `npm view t3 dist-tags`, update the library's devDependency and install.
+    1. Read `npm view t3 dist-tags`, update the library's devDependency and
+       `TARGET_T3_CODE_VERSION` together, and install. Tests read the target from
+       that export; a unit test fails when the two differ.
        Keep only the target build's `minimumReleaseAgeExclude` entries in the root
        `pnpm-workspace.yaml`.
     2. Compare upstream contracts (`packages/contracts/src`), server RPC handlers,

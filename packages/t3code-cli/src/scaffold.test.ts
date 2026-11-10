@@ -8,6 +8,7 @@ import * as NodePath from "node:path";
 import { expect, it, vi, afterEach } from "vite-plus/test";
 import {
   ProfileManager,
+  TARGET_T3_CODE_VERSION,
   T3ConnectionError,
   T3StorageError,
   T3PreconditionError,
@@ -258,11 +259,13 @@ it("keeps credential-file I/O local at the client boundary and version verdict i
   } finally {
     await invocation.close();
   }
-  expect(["0.1.8", "0.2.0", "0.0.1", "0.1.8-nightly.1", "custom"].map(versionVerdict)).toEqual([
-    "match",
-    "newer",
-    "older",
-    "older",
-    null,
-  ]);
+  expect(
+    [
+      TARGET_T3_CODE_VERSION,
+      "99.0.0",
+      "0.0.1",
+      `${TARGET_T3_CODE_VERSION}-nightly.1`,
+      "custom",
+    ].map(versionVerdict),
+  ).toEqual(["match", "newer", "older", "older", null]);
 });
