@@ -17,6 +17,12 @@ export const ReviewDiffPreviewInput = z.looseObject({
   baseRef: TrimmedNonEmptyString.optional(),
   commitSha: TrimmedNonEmptyString.optional(),
   ignoreWhitespace: z.boolean().optional(),
+  /** Read only this source kind. */
+  sourceKind: z.enum(["working-tree", "branch-range"]).optional(),
+  /** Leave untracked files out; the result is then `incomplete`. */
+  trackedOnly: z.boolean().optional(),
+  /** Return file stats without patches; `patchesDeferred` marks such a source. */
+  metadataOnly: z.boolean().optional(),
   file: z
     .looseObject({
       path: z.string().min(1),
@@ -55,6 +61,7 @@ export const ReviewDiffPreviewSource = z.looseObject({
   diff: z.string(),
   diffHash: TrimmedNonEmptyString,
   truncated: z.boolean(),
+  patchesDeferred: z.boolean().optional(),
   files: z.array(ReviewDiffFileStat).optional(),
 });
 export type ReviewDiffPreviewSource = z.infer<typeof ReviewDiffPreviewSource>;
@@ -62,6 +69,8 @@ export const ReviewDiffPreviewResult = z.looseObject({
   cwd: TrimmedNonEmptyString,
   generatedAt: IsoDateTime,
   sources: z.array(ReviewDiffPreviewSource),
+  /** Set when untracked files were left out (`trackedOnly`). */
+  incomplete: z.boolean().optional(),
 });
 export type ReviewDiffPreviewResult = z.infer<typeof ReviewDiffPreviewResult>;
 export const ReviewDiffFileContentsInput = z.looseObject({

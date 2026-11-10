@@ -131,6 +131,7 @@ export const SecretRequestFailureReason = forwardCompatibleLiteral([
   "already_answered",
   "agent_stopped",
   "store_failed",
+  "reference_unreadable",
   "record_failed",
   "invalid_ref",
   "read_failed",
@@ -141,5 +142,7 @@ export const SecretRequestFailureReason = forwardCompatibleLiteral([
 ]);
 export const SecretRequestError = taggedError("SecretRequestError", {
   reason: SecretRequestFailureReason,
+  /** The secret provider that a `reference_unreadable` answer named. */
+  provider: z.string().optional(),
   cause: Defect.optional(),
 });

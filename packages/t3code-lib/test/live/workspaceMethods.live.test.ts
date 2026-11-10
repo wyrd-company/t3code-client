@@ -206,6 +206,21 @@ describe.skipIf(!hasLiveServer)("workspace methods", () => {
     expect(workingTree?.diff).toContain("+third");
     expect(range?.diff).toContain("-first");
 
+    const filtered = await client.rpc.call("review.getDiffPreview", {
+      cwd,
+      baseRef: "main",
+      sourceKind: "working-tree",
+      trackedOnly: true,
+      metadataOnly: true,
+    });
+    expect(filtered.incomplete).toBe(true);
+    expect(filtered.sources.map((source) => source.kind)).toEqual(["working-tree"]);
+    expect(filtered.sources[0]).toMatchObject({
+      diff: "",
+      patchesDeferred: true,
+      files: [{ path: "sample.txt" }],
+    });
+
     const sha = commits[0]?.sha ?? "";
     const commit = await client.rpc.call("review.getDiffPreview", { cwd, commitSha: sha });
     const committed = commit.sources.find((source) => source.kind === "commit");

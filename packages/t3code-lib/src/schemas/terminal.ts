@@ -44,6 +44,8 @@ export const TerminalOpenInput = z.looseObject({
   rows: TerminalRowsSchema.optional(),
   env: TerminalEnvSchema.optional(),
   providerInstanceId: ProviderInstanceId.optional(),
+  /** Stop the terminal and its child processes when its thread settles. */
+  stopOnSettle: z.boolean().optional(),
 });
 export type TerminalOpenInput = z.infer<typeof TerminalOpenInput>;
 export const TerminalAttachInput = z.looseObject({
@@ -54,6 +56,8 @@ export const TerminalAttachInput = z.looseObject({
   rows: TerminalRowsSchema.optional(),
   env: TerminalEnvSchema.optional(),
   providerInstanceId: ProviderInstanceId.optional(),
+  /** Stop the terminal and its child processes when its thread settles. */
+  stopOnSettle: z.boolean().optional(),
   restartIfNotRunning: z.boolean().optional(),
   resume: z.boolean().optional(),
 });

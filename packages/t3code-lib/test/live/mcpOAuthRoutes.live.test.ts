@@ -240,6 +240,36 @@ describe.skipIf(!hasLiveServer)("live MCP OAuth routes", () => {
     expect(spent).toMatchObject({ status: 400, reason: "invalid_grant" });
   });
 
+  it("approves one sign-in at the level of an approval code", async () => {
+    const config = await server.client.server.getConfig();
+    expect(config.environment.capabilities.mcpApprovalCodes).toBe(true);
+    const issued = await server.client.auth.createPairingCredential({
+      label: "Sample approval code",
+      access: "read-only",
+    });
+    expect(issued.access).toBe("read-only");
+    expect(issued.credential).toMatch(/^READ-/);
+    const decide = (access: "read-only" | "auto") =>
+      anonymous.routes.call("mcpOAuth.decision", {
+        body: {
+          authorization,
+          decision: { _tag: "pairing-code", access, code: issued.credential },
+        },
+      });
+    expect(await httpFailure(decide("auto"))).toMatchObject({ status: 400 });
+    const { redirectTo } = await decide("read-only");
+    const token = await anonymous.routes.call("mcpOAuth.token", {
+      body: {
+        grant_type: "authorization_code",
+        code: new URL(redirectTo).searchParams.get("code") ?? "",
+        redirect_uri: REDIRECT,
+        client_id: clientId,
+        code_verifier: VERIFIER,
+      },
+    });
+    expect(token.scope).toBe("orchestration:read");
+  });
+
   it("refuses the wrong verifier, grant and client, and spends the code", async () => {
     const params = await approve("read-only");
     const body = {

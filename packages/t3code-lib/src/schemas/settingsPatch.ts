@@ -50,12 +50,14 @@ import {
   WritingStylePatch,
 } from "./settingsPatchFields.ts";
 import { SpeechAcceleration, SpeechCustomWords, SpeechModelUnloadTimeout } from "./speech.ts";
+import { TextGeneratorConfig } from "./textGenerator.ts";
 
 /** Keys that the server treats as provider management in place of a settings write. */
 const PROVIDER_PATCH_KEYS: ReadonlySet<string> = new Set([
   "providerInstances",
   "usageLimitSources",
   "secretProviders",
+  "textGenerators",
 ]);
 
 export const ServerSettingsPatch = z
@@ -78,6 +80,8 @@ export const ServerSettingsPatch = z
     worktreeCleanup: WorktreeCleanupPatch,
     storageCleanup: StorageCleanupPatch,
     worktreesDirectory: TrimmedString,
+    /** macOS: clone new worktrees from a cached checkout. */
+    fastWorktreeCheckout: z.boolean(),
     responseStreamingMode: ResponseStreamingMode,
     enableProviderUpdateChecks: z.boolean(),
     continueThreadsAfterServerUpdate: z.boolean(),
@@ -127,6 +131,8 @@ export const ServerSettingsPatch = z
     hideTaggedThreads: z.boolean(),
     guestSharingEnabled: z.boolean(),
     linkedEnvironmentsEnabled: z.boolean(),
+    /** Agents predict the next prompt after completed turns. */
+    promptSuggestionsEnabled: z.boolean(),
     backgroundActivity: z
       .looseObject({
         schemaVersion: z.literal(1),
@@ -143,6 +149,8 @@ export const ServerSettingsPatch = z
     newWorktreesStartFromOrigin: z.boolean(),
     worktreeSubmodules: WorktreeSubmodules.nullable(),
     addProjectBaseDirectory: TrimmedString,
+    /** Clones default to `<addProjectBaseDirectory>/<host>/<owner>/<repo>`. */
+    ghqCloneLayout: z.boolean(),
     textGenerationModelSelection: ModelSelectionPatch,
     threadTitleInstructions: TrimmedString,
     branchNamingMode: BranchNamingMode,
@@ -173,7 +181,8 @@ export const ServerSettingsPatch = z
     /** Merges per source; null removes one. */
     usageLimitSources: z.record(z.string(), UsageLimitSourceConfig.nullable()),
     secretProviders: z.record(SecretProviderSlug, SecretProviderConfig.nullable()),
-    cursorKeychainUsageEnabled: z.boolean(),
+    /** Merges per generator; null removes one. Ids share the provider instance namespace. */
+    textGenerators: z.record(ProviderInstanceId, TextGeneratorConfig.nullable()),
     usagePriceOverrides: z.record(TrimmedNonEmptyString, UsageModelPriceOverride.nullable()),
     usageModelAliases: z.record(TrimmedNonEmptyString, TrimmedNonEmptyString.nullable()),
   })
@@ -189,7 +198,9 @@ export type ServerUpdateSettingsInput = z.infer<typeof ServerUpdateSettingsInput
 /**
  * The scopes the server requires, in its order: `settings:write` for any other
  * change or an empty patch with no mutation, `providers:manage` for provider
- * keys and a mutation. A key this build does not know counts for neither.
+ * keys and a mutation. Removing a secret provider needs both, since it also
+ * clears the settings that read from it. A key this build does not know counts
+ * for neither.
  */
 export function requiredScopesForSettingsUpdate(
   input: ServerUpdateSettingsInput,
@@ -200,7 +211,11 @@ export function requiredScopesForSettingsUpdate(
   const changesProviders =
     input.providerInstanceMutation !== undefined ||
     keys.some((key) => PROVIDER_PATCH_KEYS.has(key));
-  const changesSettings = keys.some((key) => !PROVIDER_PATCH_KEYS.has(key));
+  const removesSecretProvider = Object.values(input.patch.secretProviders ?? {}).some(
+    (entry) => entry === null,
+  );
+  const changesSettings =
+    removesSecretProvider || keys.some((key) => !PROVIDER_PATCH_KEYS.has(key));
   if (!changesProviders) return ["settings:write"];
   return changesSettings ? ["settings:write", "providers:manage"] : ["providers:manage"];
 }

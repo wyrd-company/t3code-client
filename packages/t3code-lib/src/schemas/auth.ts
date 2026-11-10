@@ -216,6 +216,8 @@ export const AuthPairingCredentialResult = z.looseObject({
   credential: TrimmedNonEmptyString,
   label: TrimmedNonEmptyString.optional(),
   expiresAt: IsoDateTime,
+  /** Set when the code approves one agent sign-in at this level. */
+  access: AuthMcpClientGrantedAccess.optional(),
 });
 export type AuthPairingCredentialResult = z.infer<typeof AuthPairingCredentialResult>;
 
@@ -292,6 +294,12 @@ export type AuthClientSession = z.infer<typeof AuthClientSession>;
 export const AuthCreatePairingCredentialInput = z.looseObject({
   label: TrimmedNonEmptyString.optional(),
   scopes: z.array(AuthGrantScope).optional(),
+  /**
+   * Binds the code to one agent sign-in at this level, such as `AUTO-…`. The
+   * server derives the scopes from it and ignores `scopes`. Needs a server
+   * with the `mcpApprovalCodes` capability.
+   */
+  access: AuthMcpClientAccess.optional(),
 });
 export type AuthCreatePairingCredentialInput = z.infer<typeof AuthCreatePairingCredentialInput>;
 

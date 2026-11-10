@@ -109,7 +109,6 @@ export const UsageSource = z.looseObject({
   /** The session count to total across buckets. */
   distinctSessions: NonNegativeInt,
   message: TrimmedNonEmptyString.nullable(),
-  action: forwardCompatibleLiteral(["enableCursorKeychain"]).optional(),
   /** The source answered from its cache while a refresh runs; repeat with `awaitRefresh`. */
   refreshing: z.literal(true).optional(),
 });

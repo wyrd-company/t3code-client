@@ -17,6 +17,7 @@ import {
   TurnItemId,
 } from "./common.ts";
 import { KeybindingCommandInput, ResolvedKeybindingsConfig } from "./keybindings.ts";
+import { SecretReference } from "./providerInstance.ts";
 import { ServerConfigIssues } from "./server.ts";
 
 const KeybindingRule = {
@@ -89,6 +90,8 @@ export const SecretRequestAnswerInput = z.looseObject({
   answer: z.discriminatedUnion("type", [
     z.looseObject({ type: z.literal("save"), secret: TrimmedNonEmptyString }),
     z.looseObject({ type: z.literal("decline") }),
+    /** Read once through a secret provider. Needs a server with `secretRequestReferences`. */
+    z.looseObject({ type: z.literal("reference"), reference: SecretReference }),
   ]),
 });
 export type SecretRequestAnswerInput = z.infer<typeof SecretRequestAnswerInput>;

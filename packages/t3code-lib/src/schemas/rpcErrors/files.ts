@@ -16,6 +16,8 @@ export const FilesystemBrowseError = taggedError("FilesystemBrowseError", {
   failure: FilesystemBrowseFailure.optional(),
   parentPath: TrimmedNonEmptyString.optional(),
   platform: TrimmedNonEmptyString.optional(),
+  /** Set when the directory does not exist. */
+  pathMissing: z.boolean().optional(),
   ...messageAndCause,
 });
 

@@ -104,6 +104,12 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   projectWorktreeCleanup: z.boolean().optional(),
   settledWorktreeCleanup: z.boolean().optional(),
   worktreesDirectory: z.boolean().optional(),
+  /** Sent by macOS servers, which honor the `fastWorktreeCheckout` setting. */
+  fastWorktreeCheckout: z.boolean().optional(),
+  /** Server answers `subscribeVcsBranch`. */
+  vcsBranchStatus: z.boolean().optional(),
+  /** Server honors `modelCatalogOnly`. Older servers probe every provider. */
+  modelCatalogRefresh: z.boolean().optional(),
   /** Server evaluates merge and inactivity settlement without a client. */
   threadAutoSettlement: z.boolean().optional(),
   /** Server can exclude pull-request-linked threads from inactivity settlement. */
@@ -123,6 +129,12 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   mcpModeLimitHeader: z.boolean().optional(),
   /** Work a linked environment starts here stays within its link. A peer needs it to link. */
   linkFence: z.boolean().optional(),
+  /** Server mints pairing codes that approve one agent sign-in at a set level (`AUTO-…`). */
+  mcpApprovalCodes: z.boolean().optional(),
+  /** Server honors `freshContext` on sends. Older servers keep the old context. */
+  freshContext: z.boolean().optional(),
+  /** Server saves and runs a scheduled task's `threadMode`. Older servers ignore it. */
+  scheduledTaskThreadModes: z.boolean().optional(),
   /** Server can transcribe 16 kHz mono PCM audio on the environment machine (`voice.transcribe`). */
   voiceTranscription: z.boolean().optional(),
   /** Server forwards recordings to cloud speech providers (`voice.transcribeCloud`). */

@@ -46,7 +46,8 @@ const SimlockDeviceHost = z.looseObject({
   id: DeviceHostId,
   label: TrimmedNonEmptyString,
   gatewayUrl: TrimmedNonEmptyString.regex(/^https?:\/\/[^\s/]+\/?$/),
-  agentToken: TrimmedString.optional(),
+  /** Kept in the secret store, or the secret provider reference to read it from. */
+  agentToken: SettingsSecretValue.optional(),
   maxLeases: int(1, 20).optional(),
   maxLeaseMinutes: int(5, 240).optional(),
 });

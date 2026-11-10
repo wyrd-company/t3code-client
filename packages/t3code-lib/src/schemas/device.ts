@@ -51,7 +51,8 @@ export const DeviceSimlockIdentityInput = z.looseObject({
   gatewayUrl: TrimmedString.optional(),
   /** A saved Simlock host whose stored token is checked when no new token is given. */
   hostId: DeviceHostId.optional(),
-  agentToken: TrimmedString.optional(),
+  /** A token, or the secret provider reference to read it from. */
+  agentToken: SettingsSecretValue.optional(),
 });
 export type DeviceSimlockIdentityInput = z.input<typeof DeviceSimlockIdentityInput>;
 
@@ -235,6 +236,8 @@ export const DeviceServiceState = z
         status: DeviceHostStatus,
         detail: z.string().nullish(),
         androidDiscoveryIncomplete: z.boolean().nullish(),
+        /** Platforms whose device discovery did not finish. */
+        incompletePlatforms: z.array(DevicePlatform).nullish(),
       }),
     ),
     devices: z.array(DeviceSummary),

@@ -101,7 +101,11 @@ a redirect, so there the route raises `T3PreconditionError`: send the browser to
 A client or a redirect that the server does not know is a `T3HttpError` whose `body` is an HTML page.
 
 `mcpOAuth.approval` and `mcpOAuth.decision` are what that page calls. A `pairing-code` decision
-takes a credential from `auth.createPairingCredential` with the scopes of the access. A
+takes a credential from `auth.createPairingCredential` with the scopes of the access. A server
+with the `mcpApprovalCodes` capability also takes an approval code: create the credential with
+`access` in place of `scopes`. The code, such as `AUTO-…`, approves one sign-in, and the decision
+must name that level; another level is refused with HTTP 400. The result's `access` repeats the
+level. A
 `browser-session` decision takes the `csrfToken` from `mcpOAuth.approval`, and needs a `fetch`
 that keeps the session's cookie, as for `auth.browserSession`. The answer's `redirectTo` holds a
 one-use code that lasts one minute:

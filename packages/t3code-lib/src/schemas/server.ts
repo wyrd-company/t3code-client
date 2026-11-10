@@ -184,6 +184,8 @@ export const ServerConfig = z.looseObject({
   secretProviderSettings: z.boolean().optional(),
   /** Secret settings may point at a secret provider. Older servers drop the reference. */
   secretReferences: z.boolean().optional(),
+  /** A secret request may be answered with a secret provider reference. */
+  secretRequestReferences: z.boolean().optional(),
   /**
    * Folder behind the environment's Scratch project. Present only when the
    * server answers `projects.ensureScratch` and its data directory is outside

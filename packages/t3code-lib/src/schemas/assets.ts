@@ -52,6 +52,8 @@ export const AssetResource = z.discriminatedUnion("_tag", [
     _tag: z.literal(SOURCE_CONTROL_MEDIA_ASSET),
     cwd: AssetPath,
     url: TrimmedNonEmptyString.max(2048),
+    /** The change request's repository, when it differs from the checkout at `cwd`. */
+    repository: TrimmedNonEmptyString.max(512).optional(),
   }),
 ]);
 export type AssetResource = z.infer<typeof AssetResource>;

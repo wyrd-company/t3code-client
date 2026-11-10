@@ -127,6 +127,8 @@ export const ProjectScript = z.looseObject({
   runOnWorktreeCreate: z.boolean(),
   /** Run in the thread's worktree each time the thread settles. */
   runOnSettle: z.boolean().optional(),
+  /** Stop the script's terminal and child processes when its thread settles. */
+  stopOnSettle: z.boolean().optional(),
   /** Start the agent while setup runs unless explicitly disabled. */
   async: z.boolean().optional(),
   previewUrl: TrimmedNonEmptyString.optional(),

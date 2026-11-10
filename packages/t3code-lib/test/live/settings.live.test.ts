@@ -90,6 +90,16 @@ const everyShape: schemas.settingsPatch.ServerSettingsPatch = {
     },
   },
   usageModelAliases: { "sample-alias": "sample-model" },
+  fastWorktreeCheckout: false,
+  promptSuggestionsEnabled: true,
+  ghqCloneLayout: true,
+  textGenerators: {
+    [ProviderInstanceId.parse("sample-text")]: {
+      kind: "openaiCompatible",
+      baseUrl: "http://host.invalid:9/v1",
+      enabled: false,
+    },
+  },
 };
 
 describe.skipIf(!hasLiveServer)("settings methods", () => {
@@ -113,6 +123,9 @@ describe.skipIf(!hasLiveServer)("settings methods", () => {
         easDeviceHosts: [{ id: "sample-eas", idleMinutes: 5 }],
         simlockDeviceHosts: [{ id: "sample-lock" }],
         usageModelAliases: { "sample-alias": "sample-model" },
+        promptSuggestionsEnabled: true,
+        ghqCloneLayout: true,
+        textGenerators: { "sample-text": { kind: "openaiCompatible", enabled: false } },
       });
     }
   });

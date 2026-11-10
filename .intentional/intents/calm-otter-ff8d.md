@@ -1,0 +1,6 @@
+---
+t3c-docs: patch
+t3code-lib: minor
+---
+
+Field changes of T3 Code 0.1.8: `auth.pairingCredential` takes and returns `access`, which binds the code to one agent sign-in at that level. Capabilities read `fastWorktreeCheckout`, `vcsBranchStatus`, `modelCatalogRefresh`, `mcpApprovalCodes`, `freshContext` and `scheduledTaskThreadModes`; the server config reads `secretRequestReferences`. `secrets.answerRequest` takes a `reference` answer, and `SecretRequestError` reads `reference_unreadable` with its `provider`. Settings patches take `fastWorktreeCheckout`, `promptSuggestionsEnabled`, `ghqCloneLayout` and `textGenerators` (which needs `providers:manage`); removing a secret provider also needs `settings:write`. A Simlock `agentToken` takes a secret reference, and device host statuses read `incompletePlatforms`. `review.getDiffPreview` takes `sourceKind`, `trackedOnly` and `metadataOnly` and reads `patchesDeferred` and `incomplete`. Terminals and project scripts take `stopOnSettle`, `FilesystemBrowseError` reads `pathMissing`, source control media assets take `repository`, and keybindings know `composer.dictation`. Upstream removed the `cursorKeychainUsageEnabled` setting and the usage source `action`, so these are removed here.
