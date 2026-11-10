@@ -1,14 +1,14 @@
 {
-  "environmentId": "66ecafd7-99b0-421b-bcb8-a40764791a73",
+  "environmentId": "dc8eb329-6b4a-4e76-aa36-cc1ec62b73be",
   "label": "sample-environment",
   "platform": {
     "os": "linux",
     "arch": "x64",
     "machine": "desktop"
   },
-  "serverVersion": "0.1.7",
+  "serverVersion": "0.1.8",
   "orchestrationProtocolVersion": 2,
-  "databaseMigration": 79,
+  "databaseMigration": 80,
   "capabilities": {
     "repositoryIdentity": true,
     "connectionProbe": true,
@@ -20,6 +20,7 @@
     "pullRequests": true,
     "pullRequestChecks": true,
     "sideChats": true,
+    "vcsBranchStatus": true,
     "inlineMessageContext": true,
     "requiredWorktreeBootstrap": true,
     "threadSettlement": true,
@@ -40,6 +41,7 @@
     "environmentThemes": true,
     "usageLimitSources": true,
     "providerWorkspaceSnapshotsOnDemand": true,
+    "modelCatalogRefresh": true,
     "usagePriceOverrides": true,
     "usageModelAliases": true,
     "threadPinning": true,
@@ -67,7 +69,12 @@
     "peerLinks": true,
     "mcpModeLimitHeader": true,
     "linkFence": true,
+    "mcpApprovalCodes": true,
     "triage": true,
-    "oneTimeSchedules": true
+    "oneTimeSchedules": true,
+    "freshContext": true,
+    "scheduledTaskThreadModes": true,
+    "voiceTranscription": true,
+    "cloudVoiceTranscription": true
   }
 }

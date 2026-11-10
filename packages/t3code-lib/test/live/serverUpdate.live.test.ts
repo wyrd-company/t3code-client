@@ -16,7 +16,7 @@ import { startDesktopServer } from "./desktopServer.ts";
 import { hasLiveServer, refusal } from "./liveClient.ts";
 import { type PeerServer, startScratchServer, withScopes } from "./peerServer.ts";
 
-const UPDATE = { targetVersion: "0.1.7" };
+const UPDATE = { targetVersion: "0.1.8" };
 const webSocket = WsWebSocket as unknown as WebSocketConstructor;
 
 /** What a stream sends before it ends, and the failure or decode error that ends it. */

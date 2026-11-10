@@ -6,7 +6,7 @@
       "createdBy": "user",
       "creationSource": "web",
       "id": "11111111-2222-4333-8444-555555555555",
-      "projectId": "b733ce5a-e35f-415a-b0ed-45669b656dd0",
+      "projectId": "9cc8d8a7-7f8a-4663-b74c-b2bfaf2c2844",
       "title": "Example thread",
       "providerInstanceId": "codex",
       "modelSelection": {
@@ -50,8 +50,8 @@
       "goal": null,
       "itemCount": 0,
       "visibleItemCount": 0,
-      "createdAt": "2026-11-09T06:23:57.022Z",
-      "updatedAt": "2026-11-09T06:23:57.022Z",
+      "createdAt": "2026-11-10T05:54:48.913Z",
+      "updatedAt": "2026-11-10T05:54:48.913Z",
       "archivedAt": null,
       "settledOverride": null,
       "settledAt": null,
@@ -71,7 +71,7 @@
   "archivedThreads": [],
   "projects": [
     {
-      "id": "b733ce5a-e35f-415a-b0ed-45669b656dd0",
+      "id": "9cc8d8a7-7f8a-4663-b74c-b2bfaf2c2844",
       "title": "Example project",
       "workspaceRoot": "/srv/sample",
       "repositoryIdentity": null,
@@ -83,8 +83,8 @@
       "scripts": [],
       "pinnedAt": null,
       "archivedAt": null,
-      "createdAt": "2026-11-09T06:23:56.986Z",
-      "updatedAt": "2026-11-09T06:23:56.986Z"
+      "createdAt": "2026-11-10T05:54:48.885Z",
+      "updatedAt": "2026-11-10T05:54:48.885Z"
     }
   ]
 }

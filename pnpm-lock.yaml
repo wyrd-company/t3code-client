@@ -53,8 +53,8 @@ importers:
         specifier: ^9.1.3
         version: 9.1.3
       t3:
-        specifier: 0.1.7
-        version: 0.1.7
+        specifier: 0.1.8
+        version: 0.1.8
       typescript:
         specifier: 7.0.2
         version: 7.0.2
@@ -1442,8 +1442,8 @@ packages:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
     engines: {node: '>=8'}
 
-  t3@0.1.7:
-    resolution: {integrity: sha512-xYwnF28/0pYox9YkwkFKSpdaaIYFm1sVsPxsb0Z6WQobPAxbGp96EDWFkcrvEBd9vYKAceUX43txeiROeTTfNw==}
+  t3@0.1.8:
+    resolution: {integrity: sha512-d3DWllAgNVS8xQpv3R8AT7s6V8LpmnUouTb+X6jiploox2zU7NA7Q2UTQiLAqDlboBwpJ7OKxaE1f/Qnp25oqQ==}
     engines: {node: '>=20.11'}
     hasBin: true
 
@@ -2589,7 +2589,7 @@ snapshots:
     dependencies:
       has-flag: 4.0.0
 
-  t3@0.1.7: {}
+  t3@0.1.8: {}
 
   table-layout@4.1.1:
     dependencies:

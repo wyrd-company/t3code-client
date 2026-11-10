@@ -1,15 +1,15 @@
 {
   "environment": {
-    "environmentId": "66ecafd7-99b0-421b-bcb8-a40764791a73",
+    "environmentId": "dc8eb329-6b4a-4e76-aa36-cc1ec62b73be",
     "label": "sample-environment",
     "platform": {
       "os": "linux",
       "arch": "x64",
       "machine": "desktop"
     },
-    "serverVersion": "0.1.7",
+    "serverVersion": "0.1.8",
     "orchestrationProtocolVersion": 2,
-    "databaseMigration": 79,
+    "databaseMigration": 80,
     "capabilities": {
       "repositoryIdentity": true,
       "connectionProbe": true,
@@ -21,6 +21,7 @@
       "pullRequests": true,
       "pullRequestChecks": true,
       "sideChats": true,
+      "vcsBranchStatus": true,
       "inlineMessageContext": true,
       "requiredWorktreeBootstrap": true,
       "threadSettlement": true,
@@ -41,6 +42,7 @@
       "environmentThemes": true,
       "usageLimitSources": true,
       "providerWorkspaceSnapshotsOnDemand": true,
+      "modelCatalogRefresh": true,
       "usagePriceOverrides": true,
       "usageModelAliases": true,
       "threadPinning": true,
@@ -68,15 +70,20 @@
       "peerLinks": true,
       "mcpModeLimitHeader": true,
       "linkFence": true,
+      "mcpApprovalCodes": true,
       "triage": true,
-      "oneTimeSchedules": true
+      "oneTimeSchedules": true,
+      "freshContext": true,
+      "scheduledTaskThreadModes": true,
+      "voiceTranscription": true,
+      "cloudVoiceTranscription": true
     }
   },
   "auth": {
     "policy": "loopback-browser",
     "bootstrapMethods": ["one-time-token"],
     "sessionMethods": ["browser-session-cookie", "bearer-access-token", "dpop-access-token"],
-    "sessionCookieName": "t3_session_34309_ef04c1c0fff4",
+    "sessionCookieName": "t3_session_38277_10cd3e34bd97",
     "serverUpdateScope": "environment:maintain"
   },
   "cwd": "/srv/sample",
@@ -266,6 +273,24 @@
       "whenAst": {
         "type": "identifier",
         "name": "terminalFocus"
+      }
+    },
+    {
+      "command": "composer.dictation",
+      "shortcut": {
+        "key": "d",
+        "metaKey": false,
+        "ctrlKey": false,
+        "shiftKey": true,
+        "altKey": false,
+        "modKey": true
+      },
+      "whenAst": {
+        "type": "not",
+        "node": {
+          "type": "identifier",
+          "name": "terminalFocus"
+        }
       }
     },
     {
@@ -1651,7 +1676,7 @@
         "email": "user@example.test",
         "workspaceId": "00000000-0000-4000-8000-000000000001"
       },
-      "checkedAt": "2026-11-09T06:23:56.168Z",
+      "checkedAt": "2026-11-10T05:54:48.091Z",
       "models": [
         {
           "slug": "gpt-6.1-sol",
@@ -2134,13 +2159,13 @@
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-11-09T06:23:56.168Z",
+        "checkedAt": "2026-11-10T05:54:48.091Z",
         "windows": [
           {
             "id": "primary",
             "kind": "weekly",
             "label": "Weekly",
-            "usedPercent": 2,
+            "usedPercent": 3,
             "resetsAt": "2026-11-11T11:35:39.000Z",
             "windowDurationMins": 10080
           }
@@ -2181,7 +2206,7 @@
         "email": "user@example.test",
         "workspaceId": "00000000-0000-4000-8000-000000000001"
       },
-      "checkedAt": "2026-11-09T06:23:56.194Z",
+      "checkedAt": "2026-11-10T05:54:48.108Z",
       "models": [
         {
           "slug": "claude-opus-5-5",
@@ -2218,16 +2243,16 @@
                     "label": "Max"
                   },
                   {
-                    "id": "ultracode",
-                    "label": "Ultracode",
-                    "description": "xhigh effort plus multi-agent workflow orchestration"
-                  },
-                  {
                     "id": "ultrathink",
                     "label": "Ultrathink"
                   }
                 ],
                 "promptInjectedValues": ["ultrathink"]
+              },
+              {
+                "id": "ultracode",
+                "label": "Ultracode",
+                "type": "boolean"
               },
               {
                 "id": "fastMode",
@@ -2276,14 +2301,19 @@
                   }
                 ],
                 "promptInjectedValues": ["ultrathink"]
+              },
+              {
+                "id": "ultracode",
+                "label": "Ultracode",
+                "type": "boolean"
               }
             ]
           }
         },
         {
-          "slug": "claude-fable-5-1",
-          "name": "Claude Fable 5.1",
-          "aliases": ["fable", "fable-5.1", "claude-fable-5.1"],
+          "slug": "claude-fable-5-2",
+          "name": "Claude Fable 5.2",
+          "aliases": ["fable", "fable-5.2", "claude-fable-5.2"],
           "isCustom": false,
           "capabilities": {
             "optionDescriptors": [
@@ -2314,9 +2344,53 @@
                     "label": "Max"
                   },
                   {
-                    "id": "ultracode",
-                    "label": "Ultracode",
-                    "description": "xhigh effort plus multi-agent workflow orchestration"
+                    "id": "ultrathink",
+                    "label": "Ultrathink"
+                  }
+                ],
+                "promptInjectedValues": ["ultrathink"]
+              },
+              {
+                "id": "ultracode",
+                "label": "Ultracode",
+                "type": "boolean"
+              }
+            ]
+          }
+        },
+        {
+          "slug": "claude-fable-5-1",
+          "name": "Claude Fable 5.1",
+          "aliases": ["fable-5.1", "claude-fable-5.1"],
+          "isCustom": false,
+          "isLegacy": true,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "id": "effort",
+                "label": "Reasoning",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "low",
+                    "label": "Low"
+                  },
+                  {
+                    "id": "medium",
+                    "label": "Medium",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "high",
+                    "label": "High"
+                  },
+                  {
+                    "id": "xhigh",
+                    "label": "Extra High"
+                  },
+                  {
+                    "id": "max",
+                    "label": "Max"
                   },
                   {
                     "id": "ultrathink",
@@ -2324,6 +2398,11 @@
                   }
                 ],
                 "promptInjectedValues": ["ultrathink"]
+              },
+              {
+                "id": "ultracode",
+                "label": "Ultracode",
+                "type": "boolean"
               }
             ]
           }
@@ -2362,16 +2441,16 @@
                     "label": "Max"
                   },
                   {
-                    "id": "ultracode",
-                    "label": "Ultracode",
-                    "description": "xhigh effort plus multi-agent workflow orchestration"
-                  },
-                  {
                     "id": "ultrathink",
                     "label": "Ultrathink"
                   }
                 ],
                 "promptInjectedValues": ["ultrathink"]
+              },
+              {
+                "id": "ultracode",
+                "label": "Ultracode",
+                "type": "boolean"
               }
             ]
           }
@@ -2411,16 +2490,16 @@
                     "label": "Max"
                   },
                   {
-                    "id": "ultracode",
-                    "label": "Ultracode",
-                    "description": "xhigh effort plus multi-agent workflow orchestration"
-                  },
-                  {
                     "id": "ultrathink",
                     "label": "Ultrathink"
                   }
                 ],
                 "promptInjectedValues": ["ultrathink"]
+              },
+              {
+                "id": "ultracode",
+                "label": "Ultracode",
+                "type": "boolean"
               },
               {
                 "id": "fastMode",
@@ -2465,16 +2544,16 @@
                     "label": "Max"
                   },
                   {
-                    "id": "ultracode",
-                    "label": "Ultracode",
-                    "description": "xhigh effort plus multi-agent workflow orchestration"
-                  },
-                  {
                     "id": "ultrathink",
                     "label": "Ultrathink"
                   }
                 ],
                 "promptInjectedValues": ["ultrathink"]
+              },
+              {
+                "id": "ultracode",
+                "label": "Ultracode",
+                "type": "boolean"
               },
               {
                 "id": "fastMode",
@@ -2772,6 +2851,11 @@
                   }
                 ],
                 "promptInjectedValues": ["ultrathink"]
+              },
+              {
+                "id": "ultracode",
+                "label": "Ultracode",
+                "type": "boolean"
               }
             ]
           }
@@ -2797,14 +2881,14 @@
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-11-09T06:23:56.526Z",
+        "checkedAt": "2026-11-10T05:54:48.438Z",
         "windows": [
           {
             "id": "seven_day",
             "kind": "weekly",
             "label": "Weekly",
-            "usedPercent": 7,
-            "resetsAt": "2026-11-11T16:59:59.646Z",
+            "usedPercent": 11,
+            "resetsAt": "2026-11-11T16:59:59.582Z",
             "windowDurationMins": 10080
           },
           {
@@ -2815,21 +2899,15 @@
             "resetsAt": "2026-11-11T17:00:00.000Z",
             "windowDurationMins": 10080
           }
-        ]
-      },
-      "versionAdvisory": {
-        "status": "current",
-        "currentVersion": "2.1.319",
-        "latestVersion": "2.1.319",
-        "updateCommand": "/home/sample/.local/bin/claude update",
-        "canUpdate": true,
-        "canInstallVersion": false,
-        "checkedAt": "2026-11-09T06:23:56.979Z",
-        "message": null
+        ],
+        "resetCredits": {
+          "availableCount": 2,
+          "nextExpiresAt": "2027-03-09T07:59:00.000Z",
+          "nextCreditId": "launch-2610-fable"
+        }
       },
       "compatibilityAdvisory": {
         "status": "supported",
-        "latestVersionStatus": "supported",
         "message": null,
         "recommendedVersion": null,
         "recommendedRange": ">=2.1.301"
@@ -2856,7 +2934,7 @@
         "status": "unknown",
         "canLogout": true
       },
-      "checkedAt": "2026-11-09T06:23:56.209Z",
+      "checkedAt": "2026-11-10T05:54:48.120Z",
       "message": "Cursor is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -2883,7 +2961,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-09T06:23:56.207Z",
+      "checkedAt": "2026-11-10T05:54:48.119Z",
       "message": "Grok is disabled in T3 Code settings.",
       "models": [
         {
@@ -2917,13 +2995,13 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-09T06:23:56.208Z",
+      "checkedAt": "2026-11-10T05:54:48.119Z",
       "message": "OpenCode is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-11-09T06:23:56.208Z",
+        "checkedAt": "2026-11-10T05:54:48.120Z",
         "windows": [],
         "unavailable": {
           "reason": "unsupported"
@@ -2953,7 +3031,7 @@
         "status": "unknown",
         "type": "oauth-personal"
       },
-      "checkedAt": "2026-11-09T06:23:56.211Z",
+      "checkedAt": "2026-11-10T05:54:48.121Z",
       "message": "Antigravity is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -2981,7 +3059,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-09T06:23:56.208Z",
+      "checkedAt": "2026-11-10T05:54:48.119Z",
       "message": "fx is disabled in T3 Code settings.",
       "models": [
         {
@@ -3036,7 +3114,7 @@
         "updateCommand": null,
         "canUpdate": false,
         "canInstallVersion": false,
-        "checkedAt": "2026-11-09T06:23:56.208Z",
+        "checkedAt": "2026-11-10T05:54:48.119Z",
         "message": null
       }
     },
@@ -3060,7 +3138,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-09T06:23:56.217Z",
+      "checkedAt": "2026-11-10T05:54:48.126Z",
       "message": "Kiro is disabled in T3 Code settings.",
       "models": [
         {
@@ -3081,7 +3159,7 @@
         "updateCommand": null,
         "canUpdate": false,
         "canInstallVersion": false,
-        "checkedAt": "2026-11-09T06:23:56.217Z",
+        "checkedAt": "2026-11-10T05:54:48.126Z",
         "message": null
       }
     },
@@ -3106,7 +3184,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-09T06:23:56.217Z",
+      "checkedAt": "2026-11-10T05:54:48.127Z",
       "message": "Muse Code is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -3133,7 +3211,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-09T06:23:56.217Z",
+      "checkedAt": "2026-11-10T05:54:48.126Z",
       "message": "Pi is disabled in T3 Code settings.",
       "models": [
         {
@@ -3174,11 +3252,22 @@
       "logsAfterDays": null
     },
     "worktreesDirectory": "",
+    "fastWorktreeCheckout": false,
     "previousWorktreesDirectories": [],
     "responseStreamingMode": "paragraph",
     "enableProviderUpdateChecks": true,
     "continueThreadsAfterServerUpdate": true,
     "enableAgentBrowserAccess": true,
+    "cloudSpeechCredentials": {
+      "openai": "",
+      "xai": "",
+      "openrouter": ""
+    },
+    "speechModelId": "handy-computer/parakeet-unified-en-0.6b-gguf",
+    "speechAcceleration": "auto",
+    "speechModelUnloadTimeout": "min_15",
+    "speechProjectCustomWords": [],
+    "speechPostProcessingModelSelection": null,
     "projectAgentBrowserAccessOverrides": {},
     "defaultAutoPull": false,
     "defaultProjectScripts": [],
@@ -3196,7 +3285,7 @@
     "easDeviceHosts": [],
     "simlockDeviceHosts": [],
     "simlockDeviceHostsEnabled": false,
-    "sidebarAutoSettleAfterDays": 3,
+    "sidebarAutoSettleAfterDays": 7,
     "compactIdleThreads": false,
     "idleCompaction": "onReturn",
     "snoozeLimitedThreads": false,
@@ -3230,6 +3319,7 @@
     "hideTaggedThreads": false,
     "guestSharingEnabled": false,
     "linkedEnvironmentsEnabled": false,
+    "promptSuggestionsEnabled": false,
     "sidebarAutoSettleKeepPullRequests": false,
     "sidebarAutoSettleOnMerge": true,
     "backgroundActivity": {
@@ -3246,6 +3336,7 @@
     "newWorktreesStartFromOrigin": true,
     "worktreeSubmodules": null,
     "addProjectBaseDirectory": "",
+    "ghqCloneLayout": false,
     "textGenerationModelSelection": {
       "instanceId": "codex",
       "model": "gpt-6-luna",
@@ -3279,13 +3370,14 @@
     },
     "sourceControlHosts": {},
     "usageLimitSources": {},
+    "textGenerators": {},
     "secretProviders": {},
-    "cursorKeychainUsageEnabled": false,
     "usagePriceOverrides": {},
     "usageModelAliases": {}
   },
   "shellResumeCompletionMarker": true,
   "shellThreadFamilies": true,
+  "threadLinkMetadata": true,
   "shellOlderSettled": true,
   "threadResumeCompletionMarker": true,
   "threadSnapshotPagination": true,
@@ -3293,6 +3385,7 @@
   "threadFindProgressive": true,
   "secretProviderSettings": true,
   "secretReferences": true,
+  "secretRequestReferences": true,
   "scratchWorkspaceRoot": "/home/sample/.t3/scratch",
   "newProjectsRoot": "/home/sample/.t3/projects"
 }

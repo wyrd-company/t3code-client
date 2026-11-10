@@ -39,7 +39,7 @@ Application code must not spawn CLIs. The CLI composes the library and does
 not implement wire protocol. Only build/test tools may spawn the test server.
 CLI command behavior is defined by `docs/specifications/command-line.yml`; canonical
 architecture is in `docs/technical-designs/`.
-The pinned `t3` devDependency is 0.1.7; runtime code must not enforce a pinned
+The pinned `t3` devDependency is 0.1.8; runtime code must not enforce a pinned
 server version. Preserve protocol 2 and the supported upstream capabilities.
 
 Use `intentional add` for consumer changes; maintain the package's single

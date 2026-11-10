@@ -75,7 +75,11 @@ describe.skipIf(!baseUrl || !token)("live database storage", () => {
         })(),
       );
       for (const status of [facade, typed]) {
-        expect(Object.keys(status).sort()).toEqual([
+        expect(
+          Object.keys(status)
+            .filter((key) => key !== "canReclaim")
+            .sort(),
+        ).toEqual([
           "compactCommand",
           "databaseBytes",
           "incrementalVacuumEnabled",

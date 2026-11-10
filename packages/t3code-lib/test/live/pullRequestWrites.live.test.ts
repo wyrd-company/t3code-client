@@ -39,10 +39,12 @@ describe.skipIf(!hasLiveServer)("pull request writes with a local forge stub", (
       body: "Sample rewrite",
     });
     await client.rpc.call("pullRequests.update", { ...ref, title: "Sample title", body: "" });
+    await client.rpc.call("pullRequests.update", { ...ref, maintainerCanModify: true });
     await expect(peer.takeForgeCalls()).resolves.toEqual([
       { method: "POST", path: `${mergeRequest}/notes`, body: { body: "Sample comment\n" } },
       { method: "PUT", path: `${mergeRequest}/notes/51`, body: { body: "Sample rewrite" } },
       { method: "PUT", path: mergeRequest, body: { title: "Sample title", description: "" } },
+      { method: "PUT", path: mergeRequest, body: { allow_collaboration: true } },
     ]);
   });
 
@@ -50,9 +52,6 @@ describe.skipIf(!hasLiveServer)("pull request writes with a local forge stub", (
     await expect(
       refusal(client.rpc.call("pullRequests.comment", { ...ref, body: "  " })),
     ).resolves.toMatchObject({ _tag: "PullRequestOperationError", operation: "comment" });
-    await expect(
-      refusal(client.rpc.call("pullRequests.update", { ...ref, maintainerCanModify: true })),
-    ).resolves.toMatchObject({ _tag: "PullRequestOperationError", operation: "update" });
     await expect(refusal(client.rpc.call("pullRequests.update", ref))).resolves.toMatchObject({
       _tag: "PullRequestOperationError",
       detail: "Nothing was changed.",

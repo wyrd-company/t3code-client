@@ -258,7 +258,7 @@ it("keeps credential-file I/O local at the client boundary and version verdict i
   } finally {
     await invocation.close();
   }
-  expect(["0.1.7", "0.2.0", "0.0.1", "0.1.7-nightly.1", "custom"].map(versionVerdict)).toEqual([
+  expect(["0.1.8", "0.2.0", "0.0.1", "0.1.8-nightly.1", "custom"].map(versionVerdict)).toEqual([
     "match",
     "newer",
     "older",
