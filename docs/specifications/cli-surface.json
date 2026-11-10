@@ -1460,6 +1460,16 @@
               }
             },
             {
+              "name": "thread-mode",
+              "flags": ["--thread-mode"],
+              "kind": "option",
+              "description": "Where runs go: new_thread starts a thread per run; continue and fresh_session keep one thread, and fresh_session starts each later run in a new provider session.",
+              "value": {
+                "type": "enum",
+                "values": ["new_thread", "continue", "fresh_session"]
+              }
+            },
+            {
               "name": "provider",
               "flags": ["--provider"],
               "kind": "option",
@@ -1718,7 +1728,18 @@
               "flags": ["--new-thread"],
               "kind": "flag",
               "description": "Start a new thread for every run.",
-              "conflicts-with": ["thread"]
+              "conflicts-with": ["thread", "thread-mode"]
+            },
+            {
+              "name": "thread-mode",
+              "flags": ["--thread-mode"],
+              "kind": "option",
+              "description": "Where runs go: new_thread starts a thread per run; continue and fresh_session keep one thread, and fresh_session starts each later run in a new provider session.",
+              "value": {
+                "type": "enum",
+                "values": ["new_thread", "continue", "fresh_session"]
+              },
+              "conflicts-with": ["new-thread"]
             },
             {
               "name": "provider",

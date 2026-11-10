@@ -116,3 +116,25 @@ it("propagates read authorization and connection failures without saving", async
   expect((await run(["update", task.id, "--thread", "thread-sample"])).code).toBe(8);
   expect(client.scheduledTasks.upsert).not.toHaveBeenCalled();
 });
+
+it("sends a selected thread mode and refuses one that contradicts the thread", async () => {
+  expect((await run([...create, "--thread-mode", "fresh_session"])).code).toBe(0);
+  expect(vi.mocked(client.scheduledTasks.upsert).mock.lastCall?.[0]).toMatchObject({
+    threadMode: "fresh_session",
+  });
+  const bound = { ...task, threadId: schemas.common.threadId("thread-sample") };
+  vi.mocked(client.scheduledTasks.list).mockResolvedValue([bound]);
+  expect((await run(["update", task.id, "--thread-mode", "new_thread"])).code).toBe(0);
+  expect(vi.mocked(client.scheduledTasks.upsert).mock.lastCall?.[0]).toMatchObject({
+    threadId: "thread-sample",
+    threadMode: "new_thread",
+  });
+  vi.mocked(client.scheduledTasks.upsert).mockClear();
+  for (const args of [
+    [...create, "--thread", "thread-sample", "--thread-mode", "new_thread"],
+    ["update", task.id, "--new-thread", "--thread-mode", "continue"],
+    ["update", task.id, "--thread-mode", "sometimes"],
+  ])
+    expect((await run(args)).code, args.join(" ")).toBe(2);
+  expect(client.scheduledTasks.upsert).not.toHaveBeenCalled();
+});

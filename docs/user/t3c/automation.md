@@ -89,7 +89,7 @@ Execution selections apply to create and update:
 | Selection         | Options                                                                                                         |
 | ----------------- | --------------------------------------------------------------------------------------------------------------- |
 | Project           | `--project <id>` or `--project-path <directory>`                                                                |
-| Target            | `--thread <id>`; update also accepts `--new-thread` to create a thread per run                                  |
+| Target            | `--thread <id>`; `--thread-mode <mode>`; update also accepts `--new-thread`                                     |
 | Model             | `--provider <exact-instance-id>`, `--model <slug-or-alias>`                                                     |
 | Model options     | Repeat `--model-option key=value`; `--clear-model-options` starts empty                                         |
 | Modes             | `--mode <runtime-mode>`, `--interaction-mode <mode>`                                                            |
@@ -101,7 +101,15 @@ Model options use the selected model's advertised boolean and select choices.
 Explicit entries override inherited entries. On update, option flags use the
 stored model unless a provider or model selection changes it. A new worktree's
 base ref defaults to `HEAD`; an omitted start-from-origin value stays omitted.
-JSON `threadId: null` also selects a new thread per run. JSON objects use the
+Thread modes are `new_thread`, a thread per run; `continue`, one thread that
+keeps its context; and `fresh_session`, one thread that starts each later run in
+a new provider session. A one-thread task without `--thread` creates its thread
+on the first run. Without a mode, a bound thread selects `continue` and no thread
+selects `new_thread`. Update keeps the stored mode, but a thread bound to a
+`new_thread` task selects `continue`. `--new-thread` and JSON
+`threadId: null` select `new_thread`. `new_thread` with a thread exits `2`.
+`schedule show` prints the mode and the thread, or `-` before the first run.
+JSON input accepts `threadMode`. JSON objects use the
 library's `workspaceStrategy` and `modelSelection` types.
 
 ## Webhook endpoints and deliveries

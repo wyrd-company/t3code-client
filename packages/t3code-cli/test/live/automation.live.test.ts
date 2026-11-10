@@ -143,6 +143,13 @@ it("creates, reads, updates, enables, disables and deletes a task through the ex
     prompt: "Summarize the sample notes.",
     schedule: { type: "fixed_time", timeOfDay: "03:15", weekdays: [0] },
   });
+  expect((await cli(["schedule", "show", id])).stdout).toContain("thread\tnew_thread\t-\n");
+  const fresh = await json(["schedule", "update", id, "--thread-mode", "fresh_session"]);
+  expect(fresh.data).toMatchObject({ threadMode: "fresh_session", threadId: null });
+  expect((await cli(["schedule", "show", id])).stdout).toContain("thread\tfresh_session\t-\n");
+  expect((await json(["schedule", "update", id, "--new-thread"])).data.threadMode).toBe(
+    "new_thread",
+  );
   // Enabling an hourly interval leaves its next trigger in the future.
   await json(["schedule", "update", id, "--every", "1h"]);
   expect((await json(["schedule", "enable", id])).data.enabled).toBe(true);

@@ -62,6 +62,11 @@ function workspace(task: ScheduledTask): string {
   }
 }
 
+/** A task from a server before thread modes continues its bound thread. */
+function threadMode(task: ScheduledTask): string {
+  return task.threadMode ?? (task.threadId === null ? "new_thread" : "continue");
+}
+
 export function taskLine(task: ScheduledTask): string {
   return [
     task.id,
@@ -79,7 +84,7 @@ export function taskText(task: ScheduledTask): string {
     `state\t${task.enabled ? "enabled" : "disabled"}`,
     `trigger\t${triggerDetail(task)}`,
     `project\t${task.projectId}`,
-    `thread\t${task.threadId ?? "new per run"}`,
+    `thread\t${threadMode(task)}\t${task.threadId ?? "-"}`,
     `model\t${task.modelSelection.instanceId}\t${task.modelSelection.model}`,
     `options\t${JSON.stringify(task.modelSelection.options ?? [])}`,
     `modes\t${task.runtimeMode}\t${task.interactionMode}`,

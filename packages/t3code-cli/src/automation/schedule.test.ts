@@ -45,6 +45,11 @@ it("lists and shows tasks with JSON envelopes and concise text", async () => {
   // The URL token stays out of show text.
   expect(shown.stdout).not.toContain("sample-token");
   expect((await run(["show", interval.id], false)).stdout).toContain("trigger\tinterval\t1h\n");
+  expect((await run(["show", interval.id], false)).stdout).toContain("thread\tnew_thread\t-\n");
+  const fresh = { ...interval, threadMode: "fresh_session" };
+  vi.spyOn(client.scheduledTasks, "get").mockResolvedValueOnce(fresh as ScheduledTask);
+  // A one-thread task before its first run has no thread yet.
+  expect((await run(["show", interval.id], false)).stdout).toContain("thread\tfresh_session\t-\n");
   const once = { ...interval, schedule: { type: "once", runAt: "2030-01-31T07:30:00.000Z" } };
   vi.spyOn(client.scheduledTasks, "get").mockResolvedValueOnce(once as ScheduledTask);
   expect((await run(["show", interval.id], false)).stdout).toContain(

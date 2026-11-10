@@ -28,6 +28,7 @@ export const SCHEDULE_INPUT_KEYS = [
   "schedule",
   "projectId",
   "threadId",
+  "threadMode",
   "workspaceStrategy",
   "modelSelection",
   "runtimeMode",
@@ -60,6 +61,7 @@ const STRING_OPTIONS = [
   "project",
   "projectPath",
   "thread",
+  "threadMode",
   "provider",
   "model",
   "mode",
@@ -101,6 +103,8 @@ export async function readScheduleDraft(
       checkedField(key as InputKey, value),
     ]),
   ) as ScheduleFields;
+  if (merged.threadMode === "new_thread" && typeof merged.threadId === "string")
+    throw new T3PreconditionError("Thread mode new_thread cannot bind a thread.");
   return {
     fields: merged,
     ...(text("projectPath") === undefined ? {} : { projectPath: text("projectPath")! }),
@@ -152,6 +156,10 @@ function flagFields(options: Record<string, unknown>): ScheduleFields {
     throw new T3PreconditionError("Choose --thread or --new-thread.");
   if (text("thread") !== undefined) fields.threadId = threadId(text("thread")!);
   if (options["newThread"] === true) fields.threadId = null;
+  if (text("threadMode") !== undefined && options["newThread"] === true)
+    throw new T3PreconditionError("Choose --thread-mode or --new-thread.");
+  if (text("threadMode") !== undefined)
+    fields.threadMode = text("threadMode") as ScheduleFields["threadMode"];
   if (text("mode") !== undefined) fields.runtimeMode = text("mode")!;
   if (text("interactionMode") !== undefined) fields.interactionMode = text("interactionMode")!;
   const workspace = flagWorkspace(options);

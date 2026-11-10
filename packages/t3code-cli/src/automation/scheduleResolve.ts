@@ -80,6 +80,7 @@ export async function resolveCreate(
     schedule: fields.schedule!,
     projectId: project.id,
     ...(fields.threadId === undefined ? {} : { threadId: fields.threadId }),
+    ...(fields.threadMode === undefined ? {} : { threadMode: fields.threadMode }),
     workspaceStrategy: (await resolveWorkspace(client, project, fields.workspaceStrategy)) ?? {
       type: "root",
     },
