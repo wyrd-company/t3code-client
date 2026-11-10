@@ -30,6 +30,9 @@ export const VcsWorktree = z.looseObject({
 export type VcsWorktree = z.infer<typeof VcsWorktree>;
 export const VcsStatusInput = z.looseObject({ cwd: TrimmedNonEmptyString });
 export type VcsStatusInput = z.infer<typeof VcsStatusInput>;
+/** The checked-out branch of a working tree; null when HEAD is detached or there is no repository. */
+export const VcsBranchStatus = z.looseObject({ refName: z.string().nullable() });
+export type VcsBranchStatus = z.infer<typeof VcsBranchStatus>;
 export const VcsStatusSubscriptionInput = z.looseObject({
   cwd: TrimmedNonEmptyString,
   /** A passive observer gets cached remote status and keeps no refresh loop alive. */

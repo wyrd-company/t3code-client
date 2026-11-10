@@ -51,6 +51,8 @@ export interface StartTurnInput {
   /** Sets the thread's mode before the message is sent. */
   readonly interactionMode?: ProviderInteractionMode;
   readonly titleSeed?: string;
+  /** Starts a new provider session without the thread's earlier context. The message never steers. */
+  readonly freshContext?: boolean;
   /** Defaults to `auto`. */
   readonly delivery?: TurnDelivery;
   readonly origin?: CreationOrigin;

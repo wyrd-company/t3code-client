@@ -25,6 +25,17 @@ does not list the thread). `threads.usage(id)` returns provider-thread context
 usage and provider-turn usage with their owning ids; absent usage stays absent.
 `threads.diff(id, range?)` diffs the whole thread through the latest completed
 checkpoint, or the exact `{ fromTurnCount, toTurnCount }` range.
+`orchestration.getThreadTitles` takes `threadIds` and returns the titles of the
+threads that exist, archived ones included, keyed by id. Unknown and deleted ids
+are absent. On a server that advertises `threadLinkMetadata`,
+`orchestration.getThreadLinkMetadata` returns `{ title, projectId }` the same way.
+`orchestration.subscribePromptSuggestion` streams the predicted next prompt of a
+thread, `{ runId, text }` or `null` when there is none.
+
+```ts
+const titles = await client.rpc.call("orchestration.getThreadTitles", { threadIds: [threadId] });
+```
+
 `threads.search({ query, limit? })` returns at most `limit` (default and maximum 50) threads, one match each, and reports the limit. `threads.searchContent(input)`
 is the server's within-thread find.
 
@@ -60,7 +71,14 @@ to resume from a sequence you stored.
 
 `startTurn` takes `delivery`: `auto` (default) lets the server steer or queue
 the message when a run is active, `steer` and `restart` target the active
-run, `queue` waits behind it, and `start` insists on a new run.
+run, `queue` waits behind it, and `start` insists on a new run. `freshContext:
+true` starts a new provider session without the thread's earlier context. The
+earlier runs stay visible, and the message never steers. The run and its user
+message report `freshContext`.
+
+A `thread.settle` command can carry `expectedLatestRunId`. The server then
+refuses the settle with `OrchestrationV2DispatchCommandError` when the thread's
+latest run is a different one.
 
 ## Stop and queue controls
 

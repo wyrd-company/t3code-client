@@ -148,3 +148,11 @@ export function isProviderNativeSubagentThread(
 ): boolean {
   return thread.lineage.relationshipToParent === "subagent" && thread.creationSource === "provider";
 }
+
+/** A thread another agent drives: a local subagent or a task delegated from a linked environment. */
+export function isDelegatedAppThread(
+  thread: Pick<OrchestrationV2AppThread, "lineage" | "delegatedFrom">,
+): boolean {
+  // MCP-launched threads store `delegatedFrom: null`, so both absent shapes count.
+  return thread.lineage.relationshipToParent === "subagent" || thread.delegatedFrom != null;
+}

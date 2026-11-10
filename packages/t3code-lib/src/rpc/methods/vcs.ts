@@ -15,6 +15,8 @@ import {
   VcsPullResult,
   VcsRemoveWorktreeInput,
   VcsRefreshStatusInput,
+  VcsBranchStatus,
+  VcsStatusInput,
   VcsStatusSubscriptionInput,
   VcsStatusResult,
   VcsStatusStreamEvent,
@@ -81,6 +83,18 @@ export const vcsMethods = {
     payload: VcsStatusSubscriptionInput,
     success: VcsStatusStreamEvent,
     stream: true,
+    scope: "orchestration:read",
+  }),
+  subscribeVcsBranch: defineMethod({
+    payload: VcsStatusInput,
+    success: VcsBranchStatus,
+    stream: true,
+    scope: "orchestration:read",
+  }),
+  "vcs.refreshBranch": defineMethod({
+    payload: VcsStatusInput,
+    success: VoidSuccess,
+    stream: false,
     scope: "orchestration:read",
   }),
   subscribeWorktreeSetup: defineMethod({

@@ -24,6 +24,13 @@ import {
   OrchestrationV2WorktreeThreadIds,
 } from "../../schemas/orchestration/shellOmittedRows.ts";
 import {
+  OrchestrationV2GetThreadTitlesInput,
+  OrchestrationV2PromptSuggestion,
+  OrchestrationV2SubscribePromptSuggestionInput,
+  OrchestrationV2ThreadLinkMetadataMap,
+  OrchestrationV2ThreadTitles,
+} from "../../schemas/orchestration/threadReads.ts";
+import {
   OrchestrationGetFullThreadDiffInput,
   OrchestrationGetFullThreadDiffResult,
   OrchestrationGetTurnDiffInput,
@@ -151,6 +158,18 @@ export const orchestrationMethods = {
     stream: false,
     scope: read,
   }),
+  "orchestration.getThreadTitles": defineMethod({
+    payload: OrchestrationV2GetThreadTitlesInput,
+    success: OrchestrationV2ThreadTitles,
+    stream: false,
+    scope: read,
+  }),
+  "orchestration.getThreadLinkMetadata": defineMethod({
+    payload: OrchestrationV2GetThreadTitlesInput,
+    success: OrchestrationV2ThreadLinkMetadataMap,
+    stream: false,
+    scope: read,
+  }),
   "orchestration.getWorktreeThreadIds": defineMethod({
     payload: OrchestrationV2GetWorktreeThreadIdsInput,
     success: OrchestrationV2WorktreeThreadIds,
@@ -179,6 +198,12 @@ export const orchestrationMethods = {
   "orchestration.subscribeCommandOutput": defineMethod({
     payload: OrchestrationV2SubscribeCommandOutputInput,
     success: OrchestrationV2CommandOutputFrame,
+    stream: true,
+    scope: read,
+  }),
+  "orchestration.subscribePromptSuggestion": defineMethod({
+    payload: OrchestrationV2SubscribePromptSuggestionInput,
+    success: OrchestrationV2PromptSuggestion,
     stream: true,
     scope: read,
   }),

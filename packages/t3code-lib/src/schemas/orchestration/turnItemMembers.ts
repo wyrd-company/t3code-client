@@ -82,6 +82,7 @@ export const OrchestrationV2TurnItemMembers = [
     senderThreadId: ThreadId.optional(),
     idleCompaction: OrchestrationV2IdleCompaction.optional(),
     workflowScript: z.boolean().optional(),
+    freshContext: z.boolean().optional(),
     inputIntent: OrchestrationV2UserMessageInputIntent,
     text: z.string(),
     context: OrchestrationMessageContext.optional(),
@@ -247,6 +248,7 @@ export const OrchestrationV2TurnItemMembers = [
     type: z.literal("secret_request"),
     label: TrimmedNonEmptyString,
     reason: z.string(),
+    url: z.string().optional(),
     placeholder: z.string().optional(),
     secretStatus: OrchestrationV2SecretRequestStatus,
     /** The agent asked for the secret as a file. */

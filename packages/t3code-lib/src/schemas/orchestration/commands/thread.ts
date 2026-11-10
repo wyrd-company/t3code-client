@@ -11,6 +11,7 @@ import {
   ProjectId,
   ProviderDriverKind,
   ProviderSessionId,
+  RunId,
   ThreadId,
   TrimmedNonEmptyString,
 } from "../../common.ts";
@@ -85,6 +86,8 @@ export const ThreadGuestMessageDismissCommand = z.looseObject({
 export const ThreadSettleCommand = z.looseObject({
   type: z.literal("thread.settle"),
   ...stamped,
+  /** The server refuses the settle when a newer run started. */
+  expectedLatestRunId: RunId.optional(),
   settledAt: IsoDateTime.optional(),
 });
 /** Server-internal settlement by the sweep; listed because the union carries it. */

@@ -162,7 +162,7 @@ export class ShellApi {
               if (!isKnownVariant(value)) continue;
               if (value.kind === "snapshot") {
                 afterSequence = Math.max(afterSequence ?? 0, value.snapshot.snapshotSequence);
-              } else if (value.kind !== "synchronized") {
+              } else if (value.kind !== "synchronized" && value.kind !== "snapshot-required") {
                 if (afterSequence !== undefined && value.sequence <= afterSequence) continue;
                 afterSequence = value.sequence;
               }

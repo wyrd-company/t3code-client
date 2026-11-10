@@ -166,6 +166,8 @@ export const ServerConfig = z.looseObject({
    * `orchestration.getThreadFamily` and `orchestration.getWorktreeThreadIds` serve those rows.
    */
   shellThreadFamilies: z.boolean().optional(),
+  /** The server answers `orchestration.getThreadLinkMetadata`. */
+  threadLinkMetadata: z.boolean().optional(),
   /**
    * The shell can leave older settled threads out of snapshots, and
    * `orchestration.getOlderSettledThreads` serves them.

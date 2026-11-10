@@ -206,6 +206,11 @@ export type OrchestrationV2ShellSnapshot = z.infer<typeof OrchestrationV2ShellSn
 
 export const OrchestrationV2ShellStreamItem = taggedUnionWithUnknown("kind", [
   z.looseObject({ kind: z.literal("synchronized") }),
+  /**
+   * The only item of a resume the server cannot replay when the client asked for
+   * `httpSnapshotFallback`: load the HTTP snapshot and subscribe again from its cursor.
+   */
+  z.looseObject({ kind: z.literal("snapshot-required") }),
   z.looseObject({
     kind: z.literal("snapshot"),
     snapshot: OrchestrationV2ShellSnapshot,
@@ -240,6 +245,11 @@ export const OrchestrationV2SubscribeShellInput = z.looseObject({
   /** Skip the initial snapshot and replay shell events after this sequence. */
   afterSequence: NonNegativeInt.optional(),
   /** Requests a `synchronized` marker between catch-up and live delivery. */
+  /**
+   * With `afterSequence`, a gap the server cannot replay answers `snapshot-required`
+   * instead of a socket snapshot.
+   */
+  httpSnapshotFallback: z.literal(true).optional(),
   requestCompletionMarker: z.boolean().optional(),
   /**
    * Snapshots leave out idle subagent children; read them with `orchestration.getThreadFamily`.

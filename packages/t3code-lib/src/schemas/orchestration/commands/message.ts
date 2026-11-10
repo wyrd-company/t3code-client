@@ -58,6 +58,8 @@ export const MessageDispatchCommand = z.looseObject({
   scheduledTaskId: ScheduledTaskId.optional(),
   senderThreadId: ThreadId.optional(),
   idleCompaction: OrchestrationV2IdleCompaction.optional(),
+  /** Start a new provider session without the thread's earlier context. Never steers. */
+  freshContext: z.boolean().optional(),
   ...stamped,
   messageId: MessageId,
   text: z.string(),

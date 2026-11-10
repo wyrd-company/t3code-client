@@ -38,6 +38,8 @@ export const OrchestrationV2RemoteTaskChild = z.looseObject({
   environmentId: EnvironmentId,
   threadId: ThreadId,
   label: z.string(),
+  /** The title it launched with there; absent on tasks recorded before it was kept. */
+  title: z.string().optional(),
   runId: RunId.optional(),
   stoppedThere: z.boolean().optional(),
   stopCount: NonNegativeInt.optional(),

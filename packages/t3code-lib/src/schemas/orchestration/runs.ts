@@ -161,6 +161,7 @@ export const OrchestrationV2Run = z.looseObject({
   checkpointId: CheckpointId.nullable(),
   contextHandoffId: ContextHandoffId.nullable(),
   restartContinuationOfRunId: RunId.optional(),
+  usageLimitContinuationOfRunId: RunId.optional(),
   /** The delegated task this run answers, including a follow-up in an existing child thread. */
   delegatedTaskId: NodeId.optional(),
   /** When the work a wake run continues started; read it through `runWorkStartedAt`. */
@@ -169,6 +170,8 @@ export const OrchestrationV2Run = z.looseObject({
   sourcePlanRef: z.looseObject({ threadId: ThreadId, planId: PlanId }).optional(),
   delegatedCompletion: OrchestrationV2DelegatedCompletionCohort.optional(),
   workspacePreparation: OrchestrationV2WorkspacePreparation.optional(),
+  /** Starts a new provider conversation; earlier runs stay visible but never reach the provider. */
+  freshContext: z.boolean().optional(),
 });
 export type OrchestrationV2Run = z.infer<typeof OrchestrationV2Run>;
 

@@ -75,6 +75,11 @@ const { commits } = await client.rpc.call("review.getBranchCommits", { cwd, base
 const { sources } = await client.rpc.call("review.getDiffPreview", { cwd, baseRef: "main" });
 ```
 
+`subscribeVcsBranch` streams the checked-out branch of `cwd` as `{ refName }`,
+`null` when HEAD is detached. It sends the current branch first and then each
+change. `vcs.refreshBranch` reads the branch again and publishes a change to the
+open streams. Both need `orchestration:read`.
+
 `terminal.observe` follows a terminal with only `terminal:read`, and it cannot
 start one. `subscribeTerminalMetadata` lists every terminal and then follows them.
 

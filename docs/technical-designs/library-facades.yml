@@ -95,7 +95,7 @@ proposed-design:
     }
 
     export interface StartTurnInput { threadId: ThreadId; text: string; attachments?: ChatAttachment[]; context?: OrchestrationMessageContext;
-      modelSelection?: ModelSelection; runtimeMode?: RuntimeMode; interactionMode?: ProviderInteractionMode; titleSeed?: string;
+      modelSelection?: ModelSelection; runtimeMode?: RuntimeMode; interactionMode?: ProviderInteractionMode; titleSeed?: string; freshContext?: boolean;
       delivery?: "auto" | "steer" | "restart" | "queue" | "start"; origin?: CreationOrigin; signal?: AbortSignal }
 
     export interface TurnHandle {
@@ -130,7 +130,8 @@ proposed-design:
     `restart` ask for `start_immediately` with that `deliveryIntent`, so the
     server resolves the mode against its own state; `queue` asks for
     `queue_after_active`; `start` asks for `start_immediately` without an
-    intent.
+    intent. `freshContext` starts a new provider session without the thread's
+    earlier context; the server never steers such a message.
 
     `watch` subscribes with `orchestration.subscribeThread`; on socket loss it
     resubscribes with `afterSequence` set to the last sequence seen and emits

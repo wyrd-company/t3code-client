@@ -41,6 +41,16 @@ export const OrchestrationV2ProviderSession = z.looseObject({
   cwd: TrimmedNonEmptyString,
   model: TrimmedNonEmptyString.nullable(),
   capabilities: OrchestrationV2ProviderCapabilities,
+  /** Status lines the provider's extensions report; read as empty when absent. */
+  extensionStatuses: z
+    .array(
+      z.looseObject({
+        key: z.string().min(1).max(256),
+        text: TrimmedNonEmptyString.max(4096),
+      }),
+    )
+    .max(32)
+    .default([]),
   createdAt: IsoDateTime,
   updatedAt: IsoDateTime,
   lastError: z.string().nullable(),
@@ -187,6 +197,8 @@ export const OrchestrationV2ProviderTurn = z.looseObject({
   completedAt: IsoDateTime.nullable(),
   tokenUsage: OrchestrationV2ProviderTurnTokenUsage.optional(),
   turnTokenUsage: TurnTokenUsage.optional(),
+  /** The model the provider reported running this turn's root agent; it can differ from the requested one. */
+  model: TrimmedNonEmptyString.optional(),
 });
 export type OrchestrationV2ProviderTurn = z.infer<typeof OrchestrationV2ProviderTurn>;
 
