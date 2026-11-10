@@ -169,10 +169,12 @@ proposed-design:
     any grantable scope.
 
     `server.updateSettings` needs `settings:write`. A patch whose only keys are
-    `providerInstances`, `usageLimitSources` or `secretProviders`, or an empty
-    patch with a `providerInstanceMutation`, needs `providers:manage` in its place.
-    A patch with both kinds needs both. A key the target build does not know
-    counts for neither.
+    `providerInstances`, `usageLimitSources`, `secretProviders` or
+    `textGenerators`, or an empty patch with a `providerInstanceMutation`, needs
+    `providers:manage` in its place. A patch with both kinds needs both. A patch
+    that removes a secret provider (a null entry) needs both, since the server
+    also clears the settings that read from it. A key the target build does not
+    know counts for neither.
 
     `server.retryResourceTelemetry` restarts the server's resource monitor, so it
     needs `diagnostics:read` and `environment:maintain`.
