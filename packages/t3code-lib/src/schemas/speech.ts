@@ -80,7 +80,7 @@ export const SpeechAcceleration = z.union([
 ]);
 export type SpeechAcceleration = z.infer<typeof SpeechAcceleration>;
 
-export const SpeechModelUnloadTimeout = z.enum([
+const SPEECH_MODEL_UNLOAD_TIMEOUTS = [
   "never",
   "immediately",
   "min_2",
@@ -88,8 +88,13 @@ export const SpeechModelUnloadTimeout = z.enum([
   "min_10",
   "min_15",
   "hour_1",
-]);
+] as const;
+export const SpeechModelUnloadTimeout = z.enum(SPEECH_MODEL_UNLOAD_TIMEOUTS);
 export type SpeechModelUnloadTimeout = z.infer<typeof SpeechModelUnloadTimeout>;
+
+/** What a status reads: the known values, or another one of a newer server. */
+const SpeechAccelerationRead = z.string();
+const SpeechModelUnloadTimeoutRead = forwardCompatibleLiteral(SPEECH_MODEL_UNLOAD_TIMEOUTS);
 
 export const SpeechLanguage = z.string().min(2).max(16);
 export const SpeechGpuDevice = z.looseObject({ id: z.string(), name: z.string() });
@@ -157,10 +162,11 @@ const SupportedSpeechStatus = z
     supportsTranslation: z.boolean(),
     languages: z.array(z.string()).optional(),
     supportsLanguageDetection: z.boolean().optional(),
-    acceleration: SpeechAcceleration,
+    /** `auto`, `cpu` or `gpu:<id>`; another value of a newer server reads as itself. */
+    acceleration: SpeechAccelerationRead,
     /** Older servers omit it; it is derived from `acceleration` and `gpuDevices`, as upstream does. */
     benchmarkTier: SpeechBenchmarkTier.optional(),
-    modelUnloadTimeout: SpeechModelUnloadTimeout,
+    modelUnloadTimeout: SpeechModelUnloadTimeoutRead,
     gpuDevices: z.array(SpeechGpuDevice),
   })
   .transform((status) => ({

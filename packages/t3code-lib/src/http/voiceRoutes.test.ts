@@ -181,6 +181,13 @@ describe("speech schemas", () => {
     expect(
       EnvironmentSpeechStatus.parse({ ...status, gpuDevices: [{ id: "0", name: "Sample GPU" }] }),
     ).toMatchObject({ benchmarkTier: "accelerated" });
+    expect(
+      EnvironmentSpeechStatus.parse({
+        ...status,
+        acceleration: "sample-backend",
+        modelUnloadTimeout: "min_30",
+      }),
+    ).toMatchObject({ acceleration: "sample-backend", modelUnloadTimeout: "min_30" });
     expect(EnvironmentSpeechStatus.parse({ supported: false, reason: "Sample." })).toEqual({
       supported: false,
       reason: "Sample.",

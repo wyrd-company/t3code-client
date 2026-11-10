@@ -8,6 +8,7 @@
  */
 import { afterAll, describe, expect, it } from "vite-plus/test";
 import { T3HttpError, encodeSpeechPcmRequest } from "../../src/index.ts";
+import { SpeechAcceleration, SpeechModelUnloadTimeout } from "../../src/schemas/speech.ts";
 import { connect, hasLiveServer } from "./liveClient.ts";
 
 const refusal = async (promise: Promise<unknown>) => {
@@ -86,10 +87,10 @@ describe.skipIf(!hasLiveServer)("voice routes", () => {
     });
     expect(never).toMatchObject({ modelUnloadTimeout: "never" });
     await client.routes.call("voice.updateAcceleration", {
-      body: { acceleration: before.acceleration },
+      body: { acceleration: SpeechAcceleration.parse(before.acceleration) },
     });
     await client.routes.call("voice.updateModelUnloadTimeout", {
-      body: { timeout: before.modelUnloadTimeout },
+      body: { timeout: SpeechModelUnloadTimeout.parse(before.modelUnloadTimeout) },
     });
   });
 });
