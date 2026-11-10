@@ -2,7 +2,7 @@
 // relationships:
 //   implements: mcp
 // ---
-import { T3Error, type T3ErrorCode } from "@wyrd-company/t3code-lib";
+import { T3Error, T3RpcError, type T3ErrorCode } from "@wyrd-company/t3code-lib";
 import { z } from "zod";
 
 const messages: Readonly<Record<T3ErrorCode, string>> = {
@@ -27,6 +27,22 @@ export class ToolRefusal extends Error {
     super(message);
     this.name = "ToolRefusal";
     this.code = code;
+  }
+}
+
+/**
+ * Awaits `operation`. When it fails with an upstream RPC error that `refuse`
+ * maps to a refusal, throws that refusal; other failures pass through.
+ */
+export async function refuseRpcError<T>(
+  operation: Promise<T>,
+  refuse: (error: T3RpcError) => ToolRefusal | undefined,
+): Promise<T> {
+  try {
+    return await operation;
+  } catch (error) {
+    const refusal = error instanceof T3RpcError ? refuse(error) : undefined;
+    throw refusal ?? error;
   }
 }
 

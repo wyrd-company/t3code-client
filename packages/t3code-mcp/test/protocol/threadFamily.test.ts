@@ -2,33 +2,11 @@
 // relationships:
 //   verifies: mcp
 // ---
-import { Client } from "@modelcontextprotocol/client";
-import { InMemoryTransport } from "@modelcontextprotocol/server";
-import { T3Client, T3RpcError, threadId } from "@wyrd-company/t3code-lib";
+import { T3RpcError, threadId } from "@wyrd-company/t3code-lib";
 import { afterEach, expect, it, vi } from "vite-plus/test";
-import { createServer } from "../../src/server.ts";
+import { closeProtocolFixtures, protocolFixture as fixture } from "../support/protocolFixture.ts";
 
-const cleanup: (() => Promise<void>)[] = [];
-afterEach(async () => {
-  for (const close of cleanup.splice(0).toReversed()) await close();
-  vi.restoreAllMocks();
-});
-async function fixture() {
-  const upstream = T3Client.create({ baseUrl: "http://127.0.0.1:1" });
-  const provider = {
-    get: vi.fn().mockResolvedValue(upstream),
-    close: vi.fn().mockResolvedValue(undefined),
-  };
-  const server = createServer(provider);
-  const client = new Client({ name: "sample-client", version: "1.0.0" });
-  const [a, b] = InMemoryTransport.createLinkedPair();
-  await Promise.all([client.connect(a), server.connect(b)]);
-  cleanup.push(
-    () => server.close(),
-    () => client.close(),
-  );
-  return { client, upstream, provider };
-}
+afterEach(closeProtocolFixtures);
 
 it("reads a thread family with the signal and returns the library result", async () => {
   const { client, upstream } = await fixture();

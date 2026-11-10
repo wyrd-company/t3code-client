@@ -2,9 +2,9 @@
 // relationships:
 //   implements: mcp
 // ---
-import { T3RpcError, schemas } from "@wyrd-company/t3code-lib";
+import { schemas } from "@wyrd-company/t3code-lib";
 import { z } from "zod";
-import { ToolRefusal } from "../errors.ts";
+import { ToolRefusal, refuseRpcError } from "../errors.ts";
 import { defineTool } from "../tool.ts";
 
 const threadId = schemas.common.ThreadId;
@@ -49,14 +49,13 @@ export const terminalTools = [
       maxChars: z.number().int().min(1).max(maxOutputChars).optional(),
     }),
     async ({ threadId, terminalId, maxChars = defaultOutputChars }, client, signal) => {
-      let snapshot;
-      try {
-        snapshot = await client.terminal.read({ threadId, terminalId }, signal);
-      } catch (error) {
-        if (error instanceof T3RpcError && error.is("TerminalSessionLookupError"))
-          throw new ToolRefusal("not_found", "The thread has no terminal with this id.");
-        throw error;
-      }
+      const snapshot = await refuseRpcError(
+        client.terminal.read({ threadId, terminalId }, signal),
+        (error) =>
+          error.is("TerminalSessionLookupError")
+            ? new ToolRefusal("not_found", "The thread has no terminal with this id.")
+            : undefined,
+      );
       const text = plainText(snapshot.history);
       return {
         threadId: snapshot.threadId,
