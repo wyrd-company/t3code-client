@@ -74,7 +74,7 @@ it.each([false, true])(
       }),
     });
     vi.mocked(NodeChildProcess.spawn).mockImplementation((_command, _args, options) => {
-      NodeFS.writeSync((options?.stdio as [string, number, number])[1], syntheticOutput);
+      NodeFS.writeSync((options.stdio as [string, number, number])[1], syntheticOutput);
       return server as unknown as NodeChildProcess.ChildProcess;
     });
     vi.mocked(NodeChildProcess.execFileSync).mockReturnValue("example-session-value");

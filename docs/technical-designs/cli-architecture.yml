@@ -78,7 +78,7 @@ proposed-design:
     Taskfile targets generate the reference with jsdoc-to-markdown and render the
     VHS tape. The README and docs display the same demo asset.
   development: >-
-    pnpm 11, vite-plus 0.3.3, TypeScript 7, ESM/NodeNext, .ts relative imports and
+    pnpm 11, vite-plus 1.5.1, TypeScript 7, ESM/NodeNext, .ts relative imports and
     erasableSyntaxOnly match the library. Root Taskfile verbs cover the workspace
     and lib:/cli: select packages. Colocated tests import vite-plus/test. Real
     command checks use a fresh server/config home outside Git and gpt-6-luna

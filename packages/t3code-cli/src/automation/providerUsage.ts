@@ -5,7 +5,6 @@
 import {
   T3NotFoundError,
   T3PreconditionError,
-  type T3Client,
   type UsageSummary,
   type UsageSummaryInput,
 } from "@wyrd-company/t3code-lib";

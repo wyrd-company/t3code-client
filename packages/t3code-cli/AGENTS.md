@@ -18,7 +18,7 @@ Read [the specification](../../docs/specifications/command-line.yml) and
 ## Boundaries
 
 - Package: `@wyrd-company/t3code-cli`; binary: `t3c`; release unit: `t3code-cli`.
-- Node >=22.16, commander, ESM/NodeNext, TypeScript 7, vite-plus 0.3.3, pnpm 11.
+- Node >=22.16, commander, ESM/NodeNext, TypeScript 7, vite-plus 1.5.1, pnpm 11.
 - Compose library facades, `ProfileManager`, and `T3Error` subclasses. The library
   owns HTTP, WebSocket RPC, profiles, credential exchange and storage.
 - Application code uses native library APIs. Build and test tools own server processes.

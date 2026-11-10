@@ -132,9 +132,8 @@ describe.skipIf(!hasLiveServer)("diagnostics methods", () => {
     expect(NodeFS.existsSync(rotated)).toBe(false);
     expect(NodeFS.existsSync(current)).toBe(true);
 
-    const streamed = await firstItem(
-      client.rpc.stream("server.getStorageCleanupReport", {}),
-      (r) => (r === null ? undefined : r),
+    const streamed = await firstItem(client.rpc.stream("server.getStorageCleanupReport", {}), (r) =>
+      r === null ? undefined : r,
     );
     expect(Date.parse(streamed.finishedAt)).toBeGreaterThanOrEqual(Date.parse(report.finishedAt));
   }, 60_000);

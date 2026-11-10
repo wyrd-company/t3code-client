@@ -117,7 +117,10 @@ describe("ServerSettingsPatch", () => {
     ],
     ["a retention outside its range", { storageCleanup: { logsAfterDays: 0 } }],
     ["a cleanup with no mode", { worktreeCleanup: { rules: {} } }],
-    ["too many snooze presets", { snoozePresets: Array(9).fill({ kind: "after", minutes: 1 }) }],
+    [
+      "too many snooze presets",
+      { snoozePresets: Array.from({ length: 9 }, () => ({ kind: "after", minutes: 1 })) },
+    ],
     [
       "a snooze time out of range",
       { snoozePresets: [{ kind: "at", day: "today", time: "24:00" }] },

@@ -245,6 +245,8 @@ export default async function setup(): Promise<(() => Promise<void>) | undefined
       typeof code === "string" && /^(?:EACCES|EPERM|ENOENT|ESRCH|EIO|ENOSPC|EMFILE)$/.test(code)
         ? code
         : "unavailable";
+    // The dependency error is withheld on purpose: a `cause` would forward it.
+    // oxlint-disable-next-line preserve-caught-error
     throw new Error(
       `Could not start the live T3 Code server during ${stage}; ` +
         `exit=${server.exitCode ?? "none"}, signal=${server.signalCode ?? "none"}, code=${safeCode}. ` +

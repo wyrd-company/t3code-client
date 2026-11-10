@@ -7,7 +7,6 @@ import { z } from "zod";
 import { TrimmedNonEmptyString } from "./common.ts";
 import { SettingsSecretValue } from "./providerInstance.ts";
 
-const TrimmedString = z.string().trim();
 const int = (minimum: number, maximum: number) => z.number().int().min(minimum).max(maximum);
 
 const DeviceHostId = TrimmedNonEmptyString.max(128)
