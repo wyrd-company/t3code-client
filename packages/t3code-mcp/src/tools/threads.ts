@@ -25,7 +25,7 @@ export const threadTools = [
       await client.threads.stopThread(threadId, reason === undefined ? {} : { reason }, signal);
       return { threadId };
     },
-    false,
+    "destructive",
   ),
   defineTool(
     "thread_force_stop",
@@ -39,7 +39,7 @@ export const threadTools = [
             ? new ToolRefusal("superseded", "Another run is the latest; nothing was stopped.")
             : undefined,
       ),
-    false,
+    "destructive",
   ),
   defineTool(
     "thread_queue_resume",
@@ -49,7 +49,7 @@ export const threadTools = [
       await client.threads.resumeQueue(threadId, signal);
       return { threadId };
     },
-    false,
+    "destructive",
   ),
   defineTool(
     "thread_queue_start",
@@ -59,7 +59,7 @@ export const threadTools = [
       await client.threads.startQueuedRun(threadId, runId, signal);
       return { threadId, runId };
     },
-    false,
+    "destructive",
   ),
   defineTool(
     "thread_status",

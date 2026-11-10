@@ -14,10 +14,19 @@ export interface ToolRegistration {
 }
 
 /**
- * Each registration retains its own schema and typed callback. `readOnly`
- * false marks a destructive write; "idempotentWrite" marks a write that is
- * neither destructive nor different when repeated.
+ * What a tool does to server state: `read` changes nothing; `destructive`
+ * changes or ends state in a way a repeat can change again; `idempotentWrite`
+ * changes state, but not destructively and not again when repeated.
  */
+export type ToolAccess = "read" | "destructive" | "idempotentWrite";
+
+const accessHints = {
+  read: { readOnlyHint: true, destructiveHint: false, idempotentHint: true },
+  destructive: { readOnlyHint: false, destructiveHint: true, idempotentHint: false },
+  idempotentWrite: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+} as const satisfies Record<ToolAccess, object>;
+
+/** Each registration retains its own schema and typed callback. */
 export function defineTool<Shape extends z.ZodRawShape>(
   name: string,
   description: string,
@@ -27,9 +36,8 @@ export function defineTool<Shape extends z.ZodRawShape>(
     client: T3Client,
     signal: AbortSignal,
   ) => Promise<unknown>,
-  readOnly: boolean | "idempotentWrite" = true,
+  access: ToolAccess = "read",
 ): ToolRegistration {
-  const idempotentWrite = readOnly === "idempotentWrite";
   return {
     name,
     register(server, clients) {
@@ -38,12 +46,7 @@ export function defineTool<Shape extends z.ZodRawShape>(
         {
           description,
           inputSchema: input,
-          annotations: {
-            readOnlyHint: readOnly === true,
-            destructiveHint: readOnly === false,
-            idempotentHint: readOnly === true || idempotentWrite,
-            openWorldHint: true,
-          },
+          annotations: { ...accessHints[access], openWorldHint: true },
         },
         async (args, context) => {
           try {

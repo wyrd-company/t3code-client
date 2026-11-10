@@ -6,7 +6,7 @@ import { schemas } from "@wyrd-company/t3code-lib";
 import { z } from "zod";
 import { ToolRefusal, refuseRpcError } from "../errors.ts";
 import { defineTool } from "../tool.ts";
-import { clip } from "./diagnostics.ts";
+import { clip } from "./results.ts";
 
 const threadId = schemas.common.ThreadId;
 const pid = z.number().int().positive();
@@ -82,6 +82,6 @@ export const localServerTools = [
       );
       return { threadId, pid, port, stopped: true };
     },
-    false,
+    "destructive",
   ),
 ] as const;

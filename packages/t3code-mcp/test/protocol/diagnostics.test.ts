@@ -3,7 +3,7 @@
 //   verifies: mcp
 // ---
 import { afterEach, expect, it, vi } from "vite-plus/test";
-import { maxTextChars } from "../../src/tools/diagnostics.ts";
+import { maxTextChars } from "../../src/tools/results.ts";
 import { closeProtocolFixtures, protocolFixture as fixture } from "../support/protocolFixture.ts";
 
 afterEach(closeProtocolFixtures);

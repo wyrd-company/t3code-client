@@ -52,7 +52,7 @@ export const schedulerTools = [
       await client.scheduledTasks.rotateWebhookToken(id, signal);
       return client.scheduledTasks.webhookEndpoint(id, signal);
     },
-    false,
+    "destructive",
   ),
   defineTool(
     "scheduled_task_configuration",
@@ -87,6 +87,6 @@ export const schedulerTools = [
         },
         signal,
       ),
-    false,
+    "destructive",
   ),
 ] as const;

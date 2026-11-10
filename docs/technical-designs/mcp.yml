@@ -73,9 +73,11 @@ proposed-design:
     responses, ordinary launches, queued message CRUD/reordering/promotion and
     provider/model catalog discovery. The tool
     inventory is tested against the pinned stock tool set and the explicit
-    complementary contract. Tools compose library facades. Read-only/destructive
-    annotations reflect the actual operation. Structured results and text JSON
-    describe the same value; failures use isError with stable codes.
+    complementary contract. Tools compose library facades. Each tool declares
+    one access kind (read, destructive or idempotent write) that matches the
+    actual operation, and its MCP annotations follow from that kind.
+    Structured results and text JSON describe the same value; failures use
+    isError with stable codes.
     Stop and queue recovery use the server's native commands with operate scope.
     Their results acknowledge the request; they do not invent a terminal run
     state. Selected start releases the queue hold, so other queued messages may

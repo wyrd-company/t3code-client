@@ -15,28 +15,23 @@ it("negotiates and advertises only the complementary tool contract with accurate
   const { tools } = await client.listTools();
   expect(tools.map((tool) => tool.name)).toEqual(toolNames);
   expect(tools).toHaveLength(30);
+  const destructive = [
+    "configure_scheduled_task",
+    "rotate_scheduled_task_webhook",
+    "thread_stop",
+    "thread_force_stop",
+    "thread_queue_resume",
+    "thread_queue_start",
+    "stop_local_server",
+  ];
+  const idempotentWrite = ["thread_tag"];
   for (const tool of tools) {
-    const mutation = [
-      "configure_scheduled_task",
-      "rotate_scheduled_task_webhook",
-      "thread_stop",
-      "thread_force_stop",
-      "thread_queue_resume",
-      "thread_queue_start",
-      "stop_local_server",
-    ].includes(tool.name);
-    if (tool.name === "thread_tag") {
-      expect(tool.annotations).toMatchObject({
-        readOnlyHint: false,
-        destructiveHint: false,
-        idempotentHint: true,
-      });
-      continue;
-    }
-    expect(tool.annotations).toMatchObject({
-      readOnlyHint: !mutation,
-      destructiveHint: mutation,
-      idempotentHint: !mutation,
+    const read = !destructive.includes(tool.name) && !idempotentWrite.includes(tool.name);
+    expect(tool.annotations, tool.name).toEqual({
+      readOnlyHint: read,
+      destructiveHint: destructive.includes(tool.name),
+      idempotentHint: !destructive.includes(tool.name),
+      openWorldHint: true,
     });
   }
   expect(provider.get).not.toHaveBeenCalled();
