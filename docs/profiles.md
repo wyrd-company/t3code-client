@@ -13,7 +13,7 @@ relationships:
 
 `ProfileManager` stores named servers for command-line and MCP consumers.
 `TARGET_T3_CODE_VERSION` reports the server release targeted by the library
-(`0.1.8`), independently of the library's own package version. It is descriptive;
+(`0.1.9`), independently of the library's own package version. It is descriptive;
 runtime operations do not require an exact server version.
 
 ## Configuration

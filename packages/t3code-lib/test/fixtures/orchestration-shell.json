@@ -6,7 +6,7 @@
       "createdBy": "user",
       "creationSource": "web",
       "id": "11111111-2222-4333-8444-555555555555",
-      "projectId": "78a72864-221a-436b-90d4-2abc82b07efe",
+      "projectId": "7cc078a1-4ee5-4432-8f04-e48c775d8357",
       "title": "Example thread",
       "providerInstanceId": "codex",
       "modelSelection": {
@@ -30,6 +30,7 @@
       "latestRunStartedAt": null,
       "latestRunCompletedAt": null,
       "latestRunStopRequested": false,
+      "latestRunBackgroundWake": false,
       "activeRunId": null,
       "activityRunStartedAt": null,
       "activityRunStatus": null,
@@ -50,8 +51,8 @@
       "goal": null,
       "itemCount": 0,
       "visibleItemCount": 0,
-      "createdAt": "2026-11-10T06:24:12.134Z",
-      "updatedAt": "2026-11-10T06:24:12.134Z",
+      "createdAt": "2026-11-11T13:19:43.555Z",
+      "updatedAt": "2026-11-11T13:19:43.555Z",
       "archivedAt": null,
       "settledOverride": null,
       "settledAt": null,
@@ -71,7 +72,7 @@
   "archivedThreads": [],
   "projects": [
     {
-      "id": "78a72864-221a-436b-90d4-2abc82b07efe",
+      "id": "7cc078a1-4ee5-4432-8f04-e48c775d8357",
       "title": "Example project",
       "workspaceRoot": "/srv/sample",
       "repositoryIdentity": null,
@@ -83,8 +84,8 @@
       "scripts": [],
       "pinnedAt": null,
       "archivedAt": null,
-      "createdAt": "2026-11-10T06:24:12.100Z",
-      "updatedAt": "2026-11-10T06:24:12.100Z"
+      "createdAt": "2026-11-11T13:19:43.519Z",
+      "updatedAt": "2026-11-11T13:19:43.519Z"
     }
   ]
 }

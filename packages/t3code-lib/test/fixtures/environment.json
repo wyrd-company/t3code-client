@@ -1,14 +1,14 @@
 {
-  "environmentId": "b558bcba-54e5-4dc3-b4d5-19040cd34b91",
+  "environmentId": "57433867-1395-4cdf-925a-1d5b6ab043bb",
   "label": "sample-environment",
   "platform": {
     "os": "linux",
     "arch": "x64",
     "machine": "desktop"
   },
-  "serverVersion": "0.1.8",
+  "serverVersion": "0.1.9",
   "orchestrationProtocolVersion": 2,
-  "databaseMigration": 80,
+  "databaseMigration": 81,
   "capabilities": {
     "repositoryIdentity": true,
     "connectionProbe": true,
@@ -70,6 +70,7 @@
     "mcpModeLimitHeader": true,
     "linkFence": true,
     "mcpApprovalCodes": true,
+    "mcpHostedApproval": true,
     "triage": true,
     "oneTimeSchedules": true,
     "freshContext": true,

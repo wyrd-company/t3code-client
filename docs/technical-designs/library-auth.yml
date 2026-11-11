@@ -11,7 +11,7 @@ relationships:
     - releasing
 proposed-design:
   high-level-overview: >-
-    The library implements stock T3 Code 0.1.8 and orchestration protocol 2.
+    The library implements stock T3 Code 0.1.9 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade
     contracts. The library architecture links the canonical design family.
   auth: |
@@ -114,7 +114,7 @@ proposed-design:
     sends without a stored token. The client then mints socket tickets through
     that `fetch`.
   scope-groups: >-
-    AuthStandardClientScopes mirrors the stock 0.1.8 standard client grant,
+    AuthStandardClientScopes mirrors the stock 0.1.9 standard client grant,
     including access:read, access:write and relay:write. There is no separate
     administrative scope set. Callers choose explicit scopes for narrower grants.
     AuthLegacyScopes retains the wire vocabulary for decoding older credentials.
