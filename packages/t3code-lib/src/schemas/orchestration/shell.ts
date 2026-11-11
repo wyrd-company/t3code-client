@@ -128,6 +128,8 @@ export const OrchestrationV2ThreadShell = z.looseObject({
   latestRunStartedAt: IsoDateTime.nullable().optional(),
   latestRunCompletedAt: IsoDateTime.nullable().optional(),
   latestRunStopRequested: z.boolean().optional(),
+  /** The latest run answers a background-work progress wake, like a Monitor line, not a terminal one. Absent from older servers. */
+  latestRunBackgroundWake: z.boolean().optional(),
   activeRunId: RunId.nullable(),
   activityRunStartedAt: IsoDateTime.nullable().optional(),
   activityRunStatus: forwardCompatibleLiteral(["preparing", "starting", "running", "waiting"])

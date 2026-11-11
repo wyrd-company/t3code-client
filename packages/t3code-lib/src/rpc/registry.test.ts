@@ -32,6 +32,7 @@ describe("RPC contract registry", () => {
       { _tag: "workspace-file", threadId, path: "a.png" },
       { _tag: "media-file", threadId, path: "a.png" },
       { _tag: "draft-workspace-file", cwd: "/sample", path: "a.png" },
+      { _tag: "native-app-icon", app: { _tag: "app-path", path: "/sample/Sample.app" } },
     ]) {
       expect(scopeOf(resource), resource._tag).toBe("filesystem:read");
     }
@@ -40,6 +41,7 @@ describe("RPC contract registry", () => {
       { _tag: "tool-output-image", threadId, itemId: "item-1", index: 0 },
       { _tag: "project-favicon", cwd: "/sample" },
       { _tag: "native-app-icon", app: { _tag: "app-id", appId: "sample.app" } },
+      { _tag: "native-app-icon", app: { _tag: "display-name", displayName: "Sample" } },
       { _tag: "github-media", cwd: "/sample", url: "https://host.invalid/a.png" },
     ]) {
       expect(scopeOf(resource), resource._tag).toBe("orchestration:read");

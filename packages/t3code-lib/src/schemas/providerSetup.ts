@@ -228,9 +228,12 @@ export const ChatGptHandoffState = taggedUnionWithUnknown("phase", [
 ]);
 export type ChatGptHandoffState = z.infer<typeof ChatGptHandoffState>;
 
-/** An instance's own credit, or a credit of an account in a usage limit source. */
+/**
+ * An instance's own credit, or a credit of an account in a usage limit source. An instance's
+ * `creditId` picks one of its `resetCredits.options`; without it the server redeems the next one.
+ */
 export const ProviderConsumeResetCreditInput = z.union([
-  z.looseObject({ instanceId: ProviderInstanceId }),
+  z.looseObject({ instanceId: ProviderInstanceId, creditId: TrimmedNonEmptyString.optional() }),
   z.looseObject({
     sourceId: z.string(),
     accountId: TrimmedNonEmptyString,

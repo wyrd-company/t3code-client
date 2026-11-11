@@ -125,6 +125,31 @@ it("sends a token request form-encoded, with no session token", async () => {
   expect(String(init?.body)).toBe("grant_type=authorization_code&code=sample-code");
 });
 
+it("sends the session's token with an approval and a decision, and none without a session", async () => {
+  const { calls, routes } = setup(() => Response.json({ redirectTo: "http://127.0.0.1:9/cb" }));
+  await routes.call("mcpOAuth.approval", { body: query });
+  await routes.call("mcpOAuth.decision", {
+    body: { authorization: query, decision: { _tag: "deny" } },
+  });
+  for (const call of calls) {
+    expect(new Headers(call.init.headers).get("authorization")).toBe("Bearer sample-token");
+  }
+  const anonymousCalls: RequestInit[] = [];
+  const anonymous = new HttpRouteClient(
+    new HttpTransport({
+      baseUrl: "https://host.invalid",
+      getAccessToken: async () => undefined,
+      fetch: vi.fn<typeof globalThis.fetch>(async (_input, init) => {
+        anonymousCalls.push(init ?? {});
+        return Response.json({ redirectTo: "http://127.0.0.1:9/cb" });
+      }),
+    }),
+    httpRoutes,
+  );
+  await anonymous.call("mcpOAuth.approval", { body: query });
+  expect(new Headers(anonymousCalls[0]?.headers).has("authorization")).toBe(false);
+});
+
 it("keeps the code of an approval's redirect out of a decode error", async () => {
   const redirectTo = "https://app.invalid/back?code=sample-code";
   const { routes } = setup(() => Response.json({ redirectTo, extra: 1 }));

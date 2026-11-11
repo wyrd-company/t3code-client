@@ -5,8 +5,12 @@
 /**
  * The voice routes on a real stock server. No model is downloaded and no cloud provider is called:
  * the cloud transcription has no key, the model writes name a model that does not exist, and a
- * live transcription finds no model.
+ * live transcription finds no model. A model link points at an empty folder, so a link that
+ * succeeds is not exercised end to end: it needs a model file of the exact size and digest.
  */
+import * as NodeFSP from "node:fs/promises";
+import * as NodeOS from "node:os";
+import * as NodePath from "node:path";
 import { afterAll, describe, expect, it } from "vite-plus/test";
 import { T3AuthError, T3HttpError, encodeSpeechPcmRequest } from "../../src/index.ts";
 import { SpeechAcceleration, SpeechModelUnloadTimeout } from "../../src/schemas/speech.ts";
@@ -74,6 +78,27 @@ describe.skipIf(!hasLiveServer)("voice routes", () => {
     });
     const { models } = await client.routes.call("voice.cancelModelDownload", missing);
     expect(models.every((model) => model.state !== "downloading")).toBe(true);
+  });
+
+  it("finds no model to link in an empty folder, and asks for the file grant", async () => {
+    const status = await client.routes.call("voice.status");
+    if (status.supported) expect(status.supportsModelLinking).toBe(true);
+    const empty = await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), "t3-voice-link-"));
+    try {
+      await expect(
+        refusal(client.routes.call("voice.linkModels", { body: { path: empty } })),
+      ).resolves.toMatchObject({ status: 400 });
+    } finally {
+      await NodeFSP.rm(empty, { recursive: true, force: true });
+    }
+    const settings = await connectWithScopes(client, ["settings:write"]);
+    try {
+      await expect(
+        settings.routes.call("voice.linkModels", { body: { path: empty } }),
+      ).rejects.toMatchObject({ code: "insufficient_scope", requiredScope: "filesystem:read" });
+    } finally {
+      await settings.close();
+    }
   });
 
   it("changes the acceleration and the unload timeout", async () => {

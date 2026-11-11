@@ -142,6 +142,8 @@ export const EnvironmentSpeechModel = z.looseObject({
   state: forwardCompatibleLiteral(["downloadable", "downloading", "verifying", "installed"]),
   /** Bytes downloaded so far, while `state` is `downloading`. */
   downloaded: finite.optional(),
+  /** The file outside T3 Code's model folder that this model is used from. */
+  linkedFrom: z.string().optional(),
 });
 export type EnvironmentSpeechModel = z.infer<typeof EnvironmentSpeechModel>;
 
@@ -149,6 +151,11 @@ export const EnvironmentSpeechModels = z.looseObject({ models: z.array(Environme
 export type EnvironmentSpeechModels = z.infer<typeof EnvironmentSpeechModels>;
 
 export const EnvironmentSpeechModelRequest = z.looseObject({ modelId: SpeechModelId });
+/** A model file, or a folder to search for them, on the environment's own disk. */
+export const EnvironmentSpeechModelLinkRequest = z.looseObject({
+  path: TrimmedNonEmptyString.max(4096),
+});
+export type EnvironmentSpeechModelLinkRequest = z.infer<typeof EnvironmentSpeechModelLinkRequest>;
 
 const SupportedSpeechStatus = z
   .looseObject({
@@ -159,6 +166,8 @@ const SupportedSpeechStatus = z
     size: finite,
     supportsStreaming: z.boolean(),
     supportsBufferedStreaming: z.boolean().optional(),
+    /** The server can use a model file from elsewhere on its disk (`voice.linkModels`). */
+    supportsModelLinking: z.boolean().optional(),
     supportsTranslation: z.boolean(),
     languages: z.array(z.string()).optional(),
     supportsLanguageDetection: z.boolean().optional(),

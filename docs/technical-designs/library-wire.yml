@@ -83,8 +83,8 @@ proposed-design:
     | `GET /.well-known/oauth-authorization-server`         | none                 | `AuthMcpAuthorizationServerMetadata`                                                       |
     | `POST /oauth/mcp/register`                            | none                 | `AuthMcpClientRegistration`; 201 `AuthMcpRegisteredClient`; 400 with `{error}`             |
     | `GET /oauth/mcp/authorize`                            | none                 | query `AuthMcpAuthorizationRequest`; 302; 400 and an HTML page for an unverified client    |
-    | `POST /oauth/mcp/approval`                            | browser cookie or none | `AuthMcpAuthorizationRequest` → `AuthMcpApprovalDetails` or `{redirectTo}`; 400 `AuthMcpApprovalError` |
-    | `POST /oauth/mcp/decision`                            | browser cookie or none | `{authorization, decision}` → `{redirectTo}`; 400 `AuthMcpApprovalError`                 |
+    | `POST /oauth/mcp/approval`                            | session token, browser cookie or none | `AuthMcpAuthorizationRequest` → `AuthMcpApprovalDetails` or `{redirectTo}`; 400 `AuthMcpApprovalError` |
+    | `POST /oauth/mcp/decision`                            | session token, browser cookie or none | `{authorization, decision}` → `{redirectTo}`; 400 `AuthMcpApprovalError`                 |
     | `POST /oauth/mcp/token`                               | none                 | form-encoded, code is single use; `AuthMcpTokenResult`; 400 with `{error}`                 |
 
     A guest route refuses with `{reason, message}`: 403 for `invalid`, `inactive` and

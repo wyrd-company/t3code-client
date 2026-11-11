@@ -40,7 +40,9 @@ server refuses others with `ProviderSetupError`.
 pass it to `provider.chatgpt.import-profile` on that environment.
 
 `provider.consumeResetCredit` spends a banked credit of the account, for an instance
-or for an account in a usage limit source. `provider.uploadFeedback` sends feedback on
+or for an account in a usage limit source. When an instance's `resetCredits.options`
+lists resets that refill different things, `creditId` picks one; without it the server
+spends the next credit. `provider.uploadFeedback` sends feedback on
 a thread's running provider session to that provider, and needs `orchestration:operate`.
 
 ## Provider install and the ACP registry

@@ -206,10 +206,22 @@ export const ServerProviderUsageWindow = z.looseObject({
   windowDurationMins: z.number().int().nonnegative().optional(),
 });
 export type ServerProviderUsageWindow = z.infer<typeof ServerProviderUsageWindow>;
+/** One kind of banked reset, such as a weekly reset or a reset for one model family only. */
+export const ServerProviderResetCreditOption = z.looseObject({
+  creditId: TrimmedNonEmptyString,
+  label: TrimmedNonEmptyString,
+  description: TrimmedNonEmptyString,
+  availableCount: z.number().int().nonnegative(),
+  expiresAt: IsoDateTime.optional(),
+});
+export type ServerProviderResetCreditOption = z.infer<typeof ServerProviderResetCreditOption>;
 export const ServerProviderResetCredits = z.looseObject({
   availableCount: z.number().int().nonnegative(),
   nextExpiresAt: IsoDateTime.optional(),
+  /** Pins redemption to the displayed credit, including retries from another client. */
   nextCreditId: TrimmedNonEmptyString.optional(),
+  /** Present when resets differ in what they refill; redeem one by its `creditId`. */
+  options: forwardCompatibleArray(ServerProviderResetCreditOption).optional(),
 });
 export type ServerProviderResetCredits = z.infer<typeof ServerProviderResetCredits>;
 export const ServerProviderUsageLimits = z.looseObject({

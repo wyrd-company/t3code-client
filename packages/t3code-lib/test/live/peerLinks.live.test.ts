@@ -9,7 +9,7 @@
  */
 import * as NodeCrypto from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
-import type { T3Client, T3RpcError } from "../../src/index.ts";
+import { T3RpcError, type T3Client } from "../../src/index.ts";
 import { EnvironmentId, threadId, turnItemId, type ThreadId } from "../../src/schemas/common.ts";
 import { isRunTerminalStatus } from "../../src/schemas/orchestration/runs.ts";
 import { isTurnItemOfType } from "../../src/schemas/orchestration/turnItems.ts";
@@ -134,12 +134,25 @@ describe.skipIf(!ownsServer)("live peer links", () => {
 
   it("links a peer, lists it as reachable and removes it", async () => {
     await setLinksEnabled(client, true);
+    // A picked machine never links through loopback, where anything may answer as it.
+    const picked = await client.peerLinks
+      .link({
+        url: peer.baseUrl,
+        pairingCode: await pairingCode(peer),
+        access: "read-only",
+        expectedEnvironmentId: peerEnvironmentId,
+        expectedLabel: "Sample peer",
+      })
+      .then(
+        () => undefined,
+        (error: unknown) => error,
+      );
+    expect(picked).toBeInstanceOf(T3RpcError);
+    expect((picked as T3RpcError).detail).toMatchObject({ reason: "unreachable" });
     const linked = await client.peerLinks.link({
       url: peer.baseUrl,
       pairingCode: await pairingCode(peer),
       access: "read-only",
-      expectedEnvironmentId: peerEnvironmentId,
-      expectedLabel: "Sample peer",
     });
     expect(linked).toMatchObject({
       environmentId: peerEnvironmentId,

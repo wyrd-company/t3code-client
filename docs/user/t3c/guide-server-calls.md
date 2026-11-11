@@ -59,6 +59,10 @@ The `voice.*` routes transcribe on the server machine with a local speech model,
 or forward a recording to a cloud speech provider. `voice.status` says if the
 machine can transcribe and which model is selected. `voice.models` lists the
 catalog; `voice.downloadModel` and `voice.selectModel` need `settings:write`.
+When `voice.status` reports `supportsModelLinking`, `voice.linkModels` uses a model
+file, or the model files of a folder, from elsewhere on the server's disk. It needs
+`settings:write` and `filesystem:read`, and a model's `linkedFrom` names its file only
+to a session with `filesystem:read`.
 A transcription body is up to five minutes of 16 kHz mono Float32 PCM, framed
 with its recognition options:
 

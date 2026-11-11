@@ -197,6 +197,14 @@ describe.skipIf(!hasLiveServer)("provider sign-in methods", () => {
       expect(
         await refusal(client.rpc.call("provider.consumeResetCredit", { instanceId })),
       ).toMatchObject({ _tag: "ProviderSetupError", operation: "consume-reset-credit" });
+      expect(
+        await refusal(
+          client.rpc.call("provider.consumeResetCredit", {
+            instanceId,
+            creditId: "generic-credit",
+          }),
+        ),
+      ).toMatchObject({ _tag: "ProviderSetupError", operation: "consume-reset-credit" });
     }
     expect(
       await refusal(

@@ -22,6 +22,9 @@ import {
   PersistChatAttachmentsResult,
 } from "../../schemas/orchestration/attachments.ts";
 
+/** An app named by its bundle path on the host's disk, not by id or name. */
+const isAppPath = (app: object): boolean => "_tag" in app && app._tag === "app-path";
+
 export const filesMethods = {
   "filesystem.browse": defineMethod({
     payload: FilesystemBrowseInput,
@@ -44,7 +47,8 @@ export const filesMethods = {
     scopeForPayload: ({ resource }) =>
       resource._tag === "workspace-file" ||
       resource._tag === "media-file" ||
-      resource._tag === "draft-workspace-file"
+      resource._tag === "draft-workspace-file" ||
+      (resource._tag === "native-app-icon" && isAppPath(resource.app))
         ? "filesystem:read"
         : "orchestration:read",
   }),

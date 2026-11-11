@@ -65,15 +65,17 @@ export type TurnTokenUsage = z.infer<typeof TurnTokenUsage>;
 export const ToolActivitySurface = forwardCompatibleLiteral(["browser", "computer"]);
 export type ToolActivitySurface = z.infer<typeof ToolActivitySurface>;
 
+export const NativeAppIdReference = z.looseObject({
+  _tag: z.literal("app-id"),
+  appId: TrimmedNonEmptyString.max(512).regex(/^[A-Za-z0-9._-]+$/u),
+});
+export const NativeAppDisplayNameReference = z.looseObject({
+  _tag: z.literal("display-name"),
+  displayName: TrimmedNonEmptyString.max(160),
+});
 export const ToolActivityNativeAppReference = taggedUnionWithUnknown("_tag", [
-  z.looseObject({
-    _tag: z.literal("app-id"),
-    appId: TrimmedNonEmptyString.max(512).regex(/^[A-Za-z0-9._-]+$/u),
-  }),
-  z.looseObject({
-    _tag: z.literal("display-name"),
-    displayName: TrimmedNonEmptyString.max(160),
-  }),
+  NativeAppIdReference,
+  NativeAppDisplayNameReference,
 ]);
 export type ToolActivityNativeAppReference = z.infer<typeof ToolActivityNativeAppReference>;
 

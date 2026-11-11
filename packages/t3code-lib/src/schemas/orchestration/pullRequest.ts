@@ -101,6 +101,10 @@ export const ThreadPullRequestWatch = z.looseObject({
   passedChecks: z.array(TrimmedNonEmptyString).default([]),
   /** Checks still pending when required ones passed early, owed one wake once all settle. */
   owedChecks: z.array(TrimmedNonEmptyString).optional(),
+  /** Approval holds keyed by workflow run URL, or check name when no run URL is known. */
+  awaitingApproval: z.array(TrimmedNonEmptyString).optional(),
+  /** The agent was told checks await approval on this head, so later ones stay quiet. */
+  approvalAnnounced: z.boolean().optional(),
   remarksThrough: IsoDateTime,
   remarkIds: z.array(TrimmedNonEmptyString),
   conflicting: z.boolean(),

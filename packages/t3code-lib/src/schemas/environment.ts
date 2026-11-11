@@ -131,6 +131,8 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   linkFence: z.boolean().optional(),
   /** Server mints pairing codes that approve one agent sign-in at a set level (`AUTO-…`). */
   mcpApprovalCodes: z.boolean().optional(),
+  /** Agent sign-ins on the server's T3 Connect address are approved on the hosted app, without a code. */
+  mcpHostedApproval: z.boolean().optional(),
   /** Server honors `freshContext` on sends. Older servers keep the old context. */
   freshContext: z.boolean().optional(),
   /** Server saves and runs a scheduled task's `threadMode`. Older servers ignore it. */

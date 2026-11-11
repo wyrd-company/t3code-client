@@ -147,6 +147,28 @@ describe("voice routes", () => {
     await routes.call("voice.downloadModel", { body: { modelId: "sample/model" } });
     expect(await requests[1]?.json()).toEqual({ modelId: "sample/model" });
   });
+
+  it("links a model from a path on the host, which needs the file grant too", async () => {
+    const linked = { ...sampleModel, state: "installed", linkedFrom: "/sample/models/model.bin" };
+    const { requests, routes } = setup(() => Response.json({ models: [linked] }));
+    const { models } = await routes.call("voice.linkModels", { body: { path: "/sample/models" } });
+    expect(models[0]?.linkedFrom).toBe("/sample/models/model.bin");
+    expect(new URL(requests[0]?.url ?? "").pathname).toBe("/api/voice/models/link");
+    expect(await requests[0]?.json()).toEqual({ path: "/sample/models" });
+
+    const settingsOnly = new HttpRouteClient(
+      new HttpTransport({
+        baseUrl: "https://host.invalid",
+        fetch: vi.fn<typeof fetch>(),
+        getAccessToken: async () => "sample-token",
+      }),
+      httpRoutes,
+      { getScopes: () => ["settings:write"] },
+    );
+    await expect(
+      settingsOnly.call("voice.linkModels", { body: { path: "/sample/models" } }),
+    ).rejects.toMatchObject({ code: "insufficient_scope", requiredScope: "filesystem:read" });
+  });
 });
 
 describe("speech schemas", () => {
@@ -173,11 +195,15 @@ describe("speech schemas", () => {
       size: 1000,
       supportsStreaming: false,
       supportsTranslation: false,
+      supportsModelLinking: true,
       acceleration: "auto",
       modelUnloadTimeout: "min_15",
       gpuDevices: [],
     };
-    expect(EnvironmentSpeechStatus.parse(status)).toMatchObject({ benchmarkTier: "cpu" });
+    expect(EnvironmentSpeechStatus.parse(status)).toMatchObject({
+      benchmarkTier: "cpu",
+      supportsModelLinking: true,
+    });
     expect(
       EnvironmentSpeechStatus.parse({ ...status, gpuDevices: [{ id: "0", name: "Sample GPU" }] }),
     ).toMatchObject({ benchmarkTier: "accelerated" });

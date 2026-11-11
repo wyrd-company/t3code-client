@@ -106,8 +106,10 @@ with the `mcpApprovalCodes` capability also takes an approval code: create the c
 `access` in place of `scopes`. The code, such as `AUTO-…`, approves one sign-in, and the decision
 must name that level; another level is refused with HTTP 400. The result's `access` repeats the
 level. A
-`browser-session` decision takes the `csrfToken` from `mcpOAuth.approval`, and needs a `fetch`
-that keeps the session's cookie, as for `auth.browserSession`. The answer's `redirectTo` holds a
+`browser-session` decision takes the `csrfToken` from `mcpOAuth.approval`. Both routes send the
+client's access token when it has one, and the server approves for a session with `access:write`
+and `orchestration:read`. A client that approves with a browser session's cookie instead needs a
+`fetch` that keeps the cookie, as for `auth.browserSession`. The answer's `redirectTo` holds a
 one-use code that lasts one minute:
 
 ```ts

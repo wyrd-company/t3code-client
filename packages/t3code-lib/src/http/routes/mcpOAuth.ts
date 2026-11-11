@@ -3,9 +3,10 @@
 //   implements: library-wire
 // ---
 /**
- * How an MCP client gets a token with OAuth. None sends the session's token: a client that has no
- * session yet calls them, and `approval` and `decision` read a browser session only from its
- * cookie, so a client that approves with one needs a `fetch` that keeps the cookie.
+ * How an MCP client gets a token with OAuth. A client that has no session yet calls them, so most
+ * send no token. `approval` and `decision` send the session's token when there is one: the server
+ * approves for a session with `access:write` and `orchestration:read`, from its token or from a
+ * browser session cookie. A client that approves with a cookie needs a `fetch` that keeps it.
  */
 import { z } from "zod";
 
@@ -67,14 +68,14 @@ export const mcpOAuthRoutes = {
   "mcpOAuth.approval": defineRoute({
     method: "POST",
     path: "/oauth/mcp/approval",
-    auth: "none",
+    auth: "optional",
     input: z.strictObject({ body: AuthMcpAuthorizationRequest }),
     success: AuthMcpApprovalResult,
   }),
   "mcpOAuth.decision": defineRoute({
     method: "POST",
     path: "/oauth/mcp/decision",
-    auth: "none",
+    auth: "optional",
     input: z.strictObject({ body: AuthMcpApprovalDecisionRequest }),
     success: AuthMcpApprovalRedirect,
   }),

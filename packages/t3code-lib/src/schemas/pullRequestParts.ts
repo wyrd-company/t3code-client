@@ -49,6 +49,7 @@ export type PullRequestReviewVerdict = z.infer<typeof PullRequestReviewVerdict>;
 export const PullRequestLabel = z.looseObject({
   name: TrimmedNonEmptyString,
   color: z.string().nullable(),
+  description: z.string().nullable().optional(),
 });
 export type PullRequestLabel = z.infer<typeof PullRequestLabel>;
 
@@ -66,6 +67,11 @@ export const PullRequestCheck = z.looseObject({
   description: z.string().nullable(),
   url: z.string().nullable(),
   required: z.boolean().optional(),
+  /**
+   * Not a check: it stands for ones the host could not list, such as workflow runs awaiting
+   * approval when that read fails, so nothing waits on it or counts it as passing.
+   */
+  placeholder: z.boolean().optional(),
 });
 export type PullRequestCheck = z.infer<typeof PullRequestCheck>;
 
@@ -100,6 +106,8 @@ export const PullRequestThreadComment = z.looseObject({
   createdAt: IsoDateTime,
   editedAt: IsoDateTime.nullable().optional(),
   url: z.string().nullable(),
+  /** The review that posted the comment, so a link to a review with no text finds its comments. */
+  reviewUrl: z.string().nullable().optional(),
   reactions: z.array(PullRequestReaction).optional(),
   canEdit: z.boolean().optional(),
 });

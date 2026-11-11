@@ -19,6 +19,7 @@ import {
   RuntimeRequestId,
   ThreadId,
   TrimmedNonEmptyString,
+  TurnItemId,
   forwardCompatibleLiteral,
   taggedUnionWithUnknown,
 } from "../common.ts";
@@ -68,6 +69,12 @@ export type OrchestrationV2ProviderSessionDetached = z.infer<
 
 const pendingBackgroundTaskKinds = ["subagent", "command", "monitor", "background_task"] as const;
 const pendingBackgroundTask = z.looseObject({
+  /** The command line of a `command` or `monitor` task. */
+  command: z.string().optional(),
+  /** The turn item that started the work. */
+  itemId: TurnItemId.optional(),
+  /** The thread that started the work, when it is not the one that holds it. */
+  sourceThreadId: ThreadId.optional(),
   taskId: TrimmedNonEmptyString,
   description: TrimmedNonEmptyString.optional(),
   /** The subagent task that started this work and waits on it. */

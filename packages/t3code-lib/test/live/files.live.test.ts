@@ -8,6 +8,7 @@ import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import {
+  T3AuthError,
   T3HttpError,
   T3NotFoundError,
   assetUrlParams,
@@ -16,7 +17,14 @@ import {
   messageId,
   projectId,
 } from "../../src/index.ts";
-import { connect, hasLiveServer, modelSelection, refusal, waitFor } from "./liveClient.ts";
+import {
+  connect,
+  connectWithScopes,
+  hasLiveServer,
+  modelSelection,
+  refusal,
+  waitFor,
+} from "./liveClient.ts";
 import { pathWith, startPeerServer } from "./peerServer.ts";
 
 /** A one-pixel PNG. */
@@ -96,6 +104,25 @@ describe.skipIf(!hasLiveServer)("file methods and routes", () => {
         }),
       ),
     ).toMatchObject({ _tag: "AssetAttachmentNotFoundError" });
+  });
+
+  it("signs an app icon named by a bundle path, which needs the file grant", async () => {
+    const resource = {
+      _tag: "native-app-icon" as const,
+      app: { _tag: "app-path" as const, path: "/sample/Absent.app" },
+    };
+    const url = await client.rpc.call("assets.createUrl", { resource });
+    expect(url.relativeUrl).toMatch(/\/native-app-icon\.png$/u);
+    // The bundle path does not exist on the host, so the signed URL finds no icon.
+    await expect(read(url.relativeUrl)).rejects.toBeInstanceOf(T3NotFoundError);
+    const reader = await connectWithScopes(client, ["orchestration:read"]);
+    try {
+      await expect(reader.rpc.call("assets.createUrl", { resource })).rejects.toBeInstanceOf(
+        T3AuthError,
+      );
+    } finally {
+      await reader.close();
+    }
   });
 
   it("refuses an upload of the wrong size, and keeps the signed token out of the error", async () => {

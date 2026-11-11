@@ -216,6 +216,22 @@ describe.skipIf(!hasLiveServer)("live MCP OAuth routes", () => {
     expect(url.searchParams.get("iss")).toBe(new URL(server.baseUrl).origin);
   });
 
+  it("approves with the session's own token, without a cookie or a code", async () => {
+    const details = await server.client.routes.call("mcpOAuth.approval", { body: authorization });
+    expect(details).toMatchObject({ clientName: "Sample client", csrfToken: expect.any(String) });
+    const csrfToken = "csrfToken" in details ? String(details.csrfToken) : "";
+    expect(csrfToken).not.toBe("");
+    const { redirectTo } = await server.client.routes.call("mcpOAuth.decision", {
+      body: {
+        authorization,
+        decision: { _tag: "browser-session", access: "read-only", csrfToken },
+      },
+    });
+    const url = new URL(redirectTo);
+    expect(url.searchParams.get("code")).toEqual(expect.any(String));
+    expect(url.searchParams.get("state")).toBe("sample-state");
+  });
+
   it("exchanges a pairing code's approval for a token that /mcp accepts, once", async () => {
     const params = await approve();
     expect(params.get("state")).toBe("sample-state");

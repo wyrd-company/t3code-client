@@ -87,7 +87,11 @@ export const sourceControlMethods = {
     stream: false,
     scope: "source-control:write",
   }),
-  /** Returns when the project exists and the clone starts. `subscribeProjectClones` reports it. */
+  /**
+   * Returns when the project exists and the clone starts. `subscribeProjectClones` reports it.
+   * When another project already owns the destination folder, such as the project of a clone that
+   * failed before a restart, the clone runs for that project, and `projectId` names it.
+   */
   "projectClone.start": defineMethod({
     payload: ProjectCloneStartInput,
     success: ProjectCloneStartResult,

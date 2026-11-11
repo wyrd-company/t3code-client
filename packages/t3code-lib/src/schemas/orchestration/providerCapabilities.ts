@@ -19,6 +19,8 @@ export const OrchestrationV2ThreadCapabilities = z.looseObject({
   exposesNativeThreadId: z.boolean(),
 });
 export const OrchestrationV2TurnCapabilities = z.looseObject({
+  /** The provider runs native goals. Absent from older servers. */
+  supportsNativeGoals: z.boolean().optional(),
   exposesNativeTurnId: z.boolean(),
   emitsTurnStarted: z.boolean(),
   emitsTurnCompleted: z.boolean(),

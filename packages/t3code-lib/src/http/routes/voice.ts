@@ -18,6 +18,7 @@ import {
   CloudSpeechModels,
   CloudSpeechProvider,
   EnvironmentSpeechAccelerationRequest,
+  EnvironmentSpeechModelLinkRequest,
   EnvironmentSpeechModelRequest,
   EnvironmentSpeechModelUnloadTimeoutRequest,
   EnvironmentSpeechModels,
@@ -115,6 +116,20 @@ export const voiceRoutes = {
   "voice.selectModel": modelRoute("/api/voice/models/select"),
   "voice.cancelModelDownload": modelRoute("/api/voice/models/cancel"),
   "voice.removeModel": modelRoute("/api/voice/models/remove"),
+  /**
+   * Uses a model file, or the model files of a folder, from elsewhere on the environment's disk.
+   * The path is on the server's machine, so the route also needs `filesystem:read`. A model read
+   * by a session without `filesystem:read` leaves out `linkedFrom`.
+   */
+  "voice.linkModels": defineRoute({
+    method: "POST",
+    path: "/api/voice/models/link",
+    auth: "required",
+    scope: "settings:write",
+    inputScopes: () => ["filesystem:read"],
+    input: z.strictObject({ body: EnvironmentSpeechModelLinkRequest }),
+    success: EnvironmentSpeechModels,
+  }),
   "voice.updateAcceleration": defineRoute({
     method: "POST",
     path: "/api/voice/acceleration",

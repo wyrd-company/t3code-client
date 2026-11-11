@@ -4,16 +4,33 @@
 // ---
 /** Mirrors `packages/contracts/src/assets.ts`, and the bytes of the asset route. */
 import { z } from "zod";
-import { NonNegativeInt, ThreadId, TrimmedNonEmptyString, TurnItemId } from "./common.ts";
+import {
+  NonNegativeInt,
+  ThreadId,
+  TrimmedNonEmptyString,
+  TurnItemId,
+  taggedUnionWithUnknown,
+} from "./common.ts";
 import {
   PROVIDER_SEND_TURN_MAX_FILE_BYTES,
   PROVIDER_SEND_TURN_MAX_IMAGE_BYTES,
   PROVIDER_SEND_TURN_SUPPORTED_IMAGE_MIME_TYPES,
 } from "./orchestration/attachments.ts";
-import { ToolActivityNativeAppReference } from "./orchestration/providerRuntime.ts";
+import {
+  NativeAppDisplayNameReference,
+  NativeAppIdReference,
+} from "./orchestration/providerRuntime.ts";
 import { ProjectFaviconPath } from "./projects.ts";
 
 const AssetPath = TrimmedNonEmptyString.max(1024);
+
+/** A native app named as a tool activity names it, or an app bundle path on the host's disk. */
+export const NativeAppIconReference = taggedUnionWithUnknown("_tag", [
+  NativeAppIdReference,
+  NativeAppDisplayNameReference,
+  z.looseObject({ _tag: z.literal("app-path"), path: AssetPath }),
+]);
+export type NativeAppIconReference = z.infer<typeof NativeAppIconReference>;
 
 /** The wire tag of a source control host's credentialed media. */
 export const SOURCE_CONTROL_MEDIA_ASSET = "github-media";
@@ -47,7 +64,7 @@ export const AssetResource = z.discriminatedUnion("_tag", [
     cwd: AssetPath,
     path: ProjectFaviconPath.optional(),
   }),
-  z.looseObject({ _tag: z.literal("native-app-icon"), app: ToolActivityNativeAppReference }),
+  z.looseObject({ _tag: z.literal("native-app-icon"), app: NativeAppIconReference }),
   z.looseObject({
     _tag: z.literal(SOURCE_CONTROL_MEDIA_ASSET),
     cwd: AssetPath,

@@ -58,8 +58,8 @@ const expected: Record<string, [string, string, string, string | undefined]> = {
   ],
   "mcpOAuth.register": ["POST", "/oauth/mcp/register", "none", undefined],
   "mcpOAuth.authorize": ["GET", "/oauth/mcp/authorize", "none", undefined],
-  "mcpOAuth.approval": ["POST", "/oauth/mcp/approval", "none", undefined],
-  "mcpOAuth.decision": ["POST", "/oauth/mcp/decision", "none", undefined],
+  "mcpOAuth.approval": ["POST", "/oauth/mcp/approval", "optional", undefined],
+  "mcpOAuth.decision": ["POST", "/oauth/mcp/decision", "optional", undefined],
   "mcpOAuth.token": ["POST", "/oauth/mcp/token", "none", undefined],
   "orchestration.shellSnapshot": [
     "GET",
@@ -122,6 +122,7 @@ const expected: Record<string, [string, string, string, string | undefined]> = {
   "voice.selectModel": ["POST", "/api/voice/models/select", "required", "settings:write"],
   "voice.cancelModelDownload": ["POST", "/api/voice/models/cancel", "required", "settings:write"],
   "voice.removeModel": ["POST", "/api/voice/models/remove", "required", "settings:write"],
+  "voice.linkModels": ["POST", "/api/voice/models/link", "required", "settings:write"],
   "voice.updateAcceleration": ["POST", "/api/voice/acceleration", "required", "settings:write"],
   "voice.updateModelUnloadTimeout": [
     "POST",
