@@ -56,7 +56,7 @@
     "t3": "0.1.8",
     "typescript": "7.0.2",
     "typescript-api": "npm:typescript@6.0.3",
-    "vite-plus": "1.5.1",
+    "vite-plus": "1.6.0",
     "ws": "^8.21.3"
   },
   "peerDependencies": {
