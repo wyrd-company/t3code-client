@@ -114,6 +114,9 @@ describe.skipIf(!hasLiveServer)("preview viewer", () => {
     });
     expect(tab.runtime).toBe("server");
     tabId = tab.tabId;
+    // A viewer opened while a new tab loads its first page can fail to open on 0.1.9, and it
+    // holds back later viewers of that tab, so the viewer waits for the loaded page.
+    await waitFor(loadedUrl, "the loaded page");
     viewer = await attach(client, tabId);
     until = reader(viewer);
   }, 240_000);

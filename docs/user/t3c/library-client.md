@@ -68,7 +68,10 @@ Client composition root for HTTP, auth, RPC and server facades.
 
 Attach to a tab that runs in the server's browser, with a new ticket for the
 `media` use. Each viewer is its own socket, and `close()` of this client does not
-end it.
+end it. The server opens the socket once it has attached the viewer. On T3 Code 0.1.9 a
+viewer opened while a new tab loads its first page can fail to open, and later viewers of
+that tab wait behind it: open one after `preview.list` reports the tab's `navStatus` as
+`Success`, and pass a `signal` to give up on one that does not open.
 
 ```ts
 async openPreviewViewer(
