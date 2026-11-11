@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.4
+
+### Fixes
+
+- Target stock T3 Code 0.1.9, orchestration protocol 2. `TARGET_T3_CODE_VERSION` is `0.1.9`, and `t3c version` compares the server with 0.1.9.
+
 ## 0.1.3
 
 ### Features

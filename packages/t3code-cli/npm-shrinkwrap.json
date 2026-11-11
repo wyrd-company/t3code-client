@@ -1,14 +1,14 @@
 {
   "name": "@wyrd-company/t3code-cli",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
     "": {
       "name": "@wyrd-company/t3code-cli",
-      "version": "0.2.2",
+      "version": "0.2.3",
       "dependencies": {
-        "@wyrd-company/t3code-lib": "0.4.1",
+        "@wyrd-company/t3code-lib": "0.4.2",
         "commander": "^15.0.0",
         "semver": "^7.8.5"
       },
@@ -20,9 +20,9 @@
       }
     },
     "node_modules/@wyrd-company/t3code-lib": {
-      "version": "0.4.1",
-      "resolved": "https://registry.npmjs.org/@wyrd-company/t3code-lib/-/t3code-lib-0.4.1.tgz",
-      "integrity": "sha512-gXuIRoMA78H8uCFBdBMxkpH2c+y32RgcSr+FE/Fm45CUYKdBTZA6PVmYccAyKXVZeffjfprLrEu9qfHlWZStVw==",
+      "version": "0.4.2",
+      "resolved": "https://registry.npmjs.org/@wyrd-company/t3code-lib/-/t3code-lib-0.4.2.tgz",
+      "integrity": "sha512-MGYHaI3ILXmqG1wFmUH6WSk974iyBymhK8hGLZ75/33ddRK+5ggVdNrpK7OEzPT2xMaIqr7s/8/xe6Ko7Dg6oA==",
       "license": "MIT",
       "dependencies": {
         "zod": "^4.6.5"

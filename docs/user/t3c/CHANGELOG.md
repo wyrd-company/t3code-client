@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.3
+
+### Fixes
+
+- Target stock T3 Code 0.1.9, orchestration protocol 2. `TARGET_T3_CODE_VERSION` is `0.1.9`, and `t3c version` compares the server with 0.1.9.
+- Type the 0.1.9 contract changes: the `voice.linkModels` route and speech model linking fields, reset credit options and `creditId` on `provider.consumeResetCredit`, native app icons by bundle path, the session token on `mcpOAuth.approval` and `mcpOAuth.decision`, the `mcpHostedApproval` and `supportsNativeGoals` capabilities, background work origin and the shell's `latestRunBackgroundWake`, pull request label descriptions, placeholder checks, review links and approval holds, and the `thread.regenerateTitle` keybinding command.
+
 ## 0.4.2
 
 ### Fixes
