@@ -252,7 +252,9 @@ describe.skipIf(!ownsServer)("live peer links", () => {
       const first = await askLink("Sample decline", 1, openThread);
       // `reason` is optional in the tool input, and the server records its absence as empty text.
       expect(first).toMatchObject({ reason: expect.any(String), url: peer.baseUrl });
-      expect(first.environmentId).toBe(peerEnvironmentId);
+      // A card for an address names no machine: anything can answer there as any machine.
+      expect(first.environmentId).toBeUndefined();
+      expect(first.label).toBeUndefined();
       const decline = { threadId: id, turnItemId: first.id, answer: { type: "decline" } } as const;
       await client.peerLinks.answerRequest(decline);
       await ended(first.id, "declined");

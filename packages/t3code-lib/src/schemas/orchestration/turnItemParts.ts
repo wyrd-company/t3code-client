@@ -130,8 +130,13 @@ export const OrchestrationV2LinkRequestFields = {
   /** The address the agent named, if it named one. */
   url: TrimmedNonEmptyString.optional(),
   reason: z.string(),
-  /** The environment the agent named, or the one answering at `url`. */
+  /**
+   * The environment the agent named. Without it or `url` the user picks the
+   * machine. Beside a `url`, this and `label` are what answered at the address
+   * on an older server: unauthenticated, so ignore both.
+   */
   environmentId: EnvironmentId.optional(),
+  /** Only from an older server, beside `url`; see `environmentId`. */
   label: z.string().optional(),
   /** A phrase from the user's words, such as "vps", that preselects a machine. */
   hint: z.string().optional(),

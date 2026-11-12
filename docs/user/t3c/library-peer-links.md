@@ -89,7 +89,9 @@ Answer an agent's `link_request` turn item: `link`, `use-existing` or
 `decline`. A link that the peer refuses resolves, and the turn item records
 it as `failed`. A request that is gone or already answered rejects with a
 `PeerLinkRequestError` record. Its reason `record_failed` can come after the
-link was made, so check `list` after it. Needs `access:write`.
+link was made, so check `list` after it. A `link` answer that names an
+environment, to a request that an older server recorded with both `url` and
+`environmentId`, ends `failed`: ask for the link again. Needs `access:write`.
 
 ```ts
 answerRequest(
