@@ -9,7 +9,7 @@ products:
   t3c:
     name: t3c
     version: 0.2.3
-    docs-version: 0.4.3
+    docs-version: 0.4.4
     release-unit: t3code-cli
     tagline: Run T3 Code conversations from your terminal and automation.
     blurb: A Node command-line client and TypeScript library for stock T3 Code. Pair
