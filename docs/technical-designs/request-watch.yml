@@ -50,11 +50,14 @@ design-challenges:
   archived-threads: |
     The shell lists active threads. It publishes every event of an archived
     thread, the archive included, as `thread.removed`, never holds a removal
-    back, and an archived thread can still raise requests. The watcher takes a
-    removal as the sign to look: it watches the thread while its thread watch
-    holds a pending request or a run that has not ended. A thread the watcher
-    listed as active and that a later listing leaves out is treated the same
-    way.
+    back, and an archived thread can still raise requests. The watcher takes
+    every removal as the sign to look, whether or not it already holds the
+    thread as removed: it watches the thread until its view has reached the
+    removal's sequence, and while the view holds a pending request or a run
+    that has not ended. A listing after a gap the shell cannot replay shows
+    no removals, so at such a resync the watcher looks again at every thread
+    it holds as removed, and at every thread it listed as active that the
+    new listing leaves out.
   requests-before-their-cards: |
     A request's detail (the command, the files, the questions) is on its
     timeline card, and the card can arrive after the runtime request: the
@@ -112,10 +115,12 @@ proposed-design:
        shell snapshot and its catch-up, and each resync takes the shell's
        replay or a new HTTP shell snapshot (`startup`,
        `reconnects-and-restarts`). Each included thread whose row there shows
-       a summary, and each thread there removed, gets a thread watch unless it
-       has one, and a thread watch already open catches up after the
-       reconnect. Every selected request that the view holds pending, once it
-       has its first snapshot or has caught up, is reported. Whether a request
+       a summary, each thread a removal there names, and at a resync from a
+       new HTTP shell snapshot each thread the run holds as removed, gets a
+       thread watch unless it has one, and a thread watch already open
+       catches up after the reconnect. Every selected request that the view
+       holds pending, once it has its first snapshot or has caught up, is
+       reported. Whether a request
        was pending when the shell snapshot or the resync was taken is decided
        by that view: a request that settled before it was not seen pending
        (guarantee 4). At start the watcher reads only the threads whose row
@@ -140,8 +145,10 @@ proposed-design:
        holds then.
     5. **Archived threads.** An archived thread enters the run's view when a
        removal names it, or when a resync's listing leaves it out after an
-       earlier listing showed it active (`archived-threads`). From then on its
-       pending requests are reported like any other thread's. Before that,
+       earlier listing showed it active (`archived-threads`). From then on it
+       stays in the view: each later removal, and each resync from a new HTTP
+       shell snapshot, looks at it again, and its pending requests are
+       reported like any other thread's. Before that,
        the requests it holds are outside the view. Two kinds of request are
        outside it this way: a request already pending in an archived thread at
        start, and a request raised inside a gap the shell cannot replay (an
@@ -209,6 +216,18 @@ proposed-design:
       thread stays readable. A resumed subscription replays the thread's
       events after its cursor, or sends a new snapshot past the thread's
       replay limits (`subscribeOrchestrationV2Thread`, `apps/server/src/ws.ts:1025-1118`).
+    - **Event sequences.** Shell items and thread streams number events from
+      the same `sequence` column of `orchestration_events`: the shell reads
+      the v2 thread events and the project events, and a thread subscription
+      the thread's v2 events (`readApplicationRows`,
+      `apps/server/src/persistence/OrchestrationEventStore.ts:403-434`). A
+      shell row or removal carries the sequence of the latest event of its
+      thread in the batch (`coalesceShellApplicationEvents`,
+      `ShellStream.ts:575-589`). A thread subscription's snapshot carries its
+      thread's latest sequence (`ProjectionStore.ts:7741`), and its live
+      coalescer drops only updates that a later update of the same entity
+      supersedes, so the last event of a batch keeps its sequence
+      (`ThreadLiveEventCoalescer.ts:49-75`).
     - **Request updates.** A provider adapter emits a request's creation as a
       pending `runtime_request.updated` event, and the server applies each
       event as a whole record keyed by the request id. Some updates repeat a
@@ -391,9 +410,9 @@ proposed-design:
 
     | Source | Index change |
     | --- | --- |
-    | `shell.snapshot()`, at the start and at a resync | Every listed thread becomes active with its row. A thread the index holds as active and the listing leaves out becomes removed. The listed projects are added or updated. |
+    | `shell.snapshot()`, at the start and at a resync | Every listed thread becomes active with its row. A thread the index holds as active and the listing leaves out becomes removed. At a resync, every thread then held as removed and without a thread watch gets a recheck (The watch rule). The listed projects are added or updated. |
     | `thread.updated` | The thread becomes active with this row. |
-    | `thread.removed` | The thread becomes removed: archived or deleted. |
+    | `thread.removed` | The thread is removed, archived or deleted, and the removal is a trigger (The watch rule), whether or not the index already held the thread as removed. |
     | enrichment `snapshot` | The listed projects' titles are added or updated. Threads are unchanged. |
     | `project.updated`, `project.removed` | The project's title is added, updated or removed. |
     | `synchronized`, `snapshot-required`, `reconnected`, `decode-error` | See `startup` and `reconnects-and-restarts`. |
@@ -413,8 +432,22 @@ proposed-design:
     `threads.watch(threadId, { acceptBoundedSnapshot: true, acceptCompactTurnItems: true })`,
     on a thread that has none when:
 
-    - its row, included by the filters, shows a summary; or
-    - it becomes removed and its id is not in `excludeThreadIds`.
+    - its row, included by the filters, shows a summary;
+    - it has an outstanding removal or recheck.
+
+    Every `thread.removed` item, live or in a catch-up, is a removal of its
+    thread, unless the thread's id is in `excludeThreadIds`; a thread
+    excluded by id gets neither removals nor rechecks. A removal is
+    outstanding until a view of the thread reaches the removal's `sequence`:
+    the view's snapshot `snapshotSequence`, or the sequence of an event the
+    view applied, is at least the removal's (`upstream-request-model`, Event
+    sequences). A removal that arrives while
+    the thread has a thread watch is answered by that thread watch once its
+    view reaches the sequence. A recheck comes from a resync's HTTP shell
+    snapshot, for each thread the index then holds as removed and that has no
+    thread watch, and is outstanding until a thread watch delivers its first
+    snapshot. A thread has a thread watch from its opening until it closes,
+    retries included.
 
     Thread watches open as their triggers arrive, without a limit on how many
     are open. A thread watch stays open while any of these holds, and closes
@@ -424,6 +457,7 @@ proposed-design:
     - its view holds a selected pending request;
     - the thread is removed, its view's thread record is included, and its
       view holds a run that has not reached a terminal status;
+    - a removal or recheck of the thread is outstanding;
     - a request it saw pending waits for its card.
 
     The watch applies each `snapshot` and `event` item to the thread watch's
@@ -449,11 +483,14 @@ proposed-design:
 
     **Failures.** A thread watch that ends with a recoverable error yields a
     `thread-error`, and opens again with backoff while one of the conditions
-    that keep a thread watch open still holds, or while the removal that
-    opened it has not been answered by a first snapshot. A failure that is
-    not a `T3ConnectionError` also answers a removal, and the thread is looked
-    at again on its next removal: every later event of an archived thread
-    publishes one. Two seconds after a request was first seen, its report uses the
+    that keep a thread watch open still holds for its latest view, the
+    outstanding removals and rechecks included. A failed subscription
+    answers no removal or recheck. When a thread watch for a removed thread
+    fails with an error that is not a `T3ConnectionError`, the watch reads
+    `threads.detail(threadId)`. A `T3NotFoundError` there means the server
+    holds no such thread, and answers its removals and rechecks; any other
+    answer leaves them outstanding, and the thread watch opens again with
+    backoff. Two seconds after a request was first seen, its report uses the
     latest view, even when its thread watch is between attempts.
   startup: |
     Task 5 builds this.
@@ -476,11 +513,12 @@ proposed-design:
        (`reconnects-and-restarts`) before it is ready.
 
     **Readiness.** The watch yields `synchronized` when the shell subscription
-    has delivered its `synchronized` and every thread watch opened before it
-    has delivered its first snapshot, with every request seen pending in that
-    snapshot reported, including those whose report waited for a card. A
-    thread watch that fails holds readiness back and yields `thread-error`
-    items until it succeeds, or until its thread no longer needs watching.
+    has delivered its `synchronized`, every thread watch opened before it has
+    delivered its first snapshot, every removal the catch-up brought is
+    answered, and every request seen pending in those views has been
+    reported, including those whose report waited for a card. A thread watch
+    that fails holds readiness back and yields `thread-error` items until it
+    succeeds, or until its thread no longer needs watching.
 
     The CLI prints `t3c: watching for requests` on stderr at `info` level for
     `synchronized`, so a script run with `--log-level info` can wait for it.
@@ -509,9 +547,13 @@ proposed-design:
       shell snapshot again and subscribes once more with `afterSequence` set
       to its `snapshotSequence`. The index takes the listing: a thread it held
       as active that the listing leaves out was archived or deleted during the
-      outage, becomes removed, and gets a thread watch. An included thread
-      whose row in the new listing shows a summary gets a thread watch, as at
-      the start. Another `snapshot-required` repeats the resync with backoff.
+      outage and becomes removed. Every thread the index then holds as
+      removed and that has no thread watch, whether it left the listing now
+      or was removed earlier in the run, gets a recheck: the listing shows
+      active threads only, and the new cursor starts after any removal the
+      gap held. A thread watch already open resumes on its own. An included
+      thread whose row in the new listing shows a summary gets a thread
+      watch, as at the start. Another `snapshot-required` repeats the resync with backoff.
     - **Server restart.** The socket drops, and the server comes back with its
       stored events and projections, so the same cursors resume. Pending
       approvals end at shutdown or startup, as `cancelled` or `expired`. A
@@ -523,9 +565,11 @@ proposed-design:
 
     **Readiness after a resync.** The watch yields `reconnected` when the
     resumed or new shell subscription has delivered `synchronized`, every
-    thread watch the resync opened has delivered its first snapshot, every
-    thread watch that resumed after the drop has delivered its `synchronized`,
-    and every request seen pending in them has been reported.
+    removal its replay brought and every recheck its listing made is
+    answered, every thread watch the resync opened has delivered its first
+    snapshot, every thread watch that resumed after the drop has delivered
+    its `synchronized`, and every request seen pending in them has been
+    reported.
 
     The index and the set last for the run.
   command: |
@@ -897,6 +941,24 @@ proposed-design:
       the resync. An archived thread holds a pending question at start;
       nothing is reported, and the fake server fails the test when
       `orchestration.getArchivedShellSnapshot` is called.
+    - **Removed before the gap (task 5).** The watcher sees thread T's
+      archive removal, and T's thread watch closes after an idle snapshot, so
+      the index holds T as removed with no thread watch. During an outage
+      past the replay window, T is unarchived, runs, is archived again and
+      raises a selected approval that stays pending. The resume answers
+      `snapshot-required`; the resync rechecks T, the approval is reported,
+      and `reconnected` follows its line. With T in `excludeThreadIds`, T gets
+      no thread watch.
+    - **Every removal counts (task 5).** The index holds T as removed with no
+      thread watch, and a later removal of T arrives, live and in another test
+      in a replay; T gets a thread watch, and a pending approval it holds is
+      reported.
+    - **Removal ahead of the view (task 5).** Archived thread T is watched
+      while its run runs. The run ends, a new run raises a selected approval,
+      and the removal for that event reaches the watcher before T's thread
+      watch applies the end of the first run. The thread watch stays open
+      until its view reaches the removal's sequence, and the approval is
+      reported.
     - **Restart (task 5).** A run reports a pending approval and a pending
       question, and the server restarts: the approval expires, the question
       survives, and the continued run raises a new approval. The new approval
@@ -910,8 +972,16 @@ proposed-design:
     - **Failures (task 5).** A waiting thread's subscription fails twice with
       a server error. Two `thread-error` items come, `synchronized` waits, and
       the request is reported and `synchronized` follows when the third
-      attempt succeeds. A removed thread whose subscription fails with a
-      server error is not retried until its next removal.
+      attempt succeeds.
+    - **Failed subscription on a removal (task 5).** During an outage the
+      server can replay, a thread is archived and its run raises a selected
+      approval that stays pending. The replay brings the removal, and the
+      first subscription for it fails with a server error that is not a
+      `T3ConnectionError`. `threads.detail` answers the thread, so the thread
+      watch opens again with backoff; the approval is reported, and
+      `reconnected` follows its line. In another test `threads.detail`
+      answers `T3NotFoundError`, the removal is answered, and the thread
+      watch does not open again.
     - **Exact exclusion (task 5).** With `excludeThreadIds: [manager]`, a
       subagent worker thread whose parent is the manager reports its
       approvals.
