@@ -49,6 +49,12 @@ export interface ShellOmitOptions {
 
 export interface ShellWatchOptions extends ShellOmitOptions {
   readonly afterSequence?: number;
+  /**
+   * With a cursor, a gap the server cannot replay answers one `snapshot-required` item, and the
+   * subscription ends: read `snapshot()` and watch again from its `snapshotSequence`. Without it,
+   * the server sends a socket snapshot instead.
+   */
+  readonly httpSnapshotFallback?: boolean;
   readonly signal?: AbortSignal;
 }
 
@@ -126,7 +132,10 @@ export class ShellApi {
     return this.rpc.call("orchestration.getOlderSettledThreads", input, signal);
   }
 
-  /** Subscribes with `orchestration.subscribeShell`; resubscribes after a dropped socket. */
+  /**
+   * Subscribes with `orchestration.subscribeShell`; resubscribes after a dropped socket. The cursor
+   * moves only on a snapshot without `resolvedRepositoryIdentityRoots` and on sequenced items.
+   */
   watch(options: ShellWatchOptions = {}): AsyncIterable<ShellWatchItem> {
     const rpc = this.rpc;
     return {
@@ -141,6 +150,9 @@ export class ShellApi {
             const payload = {
               requestCompletionMarker: true,
               ...(afterSequence === undefined ? {} : { afterSequence }),
+              ...(afterSequence !== undefined && options.httpSnapshotFallback === true
+                ? { httpSnapshotFallback: true as const }
+                : {}),
               ...(options.omitIdleSubagents === undefined
                 ? {}
                 : { omitIdleSubagents: options.omitIdleSubagents }),

@@ -160,6 +160,14 @@ proposed-design:
     error raised while the socket is open, including an HTTP detail failure while
     seeding a resumed thread watch, ends the watch with that error.
 
+    The shell watch moves its cursor on sequenced items and on a snapshot without
+    `resolvedRepositoryIdentityRoots`. A snapshot with them only refreshes the
+    repository identities of its projects, so its rows and sequence are not
+    authoritative. `httpSnapshotFallback` with a cursor asks the server to answer
+    a gap it cannot replay with one `snapshot-required` item instead of a socket
+    snapshot; the subscription then ends, and the caller reads `shell.snapshot()`
+    and watches again from its `snapshotSequence`.
+
     The server links a message to its run: a new run's `userMessageId` names the
     message that started it, and the message record's `runId` names the run that
     took it, also when the message was steered into a run that was already
@@ -176,7 +184,7 @@ proposed-design:
       threadFamily(threadId, signal?): Promise<OrchestrationV2ThreadFamily>; // RPC
       worktreeThreadIds(worktreePath, signal?): Promise<ThreadId[]>; // RPC
       olderSettledThreads(input, signal?): Promise<OrchestrationV2OlderSettledThreadsPage>; // RPC
-      watch(options?): AsyncIterable<ShellWatchItem>; // resumable like threads; takes ShellOmitOptions
+      watch(options?): AsyncIterable<ShellWatchItem>; // resumable like threads; takes ShellOmitOptions and httpSnapshotFallback
     }
     export class ServerApi {
       probe();
