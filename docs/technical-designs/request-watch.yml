@@ -119,7 +119,10 @@ proposed-design:
        holds one. A pending request whose card has not arrived two seconds
        after its record is reported without it.
     5. **Bounds.** A request that shares the server millisecond of its thread's
-       start boundary is classed as if raised before the boundary. A request in
+       start boundary is classed as if raised before the boundary. An archived
+       thread's boundary comes from the archived snapshot, read just after the
+       shell's first snapshot, so a request raised and settled in an archived
+       thread between the two reads is classed as history. A request in
        a thread whose reads keep failing is reported once a read succeeds; each
        failure is a `thread-error` item. A secret or link card is not a runtime
        request and is never reported.
