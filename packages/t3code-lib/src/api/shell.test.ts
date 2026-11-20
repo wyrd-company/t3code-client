@@ -215,6 +215,62 @@ describe("ShellApi", () => {
     expect(items[6]).toMatchObject({ location: "archive", threadId: "thread-1" });
   });
 
+  it("keeps the cursor at a marked snapshot, which only refreshes project identities", async () => {
+    server.handle("orchestration.subscribeShell", () => {
+      return {
+        kind: "stream",
+        chunks: [
+          [
+            { kind: "snapshot", snapshot: makeShellSnapshot({ snapshotSequence: 1 }) },
+            {
+              kind: "snapshot",
+              snapshot: makeShellSnapshot({ projects: [makeShellProject()], snapshotSequence: 3 }),
+              resolvedRepositoryIdentityRoots: ["/srv/sample"],
+            },
+            threadUpdated(3),
+          ],
+        ],
+      };
+    });
+    const items: ShellWatchItem[] = [];
+    for await (const item of shell.watch()) items.push(item);
+    expect(items.map((item) => item.kind)).toEqual(["snapshot", "snapshot", "thread.updated"]);
+  });
+
+  it("replays the rows after a resumed subscription's marked snapshot at the head", async () => {
+    const payloads: Record<string, unknown>[] = [];
+    const marked = {
+      kind: "snapshot",
+      snapshot: makeShellSnapshot({ projects: [makeShellProject()], snapshotSequence: 9 }),
+      resolvedRepositoryIdentityRoots: ["/srv/sample"],
+    };
+    server.handle("orchestration.subscribeShell", (payload, context) => {
+      payloads.push(payload as Record<string, unknown>);
+      if (payloads.length > 1) {
+        // A resume opens with the marked snapshot at the head, then replays what the client missed.
+        return {
+          kind: "stream",
+          chunks: [[marked, threadUpdated(6), threadUpdated(8), threadUpdated(9)]],
+        };
+      }
+      context.connection.send({
+        _tag: "Chunk",
+        requestId: context.requestId,
+        values: [{ kind: "snapshot", snapshot: makeShellSnapshot({ snapshotSequence: 5 }) }],
+      });
+      return { kind: "hang" };
+    });
+    const items: ShellWatchItem[] = [];
+    for await (const item of shell.watch()) {
+      items.push(item);
+      if (item.kind === "snapshot" && payloads.length === 1) server.connections[0]?.drop();
+    }
+    expect(payloads[1]).toEqual({ requestCompletionMarker: true, afterSequence: 5 });
+    expect(
+      items.map((item) => (item.kind === "thread.updated" ? item.sequence : item.kind)),
+    ).toEqual(["snapshot", "reconnected", "snapshot", 6, 8, 9]);
+  });
+
   it("starts from a given afterSequence and drops items at or below it", async () => {
     let payload: unknown;
     server.handle("orchestration.subscribeShell", (input) => {
