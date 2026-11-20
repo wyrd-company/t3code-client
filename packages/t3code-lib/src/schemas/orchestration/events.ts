@@ -40,7 +40,7 @@ import {
   OrchestrationV2RunBackgroundWorkCancelled,
   OrchestrationV2Subagent,
 } from "./runs.ts";
-import { OrchestrationV2AppThread } from "./thread.ts";
+import { OrchestrationV2AppThread, OrchestrationV2ThreadVisit } from "./thread.ts";
 import { OrchestrationV2TurnItem } from "./turnItems.ts";
 
 const eventBase = {
@@ -92,6 +92,8 @@ export const OrchestrationV2DomainEvent = taggedUnionWithUnknown("type", [
   }),
   /** One linked pull request changed; the payload replaces the thread's link with the same key. */
   event("thread.pull-request-link-updated", ThreadPullRequestLink),
+  /** A visit: apply `lastVisitedAt`, and `opens` when present, to the thread. */
+  event("thread.visit-recorded", OrchestrationV2ThreadVisit),
   event("run.created", OrchestrationV2Run),
   event("run.updated", OrchestrationV2Run),
   event("run.background-work-cancelled", OrchestrationV2RunBackgroundWorkCancelled),

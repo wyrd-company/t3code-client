@@ -29,6 +29,8 @@ export const OrchestrationV2TurnCapabilities = z.looseObject({
   activeSteeringInterruptsTools: z.boolean().optional(),
   /** False when native steering takes text only, so a steer with attachments restarts the turn. */
   activeSteeringAcceptsAttachments: z.boolean().optional(),
+  /** True only where a steer leaves a running automatic compaction intact; otherwise queue. */
+  activeSteeringDuringCompaction: z.boolean().optional(),
   supportsSteeringByInterruptRestart: z.boolean(),
   supportsQueuedMessages: z.boolean(),
   terminalStatusQuality: forwardCompatibleLiteral(["strong", "weak", "none"]),

@@ -87,6 +87,11 @@ export type {
   OrchestrationV2OlderSettledThreadsPage,
   OrchestrationV2ThreadFamily,
 } from "./schemas/orchestration/shellOmittedRows.ts";
+export type {
+  OrchestrationV2ShellHttpSnapshot,
+  OrchestrationV2ShellResumable,
+  OrchestrationV2ShellResumeAnswer,
+} from "./schemas/orchestration/shellHttp.ts";
 export type { OrchestrationV2ForceStopThreadResult } from "./schemas/orchestration/threadForceStop.ts";
 export type {
   OrchestrationV2DomainEvent,

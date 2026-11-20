@@ -67,6 +67,12 @@ const expected: Record<string, [string, string, string, string | undefined]> = {
     "required",
     "orchestration:read",
   ],
+  "orchestration.shellSnapshotResume": [
+    "GET",
+    "/api/orchestration/shell",
+    "required",
+    "orchestration:read",
+  ],
   "orchestration.threadSnapshot": [
     "GET",
     "/api/orchestration/threads/:threadId",

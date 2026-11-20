@@ -7,10 +7,12 @@ import {
   EnvironmentId,
   GuestMessageId,
   GuestShareId,
+  MessageId,
   NonNegativeInt,
   PositiveInt,
   ThreadId,
   TrimmedNonEmptyString,
+  TurnItemId,
   forwardCompatibleArray,
   forwardCompatibleLiteral,
 } from "../common.ts";
@@ -165,6 +167,48 @@ export const EnvironmentContextRecord = z.looseObject({
 });
 export type EnvironmentContextRecord = z.infer<typeof EnvironmentContextRecord>;
 
+/** A quoted span of an assistant message. Positions are UTF-16 offsets, not Markdown offsets. */
+export const AssistantCitation = z
+  .looseObject({
+    version: z.literal(1),
+    environmentId: EnvironmentId.max(4096),
+    threadId: ThreadId.max(4096),
+    messageId: MessageId.max(4096),
+    text: z.string().min(1).max(8000),
+    comment: z.string().max(8000).optional(),
+    start: NonNegativeInt,
+    end: NonNegativeInt,
+    prefix: z.string().max(32),
+    suffix: z.string().max(32),
+  })
+  .refine((citation) => citation.end > citation.start && citation.text.trim().length > 0);
+export type AssistantCitation = z.infer<typeof AssistantCitation>;
+
+/**
+ * An earlier assistant response the user replies to. Only its identity and opening travel; the
+ * agent rereads the rest by `itemId`.
+ */
+export const ResponseContextRecord = z.looseObject({
+  ...recordBase,
+  kind: z.literal("response"),
+  /** Where the response is and how it starts, as the reader saw it. */
+  citation: AssistantCitation,
+  itemId: TurnItemId,
+  /** The subagents whose results that response reported on. */
+  subagents: z
+    .array(
+      z.looseObject({
+        threadId: ThreadId,
+        title: z.string().max(200),
+        /** Set when the subagent's thread lives on a linked environment. */
+        environmentId: EnvironmentId.optional(),
+      }),
+    )
+    .max(20)
+    .optional(),
+});
+export type ResponseContextRecord = z.infer<typeof ResponseContextRecord>;
+
 const knownKinds = new Set([
   "image",
   "file",
@@ -176,6 +220,7 @@ const knownKinds = new Set([
   "skill",
   "thread",
   "environment",
+  "response",
 ]);
 function fitsJson(value: unknown, maximum: number): boolean {
   try {
@@ -205,6 +250,7 @@ export const ComposerContextRecord = z.union([
   SkillContextRecord,
   ThreadContextRecord,
   EnvironmentContextRecord,
+  ResponseContextRecord,
   UnknownContextRecord,
 ]);
 export type ComposerContextRecord = z.infer<typeof ComposerContextRecord>;

@@ -15,13 +15,19 @@ import {
   OrchestrationV2ThreadHistoryPage,
   OrchestrationV2ThreadTranscript,
 } from "../../schemas/orchestration/projection.ts";
-import { OrchestrationV2ShellSnapshot } from "../../schemas/orchestration/shell.ts";
+import {
+  OrchestrationV2ShellHttpSnapshot,
+  OrchestrationV2ShellResumeAnswer,
+} from "../../schemas/orchestration/shellHttp.ts";
 import { defineRoute } from "../spec.ts";
 
 const headers = { [ORCHESTRATION_PROTOCOL_HEADER]: ORCHESTRATION_PROTOCOL_VERSION_TEXT };
 
 /** The server enables a query option only when its value is `"1"`. */
 const Flag = z.literal("1").optional();
+
+/** A cursor the server reads as a non-negative integer. */
+const Cursor = z.union([z.number().int().nonnegative(), z.string().regex(/^\d+$/)]);
 
 const ThreadParams = z.strictObject({ threadId: ThreadId });
 
@@ -36,7 +42,25 @@ export const orchestrationRoutes = {
         query: z.strictObject({ omitIdleSubagents: Flag, omitOlderSettled: Flag }).optional(),
       })
       .optional(),
-    success: OrchestrationV2ShellSnapshot,
+    success: OrchestrationV2ShellHttpSnapshot,
+  }),
+  /**
+   * The same route with `resumeFrom`, the cursor of rows the client holds, loaded with the same
+   * omissions. The answer is `{ resumable: true }` when the socket can replay from that cursor:
+   * keep the rows and subscribe with `afterSequence` and `knownProjectIdentities`. Otherwise
+   * it is a snapshot.
+   */
+  "orchestration.shellSnapshotResume": defineRoute({
+    ...common,
+    path: "/api/orchestration/shell",
+    input: z.strictObject({
+      query: z.strictObject({
+        omitIdleSubagents: Flag,
+        omitOlderSettled: Flag,
+        resumeFrom: Cursor,
+      }),
+    }),
+    success: OrchestrationV2ShellResumeAnswer,
   }),
   "orchestration.threadSnapshot": defineRoute({
     ...common,

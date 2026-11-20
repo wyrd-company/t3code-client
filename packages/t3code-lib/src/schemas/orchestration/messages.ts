@@ -21,6 +21,34 @@ import {
 import { ChatAttachment } from "./attachments.ts";
 import { OrchestrationMessageContext } from "./messageContext.ts";
 import { OrchestrationV2CreationFields } from "./model.ts";
+import { ThreadPullRequestKey } from "./pullRequest.ts";
+import { OrchestrationV2LinkedSender } from "./threadLink.ts";
+
+const notificationOutcomes = ["completed", "failed", "cancelled", "updated", "unknown"] as const;
+
+/** One pull request's part of a wake that covers several. */
+export const OrchestrationV2PullRequestWakeSection = z.looseObject({
+  text: z.string(),
+  outcome: forwardCompatibleLiteral(notificationOutcomes),
+  summary: TrimmedNonEmptyString,
+});
+export type OrchestrationV2PullRequestWakeSection = z.infer<
+  typeof OrchestrationV2PullRequestWakeSection
+>;
+
+/** The pull request watch a monitor wake reports on. */
+export const OrchestrationV2MonitorPullRequestStamp = z.looseObject({
+  ...ThreadPullRequestKey.shape,
+  watchStartedAt: IsoDateTime,
+  /** Null when the wake is not about one head, so a newer push does not outdate it. */
+  headSha: TrimmedNonEmptyString.nullable(),
+  watchEnded: z.boolean().optional(),
+  /** Set on a wake covering several pull requests. */
+  section: OrchestrationV2PullRequestWakeSection.optional(),
+});
+export type OrchestrationV2MonitorPullRequestStamp = z.infer<
+  typeof OrchestrationV2MonitorPullRequestStamp
+>;
 
 export type OrchestrationV2NotificationSource =
   | {
@@ -30,7 +58,11 @@ export type OrchestrationV2NotificationSource =
     }
   | { readonly kind: "subagent"; readonly childThreadId?: ThreadId }
   | { readonly kind: "command" }
-  | { readonly kind: "monitor" }
+  | {
+      readonly kind: "monitor";
+      readonly pullRequest?: OrchestrationV2MonitorPullRequestStamp;
+      readonly otherPullRequests?: OrchestrationV2MonitorPullRequestStamp[];
+    }
   | { readonly kind: "background_task" }
   | { readonly kind: "system" };
 
@@ -49,6 +81,8 @@ export const OrchestrationV2NotificationSource: z.ZodType<
     work: z.string().optional(),
     taskIds: z.array(NodeId).optional(),
     childThreadId: ThreadId.optional(),
+    pullRequest: OrchestrationV2MonitorPullRequestStamp.optional(),
+    otherPullRequests: z.array(OrchestrationV2MonitorPullRequestStamp).optional(),
   })
   .transform((raw): OrchestrationV2NotificationSource => {
     const child = raw.childThreadId === undefined ? {} : { childThreadId: raw.childThreadId };
@@ -65,7 +99,13 @@ export const OrchestrationV2NotificationSource: z.ZodType<
       case "command":
         return { kind: "command" };
       case "monitor":
-        return { kind: "monitor" };
+        return {
+          kind: "monitor",
+          ...(raw.pullRequest === undefined ? {} : { pullRequest: raw.pullRequest }),
+          ...(raw.otherPullRequests === undefined
+            ? {}
+            : { otherPullRequests: raw.otherPullRequests }),
+        };
       case "system":
         return { kind: "system" };
       default:
@@ -76,7 +116,7 @@ export const OrchestrationV2NotificationSource: z.ZodType<
 /** A notification records an observed event; whether the agent has it is the server's concern. */
 export const OrchestrationV2Notification = z.looseObject({
   source: OrchestrationV2NotificationSource,
-  outcome: forwardCompatibleLiteral(["completed", "failed", "cancelled", "updated", "unknown"]),
+  outcome: forwardCompatibleLiteral(notificationOutcomes),
   summary: TrimmedNonEmptyString,
   detail: z.string().optional(),
 });
@@ -96,9 +136,13 @@ export const OrchestrationV2ConversationMessage = z.looseObject({
   notification: OrchestrationV2Notification.optional(),
   ...OrchestrationV2CreationFields,
   scheduledTaskId: ScheduledTaskId.optional(),
+  /** A scheduled delivery that named no model; it runs on the thread's selection at start. */
+  followsThreadSelection: z.literal(true).optional(),
   idleCompaction: OrchestrationV2IdleCompaction.optional(),
   /** The sending agent's thread in this environment, separate from the receiving thread. */
   senderThreadId: ThreadId.optional(),
+  /** The sending agent's thread in a linked environment, for a client that cannot reach it. */
+  linkedSender: OrchestrationV2LinkedSender.optional(),
   /** Whether the message contains a provider-native workflow script. */
   workflowScript: z.boolean().optional(),
   id: MessageId,
