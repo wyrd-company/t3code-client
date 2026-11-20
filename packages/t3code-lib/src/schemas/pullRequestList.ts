@@ -65,8 +65,11 @@ export const PullRequestProviderSummary = z.looseObject({
   searchesOnHost: z.boolean(),
   actions: forwardCompatibleArray(PullRequestAction).optional(),
   projectCount: PositiveInt,
-  /** The projects on the host; an SSH checkout can resolve to another HTTP authority. */
-  projectIds: z.array(ProjectId).optional(),
+  /**
+   * The projects on the host; an SSH checkout can resolve to another HTTP authority. The server
+   * sends null for a host that no project refined, so null reads as absent.
+   */
+  projectIds: z.array(ProjectId).nullish(),
   configured: z.boolean(),
   detail: TrimmedNonEmptyString.nullable(),
 });
