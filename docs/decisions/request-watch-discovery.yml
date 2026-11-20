@@ -53,11 +53,15 @@ decision-outcome:
     start cut is a sequence because a request's timestamps do not follow event
     order: the adapter stamps `createdAt` when it builds a request, and the
     ingestor stamps each event separately. A replay from the cut places a
-    request because the server updates only pending requests, and only
-    restart recovery leaves one pending; the lifecycle
+    request: a request's first event is its creation, pending; a later
+    pending event is a re-send by restart recovery or by the Muse adapter;
+    and the requests known pending at the cut, from the HTTP shell summary
+    and from a thread with no event since the cut, stay existing; the lifecycle
     `ready` event identifies a restart. Where 0.1.10 cannot place a request,
     or cannot see a thread at all, the operator decided the behavior on
-    wyrd-company/t3code-client#169, including two further startup cases.
+    wyrd-company/t3code-client#169, including two further startup cases, and
+    a standing rule for the rest is proposed there: such a request gets the
+    class under which it is reported.
 
     The timestamp boundary misclasses requests whose events are applied out of
     timestamp order, and the bounded projection drops settled requests outside
@@ -85,6 +89,17 @@ expected-outcomes:
       once and one six seconds later.
     - A request reported after it settled reaches consumers, which act on its
       status.
-    - In the two startup cases #169 defines, the watcher reports pending
-      requests that `--skip-existing` would otherwise skip, and treats
-      settled ones as settled before the start.
+    - The startup table's decided and proposed rows trade exactness for
+      coverage where 0.1.10 cannot place a request; the design's `startup`
+      section lists each row's cost. In the replay-limit and restart cases
+      the watcher reports pending requests even with `--skip-existing` and
+      treats settled ones as settled before the start. A thread the HTTP
+      shell snapshot does not list, answered with a snapshot, has all its
+      requests reported, settled ones older than the cut included. A settled
+      first event in a thread waiting at the cut, or in a thread the HTTP shell
+      snapshot does not list, counts as existing, so a settlement a provider
+      re-emitted after the cut is reported without `--skip-existing`. A
+      pending first event that is not known pending at the cut counts as new,
+      so a request a provider re-sent is reported even with `--skip-existing`.
+    - Startup retakes its cut, and reports `degraded`, while the shell's
+      catch-up from the cut does not replay.
