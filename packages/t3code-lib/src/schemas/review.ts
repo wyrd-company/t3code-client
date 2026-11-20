@@ -44,9 +44,13 @@ export const ReviewBranchCommitsResult = z.looseObject({
   truncated: z.boolean(),
 });
 export type ReviewBranchCommitsResult = z.infer<typeof ReviewBranchCommitsResult>;
+const ReviewDiffChangeType = z.enum(["change", "rename-pure", "rename-changed", "new", "deleted"]);
+
 export const ReviewDiffFileStat = z.looseObject({
   path: z.string(),
   previousPath: z.string().nullable(),
+  /** Older servers omit it. */
+  changeType: ReviewDiffChangeType.optional(),
   additions: z.number(),
   deletions: z.number(),
 });
@@ -76,7 +80,7 @@ export type ReviewDiffPreviewResult = z.infer<typeof ReviewDiffPreviewResult>;
 export const ReviewDiffFileContentsInput = z.looseObject({
   cwd: TrimmedNonEmptyString,
   sourceKind: ReviewDiffPreviewSourceKindInput,
-  changeType: z.enum(["change", "rename-pure", "rename-changed", "new", "deleted"]),
+  changeType: ReviewDiffChangeType,
   baseRef: TrimmedNonEmptyString.nullable(),
   headRef: TrimmedNonEmptyString.nullable(),
   oldPath: TrimmedNonEmptyString,

@@ -83,6 +83,8 @@ export const UsageBucket = z.looseObject({
   costSource: UsageCostSource,
   records: NonNegativeInt,
   unpricedRecords: NonNegativeInt,
+  /** Tokens of the unpriced records. Older servers omit it. */
+  unpricedTokens: NonNegativeInt.optional(),
   /** Sessions in this bucket; a session spans buckets, so total `UsageSource.distinctSessions` instead. */
   sessions: NonNegativeInt,
 });
@@ -94,6 +96,11 @@ export const UsageSourceFingerprint = z.looseObject({
   resolvedHomePath: TrimmedNonEmptyString,
   /** Filesystem identity of the transcript directory, as `device:inode`. */
   volumeId: z.string(),
+  /**
+   * The same directory read natively by a Windows server and through a mount by its WSL
+   * server: sources with an equal value are one directory.
+   */
+  physicalSourceId: TrimmedNonEmptyString.optional(),
 });
 export type UsageSourceFingerprint = z.infer<typeof UsageSourceFingerprint>;
 
@@ -152,6 +159,8 @@ export const UsageSummaryInput = z.looseObject({
   untilTime: TrimmedNonEmptyString.optional(),
   /** Wait for slow source refreshes instead of answering from their caches. */
   awaitRefresh: z.boolean().optional(),
+  /** Accept an immediate answer from the last scan; its sources are marked refreshing. */
+  provisional: z.boolean().optional(),
   modelFilter: UsageModelFilter.optional(),
 });
 export type UsageSummaryInput = z.infer<typeof UsageSummaryInput>;

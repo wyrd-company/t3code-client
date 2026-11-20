@@ -60,6 +60,8 @@ export const TerminalAttachInput = z.looseObject({
   stopOnSettle: z.boolean().optional(),
   restartIfNotRunning: z.boolean().optional(),
   resume: z.boolean().optional(),
+  /** Snapshots carry only the last this many bytes of history. Older servers ignore it. */
+  maxHistoryBytes: z.number().int().min(0).optional(),
 });
 export type TerminalAttachInput = z.infer<typeof TerminalAttachInput>;
 export const TerminalObserveInput = TerminalSessionInput;
@@ -69,6 +71,10 @@ export type TerminalClearInput = z.infer<typeof TerminalClearInput>;
 export const TerminalWriteInput = z.looseObject({
   ...TerminalSessionInput.shape,
   data: z.string().min(1).max(65_536),
+  /** `data` holds one byte per UTF-16 code unit. Older servers write it as UTF-8 text. */
+  binary: z.boolean().optional(),
+  /** A renderer's answer to a terminal query; the server passes on one viewer's replies. */
+  reply: z.boolean().optional(),
 });
 export type TerminalWriteInput = z.infer<typeof TerminalWriteInput>;
 export const TerminalResizeInput = z.looseObject({
@@ -106,6 +112,8 @@ export const TerminalSessionSnapshot = z.looseObject({
   /** The PTY grid every renderer of this terminal should draw; absent from older servers. */
   cols: TerminalColsSchema.optional(),
   rows: TerminalRowsSchema.optional(),
+  /** Why the shell failed to start, kept so that later attachments can show it. */
+  error: z.string().min(1).optional(),
 });
 export type TerminalSessionSnapshot = z.infer<typeof TerminalSessionSnapshot>;
 export const TerminalSummary = z.looseObject({

@@ -4,7 +4,7 @@
 // ---
 /** Mirrors `packages/contracts/src/editor.ts`. */
 import { z } from "zod";
-import { TrimmedNonEmptyString, forwardCompatibleLiteral } from "./common.ts";
+import { PositiveInt, TrimmedNonEmptyString, forwardCompatibleLiteral } from "./common.ts";
 
 export const EDITOR_IDS = [
   "cursor",
@@ -37,6 +37,15 @@ export type EditorId = z.infer<typeof EditorId>;
 export const LaunchEditorInput = z.looseObject({
   cwd: TrimmedNonEmptyString,
   editor: z.enum(EDITOR_IDS),
+  /**
+   * With a position, `cwd` is an exact path, and `{}` opens it without one. Without it, a
+   * `:line:column` suffix on `cwd` is read as the position.
+   */
+  position: z
+    .looseObject({ line: PositiveInt.optional(), column: PositiveInt.optional() })
+    .optional(),
+  /** The workspace the target belongs to; JetBrains IDEs open positioned files in it. */
+  projectRoot: TrimmedNonEmptyString.optional(),
   /** Only for `file-manager`; requires the server's `shellRevealInFileManager` capability. */
   reveal: z.boolean().optional(),
 });

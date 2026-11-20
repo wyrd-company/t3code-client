@@ -98,6 +98,8 @@ export type ScheduledTask = z.infer<typeof ScheduledTask>;
 export const ScheduledTaskListResult = z.looseObject({
   // A task the client cannot decode is dropped rather than failing the list.
   tasks: forwardCompatibleArray(ScheduledTask),
+  /** The server's IANA zone for fixed-time schedules. Older servers omit it. */
+  timeZone: TrimmedNonEmptyString.optional(),
 });
 export type ScheduledTaskListResult = z.infer<typeof ScheduledTaskListResult>;
 

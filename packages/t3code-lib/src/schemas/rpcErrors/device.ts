@@ -35,6 +35,7 @@ export const DeviceOperationError = taggedError("DeviceOperationError", {
     "invalid_payload",
     "settings_failed",
     "hub_rejected",
+    "package_manager_missing",
   ]),
   exitCode: z.number().nullish(),
   cause: Defect,

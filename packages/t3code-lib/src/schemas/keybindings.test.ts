@@ -66,14 +66,15 @@ it("types commands, shortcuts and recursive when nodes", () => {
 });
 
 it("lists the static commands of the pinned server, effort commands included", () => {
-  expect(STATIC_KEYBINDING_COMMANDS).toHaveLength(88);
-  expect(new Set(STATIC_KEYBINDING_COMMANDS).size).toBe(88);
+  expect(STATIC_KEYBINDING_COMMANDS).toHaveLength(89);
+  expect(new Set(STATIC_KEYBINDING_COMMANDS).size).toBe(89);
   expect(STATIC_KEYBINDING_COMMANDS).toEqual(
     expect.arrayContaining([
       "composer.increaseEffort",
       "composer.decreaseEffort",
       "composer.dictation",
       "thread.regenerateTitle",
+      "preview.find",
     ]),
   );
 });
@@ -100,19 +101,15 @@ it("keeps every command string and rejects non-string commands", () => {
     expect(ok(withField(rule, "command", command))).toBe(false);
 });
 
-it("trims shortcut keys to between 1 and 64 characters", () => {
+it("keeps shortcut keys exactly, between 1 and 64 characters", () => {
   const key64 = "k".repeat(64);
-  for (const [key, decoded] of [
-    ["k", "k"],
-    ["  k  ", "k"],
-    [key64, key64],
-    [`  ${key64}  `, key64],
-  ])
+  // 0.1.10 keeps keys untrimmed: the `space` token resolves to the key " ".
+  for (const key of ["k", " ", "  k  ", key64])
     expect(ResolvedKeybindingRule.parse({ ...rule, shortcut: { ...shortcut, key } })).toEqual({
       ...rule,
-      shortcut: { ...shortcut, key: decoded },
+      shortcut: { ...shortcut, key },
     });
-  for (const key of [undefined, null, "", " \t\n", "k".repeat(65), 7])
+  for (const key of [undefined, null, "", "k".repeat(65), ` ${key64}`, 7])
     expect(ok({ ...rule, shortcut: withField(shortcut, "key", key) })).toBe(false);
 });
 

@@ -9,7 +9,6 @@
  */
 import { z } from "zod";
 import {
-  TrimmedNonEmptyString,
   forwardCompatibleArray,
   forwardCompatibleLiteral,
   type KnownOr,
@@ -68,6 +67,7 @@ export const STATIC_KEYBINDING_COMMANDS = [
   "preview.zoomIn",
   "preview.zoomOut",
   "preview.resetZoom",
+  "preview.find",
   "commandPalette.toggle",
   "filePicker.toggle",
   "projectSearch.toggle",
@@ -131,7 +131,8 @@ export const KeybindingCommandInput = z.union([
 export type KeybindingCommandInput = z.infer<typeof KeybindingCommandInput>;
 
 export const KeybindingShortcut = z.looseObject({
-  key: TrimmedNonEmptyString.max(MAX_KEYBINDING_VALUE_LENGTH),
+  /** Untrimmed: the `space` token resolves to the key " ". */
+  key: z.string().min(1).max(MAX_KEYBINDING_VALUE_LENGTH),
   metaKey: z.boolean(),
   ctrlKey: z.boolean(),
   shiftKey: z.boolean(),

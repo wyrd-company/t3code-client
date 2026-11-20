@@ -31,7 +31,11 @@ export type VcsWorktree = z.infer<typeof VcsWorktree>;
 export const VcsStatusInput = z.looseObject({ cwd: TrimmedNonEmptyString });
 export type VcsStatusInput = z.infer<typeof VcsStatusInput>;
 /** The checked-out branch of a working tree; null when HEAD is detached or there is no repository. */
-export const VcsBranchStatus = z.looseObject({ refName: z.string().nullable() });
+export const VcsBranchStatus = z.looseObject({
+  refName: z.string().nullable(),
+  /** False once the checkout is gone. Older servers omit it and show a detached HEAD instead. */
+  isRepo: z.boolean().optional(),
+});
 export type VcsBranchStatus = z.infer<typeof VcsBranchStatus>;
 export const VcsStatusSubscriptionInput = z.looseObject({
   cwd: TrimmedNonEmptyString,

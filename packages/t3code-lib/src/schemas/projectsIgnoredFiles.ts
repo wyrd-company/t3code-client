@@ -10,6 +10,8 @@ import { NonNegativeInt, TrimmedNonEmptyString, forwardCompatibleArray } from ".
 
 export const ProjectListIgnoredFilesInput = z.looseObject({
   cwd: TrimmedNonEmptyString,
+  /** Case-insensitive path substring, applied before the cap. Needs `ignoredFileSearch`. */
+  query: z.string().trim().max(256).optional(),
 });
 export type ProjectListIgnoredFilesInput = z.infer<typeof ProjectListIgnoredFilesInput>;
 

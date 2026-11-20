@@ -82,15 +82,18 @@ export const ProjectListEntriesResult = z.looseObject({
 });
 export type ProjectListEntriesResult = z.infer<typeof ProjectListEntriesResult>;
 export const PROJECT_READ_FILE_PATH_MAX_LENGTH = 512;
+/** A file path kept exactly as given: a name may start or end with whitespace. */
+const ExactPath = z.string().min(1);
 export const ProjectReadFileInput = z.looseObject({
   cwd: TrimmedNonEmptyString,
-  relativePath: TrimmedNonEmptyString.max(PROJECT_READ_FILE_PATH_MAX_LENGTH),
+  /** Workspace-relative or absolute host path; only workspace-relative paths are writable. */
+  relativePath: ExactPath.max(PROJECT_READ_FILE_PATH_MAX_LENGTH),
   /** Return an absent-file result instead of failing when the file does not exist. */
   allowMissing: z.boolean().optional(),
 });
 export type ProjectReadFileInput = z.infer<typeof ProjectReadFileInput>;
 export const ProjectReadFileResult = z.looseObject({
-  relativePath: TrimmedNonEmptyString,
+  relativePath: ExactPath,
   contents: z.string(),
   byteLength: NonNegativeInt,
   truncated: z.boolean(),
@@ -101,11 +104,11 @@ export type ProjectReadFileResult = z.infer<typeof ProjectReadFileResult>;
 export const PROJECT_WRITE_FILE_PATH_MAX_LENGTH = 512;
 export const ProjectWriteFileInput = z.looseObject({
   cwd: TrimmedNonEmptyString,
-  relativePath: TrimmedNonEmptyString.max(PROJECT_WRITE_FILE_PATH_MAX_LENGTH),
+  relativePath: ExactPath.max(PROJECT_WRITE_FILE_PATH_MAX_LENGTH),
   contents: z.string(),
 });
 export type ProjectWriteFileInput = z.infer<typeof ProjectWriteFileInput>;
-export const ProjectWriteFileResult = z.looseObject({ relativePath: TrimmedNonEmptyString });
+export const ProjectWriteFileResult = z.looseObject({ relativePath: ExactPath });
 export type ProjectWriteFileResult = z.infer<typeof ProjectWriteFileResult>;
 
 // project.ts: project records, icons, and mutations
