@@ -32,6 +32,11 @@ export class FakeConnection {
     socket.on("message", (data) => void this.#onMessage(String(data)));
   }
 
+  /** The socket is open and can still carry frames. */
+  get open(): boolean {
+    return this.#socket.readyState === this.#socket.OPEN;
+  }
+
   /** Envelopes sent to the client, in order. */
   get sent(): Record<string, unknown>[] {
     return this.log.filter((e) => e.direction === "out").map((e) => e.envelope);

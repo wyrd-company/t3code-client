@@ -5,7 +5,7 @@
 /**
  * Reporting for the request watch (`request-watch` design, `watching` Reporting): the run's set
  * of reported keys, the requests seen pending that wait for their card, and the
- * `ReportedRequest` builder. Pure state over thread views; the watch owns the timers.
+ * `ReportedRequest` builder, and the timers of the card waits.
  */
 import type { ProjectId, RuntimeRequestId, ThreadId } from "../schemas/common.ts";
 import type { OrchestrationV2ThreadProjection } from "../schemas/orchestration/projection.ts";
@@ -126,4 +126,30 @@ function joined(entry: SeenRequest, view: OrchestrationV2ThreadProjection): Seen
     last: record === undefined ? entry.last : requestWithCard(view, record),
     thread: view.thread,
   };
+}
+
+/** The timers of the requests that wait for their card, by key. */
+export class CardWaits {
+  readonly #timers = new Map<
+    string,
+    { threadId: ThreadId; timer: ReturnType<typeof setTimeout> }
+  >();
+
+  start(key: string, threadId: ThreadId, ms: number, due: () => void): void {
+    this.#timers.set(key, { threadId, timer: setTimeout(due, ms) });
+  }
+
+  /** Stops a wait; returns its thread, or undefined when the key was not waiting. */
+  stop(key: string): ThreadId | undefined {
+    const waiting = this.#timers.get(key);
+    if (waiting === undefined) return undefined;
+    clearTimeout(waiting.timer);
+    this.#timers.delete(key);
+    return waiting.threadId;
+  }
+
+  clear(): void {
+    for (const { timer } of this.#timers.values()) clearTimeout(timer);
+    this.#timers.clear();
+  }
 }

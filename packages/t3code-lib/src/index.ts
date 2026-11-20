@@ -132,6 +132,14 @@ export {
   type ShellWatchItem,
   type ShellWatchOptions,
 } from "./api/shell.ts";
+export {
+  RequestsApi,
+  type PendingRequestKind,
+  type ReportedRequest,
+  type RequestWatchFilters,
+  type RequestWatchItem,
+  type RequestWatchOptions,
+} from "./api/requests.ts";
 export { ServerApi } from "./api/server.ts";
 export type {
   WatchDatabaseStorageOptions,
