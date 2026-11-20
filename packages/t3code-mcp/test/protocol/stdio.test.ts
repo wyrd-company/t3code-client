@@ -4,6 +4,7 @@
 // ---
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { TARGET_T3_CODE_VERSION } from "@wyrd-company/t3code-lib";
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import { expect, it } from "vite-plus/test";
@@ -11,7 +12,9 @@ import { toolNames } from "../../src/tools/index.ts";
 import stock from "../fixtures/stockTools.json" with { type: "json" };
 
 it("has no tool-name collisions with the complete pinned stock toolkit inventory", () => {
-  expect(stock.tools.length).toBeGreaterThan(75);
+  expect(stock.reference).toMatch(`t3code v${TARGET_T3_CODE_VERSION},`);
+  expect(stock.tools).toHaveLength(75);
+  expect(new Set(stock.tools).size).toBe(stock.tools.length);
   expect(toolNames.filter((name) => stock.tools.includes(name))).toEqual([]);
   expect(new Set(toolNames).size).toBe(toolNames.length);
   expect([...toolNames].sort()).toEqual(

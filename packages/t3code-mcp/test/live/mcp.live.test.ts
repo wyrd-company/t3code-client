@@ -196,6 +196,7 @@ it("serves additive tools through stdio against an isolated stock server without
       sinceDay: day,
       untilDay: day,
       timeZone: "Etc/UTC",
+      provisional: true,
     });
     // Do not print host transcript paths or usage rows, including on failure.
     expect(Array.isArray(usage["buckets"])).toBe(true);

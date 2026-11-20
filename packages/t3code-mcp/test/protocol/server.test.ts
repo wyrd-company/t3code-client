@@ -2,7 +2,7 @@
 // relationships:
 //   verifies: mcp
 // ---
-import { T3ConnectionError, threadId, scheduledTaskId } from "@wyrd-company/t3code-lib";
+import { schemas, T3ConnectionError, threadId, scheduledTaskId } from "@wyrd-company/t3code-lib";
 import { afterEach, expect, it, vi } from "vite-plus/test";
 import { closeProtocolFixtures, protocolFixture as fixture } from "../support/protocolFixture.ts";
 import { toolNames } from "../../src/tools/index.ts";
@@ -39,13 +39,38 @@ it("negotiates and advertises only the complementary tool contract with accurate
 
 it("returns matching structured/text values and forwards provider and usage selection", async () => {
   const { client, upstream } = await fixture();
-  const status = vi.spyOn(upstream.server, "providerStatus").mockResolvedValue([]);
+  const record = schemas.provider.ServerProvider.parse({
+    instanceId: "sample-provider",
+    driver: "codex",
+    enabled: true,
+    installed: true,
+    version: "1.0.0",
+    status: "ready",
+    auth: { status: "authenticated", endpoint: "https://models.invalid" },
+    checkedAt: "2026-01-01T00:00:00Z",
+    models: [],
+    usageLimits: {
+      checkedAt: "2026-01-01T00:00:00Z",
+      zeroSpendCap: true,
+      windows: [
+        {
+          id: "sample-window",
+          kind: "weekly",
+          label: "Weekly",
+          usedPercent: 0,
+          modelIds: ["sample-model"],
+          providerIds: ["codex"],
+        },
+      ],
+    },
+  });
+  const status = vi.spyOn(upstream.server, "providerStatus").mockResolvedValue([record]);
   const result = await client.callTool({
     name: "provider_status",
     arguments: { instanceId: "sample-provider" },
   });
   expect(status).toHaveBeenCalledWith("sample-provider", expect.any(AbortSignal));
-  expect(result.structuredContent).toEqual({ providers: [] });
+  expect(result.structuredContent).toEqual({ providers: [record] });
   expect(result.content).toEqual([
     { type: "text", text: JSON.stringify(result.structuredContent) },
   ]);
@@ -56,7 +81,7 @@ it("returns matching structured/text values and forwards provider and usage sele
     sinceDay: "2026-01-01",
     untilDay: "2026-01-02",
     timeZone: "Etc/UTC",
-    awaitRefresh: true,
+    provisional: true,
   };
   const failed = await client.callTool({ name: "usage_summary", arguments: input });
   expect(summary).toHaveBeenCalledWith(input, expect.any(AbortSignal));
@@ -65,6 +90,62 @@ it("returns matching structured/text values and forwards provider and usage sele
     structuredContent: { error: { code: "connection" } },
   });
   expect(JSON.stringify(failed)).not.toContain("sample-sensitive-body");
+});
+
+it("preserves unpriced token counts and physical source identities in usage summaries", async () => {
+  const { client, upstream } = await fixture();
+  const window = { sinceDay: "2026-01-01", untilDay: "2026-01-01", timeZone: "Etc/UTC" };
+  const data = schemas.usage.UsageSummary.parse({
+    ...window,
+    contractVersion: 6,
+    readAt: "2026-01-02T00:00:00Z",
+    buckets: [
+      {
+        day: window.sinceDay,
+        provider: "codex",
+        model: "sample-model",
+        totals: {
+          uncachedInputTokens: 5,
+          cachedInputTokens: 0,
+          cacheCreationTokens: 0,
+          outputTokens: 0,
+          reasoningTokens: 0,
+        },
+        costUsd: 0,
+        cacheSavingsUsd: 0,
+        costSource: "unpriced",
+        records: 1,
+        unpricedRecords: 1,
+        unpricedTokens: 5,
+        sessions: 1,
+      },
+    ],
+    sources: [
+      {
+        fingerprint: {
+          hostId: "sample-host",
+          provider: "codex",
+          resolvedHomePath: "/sample",
+          volumeId: "1:2",
+          physicalSourceId: "sample-source",
+        },
+        status: "ok",
+        scannedFiles: 1,
+        skippedFiles: 0,
+        malformedRecords: 0,
+        distinctSessions: 1,
+        message: null,
+      },
+    ],
+    pricing: { status: "unavailable", source: "sample", fetchedAt: null, knownModels: 0 },
+    scanDurationMs: 1,
+  });
+  vi.spyOn(upstream.server, "usageSummary").mockResolvedValue(data);
+  const result = await client.callTool({ name: "usage_summary", arguments: window });
+  expect(result.structuredContent).toMatchObject({
+    buckets: [{ unpricedTokens: 5 }],
+    sources: [{ fingerprint: { physicalSourceId: "sample-source" } }],
+  });
 });
 
 it("forwards scheduler execution patches without absent fields and rotates before reading endpoint", async () => {
