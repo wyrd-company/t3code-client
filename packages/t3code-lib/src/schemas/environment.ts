@@ -41,17 +41,38 @@ export type ThreadEnvMode = z.infer<typeof ThreadEnvMode>;
 const InstalledPath = z.string().min(1);
 
 /**
- * How the server was installed. `npm-global` names its `prefix`; `t3-launcher` is a launcher
- * script (or legacy symlink) into a downloaded runtime under `baseDir`, as the install script
- * and `t3 update` leave it.
+ * A launcher script (or legacy symlink) into a downloaded runtime under `baseDir`, as the install
+ * script and `t3 update` leave it. Both paths are required, as upstream requires them.
  */
-export const ServerInstallation = z.looseObject({
-  kind: forwardCompatibleLiteral(["npx", "pnpm-dlx", "bunx", "npm-global", "t3-launcher"]),
-  prefix: TrimmedNonEmptyString.optional(),
-  launcher: InstalledPath.optional(),
-  baseDir: InstalledPath.optional(),
+export const T3LauncherServerInstallation = z.looseObject({
+  kind: z.literal("t3-launcher"),
+  launcher: InstalledPath,
+  baseDir: InstalledPath,
 });
+export type T3LauncherServerInstallation = z.infer<typeof T3LauncherServerInstallation>;
+
+/** A package runner or npm install; `npm-global` names its `prefix`. A newer kind reads here. */
+const PackageServerInstallation = z.looseObject({
+  kind: forwardCompatibleLiteral(["npx", "pnpm-dlx", "bunx", "npm-global"]).refine(
+    (kind) => kind !== "t3-launcher",
+    "A t3-launcher installation names its launcher and baseDir.",
+  ),
+  prefix: TrimmedNonEmptyString.optional(),
+});
+
+/** How the server was installed. Narrow a launcher install with `isT3LauncherInstallation`. */
+export const ServerInstallation = z.union([
+  T3LauncherServerInstallation,
+  PackageServerInstallation,
+]);
 export type ServerInstallation = z.infer<typeof ServerInstallation>;
+
+/** A launcher install, with both of its paths typed. */
+export function isT3LauncherInstallation(
+  installation: ServerInstallation,
+): installation is T3LauncherServerInstallation {
+  return installation.kind === "t3-launcher";
+}
 
 export const ExecutionEnvironmentCapabilities = z.looseObject({
   repositoryIdentity: z.boolean().default(false),

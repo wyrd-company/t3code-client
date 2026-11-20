@@ -4,7 +4,11 @@
 // ---
 import { describe, expect, it } from "vite-plus/test";
 import { rpcMethods } from "../rpc/registry.ts";
-import { ExecutionEnvironmentCapabilities, ServerInstallation } from "./environment.ts";
+import {
+  ExecutionEnvironmentCapabilities,
+  ServerInstallation,
+  isT3LauncherInstallation,
+} from "./environment.ts";
 import {
   ServerProvider,
   ServerProviderUsageLimits,
@@ -142,9 +146,28 @@ describe("server field changes of 0.1.10", () => {
     for (const key of Object.keys(flags)) {
       rejects(ExecutionEnvironmentCapabilities, { [key]: "yes" });
     }
+  });
+
+  it("requires both paths of a launcher installation and keeps other kinds as they were", () => {
     const installation = { kind: "t3-launcher", launcher: "/opt/t3/bin/t3 ", baseDir: "/opt/t3" };
-    expect(ServerInstallation.parse(installation)).toEqual(installation);
+    const parsed = ServerInstallation.parse(installation);
+    expect(parsed).toEqual(installation);
+    expect(isT3LauncherInstallation(parsed) && parsed.baseDir).toBe("/opt/t3");
     rejects(ServerInstallation, { ...installation, baseDir: "" });
+    const { launcher: _launcher, ...withoutLauncher } = installation;
+    const { baseDir: _baseDir, ...withoutBaseDir } = installation;
+    rejects(ServerInstallation, withoutLauncher);
+    rejects(ServerInstallation, withoutBaseDir);
+    rejects(ServerInstallation, { kind: "t3-launcher" });
+    // A malformed launcher install reads as no installation, not as a failed descriptor.
+    expect(
+      ExecutionEnvironmentCapabilities.parse({ serverInstallation: withoutBaseDir }),
+    ).not.toHaveProperty("serverInstallation", expect.anything());
+    const npm = { kind: "npm-global", prefix: "/usr/local" };
+    expect(ServerInstallation.parse(npm)).toEqual(npm);
+    expect(isT3LauncherInstallation(ServerInstallation.parse(npm))).toBe(false);
+    expect(ServerInstallation.parse({ kind: "npx" })).toEqual({ kind: "npx" });
+    expect(ServerInstallation.parse({ kind: "sample-future" })).toEqual({ kind: "sample-future" });
   });
 
   it("stages an update, checks a secret source and sends the new settings keys", () => {
