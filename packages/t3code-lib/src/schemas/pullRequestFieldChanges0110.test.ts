@@ -93,6 +93,10 @@ describe("pull request field changes of 0.1.10", () => {
       detail: null,
     };
     expect(PullRequestProviderSummary.parse(provider).projectIds).toEqual(["project-1"]);
+    // Seen live: the server sends null for a host that no project refined.
+    expect(
+      PullRequestProviderSummary.parse({ ...provider, projectIds: null }).projectIds,
+    ).toBeNull();
     rejects(PullRequestProviderSummary, { ...provider, projectIds: [" "] });
     const viewed = {
       ...ref,
