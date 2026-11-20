@@ -781,10 +781,10 @@ proposed-design:
     `threads.watch` that `library-facades` defines. The watch relies on
     `shell.watch` moving its resume cursor only on an authoritative snapshot,
     as `two-kinds-of-shell-snapshot` explains; a `shell.watch` that moves it on
-    an enrichment snapshot drops the rows that follow it. Task 2's commit
+    an enrichment snapshot drops the rows that follow it. `shell.watch`
+    follows that rule, for live and resumed subscriptions, by task 2's commit
     `8ecef8a` (`fix(lib): keep the shell watch cursor at a marked snapshot`)
-    makes `shell.watch` follow that rule, for live and resumed subscriptions,
-    and task 5 builds on it.
+    on the epic branch, and task 5 builds on it.
 
     - **Dropped connection.** The transport reconnects with backoff. The shell
       watch, the lifecycle watch and each open thread watch resubscribe with
@@ -1259,8 +1259,8 @@ proposed-design:
   contract-changes: |
     The specifications that contract tests bind to code change with that code:
 
-    - **Task 2** makes `shell.watch` move its cursor only on an authoritative
-      snapshot, in commit `8ecef8a` with its test.
+    - **Task 2**, done on the epic branch in `8ecef8a` with its test:
+      `shell.watch` moves its cursor only on an authoritative snapshot.
     - **Task 5:** `shell.watch` takes `httpSnapshotFallback` and yields the
       `snapshot-required` item, and a lifecycle watch resubscribes after a
       drop. `library-facades.yml` lists `RequestsApi` in its facade
