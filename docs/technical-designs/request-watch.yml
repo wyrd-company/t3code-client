@@ -41,7 +41,7 @@ design-challenges:
     `skipExisting` must skip exactly the requests pending at the start, and no
     request raised after the start may be lost, so every request is placed
     before or after one start cut: the sequence `S0` of the HTTP shell
-    snapshot the run reads first. A request carries no sequence and its timestamps
+    snapshot of the cut the run keeps. A request carries no sequence and its timestamps
     do not follow event order, so the watcher places requests by reading
     every thread once at startup, subscribing to each from `S0` before its
     first read, so the server's replay of the thread's events after `S0`, or
@@ -63,8 +63,10 @@ design-challenges:
     `snapshotSequence` is the server's latest sequence, so a watch that moved
     its cursor to it would skip the replayed rows that follow it. `shell.watch`
     therefore moves its cursor only on an authoritative snapshot, and the
-    request watch's index takes thread rows only from an authoritative
-    snapshot and only project titles from an enrichment snapshot.
+    request watch's index takes only project titles from an enrichment
+    snapshot. The request watch subscribes with `httpSnapshotFallback`, so a
+    resume past the replay window answers `snapshot-required` and the
+    authoritative state comes from the HTTP shell snapshot (reconnects).
   rows-the-server-holds-back: |
     The server coalesces a thread's events in a 50 ms batch into one row of its
     current state, and holds back a row equal to the last row it sent for that
@@ -79,8 +81,8 @@ design-challenges:
     The live stream lists active threads. It publishes the archive of a thread,
     and every later event of an archived thread, as `thread.removed`, and an
     archived thread can still hold a pending request. The watcher reads
-    `shell.archivedSnapshot()` at startup and after a resume that brings an
-    authoritative snapshot, reads a thread in full on every `thread.removed`,
+    `shell.archivedSnapshot()` at startup and after a resume past the shell's
+    replay window, reads a thread in full on every `thread.removed`,
     and watches an archived thread that waits or runs like an active one.
   requests-before-their-cards: |
     A request's detail (the command, the files, the questions) is on its
@@ -116,7 +118,8 @@ proposed-design:
     A run is one iteration of `client.requests.watch(options)`, or one
     `t3c requests watch` process. A request is identified by its thread id and
     its runtime request id. The start cut `S0` is the sequence of the HTTP
-    shell snapshot the run reads first (`startup`). A thread is included when the
+    shell snapshot of the cut the run keeps (`startup`), and the run starts
+    there. A thread is included when the
     filters select it; the filters apply to the thread record of the view that
     holds the request when the watcher reports it.
 
@@ -485,17 +488,25 @@ proposed-design:
     including a call the socket drop rejected, keeps its trigger and runs again
     once the transport is open, with the client's reconnect backoff. Any other
     read or thread watch failure produces a `thread-error` item and is retried
-    with that backoff. A thread watch that keeps failing with
-    `message_too_large` is replaced, for as long as the thread stays watched,
-    by full thread snapshots of the thread at most one second apart; the first
-    one that succeeds counts as that thread watch's first `synchronized` item.
-    When the shell watch ends with `message_too_large` before its first item,
-    because a resume's authoritative snapshot is too large for the socket, the
-    watch reads the HTTP shell snapshot (`shell.snapshot()`), handles it as an
-    authoritative resume (reconnects), and subscribes again from its
-    `snapshotSequence`, keeping the inventories and the ledger; during startup
-    it retakes the cut instead (`startup`). The shell watch's other terminal
-    errors end the run as `shell.watch` defines.
+    with that backoff.
+
+    A message too large for the socket closes the socket, so every stream on it
+    fails with `message_too_large`, not only the one whose message was too
+    large; the error does not name its stream. The watch therefore never ends
+    on it: each shell, lifecycle and thread watch resubscribes from its own
+    cursor, as after any drop. The shell watch subscribes with
+    `httpSnapshotFallback: true` (task 5 adds the option to `shell.watch`), so
+    the server answers a resume past its replay window with a small
+    `snapshot-required` item instead of an authoritative snapshot frame, and
+    thread watches take bounded snapshots, so neither sends a frame of
+    unbounded size. When `message_too_large` comes back three times within a
+    minute, the watch finds the stream that causes it: it closes every thread
+    watch and reopens them one at a time, each after the previous delivered
+    its snapshot. A thread whose watch still fails is covered, for as long as
+    it stays watched, by full thread snapshots over HTTP at most one second
+    apart; the first one that succeeds counts as that thread watch's first
+    `synchronized` item. The shell watch's other terminal errors end the run as
+    `shell.watch` defines.
 
     Modules: `src/api/requests.ts` holds `RequestsApi`; `src/api/requestWatch.ts`
     the watch, which drives the shell watch, the lifecycle watch, thread
@@ -520,7 +531,7 @@ proposed-design:
     | Source | Index change |
     | --- | --- |
     | `shell.snapshot()` at startup | The active rows and projects at `S0`. |
-    | authoritative `snapshot` | Replace the active rows with the listed threads, and add or update the listed projects. |
+    | `snapshot-required`, then the HTTP shell snapshot | Take the ids the index holds, then replace the active rows with the listed threads, and add or update the listed projects (reconnects). |
     | enrichment `snapshot` | Add or update the listed projects. Threads are unchanged. |
     | `thread.updated` | Add or update the active row. |
     | `thread.removed` | The thread is archived or deleted; its row is marked removed until a full thread snapshot refreshes it. |
@@ -528,7 +539,7 @@ proposed-design:
     | `shell.archivedSnapshot()` | Add or update every archived row. |
     | a full thread snapshot | Refresh the row from `projection.thread`: project, title, tags, archived or deleted, and whether it waits or runs. |
     | `synchronized`, `reconnected`, `decode-error` | See `startup` and reconnects. |
-    | `snapshot-required` | Not received: the watch does not ask for `httpSnapshotFallback`. |
+    | authoritative `snapshot` frame | Not received: the shell watch subscribes with `httpSnapshotFallback` and always with a cursor. |
 
     **Inclusion.** A thread is excluded when its id is exactly one of
     `excludeThreadIds`, or when one of its own tags, trimmed, equals one of
@@ -547,8 +558,9 @@ proposed-design:
     accounted for, settled ones included. The startup read makes the
     inventory complete for the thread at that read (`startup`), so a request
     whose id is not in it, seen in any later view, was raised after the start
-    cut, and is new. A thread first named after the startup catch-up was
-    created after the start cut (`startup`), and every request in it is new.
+    cut, and is new. A thread first named after the startup catch-up is
+    classed against the start cut when it is first seen, with the startup
+    subscription and table (`startup`), and its inventory starts there.
 
     **Two sources of requests.** An included thread is watched while it waits
     or runs, and until six seconds after the latest shell row the watch
@@ -567,7 +579,8 @@ proposed-design:
     - it stops being watched, so events its thread watch had not applied yet
       are accounted;
     - it becomes included; or
-    - a resume brings an authoritative snapshot (reconnects).
+    - a resume past the shell's replay window answers `snapshot-required`
+      (reconnects).
 
     Each thread has at most one read in flight; a trigger during a read
     schedules one more read after it. A read that shows an archived thread
@@ -604,74 +617,86 @@ proposed-design:
     (`server.watchLifecycle()`) and records the latest `ready` event's
     `payload.at`, the process identity, waiting for that event when the server
     is still starting, so the startup recovery is behind the cut. It reads the
-    HTTP shell snapshot
-    (`shell.snapshot()`); its `snapshotSequence` is the start cut `S0`, and its
-    threads are the active rows at `S0`. It reads `shell.archivedSnapshot()`,
-    whose rows are the archived threads at its own sequence `Sa`, later than
-    `S0`. It then subscribes to the shell with `afterSequence: S0`, as
-    upstream's own client resumes after an HTTP snapshot: the catch-up brings
-    the current row of every thread that changed after `S0`, or a removal,
-    and ends with `synchronized` at a sequence no earlier than `Sa`.
+    HTTP shell snapshot (`shell.snapshot()`); its `snapshotSequence` is the
+    start cut `S0`, and its threads are the active rows at `S0`. It reads
+    `shell.archivedSnapshot()`, whose rows are the archived threads at its own
+    sequence `Sa`, later than `S0`. It then subscribes to the shell with
+    `afterSequence: S0` and `httpSnapshotFallback: true`, as upstream's own
+    client resumes after an HTTP snapshot: the catch-up brings the current row
+    of every thread that changed after `S0`, or a removal, and ends with
+    `synchronized` at a sequence no earlier than `Sa`. The socket connection
+    that carries the lifecycle subscription must stay open from the lifecycle
+    read through the archived read; a server restart drops every socket, so an
+    unbroken connection shows that one server process served the cut.
 
-    **Retaking the cut.** The catch-up must replay. When it instead comes back
-    as an authoritative snapshot, because the gap since `S0` passed the
-    shell's replay window, or ends with `message_too_large` before its first
-    item, the startup set cannot be known from it. The watch then yields
+    **Retaking the cut.** The catch-up must replay. When the server answers it
+    with `snapshot-required`, because the gap since `S0` passed the shell's
+    replay window, or the connection drops before the archived read completes,
+    the startup set cannot be known from this cut. The watch then yields
     `degraded` with reason `start-cut`, drops the cut, and takes a new one:
-    the lifecycle check, the HTTP shell snapshot, the archived snapshot and
-    the catch-up, with the client's reconnect backoff between attempts. No
-    thread is read or classed for the startup until a cut's catch-up has
-    replayed and ended with `synchronized`, so every class refers to the cut
-    the watch keeps.
+    the lifecycle check, the HTTP shell snapshot, the archived snapshot and the
+    catch-up, with the client's reconnect backoff between attempts. No thread
+    is read or classed for the startup until a cut's catch-up has replayed and
+    ended with `synchronized`. The start of the run is the cut it keeps: a
+    request that settled before that cut, on an earlier attempt's watch or not,
+    settled before the start, as it would for a watcher launched at that cut.
 
     **The startup set.** The startup set is every thread in either snapshot,
     and every other thread that an item of the catch-up names. A thread that
-    existed at `S0` is in one of them: it was active at `S0`, archived at `Sa`,
-    or unarchived between the two reads, which the catch-up shows. A thread
-    first named after the catch-up's `synchronized` was created after `S0`,
-    and every request in it is new.
+    existed at `S0` and is not deleted is in one of them: it was active at
+    `S0`, archived at `Sa`, or unarchived between the two reads, which the
+    catch-up shows. A thread first named later, by a row or a removal, is
+    classed against `S0` the same way when it is first seen, so the time the
+    watch discovers a thread is never evidence of when it was created.
 
     **The startup read.** The watch reads every thread in the startup set once,
     a few at a time, whether it is included or not, threads the HTTP shell
     snapshot does not list first, and so learns every thread's inventory. For
-    each thread it subscribes raw from the cut
-    (`orchestration.subscribeThread` with `afterSequence: S0` and no
-    `acceptBoundedSnapshot`, not `threads.watch`, which would load a second
-    full snapshot). The server decides at that moment, over the thread's
-    events up to its latest one then, whether to replay its events since `S0`
-    or to answer with a snapshot (`upstream-request-model`, Snapshot answers),
-    so its answer concerns only events before the thread's first read. Without
-    `acceptBoundedSnapshot` that snapshot is the full thread snapshot, complete,
-    whose `snapshotSequence` is the thread's latest event:
+    each thread it first subscribes from the cut with a raw
+    `orchestration.subscribeThread` call (`afterSequence: S0`,
+    `acceptBoundedSnapshot: true`, `acceptCompactTurnItems: true`,
+    `requestCompletionMarker: true`), not `threads.watch`, which would load an
+    HTTP snapshot of its own. The server starts the live stream before it reads
+    the thread's high-water, so every event after the subscription starts
+    arrives on it. It then answers with a replay of the thread's events after
+    `S0` followed by `synchronized`, which is `synchronized` alone when there
+    is nothing to replay, or with a bounded snapshot
+    (`upstream-request-model`, Snapshot answers). Then the watch takes the full
+    thread snapshot over HTTP, whose `snapshotSequence` is `Dt`, the thread's
+    latest event, and keeps reading the subscription until it has seen the
+    thread's events through `Dt`; replay and live items carry their sequences.
 
     - A snapshot whose `snapshotSequence` is at or before `S0` comes from the
-      idle branch: the thread had no event after the cut, the snapshot is its
-      state at `S0`, and `Dt` is that sequence.
-    - A snapshot whose `snapshotSequence` is after `S0` is the replay limit,
-      the creation of the thread, or a pruned cursor; `Dt` is that sequence,
-      and the snapshot is the thread's startup read.
-    - A replay answer is followed by the full thread snapshot over HTTP, whose
-      `snapshotSequence` is `Dt`, and the watch keeps reading the subscription
-      until it has seen the thread's events through `Dt`; replay and live items
-      carry their sequences.
-    - A snapshot too large for the socket ends the subscription with
-      `message_too_large`; only a snapshot can be that large, because a replay
-      is at most 1 MiB. The watch then takes the full thread snapshot over HTTP
-      and applies the first two cases to its `snapshotSequence`.
+      idle branch: the thread had no event after the cut when the server read
+      its high-water, so every later event arrives live, and the answer counts
+      as an empty replay.
+    - A snapshot whose `snapshotSequence` is after `S0` can be the replay
+      limit, the creation of a live thread or a pruned cursor, or the idle
+      branch with an event between the server's two reads. The watch
+      subscribes from `S0` once more: the thread's high-water is now after
+      `S0`, so a second snapshot after `S0` is not the idle branch, and the
+      answer stands as the server's. A replay on the retry is classed as a
+      replay.
 
     The subscription stays open as the thread watch when the thread is
     watched, and closes otherwise.
 
     The class of each request `R` in the full snapshot depends on these facts:
 
-    - **A**: `snapshot` when the startup read is a snapshot whose
-      `snapshotSequence` is after `S0`, otherwise `replay`; an idle-branch
-      snapshot counts as a replay with no events.
+    - **A**: `snapshot` when the subscription's answer, after the retry, is a
+      snapshot whose `snapshotSequence` is after `S0`; otherwise `replay`.
+    - **C**: the replayed or live events through `Dt` include the thread's
+      creation. The server replays it only for a thread that no longer
+      exists; for a live thread it sends a snapshot instead.
     - **L**: the HTTP shell snapshot lists the thread.
     - **W**: the thread was waiting at `S0`: listed, with a non-null summary.
-    - **X**: the lifecycle `ready.at` changed between `S0` and the full read.
-    - **E**: `R`'s first event from the subscription through `Dt`: none,
-      pending or settled.
+    - **X**: the server restarted between the lifecycle read before `S0` and the
+      thread's full read. X is false when the socket connection stayed open
+      through that whole interval. After a reconnect in it, the watch reads
+      the lifecycle again on the new connection: a `ready.at` other than the one
+      recorded before `S0` makes X true, the same one false. The thread's class
+      waits for that read.
+    - **E**: `R`'s first event through `Dt`: none, pending or settled.
     - **K**: `R` is known pending at `S0`: it is the thread's summary at `S0`,
       or `Dt` is at or before `S0` and `R` is pending in the full snapshot.
 
@@ -679,49 +704,49 @@ proposed-design:
     | --- | --- | --- |
     | 1 | A snapshot, not L | new: the thread counts as created after `S0` (decided, [7041498801](https://github.com/wyrd-company/t3code-client/issues/169#issuecomment-7041498801)) |
     | 2 | A snapshot, L | pending `R`: reported, also with `skipExisting`; settled `R`: settled before start (the replay limit, decided, [7038649689](https://github.com/wyrd-company/t3code-client/issues/169#issuecomment-7038649689)) |
-    | 3 | A replay with at least one event after `S0`, X, and W or not L | pending `R`: reported, also with `skipExisting`; settled `R`: settled before start (a restart, decided, [7038649689](https://github.com/wyrd-company/t3code-client/issues/169#issuecomment-7038649689)) |
-    | 4 | A replay, not row 3, E none | existing if pending, settled before start if settled: nothing changed `R` since `S0` |
-    | 5 | A replay, not row 3, E pending, K | existing: `R` was pending at `S0` |
-    | 6 | A replay, not row 3, E pending, not K, L and not W | new: nothing was pending at `S0`, so the event created `R` |
-    | 7 | A replay, not row 3, E pending, not K, W or not L | new: the event is `R`'s creation or a re-send of a request pending at `S0`, which 0.1.10 cannot tell apart (pending the standing rule, [7042028104](https://github.com/wyrd-company/t3code-client/issues/169#issuecomment-7042028104)) |
-    | 8 | A replay, not row 3, E settled, L and not W | settled before start: nothing was pending at `S0`, so the event re-emits a settlement |
-    | 9 | A replay, not row 3, E settled, K | existing: `R` was pending at `S0` and settled after it |
-    | 10 | A replay, not row 3, E settled, not K, W | existing (decided, [7041498801](https://github.com/wyrd-company/t3code-client/issues/169#issuecomment-7041498801)) |
-    | 11 | A replay, not row 3, E settled, not K, not L | existing: the thread's state at `S0` is unknown (pending the standing rule, [7042028104](https://github.com/wyrd-company/t3code-client/issues/169#issuecomment-7042028104)) |
+    | 3 | A replay, C | new: the thread was created after `S0` |
+    | 4 | A replay, not C, X, at least one event after `S0`, and W or not L | pending `R`: reported, also with `skipExisting`; settled `R`: settled before start (a restart, decided, [7038649689](https://github.com/wyrd-company/t3code-client/issues/169#issuecomment-7038649689)) |
+    | 5 | A replay, not C, not row 4, E none | existing if pending, settled before start if settled: nothing changed `R` since `S0` |
+    | 6 | A replay, not C, not row 4, E pending, K | existing: `R` was pending at `S0` |
+    | 7 | A replay, not C, not row 4, E pending, not K, L and not W | new: nothing was pending at `S0`, so the event created `R` |
+    | 8 | A replay, not C, not row 4, E pending, not K, W or not L | new: the event is `R`'s creation or a re-send of a request pending at `S0`, which 0.1.10 cannot tell apart (pending the standing rule, [7042028104](https://github.com/wyrd-company/t3code-client/issues/169#issuecomment-7042028104)) |
+    | 9 | A replay, not C, not row 4, E settled, L and not W | settled before start: nothing was pending at `S0`, so the event re-emits a settlement |
+    | 10 | A replay, not C, not row 4, E settled, K | existing: `R` was pending at `S0` and settled after it |
+    | 11 | A replay, not C, not row 4, E settled, not K, W | existing (decided, [7041498801](https://github.com/wyrd-company/t3code-client/issues/169#issuecomment-7041498801)) |
+    | 12 | A replay, not C, not row 4, E settled, not K, not L | existing: the thread's state at `S0` is unknown (pending the standing rule, [7042028104](https://github.com/wyrd-company/t3code-client/issues/169#issuecomment-7042028104)) |
 
-    Each request falls on exactly one row. A is `replay` or `snapshot`; a
-    snapshot answer splits on L (rows 1 and 2). A replay answer either meets
-    row 3's condition or not; an idle-branch snapshot has no event after
-    `S0`, so it never does, and its state at `S0` is exact. Otherwise E is none, pending or settled. E none
-    is row 4. With E pending, K holds or not; without K, L and not W is the
-    complement of W or not L (rows 5 to 7). With E settled, L and not W
-    excludes K, because K needs W or a `Dt` at or before `S0`, which leaves E
-    none; the rest splits on K and then on W, and not W there means not L
-    (rows 8 to 11). A thread first named after the catch-up is outside the
-    table: it was created after `S0`, and every request in it is new.
+    Each request falls on exactly one row. A is `replay` or `snapshot`, and a
+    snapshot answer splits on L (rows 1 and 2). A replay splits on C (row 3),
+    and then meets row 4's condition or not; an idle-branch answer with no
+    event after `S0` never does, and its state at `S0` is exact. Otherwise E is
+    none, pending or settled. E none is row 5. With E pending, K holds or not;
+    without K, L and not W is the complement of W or not L (rows 6 to 8). With E
+    settled, L and not W excludes K, because K needs W or a `Dt` at or before
+    `S0`, which leaves E none; the rest splits on K and then on W, and not W
+    there means not L (rows 9 to 12).
 
-    Rows 1 and 2 come before row 3, so the decided creation case and the
-    replay limit take precedence over the restart case: a thread created after
-    `S0` is new even when the server restarted before its read. A replay
-    answer holds no creation event of the thread, so a thread on rows 3 to 11
-    existed at `S0`. Rows 7 and 11 apply the standing rule proposed on #169,
-    which gives a request 0.1.10 cannot place the class under which it is
+    Rows 1 to 3 come before row 4, so creation evidence and the replay limit
+    take precedence over the restart case: a thread created after `S0` is new
+    even when the server restarted before its read. Rows 4 to 12 hold threads
+    that existed at `S0`. Rows 8 and 12 apply the standing rule proposed on
+    #169, which gives a request 0.1.10 cannot place the class under which it is
     reported, and row 2's replay limit is the server's whole limit (more than
-    128 events, more than 1 MiB, or a pruned cursor) as the same proposal
-    reads the decided case. They stand as written until the operator answers;
-    an answer that differs changes those rows only.
+    128 events, more than 1 MiB, or a pruned cursor) as the same proposal reads
+    the decided case. They stand as written until the operator answers; an
+    answer that differs changes those rows only.
 
     The decided and proposed rows cost the following, and nothing else is
     lost or over-reported at startup:
 
-    - Rows 2 and 3 report a pending request even with `skipExisting`, and lose
+    - Rows 2 and 4 report a pending request even with `skipExisting`, and lose
       a request raised after `S0` that settled before the thread's read.
-    - Row 1 reports the settled requests of a thread archived at `S0` whose
-      replay is past the limit, though they settled before `S0`.
-    - Row 10 reports, without `skipExisting`, a request whose settlement a
+    - Row 1 reports the settled requests of a thread archived at `S0`, or one
+      the watch first sees long after startup, whose replay is past the limit,
+      though they settled before `S0`.
+    - Row 11 reports, without `skipExisting`, a request whose settlement a
       provider re-emitted after `S0` though it settled before `S0`.
-    - Row 7 reports a request pending at `S0` that a provider re-sent, even
-      with `skipExisting`; row 11 reports, without `skipExisting`, a request
+    - Row 8 reports a request pending at `S0` that a provider re-sent, even
+      with `skipExisting`; row 12 reports, without `skipExisting`, a request
       of a thread archived at `S0` that settled before `S0`, when a provider
       re-emitted its settlement.
 
@@ -772,18 +797,19 @@ proposed-design:
       every thread that changed after the cursor, and a removal for every
       thread archived or deleted, each a read trigger. A deleted thread stays
       readable, so its requests are reported.
-    - **Authoritative resume.** A resume past the shell's replay window brings
-      an authoritative snapshot. The watch then reads `shell.archivedSnapshot()`
-      again and reads every included thread, active, archived or held in the
-      index, once with the full thread snapshot. Each inventory shows the
+    - **Authoritative resume.** A resume past the shell's replay window is
+      answered with `snapshot-required`. The watch reads the HTTP shell
+      snapshot, which no socket limit applies to, and `shell.archivedSnapshot()`
+      again, and subscribes once more with `afterSequence` set to the HTTP
+      snapshot's `snapshotSequence`. Before it replaces any row, it takes the
+      ids of every thread the index held, and reads every included thread in
+      the union of those ids and both new listings once with the full thread
+      snapshot. A thread that existed before the outage and was deleted during
+      it is therefore still read. Each inventory shows the
       requests raised during the outage, settled or not. A thread created and
       deleted inside that outage appears in neither snapshot, and its requests
-      are the case #169 excepts. When that authoritative snapshot is too large
-      for the socket, the shell watch ends with `message_too_large` before its
-      first item; the watch then reads the HTTP shell snapshot, which has no
-      socket limit, treats it as the authoritative snapshot of this bullet, and
-      subscribes again with `afterSequence` set to its `snapshotSequence`. The
-      inventories and the ledger stay as they are.
+      are the case #169 excepts. The inventories and the ledger stay as they
+      are.
     - **Server restart.** The socket drops, the lifecycle `ready.at` changes,
       and the server comes back with its stored events and projections, so
       the same cursors resume and the reads see every request. Pending
@@ -1141,8 +1167,8 @@ proposed-design:
     - **Outage (task 5).** An idle thread raises a request while the socket is
       down, and the request is answered before the reconnect; the shell replay
       brings only the thread's current row, with a null summary. The request is
-      reported once, as `resolved`. The same holds when the resume brings an
-      authoritative snapshot, when the thread was watched before the drop, and
+      reported once, as `resolved`. The same holds when the resume answers
+      `snapshot-required`, when the thread was watched before the drop, and
       when the settled request lies outside the bounded window, so that only
       the full thread snapshot holds it.
     - **Read interrupted (task 5).** The socket drops while a full thread
@@ -1171,26 +1197,40 @@ proposed-design:
         replay.
       - A thread is created after `S0`, raises an approval, and the server
         restarts before its startup read. The thread lands on row 1 ahead of
-        row 3, and the cancelled approval is reported.
+        row 4, and the cancelled approval is reported.
       - The Muse adapter re-sends a request that was the thread's summary at
-        `S0`, which is existing (row 5), and one that was not, which is new
-        (row 7).
+        `S0`, which is existing (row 6), and one that was not, which is new
+        (row 8).
       - A thread archived at `S0` with a pending question is unarchived and
         the question settled before its read; the question is existing
-        (row 11).
+        (row 12).
       - A thread with no event since `S0` gets an idle-branch snapshot, and its
         pending requests are existing even across a restart in the window.
       - A thread unarchived between the HTTP shell snapshot and the archived
         read is in the startup set.
-    - **Cut retake (task 5).** The startup catch-up comes back as an
-      authoritative snapshot, and in another test ends with
-      `message_too_large`. The watch yields `degraded` with reason
+    - **Cut retake (task 5).** The startup catch-up is answered with
+      `snapshot-required`, and in another test the connection drops before the
+      archived read completes. The watch yields `degraded` with reason
       `start-cut`, takes a new cut, and yields `synchronized` after the new
       cut's catch-up replays.
-    - **Oversized resume (task 5).** After a long outage the shell watch ends
-      with `message_too_large` before its first item. The watch reads the HTTP
-      shell snapshot, subscribes again from its sequence, and reports each
-      request raised during the outage once, keeping its ledger.
+    - **Resume past the window (task 5).** After a long outage the shell resume
+      is answered with `snapshot-required`. The watch reads the HTTP shell
+      snapshot, subscribes again from its sequence, reads the union of the
+      threads it held and the new listings, and reports each request raised
+      during the outage once, keeping its ledger, including a request in a
+      thread it held that was deleted during the outage.
+    - **Oversized frame (task 5).** A thread watch's frame exceeds the socket
+      limit, so every stream on the socket fails with `message_too_large`.
+      Every watch resubscribes and the run continues. When it repeats, the
+      watch reopens thread watches one at a time, and the failing thread is
+      covered by full snapshots, its first success counting toward readiness.
+    - **Startup subscription (task 5).** An idle thread whose high-water is
+      before `S0` gets a snapshot answer; a request raised between the server's
+      two reads makes its sequence after `S0`, and the retry replays it. An
+      empty replay ends with `synchronized`. A thread created after `S0` and
+      deleted before its read replays its creation and lands on row 3. A
+      thread deleted long before startup and deleted again later is classed
+      against `S0`, and its old requests stay settled before start.
     - **Readiness (task 5).** `synchronized` comes only after every startup
       read succeeded. With one thread whose reads fail, `degraded` names it,
       and `synchronized` follows its first successful read. A waiting thread
@@ -1221,9 +1261,11 @@ proposed-design:
 
     - **Task 2** makes `shell.watch` move its cursor only on an authoritative
       snapshot, in commit `8ecef8a` with its test.
-    - **Task 5:** `library-facades.yml` lists `RequestsApi` in its facade
-      block, links this design, and states the snapshot rule in its watch
-      paragraph; the module map in `library.yml` adds `api/requests.ts`,
+    - **Task 5:** `shell.watch` takes `httpSnapshotFallback` and yields the
+      `snapshot-required` item, and a lifecycle watch resubscribes after a
+      drop. `library-facades.yml` lists `RequestsApi` in its facade
+      block, links this design, and states the snapshot rule and these two in
+      its watch paragraph; the module map in `library.yml` adds `api/requests.ts`,
       `api/requestWatch.ts`, `api/requestStartup.ts`, `api/requestIndex.ts`
       and `api/requestLedger.ts`; the generated API reference (`task docs`)
       documents the new exports.
