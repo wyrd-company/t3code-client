@@ -32,7 +32,8 @@ const summary = schemas.usage.UsageSummary.parse({
       cacheSavingsUsd: 0.01,
       costSource: "sample-new-source",
       records: 2,
-      unpricedRecords: 0,
+      unpricedRecords: 1,
+      unpricedTokens: 7,
       sessions: 1,
     },
   ],
@@ -43,6 +44,7 @@ const summary = schemas.usage.UsageSummary.parse({
         provider: "codex",
         resolvedHomePath: "/sample",
         volumeId: "1:2",
+        physicalSourceId: "sample-source",
       },
       status: "partial",
       scannedFiles: 3,
@@ -58,8 +60,22 @@ const summary = schemas.usage.UsageSummary.parse({
 });
 afterEach(() => vi.restoreAllMocks());
 
-it("passes an exact provider instance and keeps auth, availability and limits", async () => {
-  const provider = schemas.provider.ServerProvider.parse(sampleProvider);
+it("passes an exact provider instance and keeps auth, availability and limit attribution", async () => {
+  const provider = schemas.provider.ServerProvider.parse({
+    ...sampleProvider,
+    auth: { ...sampleProvider.auth, endpoint: "https://models.invalid" },
+    usageLimits: {
+      ...sampleProvider.usageLimits,
+      zeroSpendCap: true,
+      windows: [
+        {
+          ...sampleProvider.usageLimits.windows[0],
+          modelIds: ["sample-model"],
+          providerIds: ["codex"],
+        },
+      ],
+    },
+  });
   const read = vi.spyOn(client.server, "providerStatus").mockResolvedValue([provider]);
   const result = await run(["provider", "status", "sample-provider"]);
   expect(read).toHaveBeenCalledWith("sample-provider");
