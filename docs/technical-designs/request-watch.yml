@@ -23,15 +23,31 @@ relationships:
     - threadWatch
     - threadDerived
 design-challenges:
-  one-summary-per-thread: |
+  requests-between-observations: |
     The shell, the server's only cross-thread stream, gives each thread row one
-    pending request summary. A thread can hold several pending requests, and a
+    pending request summary and coalesces a thread's events into its current
+    row. A request raised and settled between two rows the watcher sees,
+    during an outage or inside one batch, never appears in a summary, and a
     question raised while an approval is pending leaves the summary unchanged.
-    The design uses the summary only as the sign that a thread is waiting. While
-    an included thread waits, a thread watch on it applies every event of the
-    thread and announces each pending request, so no request depends on the
-    summary naming it. [The decision record](../decisions/request-watch-discovery.yml)
-    weighs this against reading a thread on every row change.
+    The durable record is the thread projection's `runtimeRequests`, which
+    holds every request the thread raised, settled ones included, with
+    `createdAt` and `resolvedAt`. The watcher reconciles each included thread's
+    `runtimeRequests` against its ledger: through a thread watch while the
+    thread waits or runs, and through a projection read whenever the row of a
+    thread it is not watching changes or the thread is removed from the
+    stream. [The decision record](../decisions/request-watch-discovery.yml)
+    weighs this against the alternatives.
+  one-start-boundary: |
+    Every reconciliation must split the requests it finds into those that
+    existed when the run started and those raised after it, the same way
+    whenever it reads the thread. The boundary is each thread's `updatedAt` in
+    the run's initial snapshots. The server sets a thread's `updatedAt` to the
+    time of the latest event it applied, and raising or settling a request is
+    an event on its thread, so a request raised after the snapshot has a
+    `createdAt` later than its thread's boundary, and one settled before the
+    snapshot has a `resolvedAt` at or before it. The classification uses only
+    server timestamps, so it does not depend on the watcher's clock or on when
+    a thread snapshot is taken.
   two-kinds-of-shell-snapshot: |
     The shell stream sends two kinds of `snapshot` item. An authoritative
     snapshot has no `resolvedRepositoryIdentityRoots` and lists every active
@@ -43,23 +59,30 @@ design-challenges:
     `snapshotSequence` is the server's latest sequence, so a watch that moved
     its cursor to it would skip the replayed rows that follow it. `shell.watch`
     therefore moves its cursor only on an authoritative snapshot, and the
-    request watch's index replaces its thread set only on an authoritative
-    snapshot and takes only project titles from an enrichment snapshot.
+    request watch's index takes thread rows only from an authoritative
+    snapshot and only project titles from an enrichment snapshot.
+  archived-threads: |
+    The live stream lists active threads. It publishes the archive of a thread,
+    and every later event of an archived thread, as `thread.removed`, and an
+    archived thread can still hold a pending request. The watcher reads `shell.archivedSnapshot()` when it starts and
+    after a resume that brings an authoritative snapshot, and treats every
+    `thread.removed` as a change to the thread that it reconciles with a read.
+    An archived thread that waits or runs is watched like an active one.
+  requests-before-their-cards: |
+    A request's detail (the command, the files, the questions) is on its
+    timeline card, and the card can arrive after the runtime request: the
+    Claude adapter emits the request's event and then the card's
+    (`ClaudeAdapterV2.ts`). A request is reported once its card is in the
+    watcher's view. A pending request whose card has not arrived two seconds
+    after its record is reported with no card. A settled request whose card is
+    outside a bounded view is reported with the card from the thread's full
+    detail.
   exactly-once-across-outages: |
     Reconnects resubscribe the shell and every thread watch, a thread watch
-    that closes and opens again announces the same pending requests again, and
-    a server restart replays or re-snapshots state. One set of reported
-    requests, kept for the whole run and keyed by thread id and request id,
-    absorbs every repeat. Requests still pending after an outage are found by
-    the resubscribed watches; see `guarantees` for what is reported.
-  late-question-cards: |
-    A question's text lives on its `user_input_request` timeline card, which can
-    arrive after the runtime request. The thread watch's tracker announces a
-    question only when its card is in the projection, so every reported
-    question carries its questions. With `skipExisting`, requests pending at
-    synchronization are marked from the thread snapshot's full pending list,
-    including questions whose card has not arrived, so a late card does not
-    turn an existing question into a new one.
+    that closes and opens again presents the same requests again, and a read
+    presents every request the thread ever raised. One ledger for the run,
+    keyed by thread id and request id, absorbs every repeat, so reconciliation
+    is idempotent.
   untrusted-content-and-hooks: |
     Request content is written by agents. It reaches a hook only as the bytes
     of the request line on the hook's stdin. The hook's command line is the
@@ -70,36 +93,43 @@ proposed-design:
   guarantees: |
     A run is one iteration of `client.requests.watch(options)`, or one
     `t3c requests watch` process. A request is identified by its thread id and
-    its runtime request id. The watcher's view of a thread is the state its
-    thread watch has applied.
+    its runtime request id. A thread's start boundary is its `updatedAt` in the
+    run's initial snapshots (`one-start-boundary`); a thread created after them
+    has none. A thread is included when the filters select it, and the filters
+    apply to the thread as the index holds it when the watcher accounts for a
+    request.
 
     1. **At most once per run.** A run reports a request at most once, across
-       reconnects, server restarts, resubscriptions and thread watches that
-       close and open again.
-    2. **Every request that waits is reported.** A pending runtime request of a
-       selected kind, in an included thread, is reported when the watcher's
-       view of the thread reaches it while it is still pending. A question is
-       reported once its card, which holds the questions, is in that view.
-       After an outage the resubscribed watches bring the view up to date, so a
-       request raised during the outage and still pending is reported then.
-    3. **What is not reported.** A request resolved, expired or cancelled before
-       the watcher's view of its thread reaches it is not reported, and neither
-       is a request whose thread is excluded, filtered out or archived for as
-       long as the request is pending. Filters apply to the thread as the index
-       holds it when the request is announced. A request in a thread whose
-       watch keeps failing is reported once the watch opens; each failure is a
-       `thread-error` item. A secret or link card is not a runtime request and
-       is never reported.
-    4. **Existing requests.** A run reports the requests already pending when it
-       starts, so a watcher that restarts loses nothing; across runs a request
-       is reported at least once. `skipExisting` skips exactly the requests the
-       run finds pending at synchronization.
-    5. **Read only.** The watcher reads with `orchestration:read` and never
+       reconnects, server restarts, resubscriptions, thread watches that close
+       and open again, and repeated reads.
+    2. **Every request raised after the start is reported.** A runtime request
+       of a selected kind, raised after its thread's start boundary in an
+       included thread, is reported, whether it is still pending or already
+       settled when the watcher reaches it. That includes a request raised and
+       answered, expired or cancelled while the watcher was disconnected or the
+       server was down, and a request in an archived thread. A request is
+       reported with the status the watcher's view holds, so a consumer acts
+       only on `request.status` `pending`.
+    3. **Existing requests.** A request raised before the start boundary and
+       still pending at it is reported, unless `skipExisting` is set, which
+       skips exactly those. A request settled before the boundary is never
+       reported. Across runs, a request pending at each start is reported by
+       each run.
+    4. **Detail.** A request is reported with its timeline card when the server
+       holds one. A pending request whose card has not arrived two seconds
+       after its record is reported without it.
+    5. **Bounds.** A request that shares the server millisecond of its thread's
+       start boundary is classed as if raised before the boundary. A request in
+       a thread whose reads keep failing is reported once a read succeeds; each
+       failure is a `thread-error` item. A secret or link card is not a runtime
+       request and is never reported.
+    6. **Read only.** The watcher reads with `orchestration:read` and never
        answers a request. Answering stays with `threads.respondToApproval`,
        `threads.respondToUserInput` and `t3c thread respond`.
-    6. **Hooks.** Each reported request starts at most one run of the `--exec`
-       hook. A hook run is never retried. A hook that fails, times out, is
-       stopped or never starts is named on stderr.
+    7. **Hooks.** Each request line on stdout starts exactly one run of the
+       `--exec` hook, unless the watcher is forced to stop: a second signal, or
+       a process end t3c does not control. A hook run is never retried. A hook
+       that fails, times out, is stopped or never starts is named on stderr.
   upstream-request-model: |
     These are the server facts the design rests on, read from upstream
     `pingdotgg/t3code` at tags `v0.1.9` and `v0.1.10`. File paths are in that
@@ -142,10 +172,11 @@ proposed-design:
         still-pending questions
         (`apps/server/src/orchestration-v2/DelegatedTaskQuestionReactor.ts`).
 
-      The watcher reads runtime requests from thread watches and uses a
-      summary only as the sign that its thread waits, so it reports the same
-      requests on both versions. A card summary opens a thread watch like any
-      other, because the card can stand in front of a pending question.
+      The watcher reads runtime requests from thread watches and projection
+      reads, and uses a summary only as the sign that its thread waits, so it
+      reports the same requests on both versions. A card summary makes its
+      thread waiting like any other, because the card can stand in front of a
+      pending question.
     - **Shell publishing.** Every thread event makes the server read the
       thread's row again; a row identical to the last one sent is skipped. For
       subagent threads the server leaves out node, turn item, provider turn and
@@ -153,9 +184,7 @@ proposed-design:
       messages; runtime request events always pass
       (`shouldPublishShellApplicationEvent` and `skipUnchangedThreadShells` in
       `apps/server/src/orchestration-v2/ShellStream.ts`). A change to a thread's
-      summary therefore always produces a row. An archived thread is published
-      as `thread.removed`, and the stream's snapshots list active threads only
-      (`shellStreamItemFromThreadShell`); unarchiving publishes its row again.
+      summary therefore always produces a row.
     - **Shell snapshots and resume.** A fresh subscription starts with an
       authoritative snapshot, followed by an enrichment snapshot when some
       project's repository identity is resolved. A subscription with
@@ -169,10 +198,37 @@ proposed-design:
       `shellStreamItemsFromResumeSnapshot` in `ShellStream.ts`). Upstream's
       own client tells the two kinds apart by `resolvedRepositoryIdentityRoots`
       (`packages/client-runtime/src/state/shell.ts`).
-    - **Bounded snapshots keep pending cards.** A bounded projection and a
-      bounded thread snapshot keep the card of every pending request even when
-      it is older than the timeline window (`isRetainedDependency` in
-      `apps/server/src/orchestration-v2/threadHistoryPaging.ts`).
+    - **Durable request records.** Applying `runtime-request.updated` upserts
+      the request by id, so a thread's `runtimeRequests` hold every request it
+      raised, settled ones included, with `createdAt` and `resolvedAt`
+      (`applyToProjection` in `ProjectionStore.ts`). Recovery and deletion
+      settle requests by the same event, with `resolvedAt` set
+      (`ProviderRuntimeRecoveryService.ts`, `ThreadDeletion.ts`).
+    - **Bounded views carry every request.** A bounded projection
+      (`orchestration.getThreadProjection`) and a bounded thread snapshot carry
+      the whole `runtimeRequests` list; only plans and context handoffs are
+      filtered (`buildBoundedThreadProjection` in
+      `apps/server/src/orchestration-v2/threadHistoryPaging.ts`). They keep the
+      card of every pending request even when it is older than the timeline
+      window (`isRetainedDependency`). A settled request's card is in a bounded
+      view only inside the window; the full HTTP detail holds every card.
+    - **Thread time.** Every event the projection applies, request and card
+      events included, sets the thread's `updatedAt` to the event's
+      `occurredAt`, and a thread row's `updatedAt` is that value
+      (`applyToProjection`, `threadShellFromProjection`).
+    - **Card order.** The Claude adapter emits a request's
+      `runtime_request.updated` event and then its card's `turn_item.updated`
+      event, one after the other (`ClaudeAdapterV2.ts`), so a view can hold the
+      request before its card.
+    - **Archived threads.** The stream's snapshots list active threads. For an
+      archived thread, `shellStreamItemFromThreadShell` turns its row into
+      `thread.removed`, for the archive and for every later event of the
+      thread, and `skipUnchangedThreadShells` never skips a removal;
+      unarchiving publishes its row again. An archived thread keeps its
+      `runtimeRequests`, and the design does not depend on which of them
+      archiving settles. `orchestration.getArchivedShellSnapshot`
+      (`shell.archivedSnapshot()`) lists the archived rows, in the same shape
+      as active ones.
     - **Restarts.** When the server shuts down, and again when it starts, it
       ends every pending request (`cancelled` at shutdown, `expired` at
       startup) except live questions with complete cards outside
@@ -183,8 +239,10 @@ proposed-design:
       Event sequences are stored with the events, so cursors stay valid across a
       restart.
     - **Scopes.** `orchestration.subscribeShell`, `orchestration.subscribeThread`,
-      `orchestration.getThreadProjection`, `GET /api/orchestration/shell` and
-      `GET /api/projects` require `orchestration:read`
+      `orchestration.getThreadProjection`,
+      `orchestration.getArchivedShellSnapshot`, `GET /api/orchestration/shell`,
+      the HTTP thread detail and `GET /api/projects` require
+      `orchestration:read`
       (`apps/server/src/auth/RpcAuthorization.ts`).
   library-api: |
     Task 5 builds this API. `T3Client.requests` is a `RequestsApi` facade over
@@ -220,14 +278,14 @@ proposed-design:
       readonly projectIds?: readonly ProjectId[];
       /** Only requests of this kind. */
       readonly kind?: PendingRequestKind;
-      /** Never these threads, nor the subagent threads below them. */
+      /** Never the threads with exactly these ids. */
       readonly excludeThreadIds?: readonly ThreadId[];
-      /** Never threads with one of these tags, nor the subagent threads below them. */
+      /** Never the threads that carry one of these tags. */
       readonly excludeTags?: readonly string[];
     }
 
     export interface RequestWatchOptions extends RequestWatchFilters {
-      /** Skip the requests pending at synchronization instead of reporting them. */
+      /** Skip the requests pending at the start boundary instead of reporting them. */
       readonly skipExisting?: boolean;
       readonly signal?: AbortSignal;
     }
@@ -247,7 +305,7 @@ proposed-design:
       | { readonly kind: "decode-error"; readonly error: T3DecodeError };
 
     export class RequestsApi {
-      /** Every new pending request on the server, once per run; read-only. */
+      /** Every request raised on the server after the start, once per run; read-only. */
       watch(options?: RequestWatchOptions): AsyncIterable<RequestWatchItem>;
     }
     ```
@@ -255,18 +313,20 @@ proposed-design:
     `PendingRequest` is the library's existing type from `threadDerived.ts`, so
     a reported request has the shape `threads.pendingRequests` and
     `t3c thread requests --json` already return, plus `thread` and `project`.
+    Its `request` is the record as the watcher's view holds it when it reports,
+    so its `status` can already be `resolved`, `expired` or `cancelled`.
 
-    - `request` reports one request. Within one thread, requests are reported in
-      the order the thread watch announces them: oldest first for the requests
-      in its snapshot, then as raised. Requests of different threads have no
-      order between them.
-    - `synchronized` comes once per run, after the requests pending at
-      synchronization are reported or skipped.
+    - `request` reports one request, when it becomes reportable: its card is
+      in the view, its two seconds have passed, or its card came from the
+      detail. Requests that become reportable together are reported oldest
+      `createdAt` first. Requests of different threads have no order between
+      them.
+    - `synchronized` comes once per run, when the requests pending at the start
+      boundary are reported or skipped.
     - `reconnected` comes when the shell subscription resumes after a dropped
       socket; `afterSequence` is its cursor.
-    - `thread-error` reports a thread watch that ended with an error that
-      concerns only its thread. The watch opens the thread's watch again while
-      the thread still waits, as `discovery` describes.
+    - `thread-error` reports a thread watch or read that failed for one thread.
+      The watch tries that thread again, as `discovery` describes.
     - `decode-error` passes on a shell or thread item that failed to decode.
 
     The watch validates its options before it subscribes: ids are nonempty
@@ -276,105 +336,130 @@ proposed-design:
     quietly. An error from the shell watch ends the iteration with that error,
     as `shell.watch` defines; a credential the server rejects arrives this way
     as the library's connection error, and `client.close()` as the closed
-    connection error. An error from a thread watch ends the iteration when it
-    concerns the connection or the credential: a `T3ConnectionError` other than
-    `message_too_large`, a `T3AuthError`, or a `T3RpcError` whose tag is
-    `EnvironmentAuthorizationError`, whether or not its record decoded. Every
-    other thread watch error produces a `thread-error` item.
+    connection error. An error from a thread watch or read ends the iteration
+    when it concerns the connection or the credential: a `T3ConnectionError`
+    other than `message_too_large`, a `T3AuthError`, or a `T3RpcError` whose
+    tag is `EnvironmentAuthorizationError`, whether or not its record decoded.
+    Every other thread watch or read error produces a `thread-error` item.
 
-    Modules: `src/api/requests.ts` holds `RequestsApi`, `src/api/requestWatch.ts`
-    the watch, and `src/api/requestIndex.ts` the shell index and its inclusion
-    rule as pure functions. `src/index.ts` exports `RequestsApi` and the types
-    above.
+    Modules: `src/api/requests.ts` holds `RequestsApi`; `src/api/requestWatch.ts`
+    the watch, which drives the shell watch, thread watches and reads;
+    `src/api/requestIndex.ts` the index, the start boundaries and the inclusion
+    rule as pure functions; and `src/api/requestLedger.ts` reconciliation: the
+    classification, the card join and the ledger, as pure functions over a
+    projection. `src/index.ts` exports `RequestsApi` and the types above.
   discovery: |
     Task 5 builds this. [The decision record](../decisions/request-watch-discovery.yml)
     explains the shape.
 
     **The index.** The watch consumes `shell.watch()` without omission options,
-    so every active thread's row reaches it; the stream publishes an archived
-    thread as removed, so the watch covers the threads that are not archived.
-    For each thread the index keeps its id, project id, title, tags, its
-    parent's id when `lineage.relationshipToParent` is `subagent`, and whether
-    its summary is non-null. For each project it keeps the title. Shell items
-    change the index:
+    and reads `shell.archivedSnapshot()`, so it holds a row for every thread on
+    the server. For each thread the index keeps its id, whether it is active or
+    archived, its project id, title and tags, its latest `updatedAt`, its start
+    boundary, whether its summary is non-null (it waits), and whether
+    `activeRunId` or `activityRunStatus` is non-null (it runs). For each project
+    it keeps the title.
 
-    | Shell item | Index change |
+    | Source | Index change |
     | --- | --- |
-    | authoritative `snapshot` | Replace the thread set with the listed threads, and add or update the listed projects. A thread the snapshot does not list leaves the index. |
+    | authoritative `snapshot` | Replace the active rows with the listed threads, and add or update the listed projects. |
     | enrichment `snapshot` | Add or update the listed projects. Threads are unchanged. |
-    | `thread.updated` | Add or update the thread. |
-    | `thread.removed` | Remove the thread. |
-    | `project.updated` | Add or update the project. |
-    | `project.removed` | Remove the project's title. |
-    | `synchronized` | The first one closes the initial shell state; see synchronization. |
-    | `reconnected`, `decode-error` | Passed on as items. |
+    | `thread.updated` | Add or update the active row. |
+    | `thread.removed` | The thread is archived or deleted; its row stays, marked removed, and the thread is read. |
+    | `project.updated`, `project.removed` | Add, update or remove the project's title. |
+    | `shell.archivedSnapshot()` | Add or update every archived row. |
+    | a read of the thread | For an archived or removed thread: whether it waits or runs, from the projection. |
+    | `synchronized`, `reconnected`, `decode-error` | See synchronization and reconnects. |
     | `snapshot-required` | Not received: the watch does not ask for `httpSnapshotFallback`. |
 
-    **Inclusion.** A thread is excluded when its id is in `excludeThreadIds`,
-    when one of its tags, trimmed, equals one of `excludeTags`, or when its
-    subagent parent is excluded. The parent walk follows the parent ids in the
-    index's rows. The index remembers, for the run, the id of every thread it
-    has seen excluded by a tag, so a parent that was archived or deleted still
-    excludes its subagent threads; the walk stops at a parent the index neither
-    holds nor remembers. A thread is included when it is not excluded and
-    `projectIds` is absent, empty or lists its project.
-    Exclusion applies to subagent descendants because a thread that handles
-    requests can delegate to subagent threads, and their requests come from the
-    same work. Excluded ids are not checked for existence, so a reviewer thread
-    can be excluded before it exists.
+    **Start boundaries.** The first authoritative snapshot and the archived
+    snapshot read after it set each listed thread's start boundary to its
+    `updatedAt`. Later rows never change a boundary. A thread first seen after
+    them has no boundary, so every request it raises is new.
 
-    **Thread watches.** A thread is watched while it is included and its
-    summary is non-null. After each shell item the watch compares the watched
-    set with its open thread watches. It opens
+    **Inclusion.** A thread is excluded when its id is exactly one of
+    `excludeThreadIds`, or when one of its own tags, trimmed, equals one of
+    `excludeTags`. No other thread is excluded with it: a subagent thread has
+    its own id, and is excluded only by its own id or tags. A thread is
+    included when it is not excluded and `projectIds` is absent, empty or
+    lists its project. Excluded ids are not checked for existence, so a
+    reviewer thread can be excluded before it exists.
+
+    **Two sources of requests.** An included thread that waits or runs is
+    watched: the watch opens
     `threads.watch(threadId, { acceptBoundedSnapshot: true, acceptCompactTurnItems: true })`
-    with its own abort signal for each thread that became watched, and aborts
-    the thread watch of each thread that stopped being watched: its summary
-    went null, it became excluded, or it was removed. Only threads with a
-    non-null summary are evaluated, so the cost of each item follows the number
-    of waiting threads.
+    and applies each `snapshot` and `event` item to a projection of its own with
+    `applyThreadEvent`, the reducer the thread tracker uses. It reconciles that
+    projection after the snapshot and after every event, so it sees every
+    event of a watched thread. Every other included thread is read: the watch
+    calls `threads.projection(threadId)`, which carries every runtime request
+    the thread holds, and reconciles the result. A thread is read when:
 
-    From each thread watch the watch uses these items:
+    - the shell or the archived snapshot shows its row with an `updatedAt`
+      other than the one the index holds;
+    - the stream removes it, which it does for an archive, a deletion, and every
+      event of an archived thread;
+    - it stops being watched, so events its thread watch had not applied yet
+      are accounted; or
+    - it becomes included.
 
-    | Thread watch item | Use |
-    | --- | --- |
-    | `snapshot` | With `skipExisting`, marks the requests of an initial thread as existing. |
-    | `synchronized` | The first one counts toward the run's synchronization. |
-    | `approval-requested`, `user-input-requested` | Reported when `kind` allows it and the request is not in the reported set. |
-    | `decode-error` | Passed on. |
-    | other items | Not used. |
+    The initial snapshots set the index's `updatedAt` without a read. An idle
+    thread changes rarely, so reads follow the events of threads that neither
+    wait nor run. Each thread has at most one read in flight; a trigger during
+    a read schedules one more read after it. A read that shows an archived
+    thread waiting or running starts its watch; the watch of an archived
+    thread ends when its own projection shows it neither waits nor runs.
 
-    A thread watch error that concerns the connection or the credential ends
-    the run, as `library-api` lists. Any other error ends only that thread
-    watch and produces a `thread-error` item. While the thread stays watched,
-    its watch opens again after the client's reconnect backoff for that
-    thread's consecutive failures, or at once when the shell publishes a new
-    row for the thread. A watch that delivers its snapshot resets the count.
+    **Reconciliation.** For each runtime request in the projection whose key is
+    not in the run's ledger, reconciliation classifies it against its thread's
+    start boundary `B`:
 
-    **Reporting.** Reporting a request adds its key to the run's reported set
-    and builds the `ReportedRequest` from the announcement and the index: the
-    thread's current title and tags, and the project id and title. The kind
-    filter applies per request; the other filters apply per thread.
+    | Class | Test | Result |
+    | --- | --- | --- |
+    | new | no `B`, or `createdAt` after `B` | reported |
+    | existing | `createdAt` at or before `B`, and `resolvedAt` null or after `B` | reported, or added to the ledger without a report when `skipExisting` is set |
+    | history | `createdAt` and `resolvedAt` at or before `B` | added to the ledger, never reported |
+
+    A request to report is reported once the projection holds its card, the
+    `approval_request` or `user_input_request` turn item whose `requestId` is
+    the request's id. A pending request without a card waits up to two
+    seconds; the card's arrival reports it, and otherwise it is reported with
+    no card. A settled request without a card in a bounded view is reported
+    with the card from `threads.detail(threadId)`, read once for the
+    reconciliation that needs it, or with none when the detail holds none
+    either. The `kind` filter applies here, per request; the other filters
+    decide which threads are watched and read. Reporting adds the key to the
+    ledger and builds the `ReportedRequest` from the request, its card and the
+    index: the thread's current title and tags, and the project id and title.
+
+    **Failures.** A thread watch or read error that concerns the connection or
+    the credential ends the run, as `library-api` lists. Any other error
+    produces a `thread-error` item. A failed thread watch opens again while the
+    thread still waits or runs, and a failed read runs again while its trigger
+    stands: after the client's reconnect backoff for that thread's consecutive
+    failures, or at once when the shell publishes a new row for the thread. A
+    watch that delivers its snapshot, or a read that succeeds, resets the
+    count.
   synchronization-and-existing-requests: |
     Task 5 builds this.
 
-    The initial waiting set is the set of threads that are watched when the
-    shell's first `synchronized` item arrives. The run is synchronized when that
-    item has arrived and every thread in the initial waiting set has delivered
-    its first `synchronized` item, or its first thread watch has ended. A
-    thread whose first watch failed before its snapshot counts as having no
-    existing requests, so a later watch reports what it finds. A thread watch's
-    `synchronized` follows its snapshot and the announcements that snapshot
-    produced, because the thread subscription asks for a completion marker. The
-    watch then yields `synchronized`, once per run.
+    The start boundary is the observable line between existing and new
+    requests: `skipExisting` skips exactly the class `existing`, whichever
+    source reaches a request first and whenever it does. A request raised after
+    the initial snapshot is new in every interleaving, because its `createdAt`
+    is later than its thread's boundary; a request pending in the initial
+    snapshot is existing in every interleaving, including one settled before
+    its thread's first snapshot or read.
 
-    Without `skipExisting`, the requests pending in those snapshots are
-    reported like any other. With `skipExisting`, each initial thread's first
-    snapshot adds the key of every request in
-    `pendingRequests(snapshot.projection)` to the reported set without
-    reporting it, including questions whose card has not arrived. Requests
-    raised after synchronization are always reported. A request raised while
-    the run starts, before synchronization, is reported unless the first
-    snapshot of its thread already holds it.
+    The initial set is the included threads that wait or run in the initial
+    snapshots. The run is synchronized when the shell's first `synchronized`
+    item has arrived, the archived snapshot has been read, and every thread in
+    the initial set has delivered its first `synchronized` item or its first
+    watch has ended. A thread watch's `synchronized` follows its snapshot and
+    the reconciliation of that snapshot, because the thread subscription asks
+    for a completion marker. The watch then yields `synchronized`, once per
+    run. A request still waiting for its card at that moment is reported when
+    the card arrives or its two seconds pass.
 
     The CLI prints `t3c: watching for requests` on stderr at `info` level when
     the watch yields `synchronized`, so a script run with `--log-level info`
@@ -392,26 +477,28 @@ proposed-design:
     - **Dropped connection.** The transport reconnects with backoff. The shell
       watch and each open thread watch resubscribe with their own cursor, skip
       replayed items at or below it, and wait through failures without an
-      attempt limit. A thread watch that receives a new snapshot re-seeds its
-      tracker, which keeps the requests it announced and announces only the
-      others. Threads that started waiting during the outage come back as rows
-      in the shell replay, or in an authoritative snapshot, and their thread
-      watches open; threads deleted or archived during the outage leave the
-      index through the replay's `thread.removed` or through the authoritative
-      snapshot, and their thread watches close.
+      attempt limit. A resumed thread watch applies the replayed events, or a
+      new snapshot, to its projection and reconciles it, so a request raised
+      and settled in a watched thread during the outage is reported. The
+      shell's resume brings the current row of every thread that changed after
+      its cursor, or an authoritative snapshot. Each such row with a new
+      `updatedAt`, each removal, and each active row missing from an
+      authoritative snapshot is a read trigger. After an authoritative
+      snapshot the watch also reads `shell.archivedSnapshot()` again, and each
+      archived row with a new `updatedAt` is a read trigger. A read presents
+      every request the thread raised during the outage, settled or not.
     - **Server restart.** The socket drops and the server comes back with its
-      stored events, so the same cursors resume. Pending approvals end at
-      shutdown or startup: their thread watches announce nothing new for them,
-      and a continued run that asks again raises a new request id, which is
-      reported once. Questions that survive keep their id, so they are not
+      stored events and projections, so the same cursors resume and the reads
+      see every request. Pending approvals end at shutdown or startup, as
+      `cancelled` or `expired`; a request first seen in that state is reported
+      with it. A continued run that asks again raises a new request id, which
+      is reported once. Questions that survive keep their id, so they are not
       reported again.
-    - **Thread watch reopened.** A thread whose summary goes null and later
-      non-null again gets a new thread watch; its snapshot announces the
-      thread's open requests again, and the reported set drops those already
-      reported.
+    - **Thread watch reopened.** A thread that stops waiting and running and
+      later starts again gets a new thread watch; its snapshot presents the
+      thread's requests again, and the ledger drops those already accounted.
 
-    The reported set holds one key per reported request for the life of the
-    run.
+    The ledger holds one key per accounted request for the life of the run.
   command: |
     Task 6 builds the command. Task 7 adds `--ignore-defaults` and the defaults
     it controls.
@@ -499,12 +586,11 @@ proposed-design:
 
     **Stopping.** The command uses the CLI's one signal scope
     (`execution/signals.ts`). On the first SIGINT or SIGTERM, or on any other
-    end of the watch, it aborts the watch, so no request is reported after it.
-    Queued hooks do not start; running hooks are stopped as `exec-hook`
-    describes. Then the client closes, `--json` writes the result line, stderr
-    ends with the final line, and the process exits. A second signal ends the
-    process at once with exit 4, after the hook runner kills every running
-    hook's process group.
+    end of the watch, it aborts the watch, so no request is reported after it,
+    and the hook runner drains as `exec-hook` describes. Then the client
+    closes, `--json` writes the result line, stderr ends with the final line,
+    and the process exits. A second signal forces the stop: the hook runner
+    stops its hooks, as `exec-hook` describes, and the process exits 4.
 
     Modules: `src/requests/index.ts` exports `requestsHandlers` with the
     `requests watch` handler, which the composition root adds beside the other
@@ -530,7 +616,10 @@ proposed-design:
 
     `kind`, `requestId`, `request`, `item` and `questions` are the library's
     `PendingRequest`, the object `t3c thread requests --json` returns, with an
-    absent card written as null instead of left out. For
+    absent card written as null instead of left out. `request.status` is the
+    request's status when the watcher reported it: a request raised and settled
+    while the watcher was away is reported as `resolved`, `expired` or
+    `cancelled`, and a hook answers only a `pending` one. For
     an approval, `item.prompt` holds the command or the provider's description
     of the action; for a question, `questions` holds the questions and their
     options. A hook that needs more, such as a file change's diff, reads the
@@ -575,13 +664,14 @@ proposed-design:
     ignored. Nothing from the request goes into the hook's arguments or
     environment.
 
-    **Environment.** The hook inherits t3c's environment. When `--server`
-    selected the server, the runner also sets `T3_SERVER_URL` to that server's
-    origin, so `t3c` commands the hook runs reach the same server. A server
-    selected by `T3_SERVER_URL` is inherited as it is, and one selected by the
-    current profile is selected the same way by the hook's own `t3c`. A
-    credential given with `--credentials` is not passed on; such a hook passes
-    the file to its own `t3c` commands.
+    **Environment.** The hook inherits t3c's environment, and the runner sets
+    `T3_SERVER_URL` to the origin of the server the watcher is connected to,
+    however that server was selected. A `t3c` command the hook runs therefore
+    reaches the server the request came from, even after the current profile
+    changes, and takes the credential of the first profile whose origin
+    matches, or `T3_TOKEN` when the watcher's environment sets it. A credential
+    given with `--credentials` is not passed on; such a hook passes the file to
+    its own `t3c` commands.
 
     **Output.** The hook's stdout and stderr go to t3c's stderr, never to its
     stdout, line by line, each line prefixed with `t3c: hook <requestId>: `
@@ -606,18 +696,23 @@ proposed-design:
     | Ended by a signal it did not get from t3c | `t3c: hook failed for request <requestId> in thread <threadId>: signal <name>` |
     | Timed out | `t3c: hook failed for request <requestId> in thread <threadId>: timed out after <duration>` |
     | The process did not start | `t3c: hook failed for request <requestId> in thread <threadId>: could not start` |
-    | Stopped with the watcher | `t3c: hook stopped for request <requestId> in thread <threadId>` |
-    | Queued when the watcher stopped | `t3c: hook not run for request <requestId> in thread <threadId>` |
+    | Stopped by a forced stop | `t3c: hook stopped for request <requestId> in thread <threadId>` |
+    | Queued at a forced stop | `t3c: hook not run for request <requestId> in thread <threadId>` |
 
     A failed hook is not retried, and the watcher keeps running.
 
-    **Stop.** When the watch ends, queued runs never start and are reported as
-    not run. Running hooks receive SIGTERM to their process groups; after five
-    seconds the survivors receive SIGKILL, and each is reported as stopped. The
-    runner registers a process `exit` handler that sends SIGKILL to every hook
-    process group still running, so no hook outlives a t3c that exits. A
-    request whose hook did not run, and that is still pending when the next run
-    starts, is reported by that run unless `--skip-existing` is given.
+    **Stop.** A first SIGINT or SIGTERM, or an error that ends the watch, stops
+    reporting and then drains: every request already written to stdout still
+    gets its hook run. Queued runs start as slots free, running hooks finish,
+    and each run keeps its `--exec-timeout`, so the drain ends within the
+    queue's length divided by `--exec-concurrency`, times the timeout. A second
+    signal forces the stop: queued runs never start and are reported as not
+    run, running hooks receive SIGTERM to their process groups, and SIGKILL
+    five seconds later, and each is reported as stopped. The runner registers a
+    process `exit` handler that sends SIGKILL to every hook process group still
+    running, so no hook outlives a t3c that exits. A request whose hook did not
+    run, and that is still pending when the next run starts, is reported by
+    that run unless `--skip-existing` is given.
   spawn-exception: |
     Task 6 changes the rule's wording and adds its test.
     [The decision record](../decisions/exec-hook-spawn-exception.yml) holds the
@@ -707,6 +802,39 @@ proposed-design:
       atomic as `profile-storage` defines. A config without `requestWatch`,
       such as one the previous t3c release wrote, loads unchanged and watches
       everything.
+  verification: |
+    Fake-server tests show each guarantee in the cases that break a weaker
+    design. Task 5 owns the library cases and task 6 the command cases.
+
+    - **Card order (task 5).** In a watched thread, a request's record arrives
+      before its card, and in another test after it: both report one line with
+      the card. A pending request whose card never arrives is reported without
+      it after two seconds, and its late card reports nothing more.
+    - **Outage (task 5).** An idle thread raises a request while the socket is
+      down, and the request is answered before the reconnect; the shell replay
+      brings only the thread's current row, with a null summary. The request is
+      reported once, as `resolved`. The same case holds when the resume brings
+      an authoritative snapshot, and when the thread was watched before the
+      drop.
+    - **Restart (task 5).** Across a server restart, a pending approval and a
+      surviving question are each reported once.
+    - **Archived threads (task 5).** An archived thread holds a pending
+      question when the run starts; it is reported. A thread is archived while
+      a question in it is pending and the watcher is disconnected; it is
+      reported after the reconnect.
+    - **Start boundary (task 5).** With `skipExisting`, request A is pending in
+      the initial snapshot and request B is raised just after it. A thread
+      snapshot taken before B and one taken after B both yield: A skipped, B
+      reported.
+    - **Exact exclusion (task 5).** With `excludeThreadIds: [manager]`, a
+      subagent worker thread whose parent is the manager reports its
+      approvals.
+    - **Drain (task 6).** With `--exec-concurrency 1`, hook A running and
+      request B reported and queued, a first SIGTERM lets A finish and B run;
+      a second signal during A reports B as not run.
+    - **Hook server (task 6).** The watcher connects through the current
+      profile A; the current profile then switches to B; the hook's
+      `T3_SERVER_URL` still names A's origin.
   contract-changes: |
     The specifications that contract tests bind to code change with that code:
 
@@ -714,9 +842,9 @@ proposed-design:
       snapshot, in commit `8ecef8a` with its test.
     - **Task 5:** `library-facades.yml` lists `RequestsApi` in its facade
       block, links this design, and states the snapshot rule in its watch
-      paragraph; the module map in `library.yml` adds
-      `api/requests.ts`, `api/requestWatch.ts` and `api/requestIndex.ts`; the
-      generated API reference (`task docs`) documents the new exports.
+      paragraph; the module map in `library.yml` adds `api/requests.ts`,
+      `api/requestWatch.ts`, `api/requestIndex.ts` and `api/requestLedger.ts`;
+      the generated API reference (`task docs`) documents the new exports.
     - **Task 6:** `docs/specifications/cli-surface.json` adds the `requests`
       group and its `watch` leaf with the options above (except
       `--ignore-defaults`), `requires` on `exec-concurrency` and `exec-timeout`,
@@ -736,22 +864,22 @@ proposed-design:
 
     | #169 | Met by | Task |
     | --- | --- | --- |
-    | Invariant: t3c never answers | `guarantees` 5; the watch reads only | 5, 6 |
+    | Invariant: t3c never answers | `guarantees` 6; the watch reads only | 5, 6 |
     | Invariant: content never on a command line or evaluated | `exec-hook` stdin and environment; `untrusted-content-and-hooks` | 6 |
     | Invariant: read access only | `upstream-request-model` scopes; `command` preflight | 5, 6 |
     | Invariant: no version pin, protocol 2 | `upstream-request-model` (same behavior on 0.1.9 and 0.1.10) | 5 |
     | Invariant: public library API, CLI composes | `library-api`; `command` | 5, 6 |
-    | 1. Every thread, including new ones | `discovery` index without omissions; archived threads are out of the stream | 5 |
+    | 1. Every thread, including new ones | `discovery` index from the shell stream and `shell.archivedSnapshot()`; `archived-threads` | 5 |
     | 2. Projects and request kind | `projectIds`, `kind`; `--project`, `--kind` | 5, 6 |
-    | 3. Exclude by id and tag | `discovery` inclusion, with subagent descendants | 5, 6 |
-    | 4. Once per run, one JSON line with its fields | `guarantees` 1; `output-line` | 5, 6 |
-    | 5. Existing requests reported; an option skips them | `synchronization-and-existing-requests`; `--skip-existing` | 5, 6 |
-    | 6. Survives restart and lost connection | `reconnects-and-restarts`; `guarantees` 2 and 3 | 5 |
-    | 7. `--exec`: stdin only, failures on stderr, bounded | `exec-hook`; `spawn-exception` | 6 |
+    | 3. Exclude by id and tag | `discovery` inclusion: exact ids and the thread's own tags | 5, 6 |
+    | 4. Once per run, one JSON line with its fields | `guarantees` 1, 2 and 4; `requests-before-their-cards`; `output-line` | 5, 6 |
+    | 5. Existing requests reported; an option skips them | `guarantees` 3; `one-start-boundary`; `synchronization-and-existing-requests` | 5, 6 |
+    | 6. Survives restart and lost connection, missing nothing raised during the outage | `requests-between-observations`; `reconnects-and-restarts`; `guarantees` 1 and 2 | 5 |
+    | 7. `--exec`: once per request on stdin only, failures on stderr, bounded | `exec-hook`, including the drain; `spawn-exception` | 6 |
     | 8. Defaults per profile; flags override | `config-defaults` | 7 |
     | 9. Exit codes, stderr, clean interrupt | `command` exit codes, output and stopping | 6 |
-    | Success: approval on stdout within 5 seconds | `discovery`: one shell row, then one thread subscription | 5 (live test), 8 |
-    | Success: exactly once across a server restart | `reconnects-and-restarts` | 5, 8 |
-    | Success: filters select exactly what is specified | `discovery` inclusion; `config-defaults` precedence | 6, 7 |
+    | Success: approval on stdout within 5 seconds | `discovery`: a watched thread's event, or one row and one thread subscription; a missing card waits at most two seconds | 5 (live test), 8 |
+    | Success: exactly once across a server restart | `reconnects-and-restarts`; `verification` | 5, 8 |
+    | Success: filters select exactly what is specified | `discovery` inclusion; `config-defaults` precedence; `verification` | 6, 7 |
     | Success: passes both gates for t3c | `tool-scope` verdict record | 4 |
     | Acceptance scenario | the whole design; the guide's worked hook | 8 |
