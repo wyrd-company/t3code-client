@@ -71,6 +71,7 @@ products:
               - library-profiles
               - library-errors
               - library-types
+              - library-types-2
           - group: Workspace facades
             pages:
               - library-projects

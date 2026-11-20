@@ -1,7 +1,7 @@
 ---
 product: t3c
 title: "Version control API"
-order: 24
+order: 25
 relationships:
   references: [library, api]
 ---

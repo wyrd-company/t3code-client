@@ -1,7 +1,7 @@
 ---
 product: t3c
 title: "Thread state and helpers"
-order: 16
+order: 17
 relationships:
   references: [library, api]
 ---
@@ -70,6 +70,17 @@ An unknown thread has an empty family; a deleted one still names its root.</p>
 <dt><a href="#OrchestrationV2OlderSettledThreadsPage">OrchestrationV2OlderSettledThreadsPage</a></dt>
 <dd><p>Older settled threads below the cursor, newest settle first. A <code>limit: 0</code> read fills <code>counts</code>
 instead, per project. A cursor without an id is strict.</p>
+</dd>
+<dt><a href="#OrchestrationV2ShellHttpSnapshot">OrchestrationV2ShellHttpSnapshot</a></dt>
+<dd><p>The HTTP shell snapshot. <code>projectIdentities</code> names the projects&#39; repository identities; send it
+back as <code>knownProjectIdentities</code> when subscribing from this snapshot&#39;s cursor.</p>
+</dd>
+<dt><a href="#OrchestrationV2ShellResumable">OrchestrationV2ShellResumable</a></dt>
+<dd><p>The answer to <code>resumeFrom</code> when the socket can replay from that cursor: keep the rows held and
+subscribe from the cursor.</p>
+</dd>
+<dt><a href="#OrchestrationV2ShellResumeAnswer">OrchestrationV2ShellResumeAnswer</a></dt>
+<dd><p>A snapshot, or <code>resumable</code> when the server can replay from the cursor the client holds.</p>
 </dd>
 <dt><a href="#ModelSelection">ModelSelection</a></dt>
 <dd><p>The historical <code>{ provider, model }</code> shape still decodes; <code>instanceId</code> is the routing key.</p>
@@ -277,6 +288,29 @@ Where a page of older settled threads starts: below this settle time, then after
 
 Older settled threads below the cursor, newest settle first. A `limit: 0` read fills `counts`
 instead, per project. A cursor without an id is strict.
+
+**Kind**: global constant  
+<a name="OrchestrationV2ShellHttpSnapshot"></a>
+
+## OrchestrationV2ShellHttpSnapshot
+
+The HTTP shell snapshot. `projectIdentities` names the projects' repository identities; send it
+back as `knownProjectIdentities` when subscribing from this snapshot's cursor.
+
+**Kind**: global constant  
+<a name="OrchestrationV2ShellResumable"></a>
+
+## OrchestrationV2ShellResumable
+
+The answer to `resumeFrom` when the socket can replay from that cursor: keep the rows held and
+subscribe from the cursor.
+
+**Kind**: global constant  
+<a name="OrchestrationV2ShellResumeAnswer"></a>
+
+## OrchestrationV2ShellResumeAnswer
+
+A snapshot, or `resumable` when the server can replay from the cursor the client holds.
 
 **Kind**: global constant  
 <a name="ModelSelection"></a>

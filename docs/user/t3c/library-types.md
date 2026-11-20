@@ -99,6 +99,9 @@ string. A client that omits it sees a reference as a saved, redacted secret.</p>
 <dd><p>Cached and cache-creation input tokens are disjoint from uncached input
 tokens. <code>reasoningTokens</code> is a subset of <code>outputTokens</code>; never add it on top.</p>
 </dd>
+<dt><a href="#ServerProviderDelta">ServerProviderDelta</a></dt>
+<dd><p>A provider whose lists are absent when they equal the reader&#39;s. No defaults fill them.</p>
+</dd>
 </dl>
 
 ## Functions
@@ -127,6 +130,15 @@ not whole samples and for options over <code>SPEECH_MAX_OPTIONS_BYTES</code>.</p
   pcm: Uint8Array,
   options: SpeechTranscriptionOptions = DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS,
 ): Uint8Array&lt;ArrayBuffer&gt;;
+</code></pre>
+</dd>
+<dt><a href="https://wyrd.foo/docs/t3c/library-types-2#applyServerProviderDeltas">applyServerProviderDeltas()</a></dt>
+<dd><p>Rebuilds the provider list from the one held and the deltas received. A provider whose list
+the reader never held cannot be rebuilt and is left out, as upstream drops it.</p>
+<pre><code class="language-ts">export function applyServerProviderDeltas(
+  previous: readonly ServerProvider[],
+  deltas: readonly ServerProviderDelta[],
+): ServerProvider[];
 </code></pre>
 </dd>
 </dl>
@@ -414,6 +426,13 @@ Calendar day as `YYYY-MM-DD`.
 
 Cached and cache-creation input tokens are disjoint from uncached input
 tokens. `reasoningTokens` is a subset of `outputTokens`; never add it on top.
+
+**Kind**: global constant  
+<a name="ServerProviderDelta"></a>
+
+## ServerProviderDelta
+
+A provider whose lists are absent when they equal the reader's. No defaults fill them.
 
 **Kind**: global constant  
 <a name="assetUrlParams"></a>
