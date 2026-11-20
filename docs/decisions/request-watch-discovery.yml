@@ -57,8 +57,7 @@ decision-outcome:
     restart recovery leaves one pending; the lifecycle
     `ready` event identifies a restart. Where 0.1.10 cannot place a request,
     or cannot see a thread at all, the operator decided the behavior on
-    wyrd-company/t3code-client#169; two further startup cases are pending
-    there.
+    wyrd-company/t3code-client#169, including two further startup cases.
 
     The timestamp boundary misclasses requests whose events are applied out of
     timestamp order, and the bounded projection drops settled requests outside

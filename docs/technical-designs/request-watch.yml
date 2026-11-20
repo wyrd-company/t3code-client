@@ -137,8 +137,8 @@ proposed-design:
        startup cases in which 0.1.10 cannot place a request against `S0`; in
        them the watcher reports the thread's pending requests, with or without
        `skipExisting`, and treats its settled requests as settled before
-       `S0` (`startup`). Two further startup cases are pending the operator's
-       decision, as `startup` marks.
+       `S0` (`startup`). The operator decided two further startup cases on
+       #169, which `startup` defines.
     4. **Detail.** A request is reported with its timeline card when the server
        holds one: from the watcher's view, or for a pending request whose card
        has not arrived after two seconds, from a full thread snapshot taken
@@ -580,7 +580,7 @@ proposed-design:
     | the same | settled | settled before start |
     | the server answers with a snapshot, and the thread is in the HTTP shell snapshot | pending | reported, also with `skipExisting` |
     | the same | settled | settled before start |
-    | the server answers with a snapshot, and the thread is not in the HTTP shell snapshot | any | pending the operator's decision: new (recommended) |
+    | the server answers with a snapshot, and the thread is not in the HTTP shell snapshot | any | new, as #169 decides ([decision](https://github.com/wyrd-company/t3code-client/issues/169#issuecomment-7041498801)) |
     | `Dt` at or before `S0` | pending | existing |
     | `Dt` at or before `S0` | settled | settled before start |
     | replay, no replayed event for the request | pending | existing |
@@ -588,7 +588,7 @@ proposed-design:
     | replay, first replayed event for the request pending | any | new: it is the creation, because the only other update that leaves a request pending is restart recovery, which the first rows cover |
     | replay, first replayed event settled, thread not waiting at `S0` | any | settled before start: no request was pending at `S0`, so the event re-emits a settlement |
     | replay, first replayed event settled, thread waiting at `S0`, the request is the summary at `S0` | any | existing |
-    | replay, first replayed event settled, thread waiting at `S0`, any other request | any | pending the operator's decision: existing (recommended) |
+    | replay, first replayed event settled, thread waiting at `S0`, any other request | any | existing, as #169 decides ([decision](https://github.com/wyrd-company/t3code-client/issues/169#issuecomment-7041498801)) |
 
     The first four rows are the two startup cases #169 defines: a server
     restart, and the replay limit, which the decision names as more than 128
@@ -599,24 +599,20 @@ proposed-design:
     startup read imports gains its events after `S0` and is classed by the
     snapshot rows.
 
-    Two rows are pending the operator's decision on #169
-    ([question](https://github.com/wyrd-company/t3code-client/issues/169#issuecomment-7039169791)), and their recommended class is what the
-    watcher applies until it is made:
+    Two rows apply the operator's decision on #169
+    ([decision](https://github.com/wyrd-company/t3code-client/issues/169#issuecomment-7041498801)) for requests 0.1.10 cannot place:
 
     - **A thread the HTTP shell snapshot does not list, answered with a
       snapshot.** The server answers so for a thread created after `S0`, and
       for a thread archived at `S0` or unarchived before the archived read
-      whose events since `S0` pass the replay limit. Its requests cannot be
-      placed. Classing them new loses nothing and reports a settled request
-      that predates `S0` only in the second case; classing them as the replay
-      limit does loses the settled requests of every thread created during
-      startup.
+      whose events since `S0` pass the replay limit. The thread counts as
+      created after `S0`, and all its requests are reported; in the second
+      case that includes settled requests older than `S0`.
     - **A settled first replayed event in a thread waiting at `S0`.** It is a
       request pending at `S0` that settled after it, or a provider re-emitting
-      the settlement of a request settled just before `S0`. Classing it
-      existing reports such a re-emitted settlement without `skipExisting`;
-      classing it settled before start loses a request settled just after
-      `S0`.
+      the settlement of a request settled just before `S0`. The request counts
+      as existing: it is reported without `skipExisting` and skipped with it,
+      so a re-emitted settlement is reported without `skipExisting`.
 
     Every request a thread gains after its startup read is new. Until a
     thread's startup read has classed its requests, the watch holds that
@@ -1022,8 +1018,7 @@ proposed-design:
       with more than 128 events since `S0`, and a thread waiting at `S0` across
       a server restart in the window, report their pending requests and none
       of their settled ones. A thread created during startup, which the server
-      answers with a snapshot, reports all its requests (pending the
-      operator's decision).
+      answers with a snapshot, reports all its requests.
     - **Readiness (task 5).** `synchronized` comes only after every startup
       read succeeded. With one thread whose reads fail, `degraded` names it,
       and `synchronized` follows its first successful read. A thread watch
@@ -1079,7 +1074,7 @@ proposed-design:
     | 2. Projects and request kind | `projectIds`, `kind`; `--project`, `--kind` | 5, 6 |
     | 3. Exclude by id and tag | `discovery` inclusion: exact ids and the thread's own tags, applied to the view's thread record | 5, 6 |
     | 4. Once per run, one JSON line with its fields | `guarantees` 1, 2 and 4; `requests-before-their-cards`; `output-line` | 5, 6 |
-    | 5. Existing requests reported; an option skips them | `guarantees` 3; `one-start-cut`; `startup`, including the two startup cases the decision defines and the two pending [this question](https://github.com/wyrd-company/t3code-client/issues/169#issuecomment-7039169791) | 5, 6 |
+    | 5. Existing requests reported; an option skips them | `guarantees` 3; `one-start-cut`; `startup`, including the two startup cases the decision defines and the two further cases decided [here](https://github.com/wyrd-company/t3code-client/issues/169#issuecomment-7041498801) | 5, 6 |
     | 6. Survives restart and lost connection, missing nothing raised during the outage | `requests-between-observations`; `rows-the-server-holds-back`; `recoverable-failures`; `reconnects-and-restarts`; `guarantees` 1 and 2, with the deletion exception the decision makes | 5 |
     | 7. `--exec`: once per request on stdin only, failures on stderr, bounded | `exec-hook`, including the drain; `spawn-exception` | 6 |
     | 8. Defaults per profile; flags override | `config-defaults` | 7 |
