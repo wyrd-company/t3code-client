@@ -122,13 +122,17 @@ describe.skipIf(!hasLiveServer)("live thread reads", () => {
         if (result.value.kind === "decode-error") throw result.value.error;
         return result.value.value;
       };
-      expect(await next()).toEqual({ refName: "main" });
+      // 0.1.10 adds `isRepo`, so that a removed checkout no longer reads as a detached HEAD.
+      expect(await next()).toEqual({ refName: "main", isRepo: true });
       git("switch", "--create", "sample");
       await client.rpc.call("vcs.refreshBranch", { cwd });
-      expect(await next()).toEqual({ refName: "sample" });
+      expect(await next()).toEqual({ refName: "sample", isRepo: true });
       git("switch", "--detach");
       await client.rpc.call("vcs.refreshBranch", { cwd });
-      expect(await next()).toEqual({ refName: null });
+      expect(await next()).toEqual({ refName: null, isRepo: true });
+      await NodeFSP.rm(NodePath.join(cwd, ".git"), { recursive: true, force: true });
+      await client.rpc.call("vcs.refreshBranch", { cwd });
+      expect(await next()).toEqual({ refName: null, isRepo: false });
       await iterator.return?.();
     } finally {
       controller.abort();
