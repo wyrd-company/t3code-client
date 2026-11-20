@@ -2,6 +2,7 @@
 // relationships:
 //   verifies: library
 // ---
+import * as NodeFS from "node:fs";
 import { describe, expect, it } from "vite-plus/test";
 import {
   at,
@@ -9,6 +10,7 @@ import {
   makeMessage,
   makeProjection,
   makeRun,
+  makeShellProject,
   makeShellThread,
   makeTurnItem,
   parseEvent,
@@ -25,11 +27,19 @@ import {
 } from "./providerState.ts";
 import { OrchestrationV2Run, OrchestrationV2Subagent } from "./runs.ts";
 import {
+  OrchestrationProjectShell,
   OrchestrationV2PendingRuntimeRequestSummary,
+  OrchestrationV2ShellSnapshot,
   OrchestrationV2SubscribeShellInput,
 } from "./shell.ts";
 import { OrchestrationV2TurnItem } from "./turnItems.ts";
 
+const shellFixture: unknown = JSON.parse(
+  NodeFS.readFileSync(
+    new URL("../../../test/fixtures/orchestration-shell.json", import.meta.url),
+    "utf8",
+  ),
+);
 const linkedSender = { environmentId: "environment-2", threadId: "thread-9", title: "Sample" };
 const stamp = { commandId: "command-1", threadId: ids.threadId, createdAt: at };
 
@@ -300,5 +310,14 @@ describe("orchestration field changes of 0.1.10", () => {
       OrchestrationV2SubscribeShellInput.parse({ afterSequence: 4, knownProjectIdentities: "abc" }),
     ).toEqual({ afterSequence: 4, knownProjectIdentities: "abc" });
     rejects(OrchestrationV2SubscribeShellInput, { knownProjectIdentities: 1 });
+  });
+
+  it("reads whether someone renamed a project, as the recaptured shell fixture carries it", () => {
+    expect(makeShellProject({ hasCustomTitle: true }).hasCustomTitle).toBe(true);
+    expect(makeShellProject()).not.toHaveProperty("hasCustomTitle");
+    expect(
+      OrchestrationV2ShellSnapshot.parse(shellFixture).projects.map((p) => p.hasCustomTitle),
+    ).toEqual([false]);
+    rejects(OrchestrationProjectShell, { ...makeShellProject(), hasCustomTitle: "yes" });
   });
 });
