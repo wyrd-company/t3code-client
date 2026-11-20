@@ -116,6 +116,15 @@ export const ServerSettings = z.looseObject({
   hideTaggedThreads: z.boolean().optional(),
   /** Pass it as `modelFilter` to `server.getUsageSummary`. An invalid value reads as absent. */
   usageModelFilter: UsageModelFilter.optional().catch(undefined),
+  /** Hold an OS sleep inhibitor while any run is active. Absent from older servers. */
+  keepAwakeWhileAgentsWork: z.boolean().optional(),
+  /** New T3 Connect device keys wait for approval. Absent from older servers. */
+  requireConnectDeviceApproval: z.boolean().optional(),
+  /** The appearance clients apply once per `defaultAppearanceSetAt`; empty sets none. */
+  defaultAppearance: forwardCompatibleLiteral(["", "light", "dark", "system"]).optional(),
+  defaultAppearanceSetAt: z.string().max(64).optional(),
+  /** Hosts the add and publish project pickers offer, by kind. */
+  offeredSourceControlProviders: z.record(z.string(), z.boolean()).optional(),
 });
 export type ServerSettings = z.infer<typeof ServerSettings>;
 export const UsageLimitSourceAccount = z.looseObject({

@@ -11,7 +11,12 @@ import {
   ServerProviderWorkspaceSnapshot,
 } from "./provider.ts";
 import { ServerProviderDelta, applyServerProviderDeltas } from "./providerDelta.ts";
-import { EnvironmentTheme, ServerConfigStreamEvent, UsageLimitSourceSnapshot } from "./server.ts";
+import {
+  EnvironmentTheme,
+  ServerConfigStreamEvent,
+  ServerSettings,
+  UsageLimitSourceSnapshot,
+} from "./server.ts";
 import { SecretSourceCheckInput, SecretSourceCheckResult } from "./serverActions.ts";
 import { ServerSelfUpdateInput } from "./serverSelfUpdate.ts";
 import { ServerSettingsPatch } from "./settingsPatch.ts";
@@ -168,6 +173,18 @@ describe("server field changes of 0.1.10", () => {
     for (const [key, value] of Object.entries(patch)) {
       rejects(ServerSettingsPatch, { [key]: typeof value === "boolean" ? "yes" : 1 });
     }
+  });
+
+  it("reads the new settings", () => {
+    const settings = {
+      keepAwakeWhileAgentsWork: true,
+      requireConnectDeviceApproval: false,
+      defaultAppearance: "dark",
+      defaultAppearanceSetAt: "2026-01-01T00:00:00.000Z",
+      offeredSourceControlProviders: { gitlab: true },
+    };
+    expect(ServerSettings.parse(settings)).toEqual(settings);
+    for (const key of Object.keys(settings)) rejects(ServerSettings, { [key]: 1 });
   });
 
   it("registers the new methods with their scopes", () => {
