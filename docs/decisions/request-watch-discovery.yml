@@ -22,8 +22,10 @@ considered-options:
     thread whose row shows a summary gets a thread watch, a bounded
     subscription that holds every pending request with its card, and keeps it
     while its row shows a summary or the thread watch holds a pending request.
-    A removed thread gets one while it holds a pending request or a running
-    run. Every report comes from a request a thread watch holds pending.
+    A removed thread gets one on each removal, and again at each resync past
+    the replay window, and keeps it until its view reaches the removal and
+    while it holds a pending request or a running run. Every report comes from
+    a request a thread watch holds pending.
   inventories-from-startup-reads: >-
     At startup the watcher lists every thread, active and archived, and reads
     each one in full, keeping an inventory of every request id it holds. A
@@ -84,4 +86,7 @@ expected-outcomes:
       covers it.
     - Each waiting included thread costs one subscription and one bounded
       snapshot when it opens, and streams all its events while it waits. A
-      removed thread costs the same while it runs.
+      removed thread costs the same while it runs, and for each removal.
+    - A resync past the shell's replay window costs one subscription and one
+      bounded snapshot for every thread the run holds as removed without a
+      thread watch, because the new listing shows active threads only.
