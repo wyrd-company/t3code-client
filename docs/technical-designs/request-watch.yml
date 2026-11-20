@@ -115,13 +115,14 @@ proposed-design:
        shell snapshot and its catch-up, and each resync takes the shell's
        replay or a new HTTP shell snapshot (`startup`,
        `reconnects-and-restarts`). Each included thread whose row there shows
-       a summary, each thread a removal there names, and at a resync from a
-       new HTTP shell snapshot each thread the run holds as removed, gets a
-       thread watch unless it has one, and a thread watch already open
-       catches up after the reconnect. Every selected request that the view
-       holds pending, once it has its first snapshot or has caught up, is
-       reported. Whether a request
-       was pending when the shell snapshot or the resync was taken is decided
+       a summary, and each thread a removal there names, gets a thread watch
+       unless it has one. At a resync from a new HTTP shell snapshot, each
+       thread the run holds as removed gets a thread watch that subscribes
+       after that listing, in place of any it has. Every other thread watch
+       already open catches up after the reconnect before it can close. Every
+       selected request that the view holds pending, once it has its first
+       snapshot or has caught up, is reported. Whether a request was pending
+       when the shell snapshot or the resync was taken is decided
        by that view: a request that settled before it was not seen pending
        (guarantee 4). At start the watcher reads only the threads whose row
        shows a summary and the threads a removal in the catch-up names.
@@ -410,7 +411,7 @@ proposed-design:
 
     | Source | Index change |
     | --- | --- |
-    | `shell.snapshot()`, at the start and at a resync | Every listed thread becomes active with its row. A thread the index holds as active and the listing leaves out becomes removed. At a resync, every thread then held as removed and without a thread watch gets a recheck (The watch rule). The listed projects are added or updated. |
+    | `shell.snapshot()`, at the start and at a resync | Every listed thread becomes active with its row. A thread the index holds as active and the listing leaves out becomes removed. At a resync, every thread then held as removed gets a recheck (The watch rule). The listed projects are added or updated. |
     | `thread.updated` | The thread becomes active with this row. |
     | `thread.removed` | The thread is removed, archived or deleted, and the removal is a trigger (The watch rule), whether or not the index already held the thread as removed. |
     | enrichment `snapshot` | The listed projects' titles are added or updated. Threads are unchanged. |
@@ -441,13 +442,15 @@ proposed-design:
     outstanding until a view of the thread reaches the removal's `sequence`:
     the view's snapshot `snapshotSequence`, or the sequence of an event the
     view applied, is at least the removal's (`upstream-request-model`, Event
-    sequences). A removal that arrives while
-    the thread has a thread watch is answered by that thread watch once its
-    view reaches the sequence. A recheck comes from a resync's HTTP shell
-    snapshot, for each thread the index then holds as removed and that has no
-    thread watch, and is outstanding until a thread watch delivers its first
-    snapshot. A thread has a thread watch from its opening until it closes,
-    retries included.
+    sequences). A removal that arrives while the thread has a thread watch is
+    answered by that thread watch once its view reaches the sequence. A
+    recheck comes from a resync's HTTP shell snapshot, for each thread the
+    index then holds as removed, and is outstanding until a thread watch that
+    subscribed after that listing delivers its first snapshot. When the
+    thread already has a thread watch, that thread watch subscribes again
+    without a cursor, so its first snapshot is taken after the listing; a
+    resumed replay never answers a recheck. A thread has a thread watch from
+    its opening until it closes, retries included.
 
     Thread watches open as their triggers arrive, without a limit on how many
     are open. A thread watch stays open while any of these holds, and closes
@@ -458,6 +461,8 @@ proposed-design:
     - the thread is removed, its view's thread record is included, and its
       view holds a run that has not reached a terminal status;
     - a removal or recheck of the thread is outstanding;
+    - its subscription has not delivered `synchronized` since it last opened
+      or resumed, so it closes only on a view that has caught up;
     - a request it saw pending waits for its card.
 
     The watch applies each `snapshot` and `event` item to the thread watch's
@@ -483,8 +488,9 @@ proposed-design:
 
     **Failures.** A thread watch that ends with a recoverable error yields a
     `thread-error`, and opens again with backoff while one of the conditions
-    that keep a thread watch open still holds for its latest view, the
-    outstanding removals and rechecks included. A failed subscription
+    that keep a thread watch open, other than the wait for `synchronized`,
+    still holds for its latest view, the outstanding removals and rechecks
+    included. A failed subscription
     answers no removal or recheck. When a thread watch for a removed thread
     fails with an error that is not a `T3ConnectionError`, the watch reads
     `threads.detail(threadId)`. A `T3NotFoundError` there means the server
@@ -548,12 +554,15 @@ proposed-design:
       to its `snapshotSequence`. The index takes the listing: a thread it held
       as active that the listing leaves out was archived or deleted during the
       outage and becomes removed. Every thread the index then holds as
-      removed and that has no thread watch, whether it left the listing now
-      or was removed earlier in the run, gets a recheck: the listing shows
-      active threads only, and the new cursor starts after any removal the
-      gap held. A thread watch already open resumes on its own. An included
-      thread whose row in the new listing shows a summary gets a thread
-      watch, as at the start. Another `snapshot-required` repeats the resync with backoff.
+      removed, whether it left the listing now or was removed earlier in the
+      run, and whether or not it has a thread watch, gets a recheck. The
+      listing shows active threads only, the new cursor starts after any
+      removal the gap held, and a thread watch's own replay can apply an
+      older run's terminal event before it reaches a newer request. Every
+      other thread watch already open resumes on its own and stays open until
+      it has delivered `synchronized`. An included thread whose row in the new
+      listing shows a summary gets a thread watch, as at the start. Another
+      `snapshot-required` repeats the resync with backoff.
     - **Server restart.** The socket drops, and the server comes back with its
       stored events and projections, so the same cursors resume. Pending
       approvals end at shutdown or startup, as `cancelled` or `expired`. A
@@ -566,10 +575,10 @@ proposed-design:
     **Readiness after a resync.** The watch yields `reconnected` when the
     resumed or new shell subscription has delivered `synchronized`, every
     removal its replay brought and every recheck its listing made is
-    answered, every thread watch the resync opened has delivered its first
-    snapshot, every thread watch that resumed after the drop has delivered
-    its `synchronized`, and every request seen pending in them has been
-    reported.
+    answered, every thread watch the resync opened or subscribed again has
+    delivered its first snapshot, every other thread watch that resumed after
+    the drop has delivered its `synchronized`, and every request seen pending
+    in them has been reported.
 
     The index and the set last for the run.
   command: |
@@ -953,6 +962,22 @@ proposed-design:
       thread watch, and a later removal of T arrives, live and in another test
       in a replay; T gets a thread watch, and a pending approval it holds is
       reported.
+    - **Open watch across the gap (task 5).** Archived thread T has a thread
+      watch, held open by its running run, when the socket drops. During the
+      outage the shell's gap passes its replay window while T's own events
+      stay within T's replay limits: T's run ends, T is unarchived, a new run
+      starts, T is archived again, and the new run raises a selected approval
+      that stays pending. After `snapshot-required`, the recheck makes T's
+      thread watch subscribe again; the approval is reported once, and
+      `reconnected` follows its line. In another test the socket stays open
+      and the shell watch fails with a server error, while T's thread watch,
+      live throughout, has not yet applied the gap's events; the recheck's new
+      subscription reports the approval once, before `reconnected`.
+    - **Held through the marker (task 5).** A resumed thread watch replays an
+      event after which no other condition keeps it open, and a later event
+      in the same replay raises a selected approval. The thread watch stays
+      open until its `synchronized`, reports the approval once, and the
+      readiness item follows that line.
     - **Removal ahead of the view (task 5).** Archived thread T is watched
       while its run runs. The run ends, a new run raises a selected approval,
       and the removal for that event reaches the watcher before T's thread
