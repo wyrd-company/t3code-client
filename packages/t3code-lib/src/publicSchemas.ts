@@ -147,6 +147,11 @@ export type {
 } from "./schemas/usage.ts";
 export { usageDay } from "./schemas/usage.ts";
 export type {
+  ServerConfigProviderStatusDeltasPayload,
+  ServerProviderDelta,
+} from "./schemas/providerDelta.ts";
+export { applyServerProviderDeltas } from "./schemas/providerDelta.ts";
+export type {
   RpcErrorRecord,
   KnownRpcErrorRecord,
   UnknownRpcErrorRecord,

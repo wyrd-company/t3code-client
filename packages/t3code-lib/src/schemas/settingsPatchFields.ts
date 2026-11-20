@@ -30,7 +30,8 @@ const WorktreeKeepWhen = z.enum(["any-local-files", "uncommitted-changes", "trac
 export const ResponseStreamingMode = z.enum(["turn", "paragraph"]);
 export const IdleCompactionMode = z.enum(["onReturn", "beforeCacheExpires", "off"]);
 export const BranchNamingMode = z.enum(["static", "semantic", "custom"]);
-export const PullRequestMergeMethod = z.enum(["merge", "squash", "rebase"]);
+/** `fast-forward` refuses unless the head contains the base; `rebase` rewrites the branch. */
+export const PullRequestMergeMethod = z.enum(["merge", "squash", "rebase", "fast-forward"]);
 export const BackgroundActivityProfile = z.enum(["balanced", "performance", "battery-saver"]);
 const SourceControlWritingStyleMode = z.enum([
   "repo_conventions",
