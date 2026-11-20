@@ -1,67 +1,78 @@
 $schema: https://refinery.systems/ontology/decision-record
-title: The request watcher finds requests through the shell and watches each waiting thread
+title: The request watcher reconciles each thread's durable request records
 relationships:
   related-to:
     - request-watch
   references:
     - library-facades
 description: >-
-  The request watcher reports every new pending request across a T3 Code
-  server. The server's only cross-thread stream is the shell
-  (`orchestration.subscribeShell`), and each thread row in it carries one
-  pending request summary, not the list of a thread's pending requests. The
-  decision is how the watcher learns about every request in every thread from
-  that stream.
+  The request watcher reports every request raised across a T3 Code server
+  once, including requests raised and settled while it was disconnected and
+  requests in archived threads. The server's only cross-thread stream is the
+  shell (`orchestration.subscribeShell`). Each of its thread rows carries one
+  pending request summary, it coalesces a thread's events into the current
+  row, and it lists active threads only. The decision is how the watcher learns
+  about every request in every thread from what the server offers.
 considered-options:
-  shell-index-and-thread-watches: >-
-    The shell is an index of waiting threads. While an included thread's row
-    shows a pending request, the watcher holds a `threads.watch` subscription
-    on that thread, and reports what the thread watch's tracker announces. The
-    thread watch closes when the row shows no pending request.
-  shell-index-and-reads: >-
-    The shell is an index of waiting threads. When a waiting thread's row
-    changes, the watcher reads that thread's pending requests with
-    `threads.pendingRequests` and reports the ones it has not reported.
+  reconcile-durable-records: >-
+    A thread projection's `runtimeRequests` hold every request the thread
+    raised, settled ones included. The watcher keeps a ledger of the requests it
+    has accounted for and reconciles each included thread's `runtimeRequests`
+    against it. A thread that waits or runs is reconciled from a `threads.watch`
+    subscription after every event. Any other thread is reconciled by a
+    projection read whenever its row changes or the stream removes it, and the
+    archived snapshot covers archived threads. Each thread's `updatedAt` in the
+    initial snapshots is its start boundary.
+  watch-waiting-threads: >-
+    While an included thread's row shows a pending summary, the watcher holds a
+    thread watch on it, and it reports the pending requests the watch's tracker
+    announces.
+  replay-events-from-cursors: >-
+    After an outage, the watcher subscribes each changed thread from its
+    last-known sequence and reads the replayed events for requests raised in
+    between.
+  read-on-every-row-change: >-
+    The watcher reads a thread's pending requests whenever its shell row
+    changes, without thread watches.
   watch-every-thread: >-
-    The watcher holds a `threads.watch` subscription on every thread on the
-    server, and the shell only tells it which threads exist.
+    The watcher holds a thread watch on every thread on the server.
   poll-every-thread: >-
-    The watcher reads every thread's pending requests on an interval.
+    The watcher reads every thread's requests on an interval.
 decision-outcome:
-  chosen-option: shell-index-and-thread-watches
+  chosen-option: reconcile-durable-records
   justification: |
-    The shell row's summary is non-null exactly when the thread has a pending
-    runtime request or a waiting secret or link card, and the server publishes
-    a new row whenever a thread event changes the row (`ShellStream.ts`,
-    `ProjectionStore.ts` at upstream v0.1.10). The summary names one request:
-    approvals before questions, newest first. A question raised while an
-    approval is pending, or a question whose timeline card arrives after the
-    request, leaves the summary unchanged. A thread watch applies every event
-    of its thread, so it sees those requests without depending on which shell
-    fields change.
+    `runtimeRequests` is the only record the server keeps of a request after
+    it settles, and a bounded projection carries all of it
+    (`applyToProjection` in `ProjectionStore.ts`, `buildBoundedThreadProjection`
+    in `threadHistoryPaging.ts` at upstream v0.1.10). Reconciling against it
+    finds a request raised and answered while the watcher was away, which
+    nothing in the shell shows: the shell's replay is the thread's current row,
+    and a removal for an archived thread.
 
-    Reads on row changes depend on some row field changing for every new
-    request, which the server does not promise. The server also leaves a
-    subagent thread's turn-item updates out of the shell stream, so a subagent
-    question whose card arrives after the request produces no row at all. Reads
-    also repeat for every row change of a waiting thread whose run keeps
-    working. Watching every thread streams the full activity of every running
-    thread to the watcher. Polling bounds latency by the interval and reads
-    every thread on each pass.
+    Watching only waiting threads misses exactly those requests. Replaying
+    events from cursors fails once the gap passes the server's replay budget or
+    pruned sequence, where the server sends a snapshot instead. Reading on every
+    row change reads busy threads on every streamed update. Watching every
+    thread streams the full activity of every thread. Polling bounds latency by
+    the interval. Combining watches for waiting and running threads with reads
+    for the rest keeps the stream on the threads where activity is, and reads
+    on the rare changes of the others.
 expected-outcomes:
   positive: |
-    - Requests inside a waiting thread are seen exactly, including requests the
-      shell summary hides and question cards that arrive late.
-    - The thread watch's resume, replay and tracker semantics carry over
-      unchanged, so a reconnect needs no logic of its own beyond the
-      watcher's set of reported requests.
-    - Subscriptions follow the number of waiting threads, not the number of
-      threads on the server.
+    - Every request raised after the start is reported, settled or not, after
+      any outage and in archived threads.
+    - A start boundary from server timestamps classifies a request the same
+      way whichever source reaches it first.
+    - The thread watch's resume and replay semantics carry over unchanged. The
+      ledger makes every repeat harmless, so reconciliation is idempotent.
   negative: |
-    - Each waiting, included thread costs one subscription and a bounded
-      snapshot when the subscription opens.
-    - A waiting thread whose run keeps working, such as one with a question
-      that does not block its run, streams all its events to the watcher until
-      the question is answered.
-    - A request raised and resolved before the watcher's view of its thread
-      reaches it is never reported. Such a request needs no answer by then.
+    - Each waiting or running included thread costs one subscription, with a
+      bounded snapshot when it opens, and streams all its events to the
+      watcher while it runs.
+    - A change to an idle thread costs one bounded projection read, and the
+      watcher reads the archived snapshot at start and after an authoritative
+      resume.
+    - A settled request whose card is outside the bounded window costs one
+      full thread detail read.
+    - A request reported after it settled reaches consumers, which act on its
+      status.
