@@ -8,6 +8,8 @@ relationships:
     - command-line
     - testing
     - releasing
+    - request-watch
+    - exec-hook-spawn-exception
 proposed-design:
   high-level-overview:
     The CLI composes library operations through one invocation and output boundary.
@@ -91,4 +93,6 @@ proposed-design:
     `cli:test`, `cli:test:live`, `cli:acceptance`, `cli:shrinkwrap` and `cli:package`.
     Auth and execution extend tests under the existing unit/live patterns; release
     plumbing adds its documentation/demo/distribution targets without replacing the
-    shared verbs. Commands use the library; only development scripts spawn tools.
+    shared verbs. Commands use the library; only development scripts spawn tools,
+    with one exception: the hook runner of `requests watch` runs the operator's
+    `--exec` command, as the request-watch design defines.
