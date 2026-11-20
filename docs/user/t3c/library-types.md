@@ -13,6 +13,11 @@ relationships:
 ## Classes
 
 <dl>
+<dt><a href="#RequestsApi">RequestsApi</a></dt>
+<dd><p>The approvals and questions a server&#39;s threads hold pending, as one read-only watch over the
+shell and thread watches. Answering stays with <code>threads.respondToApproval</code>,
+<code>threads.respondToUserInput</code> and <code>t3c thread respond</code>.</p>
+</dd>
 <dt><a href="#DiagnosticsApi">DiagnosticsApi</a></dt>
 <dd><p>Read-only views of the server&#39;s own health: trace summaries, its backend processes,
 host resources, resource history and the latest storage cleanup report. None of
@@ -117,12 +122,12 @@ tokens. <code>reasoningTokens</code> is a subset of <code>outputTokens</code>; n
 <pre><code class="language-ts">export function attachmentUploadUrlParams(relativeUrl: string): { token: string };
 </code></pre>
 </dd>
-<dt><a href="#webhookUrlParams">webhookUrlParams()</a></dt>
+<dt><a href="https://wyrd.foo/docs/t3c/library-types-2#webhookUrlParams">webhookUrlParams()</a></dt>
 <dd><p>The route params of a webhook endpoint&#39;s <code>path</code>, from <code>scheduledTasks.webhookEndpoint</code>.</p>
 <pre><code class="language-ts">export function webhookUrlParams(path: string): { hookId: string; token: string };
 </code></pre>
 </dd>
-<dt><a href="#encodeSpeechPcmRequest">encodeSpeechPcmRequest()</a></dt>
+<dt><a href="https://wyrd.foo/docs/t3c/library-types-2#encodeSpeechPcmRequest">encodeSpeechPcmRequest()</a></dt>
 <dd><p>Frames 16 kHz mono Float32 <code>pcm</code> with its recognition options as the body of <code>voice.transcribe</code>
 or <code>voice.transcribeCloud</code>. Raises <code>T3PreconditionError</code> for invalid options, for audio that is
 not whole samples and for options over <code>SPEECH_MAX_OPTIONS_BYTES</code>.</p>
@@ -143,6 +148,33 @@ the reader never held cannot be rebuilt and is left out, as upstream drops it.</
 </dd>
 </dl>
 
+<a name="RequestsApi"></a>
+
+## RequestsApi
+
+The approvals and questions a server's threads hold pending, as one read-only watch over the
+shell and thread watches. Answering stays with `threads.respondToApproval`,
+`threads.respondToUserInput` and `t3c thread respond`.
+
+**Kind**: global class  
+<a name="RequestsApi+watch"></a>
+
+### requestsApi.watch()
+
+Every selected request the watch sees pending, once per run, with `synchronized` once the
+start's reports are out and `reconnected` after each resync's. Every thread is covered,
+including threads created and archived while the watch runs; requests already pending in
+archived threads at the start are not. A request that settles before the watch sees it
+pending is not reported. Raises `T3PreconditionError` for a malformed option before it
+subscribes. Aborting `signal` ends the iteration quietly; `client.close()` and a rejected
+credential end it with their error, and every other failure is retried with the
+transport's backoff.
+
+```ts
+watch(options: RequestWatchOptions = {}): AsyncIterable<RequestWatchItem>;
+```
+
+**Kind**: instance method of [<code>RequestsApi</code>](#RequestsApi)  
 <a name="DiagnosticsApi"></a>
 
 ## DiagnosticsApi
@@ -454,33 +486,6 @@ The `attachments.upload` params of a `relativeUrl` from `attachments.createUploa
 
 ```ts
 export function attachmentUploadUrlParams(relativeUrl: string): { token: string };
-```
-
-**Kind**: global function  
-<a name="webhookUrlParams"></a>
-
-## webhookUrlParams()
-
-The route params of a webhook endpoint's `path`, from `scheduledTasks.webhookEndpoint`.
-
-```ts
-export function webhookUrlParams(path: string): { hookId: string; token: string };
-```
-
-**Kind**: global function  
-<a name="encodeSpeechPcmRequest"></a>
-
-## encodeSpeechPcmRequest()
-
-Frames 16 kHz mono Float32 `pcm` with its recognition options as the body of `voice.transcribe`
-or `voice.transcribeCloud`. Raises `T3PreconditionError` for invalid options, for audio that is
-not whole samples and for options over `SPEECH_MAX_OPTIONS_BYTES`.
-
-```ts
-export function encodeSpeechPcmRequest(
-  pcm: Uint8Array,
-  options: SpeechTranscriptionOptions = DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS,
-): Uint8Array<ArrayBuffer>;
 ```
 
 **Kind**: global function

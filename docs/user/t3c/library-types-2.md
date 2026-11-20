@@ -10,6 +10,33 @@ relationships:
 
 # Shared types and constants (2)
 
+<a name="webhookUrlParams"></a>
+
+## webhookUrlParams()
+
+The route params of a webhook endpoint's `path`, from `scheduledTasks.webhookEndpoint`.
+
+```ts
+export function webhookUrlParams(path: string): { hookId: string; token: string };
+```
+
+**Kind**: global function  
+<a name="encodeSpeechPcmRequest"></a>
+
+## encodeSpeechPcmRequest()
+
+Frames 16 kHz mono Float32 `pcm` with its recognition options as the body of `voice.transcribe`
+or `voice.transcribeCloud`. Raises `T3PreconditionError` for invalid options, for audio that is
+not whole samples and for options over `SPEECH_MAX_OPTIONS_BYTES`.
+
+```ts
+export function encodeSpeechPcmRequest(
+  pcm: Uint8Array,
+  options: SpeechTranscriptionOptions = DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS,
+): Uint8Array<ArrayBuffer>;
+```
+
+**Kind**: global function  
 <a name="applyServerProviderDeltas"></a>
 
 ## applyServerProviderDeltas()

@@ -216,6 +216,11 @@ Linked pull request snapshot authors carry optional boolean <code>isBot</code> t
 shell snapshots and updates. True, false, omission and unknown actor metadata
 survive; malformed values fail decoding. This metadata does not grant permissions.</p>
 </dd>
+<dt><a href="#RequestsApi">RequestsApi</a></dt>
+<dd><p>The approvals and questions a server&#39;s threads hold pending, as one read-only watch over the
+shell and thread watches. Answering stays with <code>threads.respondToApproval</code>,
+<code>threads.respondToUserInput</code> and <code>t3c thread respond</code>.</p>
+</dd>
 <dt><a href="#ServerApi">ServerApi</a></dt>
 <dd><p>Server environment, configuration and providers.
 Configuration reads, snapshots and <code>keybindingsUpdated</code> payloads type
@@ -1049,6 +1054,7 @@ Client composition root for HTTP, auth, RPC and server facades.
 
 - [T3Client](#T3Client)
   - _instance_
+    - [.requests](#T3Client+requests)
     - [.openPreviewViewer()](#T3Client+openPreviewViewer)
     - [.openSpeechStream()](#T3Client+openSpeechStream)
     - [.connect()](#T3Client+connect)
@@ -1056,6 +1062,13 @@ Client composition root for HTTP, auth, RPC and server facades.
   - _static_
     - [.create()](#T3Client.create)
 
+<a name="T3Client+requests"></a>
+
+### t3Client.requests
+
+Pending approvals and questions across every thread, read-only.
+
+**Kind**: instance property of [<code>T3Client</code>](#T3Client)  
 <a name="T3Client+openPreviewViewer"></a>
 
 ### t3Client.openPreviewViewer()
@@ -2550,13 +2563,41 @@ olderSettledThreads(
 
 ### shellApi.watch()
 
-Subscribes with `orchestration.subscribeShell`; resubscribes after a dropped socket.
+Subscribes with `orchestration.subscribeShell`; resubscribes after a dropped socket. The cursor
+moves only on a snapshot without `resolvedRepositoryIdentityRoots` and on sequenced items.
 
 ```ts
 watch(options: ShellWatchOptions = {}): AsyncIterable<ShellWatchItem>;
 ```
 
 **Kind**: instance method of [<code>ShellApi</code>](#ShellApi)  
+<a name="RequestsApi"></a>
+
+## RequestsApi
+
+The approvals and questions a server's threads hold pending, as one read-only watch over the
+shell and thread watches. Answering stays with `threads.respondToApproval`,
+`threads.respondToUserInput` and `t3c thread respond`.
+
+**Kind**: global class  
+<a name="RequestsApi+watch"></a>
+
+### requestsApi.watch()
+
+Every selected request the watch sees pending, once per run, with `synchronized` once the
+start's reports are out and `reconnected` after each resync's. Every thread is covered,
+including threads created and archived while the watch runs; requests already pending in
+archived threads at the start are not. A request that settles before the watch sees it
+pending is not reported. Raises `T3PreconditionError` for a malformed option before it
+subscribes. Aborting `signal` ends the iteration quietly; `client.close()` and a rejected
+credential end it with their error, and every other failure is retried with the
+transport's backoff.
+
+```ts
+watch(options: RequestWatchOptions = {}): AsyncIterable<RequestWatchItem>;
+```
+
+**Kind**: instance method of [<code>RequestsApi</code>](#RequestsApi)  
 <a name="ServerApi"></a>
 
 ## ServerApi

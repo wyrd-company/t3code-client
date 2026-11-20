@@ -122,7 +122,8 @@ olderSettledThreads(
 
 ### shellApi.watch()
 
-Subscribes with `orchestration.subscribeShell`; resubscribes after a dropped socket.
+Subscribes with `orchestration.subscribeShell`; resubscribes after a dropped socket. The cursor
+moves only on a snapshot without `resolvedRepositoryIdentityRoots` and on sequenced items.
 
 ```ts
 watch(options: ShellWatchOptions = {}): AsyncIterable<ShellWatchItem>;

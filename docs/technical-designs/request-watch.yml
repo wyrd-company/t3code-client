@@ -290,9 +290,12 @@ proposed-design:
       `orchestration:read` (`apps/server/src/auth/RpcAuthorization.ts`).
   library-api: |
     Task 5 builds this API. `T3Client.requests` is a `RequestsApi` facade over
-    the client's `shell` and `threads` facades. Like every facade it holds no
-    state beyond those references; each iteration of `watch` holds its own
-    index, thread watches and set of reported keys.
+    the client's `shell` and `threads` facades and the socket's state. Like
+    every facade it holds no state beyond those references; each iteration of
+    `watch` holds its own index, thread watches and set of reported keys. The
+    socket's state tells a run when the socket drops: every subscription live
+    at that moment resumes, so its items until its `reconnected` came before
+    the drop, and its `synchronized` among them does not count as caught up.
 
     ```ts
     import { ProfileManager, T3Client } from "@wyrd-company/t3code-lib";
@@ -394,11 +397,12 @@ proposed-design:
     `message_too_large` is a failed thread watch like any other.
 
     Modules: `src/api/requests.ts` holds `RequestsApi`; `src/api/requestWatch.ts`
-    the watch, which drives the HTTP shell snapshot, the shell watch, the
-    thread watches, resyncs and readiness; `src/api/requestIndex.ts` the index,
-    the inclusion rule and the watch rule as pure functions; and
-    `src/api/requestReports.ts` reporting: the set of reported keys, the card
-    wait and the `ReportedRequest` builder, as pure functions over a view.
+    the run, which drives the HTTP shell snapshot, the shell watch, resyncs,
+    readiness and the end of the run; `src/api/requestThreadWatches.ts` the
+    run's thread watches, with their views, removals, rechecks and retries;
+    `src/api/requestIndex.ts` the index, the inclusion rule and the watch rule
+    as pure functions; and `src/api/requestReports.ts` reporting: the set of
+    reported keys, the card wait and the `ReportedRequest` builder.
     `src/index.ts` exports `RequestsApi` and the types above.
   watching: |
     Task 5 builds this. [The decision record](../decisions/request-watch-discovery.yml)

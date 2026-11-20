@@ -18,6 +18,11 @@ export interface RequestWatchOptions extends RequestWatchFilters {
   readonly signal?: AbortSignal;
 }
 
+/**
+ * The approvals and questions a server's threads hold pending, as one read-only watch over the
+ * shell and thread watches. Answering stays with `threads.respondToApproval`,
+ * `threads.respondToUserInput` and `t3c thread respond`.
+ */
 export class RequestsApi {
   readonly #sources: RequestWatchSources;
 
