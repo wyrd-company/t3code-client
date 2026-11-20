@@ -61,6 +61,7 @@ TypeScript declarations ship with the package.
 - [Profiles and credentials](https://wyrd.foo/docs/t3c/library-profiles)
 - [Errors](https://wyrd.foo/docs/t3c/library-errors)
 - [Shared types and constants](https://wyrd.foo/docs/t3c/library-types)
+- [Shared types and constants (2)](https://wyrd.foo/docs/t3c/library-types-2)
 - [Projects API](https://wyrd.foo/docs/t3c/library-projects)
 - [Threads API](https://wyrd.foo/docs/t3c/library-threads)
 - [Thread lifecycle API](https://wyrd.foo/docs/t3c/library-thread-lifecycle)

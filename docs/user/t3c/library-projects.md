@@ -1,7 +1,7 @@
 ---
 product: t3c
 title: "Projects API"
-order: 12
+order: 13
 relationships:
   references: [library, api]
 ---

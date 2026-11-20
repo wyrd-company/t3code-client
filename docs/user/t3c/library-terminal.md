@@ -1,7 +1,7 @@
 ---
 product: t3c
 title: "Terminal API"
-order: 25
+order: 26
 relationships:
   references: [library, api]
 ---

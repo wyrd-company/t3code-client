@@ -1,7 +1,7 @@
 ---
 product: t3c
 title: "Thread lifecycle API"
-order: 14
+order: 15
 relationships:
   references: [library, api]
 ---

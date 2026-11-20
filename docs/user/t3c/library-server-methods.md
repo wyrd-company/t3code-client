@@ -1,7 +1,7 @@
 ---
 product: t3c
 title: "Server API methods"
-order: 20
+order: 21
 relationships:
   references: [library, api]
 ---
