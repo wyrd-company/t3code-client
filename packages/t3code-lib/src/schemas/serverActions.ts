@@ -15,6 +15,7 @@ import {
   ThreadId,
   TrimmedNonEmptyString,
   TurnItemId,
+  taggedUnionWithUnknown,
 } from "./common.ts";
 import { KeybindingCommandInput, ResolvedKeybindingsConfig } from "./keybindings.ts";
 import { SecretReference } from "./providerInstance.ts";
@@ -95,3 +96,14 @@ export const SecretRequestAnswerInput = z.looseObject({
   ]),
 });
 export type SecretRequestAnswerInput = z.infer<typeof SecretRequestAnswerInput>;
+
+/** Checks that the server can read a secret reference, without returning the value. */
+export const SecretSourceCheckInput = z.looseObject({ source: SecretReference });
+export type SecretSourceCheckInput = z.infer<typeof SecretSourceCheckInput>;
+
+/** `Resolved`, or `Failed` with the reason the server could not read the reference. */
+export const SecretSourceCheckResult = taggedUnionWithUnknown("_tag", [
+  z.looseObject({ _tag: z.literal("Resolved") }),
+  z.looseObject({ _tag: z.literal("Failed"), detail: z.string() }),
+]);
+export type SecretSourceCheckResult = z.infer<typeof SecretSourceCheckResult>;

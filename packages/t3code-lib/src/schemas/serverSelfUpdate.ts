@@ -21,6 +21,8 @@ export const ServerSelfUpdateInput = z.looseObject({
   channel: z.enum(["latest", "nightly"]).optional(),
   /** The target release's highest migration. A host refuses to change track without it. */
   targetDatabaseMigration: z.number().int().optional(),
+  /** Prepare the release without restarting into it. Needs `serverUpdateStaging`. */
+  stageOnly: z.boolean().optional(),
 });
 export type ServerSelfUpdateInput = z.input<typeof ServerSelfUpdateInput>;
 

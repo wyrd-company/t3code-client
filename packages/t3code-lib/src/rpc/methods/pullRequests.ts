@@ -185,6 +185,17 @@ export const pullRequestsMethods = {
     scope: "orchestration:read",
   }),
   /**
+   * A refresh revision each time the threads linked to pull requests change, apart from
+   * `pullRequests.subscribeRefreshes` so that it does not refetch forge reads. Needs a server
+   * that advertises `linkedThreadRefreshes`; older servers need polling.
+   */
+  "pullRequests.subscribeLinkedThreadRefreshes": defineMethod({
+    payload: z.looseObject({}),
+    success: NonNegativeInt,
+    stream: true,
+    scope: "orchestration:read",
+  }),
+  /**
    * Starts a run with the review guide model, if none runs for this head, and answers
    * at once. `pullRequests.reviewGuide` reads the run and then the guide. Needs
    * `reviewGuidesEnabled`, and a project that is a checkout of the repository.

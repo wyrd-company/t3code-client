@@ -127,6 +127,8 @@ export const ServerProviderAuth = z.looseObject({
   profileId: TrimmedNonEmptyString.optional(),
   /** The workspace or organization whose quota the login draws on. */
   workspaceId: TrimmedNonEmptyString.optional(),
+  /** Origin of the custom endpoint the instance sends its requests to. */
+  endpoint: TrimmedNonEmptyString.optional(),
 });
 export type ServerProviderAuth = z.infer<typeof ServerProviderAuth>;
 export const ServerProviderAvailability = forwardCompatibleLiteral(["available", "unavailable"]);
@@ -143,6 +145,8 @@ export const ServerProviderModel = z.looseObject({
   isCustom: z.boolean(),
   isDefault: z.boolean().optional(),
   isLegacy: z.boolean().optional(),
+  /** False when sessions can run the model but application text generation cannot. */
+  supportsTextGeneration: z.boolean().optional(),
   capabilities: ModelCapabilities.nullable(),
 });
 export type ServerProviderModel = z.infer<typeof ServerProviderModel>;
@@ -201,6 +205,9 @@ export const ServerProviderUsageWindow = z.looseObject({
   id: TrimmedNonEmptyString,
   kind: forwardCompatibleLiteral(["session", "weekly", "monthly", "other"]),
   label: TrimmedNonEmptyString,
+  /** When present, the limit applies only to these provider model ids. */
+  modelIds: z.array(TrimmedNonEmptyString).optional(),
+  providerIds: z.array(TrimmedNonEmptyString).optional(),
   usedPercent: z.number().min(0).max(100),
   resetsAt: IsoDateTime.optional(),
   windowDurationMins: z.number().int().nonnegative().optional(),
@@ -227,6 +234,8 @@ export type ServerProviderResetCredits = z.infer<typeof ServerProviderResetCredi
 export const ServerProviderUsageLimits = z.looseObject({
   checkedAt: IsoDateTime,
   windows: forwardCompatibleArray(ServerProviderUsageWindow),
+  /** A $0 monthly spend cap, which has no percentage and so is not a window. */
+  zeroSpendCap: z.boolean().optional(),
   /** Opaque credential identity when the provider does not report an account. */
   credentialFingerprint: TrimmedNonEmptyString.optional(),
   resetCredits: ServerProviderResetCredits.optional(),
@@ -286,6 +295,9 @@ export const ServerProviderWorkspaceSnapshot = z.looseObject({
   slashCommandsPending: z.boolean().optional(),
   skills: z.array(ServerProviderSkill),
   optionDescriptors: z.array(ProviderOptionDescriptor).optional(),
+  /** The workspace's own models; absent means the provider's machine `models`. */
+  models: z.array(ServerProviderModel).optional(),
+  modelsPending: z.boolean().optional(),
 });
 export type ServerProviderWorkspaceSnapshot = z.infer<typeof ServerProviderWorkspaceSnapshot>;
 export const ServerProvider = z.looseObject({
@@ -339,10 +351,17 @@ export const ServerProvider = z.looseObject({
   slashCommands: z.array(ServerProviderSlashCommand).default([]),
   skills: z.array(ServerProviderSkill).default([]),
   workspaceSnapshots: z.array(ServerProviderWorkspaceSnapshot).optional(),
+  /** A workspace rescan after a session start changed its skills or commands: fetch them again. */
+  workspaceRescannedAt: IsoDateTime.optional(),
   usageLimits: ServerProviderUsageLimits.optional(),
   versionAdvisory: ServerProviderVersionAdvisory.optional(),
   compatibilityAdvisory: ServerProviderCompatibilityAdvisory.optional(),
   updateState: ServerProviderUpdateState.optional(),
+  /**
+   * Stands for the machine slash commands and skills, which are then left out. Sent only when
+   * `subscribeServerConfig` asks for `providerCatalogDigests`.
+   */
+  catalogDigest: TrimmedNonEmptyString.optional(),
 });
 export type ServerProvider = z.infer<typeof ServerProvider>;
 export const ServerProviders = forwardCompatibleArray(ServerProvider);

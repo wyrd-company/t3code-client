@@ -37,9 +37,19 @@ export type ExecutionEnvironmentPlatform = z.infer<typeof ExecutionEnvironmentPl
 export const ThreadEnvMode = forwardCompatibleLiteral(["local", "worktree"]);
 export type ThreadEnvMode = z.infer<typeof ThreadEnvMode>;
 
+/** Not trimmed: a path that differs from the installed one would name the wrong home. */
+const InstalledPath = z.string().min(1);
+
+/**
+ * How the server was installed. `npm-global` names its `prefix`; `t3-launcher` is a launcher
+ * script (or legacy symlink) into a downloaded runtime under `baseDir`, as the install script
+ * and `t3 update` leave it.
+ */
 export const ServerInstallation = z.looseObject({
-  kind: forwardCompatibleLiteral(["npx", "pnpm-dlx", "bunx", "npm-global"]),
+  kind: forwardCompatibleLiteral(["npx", "pnpm-dlx", "bunx", "npm-global", "t3-launcher"]),
   prefix: TrimmedNonEmptyString.optional(),
+  launcher: InstalledPath.optional(),
+  baseDir: InstalledPath.optional(),
 });
 export type ServerInstallation = z.infer<typeof ServerInstallation>;
 
@@ -81,10 +91,14 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   requiredWorktreeBootstrap: z.boolean().optional(),
   commandOutputStreaming: z.boolean().optional(),
   ignoredFileListing: z.boolean().optional(),
+  /** `projects.listIgnoredFiles` honors `query`. Older servers ignore it. */
+  ignoredFileSearch: z.boolean().optional(),
   databaseStorage: z.boolean().optional(),
   storageCleanup: z.boolean().optional(),
   storageCleanupRun: z.boolean().optional(),
   otlpEndpointCheck: z.boolean().optional(),
+  /** Server answers `server.checkSecretSource`. */
+  secretSourceCheck: z.boolean().optional(),
   pullRequestStackActions: z.boolean().optional(),
   agentActivityPublishing: z.boolean().optional(),
   serverSelfUpdate: forwardCompatibleLiteral([
@@ -93,6 +107,8 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
     "desktop-managed",
   ]).optional(),
   serverSelfUpdateProgress: z.boolean().optional(),
+  /** Server honors `stageOnly` on an update: it prepares the release without restarting. */
+  serverUpdateStaging: z.boolean().optional(),
   serverUpdateThreadContinuation: z.boolean().optional(),
   desktopAppUpdate: z.boolean().optional(),
   threadSettlement: z.boolean().optional(),
@@ -149,6 +165,14 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   localServerStop: z.boolean().optional(),
   /** The desktop app switches update tracks when a server update request names one. */
   desktopAppChannelSwitch: z.boolean().optional(),
+  /**
+   * The server config's flags of the same names, here so a client can load the shell snapshot
+   * before the socket opens. A server that names them answers the snapshot's `resumeFrom`.
+   */
+  shellThreadFamilies: z.boolean().optional(),
+  shellOlderSettled: z.boolean().optional(),
+  /** Server answers `pullRequests.subscribeLinkedThreadRefreshes`; older servers need polling. */
+  linkedThreadRefreshes: z.boolean().optional(),
 });
 export type ExecutionEnvironmentCapabilities = z.infer<typeof ExecutionEnvironmentCapabilities>;
 

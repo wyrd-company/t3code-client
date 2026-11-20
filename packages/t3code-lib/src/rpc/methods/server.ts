@@ -16,6 +16,8 @@ import {
 import {
   ClientActivityReportInput,
   SecretRequestAnswerInput,
+  SecretSourceCheckInput,
+  SecretSourceCheckResult,
   ServerKeybindingsResult,
   ServerProviderUpdateInput,
   ServerRemoveKeybindingInput,
@@ -78,6 +80,16 @@ export const serverMethods = {
       usageLimitsCommand: z.boolean().optional(),
       /** A failed workspace scan replies with the machine catalog as a pending snapshot. */
       providerCatalogsOnDemand: z.boolean().optional(),
+      /**
+       * Reply with no providers; the config stream carries the result. Ignored with `instanceId`
+       * and `cwd`, whose reply is the snapshot.
+       */
+      omitProviders: z.boolean().optional(),
+      /**
+       * With `providerCatalogsOnDemand`, a cwd reply also carries the machine slash commands and
+       * skills with their `catalogDigest`, for a client whose held lists are not current.
+       */
+      machineCatalog: z.boolean().optional(),
     }),
     success: ServerProviderUpdatedPayload,
     stream: false,
@@ -123,6 +135,20 @@ export const serverMethods = {
     success: UsageSummary,
     stream: false,
     scope: "diagnostics:read",
+  }),
+  /** The settings, redacted for clients, as `subscribeServerConfig` also sends them. */
+  "server.getSettings": defineMethod({
+    payload: z.looseObject({}),
+    success: ServerSettings,
+    stream: false,
+    scope: "orchestration:read",
+  }),
+  /** Reads a secret reference on the server and reports whether it resolved. */
+  "server.checkSecretSource": defineMethod({
+    payload: SecretSourceCheckInput,
+    success: SecretSourceCheckResult,
+    stream: false,
+    scope: "settings:write",
   }),
   /** A provider-only change needs only `providers:manage`, so `scope` is replaced per payload. */
   "server.updateSettings": defineMethod({
@@ -219,6 +245,13 @@ export const serverMethods = {
       workspaceSnapshotsOnDemand: z.boolean().optional(),
       /** With `workspaceSnapshotsOnDemand`: also omit the machine slash commands and skills. */
       providerCatalogsOnDemand: z.boolean().optional(),
+      /**
+       * With `providerCatalogsOnDemand`: send a `catalogDigest` in place of the machine slash
+       * commands and skills. Load new lists with a cwd snapshot.
+       */
+      providerCatalogDigests: z.boolean().optional(),
+      /** Send provider changes as `providerStatusDeltas` events instead of `providerStatuses`. */
+      providerStatusDeltas: z.boolean().optional(),
     }),
     success: ServerConfigStreamEvent,
     stream: true,

@@ -18,6 +18,7 @@ import { ExecutionEnvironmentDescriptor } from "./environment.ts";
 import { ResolvedKeybindingsConfig } from "./keybindings.ts";
 import { ManagedPolicySummary } from "./managedPolicy.ts";
 import { ServerProviders, ServerProviderUsageLimits } from "./provider.ts";
+import { ServerConfigProviderStatusDeltasPayload } from "./providerDelta.ts";
 import { UsageModelFilter } from "./usage.ts";
 
 export { EditorId };
@@ -47,6 +48,10 @@ export const EnvironmentTheme = z.looseObject({
   id: z.string(),
   name: z.string(),
   appearance: forwardCompatibleLiteral(["light", "dark"]),
+  /** Custom styles for web and desktop clients. */
+  css: z.string().max(50_000).optional(),
+  /** Revision of the image published beside the theme (`environment-theme-background` asset). */
+  background: TrimmedNonEmptyString.max(64).optional(),
 });
 export type EnvironmentTheme = z.infer<typeof EnvironmentTheme>;
 export const FileManagerRevealKind = forwardCompatibleLiteral(["finder", "file-explorer", "files"]);
@@ -126,6 +131,10 @@ export const UsageLimitSourceSnapshot = z.looseObject({
   id: TrimmedNonEmptyString,
   kind: forwardCompatibleLiteral(["cliproxy"]),
   label: TrimmedNonEmptyString,
+  /** Origin of the hub, which also serves the agents sent through it. */
+  origin: TrimmedNonEmptyString.optional(),
+  /** Origin and base path of the hub, which tell apart hubs served from one origin. */
+  endpoint: TrimmedNonEmptyString.optional(),
   checkedAt: IsoDateTime,
   accounts: forwardCompatibleArray(UsageLimitSourceAccount),
   error: TrimmedNonEmptyString.optional(),
@@ -151,6 +160,8 @@ export const ServerConfig = z.looseObject({
   environment: ExecutionEnvironmentDescriptor,
   auth: ServerAuthDescriptor,
   cwd: TrimmedNonEmptyString,
+  /** The machine's own name, which file URIs from its shells may carry. Older servers omit it. */
+  hostname: z.string().optional(),
   keybindingsConfigPath: TrimmedNonEmptyString,
   keybindings: ResolvedKeybindingsConfig,
   issues: ServerConfigIssues,
@@ -195,6 +206,11 @@ export const ServerConfig = z.looseObject({
   /** Folder that holds projects started from just a name (`projects.createNew`). */
   newProjectsRoot: TrimmedNonEmptyString.optional(),
   lastEventLoopStall: ServerEventLoopStall.optional(),
+  /**
+   * The host's clock when it built the config, for elapsed times against host timestamps. Only
+   * a subscription's first snapshot is fresh; later snapshots may repeat it.
+   */
+  serverTime: IsoDateTime.optional(),
   environmentThemes: z.array(EnvironmentTheme).optional(),
   usageLimitSources: UsageLimitSourceSnapshots.optional(),
   /** Present when an administrator's policy file manages the environment. */
@@ -242,6 +258,15 @@ export const ServerConfigStreamProviderStatusesEvent = z.looseObject({
 export type ServerConfigStreamProviderStatusesEvent = z.infer<
   typeof ServerConfigStreamProviderStatusesEvent
 >;
+/** Sent instead of `providerStatuses` to a subscriber that asked for `providerStatusDeltas`. */
+export const ServerConfigStreamProviderStatusDeltasEvent = z.looseObject({
+  version: z.literal(1),
+  type: z.literal("providerStatusDeltas"),
+  payload: ServerConfigProviderStatusDeltasPayload,
+});
+export type ServerConfigStreamProviderStatusDeltasEvent = z.infer<
+  typeof ServerConfigStreamProviderStatusDeltasEvent
+>;
 export const ServerConfigSettingsUpdatedPayload = z.looseObject({ settings: ServerSettings });
 export type ServerConfigSettingsUpdatedPayload = z.infer<typeof ServerConfigSettingsUpdatedPayload>;
 export const ServerConfigStreamSettingsUpdatedEvent = z.looseObject({
@@ -276,6 +301,7 @@ export const ServerConfigStreamEvent = taggedUnionWithUnknown("type", [
   ServerConfigStreamSnapshotEvent,
   ServerConfigStreamKeybindingsUpdatedEvent,
   ServerConfigStreamProviderStatusesEvent,
+  ServerConfigStreamProviderStatusDeltasEvent,
   ServerConfigStreamSettingsUpdatedEvent,
   ServerConfigStreamEnvironmentThemesUpdatedEvent,
   ServerConfigStreamUsageLimitSourcesUpdatedEvent,

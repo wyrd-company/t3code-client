@@ -219,6 +219,19 @@ describe("requiredScopesForSettingsUpdate", () => {
       ["providers:manage"],
     ],
     ["only an unknown key", { futureSetting: 1 }, undefined, ["settings:write"]],
+    ["device approval alone", { requireConnectDeviceApproval: true }, undefined, ["access:write"]],
+    [
+      "device approval and a setting",
+      { requireConnectDeviceApproval: false, keepAwakeWhileAgentsWork: true },
+      undefined,
+      ["settings:write", "access:write"],
+    ],
+    [
+      "device approval and a provider key",
+      { requireConnectDeviceApproval: true, ...providers },
+      undefined,
+      ["providers:manage", "access:write"],
+    ],
     ["an unknown key and a mutation", { futureSetting: 1 }, remove, ["providers:manage"]],
     ["an inherited name and a mutation", { constructor: 1 }, remove, ["providers:manage"]],
   ])("for %s", (_name, patch, providerInstanceMutation, expected) => {

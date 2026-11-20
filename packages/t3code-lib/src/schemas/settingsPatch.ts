@@ -85,6 +85,10 @@ export const ServerSettingsPatch = z
     responseStreamingMode: ResponseStreamingMode,
     enableProviderUpdateChecks: z.boolean(),
     continueThreadsAfterServerUpdate: z.boolean(),
+    /** Hold an OS sleep inhibitor while any run is active. */
+    keepAwakeWhileAgentsWork: z.boolean(),
+    /** New T3 Connect device keys wait for approval. Changing it needs `access:write`. */
+    requireConnectDeviceApproval: z.boolean(),
     enableAgentBrowserAccess: z.boolean(),
     /** A literal key goes to the server's secret store; an empty string removes it. */
     cloudSpeechCredentials: z
@@ -176,6 +180,8 @@ export const ServerSettingsPatch = z
      * tokens of hosts it omits; an empty map clears them all.
      */
     sourceControlHosts: z.record(z.string(), z.record(z.string(), z.unknown())),
+    /** Hosts the add and publish project pickers offer, by kind. */
+    offeredSourceControlProviders: z.record(z.string(), z.boolean()),
     /** Replaces the whole map. `providerInstanceMutation` changes one instance. */
     providerInstances: z.record(ProviderSlug, ProviderInstanceConfig),
     /** Merges per source; null removes one. */
@@ -195,12 +201,15 @@ export const ServerUpdateSettingsInput = z.looseObject({
 });
 export type ServerUpdateSettingsInput = z.infer<typeof ServerUpdateSettingsInput>;
 
+/** The key whose change the server guards with `access:write` in place of a settings write. */
+const ACCESS_PATCH_KEY = "requireConnectDeviceApproval";
+
 /**
  * The scopes the server requires, in its order: `settings:write` for any other
  * change or an empty patch with no mutation, `providers:manage` for provider
- * keys and a mutation. Removing a secret provider needs both, since it also
- * clears the settings that read from it. A key this build does not know counts
- * for neither.
+ * keys and a mutation, `access:write` for `requireConnectDeviceApproval`.
+ * Removing a secret provider needs `settings:write` too, since it also clears
+ * the settings that read from it. A key this build does not know counts for none.
  */
 export function requiredScopesForSettingsUpdate(
   input: ServerUpdateSettingsInput,
@@ -214,8 +223,17 @@ export function requiredScopesForSettingsUpdate(
   const removesSecretProvider = Object.values(input.patch.secretProviders ?? {}).some(
     (entry) => entry === null,
   );
+  const changesAccess = keys.includes(ACCESS_PATCH_KEY);
   const changesSettings =
-    removesSecretProvider || keys.some((key) => !PROVIDER_PATCH_KEYS.has(key));
-  if (!changesProviders) return ["settings:write"];
-  return changesSettings ? ["settings:write", "providers:manage"] : ["providers:manage"];
+    removesSecretProvider ||
+    keys.some((key) => !PROVIDER_PATCH_KEYS.has(key) && key !== ACCESS_PATCH_KEY);
+  const scopes: AuthEnvironmentScope[] = [
+    ...(changesSettings || (!changesProviders && !changesAccess)
+      ? ["settings:write" as const]
+      : []),
+    ...(changesProviders ? ["providers:manage" as const] : []),
+    ...(changesAccess ? ["access:write" as const] : []),
+  ];
+  const [first = "settings:write", ...rest] = scopes;
+  return [first, ...rest];
 }
