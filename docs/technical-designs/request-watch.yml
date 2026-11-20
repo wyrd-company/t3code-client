@@ -1,0 +1,703 @@
+$schema: https://refinery.systems/ontology/technical-design
+title: Request watcher
+objective: >-
+  Report each new pending approval and question on a T3 Code server once, as
+  it is raised, through a public library watch and the `t3c requests watch`
+  command, and run an operator's hook command once for each reported request.
+relationships:
+  related-to:
+    - library
+    - library-facades
+    - composition
+    - cli-architecture
+    - tool-scope
+    - profile-storage
+  references:
+    - request-watch-discovery
+    - exec-hook-spawn-exception
+    - command-line
+    - cli-surface
+    - profiles
+    - policy
+    - docs/user/t3c/commands.md
+    - threadWatch
+    - threadDerived
+design-challenges:
+  one-summary-per-thread: |
+    The shell, the server's only cross-thread stream, gives each thread row one
+    pending request summary. A thread can hold several pending requests, and a
+    question raised while an approval is pending leaves the summary unchanged.
+    The design uses the summary only as the sign that a thread is waiting. While
+    an included thread waits, a thread watch on it applies every event of the
+    thread and announces each pending request, so no request depends on the
+    summary naming it. [The decision record](../decisions/request-watch-discovery.yml)
+    weighs this against reading a thread on every row change.
+  resume-snapshot-without-threads: |
+    When the shell subscription resumes from a cursor the server can replay, its
+    first frame is a `snapshot` item that lists projects and no thread rows.
+    Applying it as the full thread set would drop every waiting thread. The
+    watcher's index therefore treats every snapshot as additions and updates
+    only. Rows leave the index through `thread.removed`.
+  exactly-once-across-outages: |
+    Reconnects resubscribe the shell and every thread watch, a thread watch
+    that closes and opens again announces the same pending requests again, and
+    a server restart replays or re-snapshots state. One set of reported
+    requests, kept for the whole run and keyed by thread id and request id,
+    absorbs every repeat. Requests still pending after an outage are found by
+    the resubscribed watches; see `guarantees` for what is reported.
+  late-question-cards: |
+    A question's text lives on its `user_input_request` timeline card, which can
+    arrive after the runtime request. The thread watch's tracker announces a
+    question only when its card is in the projection, so every reported
+    question carries its questions. With `skipExisting`, requests pending at
+    synchronization are marked from the thread snapshot's full pending list,
+    including questions whose card has not arrived, so a late card does not
+    turn an existing question into a new one.
+  untrusted-content-and-hooks: |
+    Request content is written by agents. It reaches a hook only as the bytes
+    of the request line on the hook's stdin. The hook's command line is the
+    operator's `--exec` text, fixed when the watcher starts and never read from
+    a file. Ids that t3c prints on stderr are JSON strings, so control
+    characters in a caller-chosen thread id are escaped.
+proposed-design:
+  guarantees: |
+    A run is one iteration of `client.requests.watch(options)`, or one
+    `t3c requests watch` process. A request is identified by its thread id and
+    its runtime request id. The watcher's view of a thread is the state its
+    thread watch has applied.
+
+    1. **At most once per run.** A run reports a request at most once, across
+       reconnects, server restarts, resubscriptions and thread watches that
+       close and open again.
+    2. **Every request that waits is reported.** A pending runtime request of a
+       selected kind, in an included thread, is reported when the watcher's
+       view of the thread reaches it while it is still pending. A question is
+       reported once its card, which holds the questions, is in that view.
+       After an outage the resubscribed watches bring the view up to date, so a
+       request raised during the outage and still pending is reported then.
+    3. **What is not reported.** A request resolved, expired or cancelled before
+       the watcher's view of its thread reaches it is not reported, and neither
+       is a request whose thread is excluded or filtered out for as long as the
+       request is pending. A request in a thread whose watch keeps failing is
+       reported once the watch opens; each failure is a `thread-error` item. A
+       secret or link card is not a runtime request and is never reported.
+    4. **Existing requests.** A run reports the requests already pending when it
+       starts, so a watcher that restarts loses nothing; across runs a request
+       is reported at least once. `skipExisting` skips exactly the requests the
+       run finds pending at synchronization.
+    5. **Read only.** The watcher reads with `orchestration:read` and never
+       answers a request. Answering stays with `threads.respondToApproval`,
+       `threads.respondToUserInput` and `t3c thread respond`.
+    6. **Hooks.** Each reported request starts at most one run of the `--exec`
+       hook. A hook run is never retried. A hook that fails, times out, is
+       stopped or never starts is named on stderr.
+  upstream-request-model: |
+    These are the server facts the design rests on, read from upstream
+    `pingdotgg/t3code` at tags `v0.1.9` and `v0.1.10`. File paths are in that
+    repository.
+
+    - **Runtime requests.** A thread projection's `runtimeRequests` hold the
+      approvals and questions a provider raised, with `status` `pending`,
+      `resolved`, `expired` or `cancelled`. Each has a timeline card: an
+      `approval_request` item (`requestKind`, `prompt`, `reason`, `options`,
+      `appName`) or a `user_input_request` item (`questions`). For a command
+      approval the adapters put the command itself in `prompt`
+      (`apps/server/src/orchestration-v2/Adapters/ClaudeAdapterV2.ts`,
+      `CodexAdapterV2.ts`). The library's `pendingRequests` joins each pending
+      request with its card. Its kind is `user-input` for a `user_input`
+      request and `approval` for every other request kind; this is the
+      classification `t3c thread requests` reports.
+    - **The shell summary.** A thread row's `pendingRuntimeRequest` is null when
+      the thread has no pending runtime request and no waiting secret or link
+      card. Otherwise it summarizes one: pending runtime requests sort approvals
+      before questions and newest first, and a waiting secret or link card
+      replaces a null or question summary when the card is at least as new. A
+      card summary has kind `user_input` and the card's turn item id as its id
+      (`threadShellFromProjection`, `pendingRuntimeRequestSummary` and
+      `secretRequestAsPendingInput` in
+      `apps/server/src/orchestration-v2/ProjectionStore.ts`).
+    - **What 0.1.10 changes.** 0.1.10 adds `userOnly: true` to a card summary
+      (`OrchestrationV2PendingRuntimeRequestSummary` in
+      `packages/contracts/src/orchestrationV2.ts`): only the user can answer a
+      secret or link card. 0.1.9 sends the same card summaries without the
+      flag. Runtime request records, the two card types and the response
+      methods are the same in both tags. The watcher reads runtime requests from
+      thread watches, so it behaves the same on both versions, and a card
+      summary only marks its thread as waiting, because the card can stand in
+      front of a pending question.
+    - **Shell publishing.** Every thread event makes the server read the
+      thread's row again; a row identical to the last one sent is skipped. For
+      subagent threads the server leaves out node, turn item, provider turn and
+      message updates, except secret and link cards and user messages; runtime
+      request events always pass (`shouldPublishShellApplicationEvent` and
+      `skipUnchangedThreadShells` in
+      `apps/server/src/orchestration-v2/ShellStream.ts`). A change to a thread's
+      summary therefore always produces a row.
+    - **Shell resume.** A subscription with `afterSequence` that the server can
+      replay starts with a `snapshot` frame of projects and no thread rows, then
+      the current rows of the threads changed after the cursor, then
+      `synchronized`. A cursor the server cannot replay gets a full snapshot
+      (`subscribeOrchestrationV2Shell` in `apps/server/src/ws.ts`).
+    - **Bounded snapshots keep pending cards.** A bounded projection and a
+      bounded thread snapshot keep the card of every pending request even when
+      it is older than the timeline window (`isRetainedDependency` in
+      `apps/server/src/orchestration-v2/threadHistoryPaging.ts`).
+    - **Restarts.** When the server shuts down, and again when it starts, it
+      ends every pending request (`cancelled` at shutdown, `expired` at
+      startup) except live questions with complete cards outside
+      provider-native subagent threads, and requests already answerable by
+      message. Those keep their id and stay pending, answerable by message. A
+      run the restart cut short can continue and raise new requests with new ids
+      (`apps/server/src/orchestration-v2/ProviderRuntimeRecoveryService.ts`).
+      Event sequences are stored with the events, so cursors stay valid across a
+      restart.
+    - **Scopes.** `orchestration.subscribeShell`, `orchestration.subscribeThread`,
+      `orchestration.getThreadProjection`, `GET /api/orchestration/shell` and
+      `GET /api/projects` require `orchestration:read`
+      (`apps/server/src/auth/RpcAuthorization.ts`).
+  library-api: |
+    Task 5 builds this API. `T3Client.requests` is a `RequestsApi` facade over
+    the client's `shell` and `threads` facades:
+
+    ```ts
+    import { ProfileManager, T3Client } from "@wyrd-company/t3code-lib";
+
+    const client = T3Client.create(await new ProfileManager().resolve());
+    const controller = new AbortController();
+    process.once("SIGINT", () => controller.abort());
+    try {
+      for await (const item of client.requests.watch({
+        kind: "approval",
+        excludeThreadIds: [reviewerThreadId],
+        excludeTags: ["reviewer"],
+        signal: controller.signal,
+      })) {
+        if (item.kind === "request") await forward(item.request);
+        else if (item.kind === "thread-error") console.error(item.threadId, item.error.code);
+      }
+    } finally {
+      await client.close();
+    }
+    ```
+
+    ```ts
+    export type PendingRequestKind = PendingRequest["kind"]; // "approval" | "user-input"
+
+    /** Which requests a watch reports. Every filter is optional; none selects every request. */
+    export interface RequestWatchFilters {
+      /** Only threads in these projects. */
+      readonly projectIds?: readonly ProjectId[];
+      /** Only requests of this kind. */
+      readonly kind?: PendingRequestKind;
+      /** Never these threads, nor the subagent threads below them. */
+      readonly excludeThreadIds?: readonly ThreadId[];
+      /** Never threads with one of these tags, nor the subagent threads below them. */
+      readonly excludeTags?: readonly string[];
+    }
+
+    export interface RequestWatchOptions extends RequestWatchFilters {
+      /** Skip the requests pending at synchronization instead of reporting them. */
+      readonly skipExisting?: boolean;
+      readonly signal?: AbortSignal;
+    }
+
+    /** A pending request with the thread and project it belongs to. */
+    export type ReportedRequest = PendingRequest & {
+      readonly thread: { readonly id: ThreadId; readonly title: string; readonly tags: readonly string[] };
+      /** `title` is the project's name; null while the watch has not seen the project. */
+      readonly project: { readonly id: ProjectId; readonly title: string | null };
+    };
+
+    export type RequestWatchItem =
+      | { readonly kind: "request"; readonly request: ReportedRequest }
+      | { readonly kind: "synchronized" }
+      | { readonly kind: "reconnected"; readonly afterSequence: number }
+      | { readonly kind: "thread-error"; readonly threadId: ThreadId; readonly error: T3Error }
+      | { readonly kind: "decode-error"; readonly error: T3DecodeError };
+
+    export class RequestsApi {
+      /** Every new pending request on the server, once per run; read-only. */
+      watch(options?: RequestWatchOptions): AsyncIterable<RequestWatchItem>;
+    }
+    ```
+
+    `PendingRequest` is the library's existing type from `threadDerived.ts`, so
+    a reported request has the shape `threads.pendingRequests` and
+    `t3c thread requests --json` already return, plus `thread` and `project`.
+
+    - `request` reports one request. Within one thread, requests are reported in
+      the order the thread watch announces them: oldest first for the requests
+      in its snapshot, then as raised. Requests of different threads have no
+      order between them.
+    - `synchronized` comes once per run, after the requests pending at
+      synchronization are reported or skipped.
+    - `reconnected` comes when the shell subscription resumes after a dropped
+      socket; `afterSequence` is its cursor.
+    - `thread-error` reports a thread watch that ended with an error that
+      concerns only its thread. The watch opens the thread's watch again while
+      the thread still waits, as `discovery` describes.
+    - `decode-error` passes on a shell or thread item that failed to decode.
+
+    The watch validates its options before it subscribes: ids are nonempty
+    strings, `kind` is one of the two kinds, and each tag is a valid
+    `ThreadTag` (trimmed, one line, at most 64 characters). A malformed option
+    raises `T3PreconditionError`. Aborting the signal ends the iteration
+    quietly. An error from the shell watch ends the iteration with that error,
+    as `shell.watch` defines; a credential the server rejects arrives this way
+    as the library's connection error, and `client.close()` as the closed
+    connection error. An error from a thread watch ends the iteration when it
+    concerns the connection or the credential: a `T3ConnectionError` other than
+    `message_too_large`, a `T3AuthError`, or a `T3RpcError` that is
+    `EnvironmentAuthorizationError`. Every other thread watch error produces a
+    `thread-error` item.
+
+    Modules: `src/api/requests.ts` holds `RequestsApi`, `src/api/requestWatch.ts`
+    the watch, and `src/api/requestIndex.ts` the shell index and its inclusion
+    rule as pure functions. `src/index.ts` exports `RequestsApi` and the types
+    above.
+  discovery: |
+    Task 5 builds this. [The decision record](../decisions/request-watch-discovery.yml)
+    explains the shape.
+
+    **The index.** The watch consumes `shell.watch()` without omission options,
+    so every thread row reaches it. For each thread the index keeps its id,
+    project id, title, tags, its parent's id when `lineage.relationshipToParent`
+    is `subagent`, and whether its summary is non-null. For each project it keeps
+    the title. Shell items change the index:
+
+    | Shell item | Index change |
+    | --- | --- |
+    | `snapshot` | Add or update every listed thread (`threads` and `archivedThreads`) and project. Nothing is removed. |
+    | `thread.updated` | Add or update the thread. |
+    | `thread.removed` | Remove the thread. |
+    | `project.updated` | Add or update the project. |
+    | `project.removed` | Remove the project's title. |
+    | `synchronized` | The first one closes the initial shell state; see synchronization. |
+    | `reconnected`, `decode-error` | Passed on as items. |
+    | `snapshot-required` | Not received: the watch does not ask for `httpSnapshotFallback`. |
+
+    **Inclusion.** A thread is excluded when its id is in `excludeThreadIds`,
+    when one of its tags, trimmed, equals one of `excludeTags`, or when its
+    subagent parent is excluded. The parent walk follows the index's parent ids
+    and stops at a thread the index does not hold. A thread is included when it
+    is not excluded and `projectIds` is absent, empty or lists its project.
+    Exclusion applies to subagent descendants because a thread that handles
+    requests can delegate to subagent threads, and their requests come from the
+    same work. Excluded ids are not checked for existence, so a reviewer thread
+    can be excluded before it exists.
+
+    **Thread watches.** A thread is watched while it is included and its
+    summary is non-null. After each shell item the watch compares the watched
+    set with its open thread watches. It opens
+    `threads.watch(threadId, { acceptBoundedSnapshot: true, acceptCompactTurnItems: true })`
+    with its own abort signal for each thread that became watched, and aborts
+    the thread watch of each thread that stopped being watched: its summary
+    went null, it became excluded, or it was removed. Only threads with a
+    non-null summary are evaluated, so the cost of each item follows the number
+    of waiting threads.
+
+    From each thread watch the watch uses these items:
+
+    | Thread watch item | Use |
+    | --- | --- |
+    | `snapshot` | With `skipExisting`, marks the requests of an initial thread as existing. |
+    | `synchronized` | The first one counts toward the run's synchronization. |
+    | `approval-requested`, `user-input-requested` | Reported when `kind` allows it and the request is not in the reported set. |
+    | `decode-error` | Passed on. |
+    | other items | Not used. |
+
+    A thread watch error that concerns the connection or the credential ends
+    the run, as `library-api` lists. Any other error ends only that thread
+    watch and produces a `thread-error` item. While the thread stays watched,
+    its watch opens again after the client's reconnect backoff for that
+    thread's consecutive failures, or at once when the shell publishes a new
+    row for the thread. A watch that delivers its snapshot resets the count.
+
+    **Reporting.** Reporting a request adds its key to the run's reported set
+    and builds the `ReportedRequest` from the announcement and the index: the
+    thread's current title and tags, and the project id and title. The kind
+    filter applies per request; the other filters apply per thread.
+  synchronization-and-existing-requests: |
+    Task 5 builds this.
+
+    The initial waiting set is the set of threads that are watched when the
+    shell's first `synchronized` item arrives. The run is synchronized when that
+    item has arrived and every thread in the initial waiting set has delivered
+    its first `synchronized` item, or has ended. A thread watch's
+    `synchronized` follows its snapshot and the announcements that snapshot
+    produced, because the thread subscription asks for a completion marker. The
+    watch then yields `synchronized`, once per run.
+
+    Without `skipExisting`, the requests pending in those snapshots are
+    reported like any other. With `skipExisting`, each initial thread's first
+    snapshot adds the key of every request in
+    `pendingRequests(snapshot.projection)` to the reported set without
+    reporting it, including questions whose card has not arrived. Requests
+    raised after synchronization are always reported. A request raised while
+    the run starts, before synchronization, is reported unless the first
+    snapshot of its thread already holds it.
+
+    The CLI prints `t3c: watching for requests` on stderr at `info` level when
+    the watch yields `synchronized`, so a script can wait for it.
+  reconnects-and-restarts: |
+    Task 5 builds this, on the resume behavior of `shell.watch` and
+    `threads.watch` that `library-facades` defines.
+
+    - **Dropped connection.** The transport reconnects with backoff. The shell
+      watch and each open thread watch resubscribe with their own cursor, skip
+      replayed items at or below it, and wait through failures without an
+      attempt limit. A thread watch that receives a new snapshot re-seeds its
+      tracker, which announces open requests again; the reported set drops
+      them. Threads that started waiting during the outage come back as rows in
+      the shell replay, or in a full snapshot, and their thread watches open.
+    - **Server restart.** The socket drops and the server comes back with its
+      stored events, so the same cursors resume. Pending approvals end at
+      shutdown or startup: their thread watches announce nothing new for them,
+      and a continued run that asks again raises a new request id, which is
+      reported once. Questions that survive keep their id, so the reported set drops
+      their second announcement.
+    - **Thread watch reopened.** A thread whose summary goes null and later
+      non-null again gets a new thread watch; its snapshot announces the
+      thread's open requests again, and the reported set drops those already
+      reported.
+
+    The reported set holds one key per reported request for the life of the
+    run.
+  command: |
+    Task 6 builds the command. Task 7 adds `--ignore-defaults` and the defaults
+    it controls.
+
+    ```text
+    t3c requests watch [--project <id>]... [--kind approval|user-input]
+                       [--exclude-thread <id>]... [--exclude-tag <tag>]...
+                       [--skip-existing] [--ignore-defaults]
+                       [--exec <command> [--exec-concurrency <n>] [--exec-timeout <duration>]]
+    ```
+
+    `requests` is a command group like `thread` and `schedule`, named in the
+    plural because `request` reads as a verb. Its one leaf is `watch`. The
+    global options `--server`, `--credentials`, `--json`, `--log-level` and
+    `--connect-timeout` apply as for every command.
+
+    | Option | Value | Library option or behavior |
+    | --- | --- | --- |
+    | `--project <id>` | repeatable project id | `projectIds` |
+    | `--kind <kind>` | `approval` or `user-input` | `kind` |
+    | `--exclude-thread <id>` | repeatable thread id | `excludeThreadIds` |
+    | `--exclude-tag <tag>` | repeatable tag | `excludeTags` |
+    | `--skip-existing` | flag | `skipExisting` |
+    | `--ignore-defaults` | flag | the profile's `requestWatch` defaults are not read |
+    | `--exec <command>` | command line | runs the hook; see `exec-hook` |
+    | `--exec-concurrency <n>` | positive integer, default 4; requires `--exec` | hooks that run at once |
+    | `--exec-timeout <duration>` | duration, default `10m`; requires `--exec` | how long one hook runs |
+
+    Repeated values are deduplicated. A malformed tag, a concurrency that is not
+    a positive integer, a malformed duration, or `--exec-concurrency` or
+    `--exec-timeout` without `--exec` is a usage error (exit 2).
+
+    **Preflight.** Before it watches, the command reads the server's projects
+    once with `client.projects.snapshot()`. That read settles reachability (exit
+    8), the credential and `orchestration:read` (exit 9), and that every
+    selected project exists (exit 10, naming the missing id), as policy requires
+    for explicitly selected resources. Then the command iterates
+    `client.requests.watch` with the resolved filters and the signal scope's
+    abort signal.
+
+    **Output.** stdout carries one line per reported request, the format in
+    `output-line`, in text mode and in `--json` mode. stderr carries everything
+    else:
+
+    | Event | stderr line | Level |
+    | --- | --- | --- |
+    | `synchronized` | `t3c: watching for requests` | info |
+    | `reconnected` | `t3c: reconnected` | info |
+    | `thread-error` | `t3c: could not watch thread <id>: <error message>` | warn |
+    | `decode-error` | `t3c: skipped a server item that could not be decoded` | warn |
+    | hook outcomes | see `exec-hook` | error, or info for success |
+    | end of the watch | the short final error line policy defines | always |
+
+    `<id>` is the thread id and `<error message>` the error's message, each
+    written as a JSON string.
+
+    **Exit codes.** A watch has no successful end; every end is one of these,
+    from the policy table:
+
+    | Code | When |
+    | --- | --- |
+    | 1 | Unexpected error, or profile config or credential storage failure. |
+    | 2 | Usage error, including malformed `requestWatch` defaults. |
+    | 4 | SIGINT or SIGTERM. |
+    | 8 | The preflight cannot reach the server, or a connection error ends the watch, including a credential the server rejects after the preflight. |
+    | 9 | The preflight's credential is rejected or lacks `orchestration:read`, or the server refuses a subscription for missing scope. |
+    | 10 | A selected project does not exist. |
+
+    These follow the common mapping in `errors.ts`: the library reports a
+    credential rejected on the socket as a connection error.
+
+    A hook's result never changes the exit code. In `--json` mode the last
+    stdout line is the result, in the streaming form policy defines for
+    `--stream --json`:
+
+    ```json
+    {"type":"result","data":{"reported":3,"hooks":{"succeeded":2,"failed":1,"stopped":0,"notRun":0}},"exitCode":4,"error":{"code":"interrupted","message":"Operation interrupted."}}
+    ```
+
+    `data.hooks` is null without `--exec`. `error` has the shape of every other
+    command's JSON error. Every end after the arguments parse writes this line
+    last, including a failed preflight.
+
+    **Stopping.** The command uses the CLI's one signal scope
+    (`execution/signals.ts`). On the first SIGINT or SIGTERM, or on any other
+    end of the watch, it aborts the watch, so no request is reported after it.
+    Queued hooks do not start; running hooks are stopped as `exec-hook`
+    describes. Then the client closes, `--json` writes the result line, stderr
+    ends with the final line, and the process exits. A second signal ends the
+    process at once with exit 4, after the hook runner kills every running
+    hook's process group.
+
+    Modules: `src/requests/index.ts` exports `requestsHandlers` with the
+    `requests watch` handler, which the composition root adds beside the other
+    handler families. `src/requests/watch.ts` holds the handler,
+    `src/requests/line.ts` the line format, and `src/requests/hookRunner.ts`
+    the hook runner.
+  output-line: |
+    Task 6 builds this. Each reported request is one line: a JSON object
+    followed by `\n`. `JSON.stringify` escapes newlines inside strings, so a
+    line never contains one. Consumers ignore fields they do not know; fields
+    are only ever added.
+
+    | Field | Value |
+    | --- | --- |
+    | `type` | `"request"` |
+    | `kind` | `"approval"` or `"user-input"` |
+    | `requestId` | the runtime request id, as `thread respond --request` takes it |
+    | `thread` | `{id, title, tags}` from the thread's latest shell row |
+    | `project` | `{id, title}`; `title` is the project's name, or null when unknown |
+    | `request` | the server's runtime request record (`kind` is the server's request kind, such as `command` or `file-change`) |
+    | `item` | the request's timeline card as the server gives it, or null when the thread holds none |
+    | `questions` | for `user-input` only: the card's questions |
+
+    `kind`, `requestId`, `request`, `item` and `questions` are the library's
+    `PendingRequest`, the object `t3c thread requests --json` returns, with an
+    absent card written as null instead of left out. For
+    an approval, `item.prompt` holds the command or the provider's description
+    of the action; for a question, `questions` holds the questions and their
+    options. A hook that needs more, such as a file change's diff, reads the
+    thread.
+
+    An example line, wrapped here for reading:
+
+    ```json
+    {"type":"request","kind":"approval","requestId":"request-1",
+     "thread":{"id":"thread-1","title":"Fix the build","tags":[]},
+     "project":{"id":"project-1","title":"example"},
+     "request":{"id":"request-1","nodeId":"node-1","providerTurnId":"provider-turn-1",
+      "nativeRequestRef":{"driver":"claudeAgent","nativeId":"native-1","strength":"strong"},
+      "kind":"command","status":"pending",
+      "responseCapability":{"type":"live","providerSessionId":"session-1","supportsFeedback":true},
+      "createdAt":"2026-01-01T00:00:00.000Z","resolvedAt":null},
+     "item":{"id":"item-1","threadId":"thread-1","runId":"run-1","nodeId":"node-1",
+      "providerThreadId":"provider-thread-1","providerTurnId":"provider-turn-1",
+      "nativeItemRef":null,"parentItemId":null,"ordinal":4,"status":"waiting","title":null,
+      "startedAt":"2026-01-01T00:00:00.000Z","completedAt":null,
+      "updatedAt":"2026-01-01T00:00:00.000Z","type":"approval_request",
+      "requestId":"request-1","requestKind":"command","prompt":"npm test"}}
+    ```
+  exec-hook: |
+    Task 6 builds the hook runner in `src/requests/hookRunner.ts`.
+
+    **Start.** For each reported request, after its stdout line is written, the
+    runner queues one hook run. Runs start in report order whenever fewer than
+    `--exec-concurrency` hooks are running. The queue holds one line per waiting
+    run.
+
+    **Command.** The runner starts `--exec`'s text with the platform shell, as
+    Node's `spawn(command, { shell: true })` does (`/bin/sh -c` on POSIX), in
+    t3c's working directory. The shell receives only the operator's text, fixed
+    when the watcher starts. On POSIX the hook leads its own process group, so
+    the runner can signal the hook and everything it started; on other
+    platforms the runner signals the hook process alone.
+
+    **stdin.** The hook's stdin receives the request's line, byte for byte the
+    line written to stdout, and then end of file. A hook that exits without
+    reading stdin is not a failure for that reason; a broken pipe on stdin is
+    ignored. Nothing from the request goes into the hook's arguments or
+    environment.
+
+    **Environment.** The hook inherits t3c's environment. When `--server`
+    selected the server, the runner also sets `T3_SERVER_URL` to that server's
+    origin, so `t3c` commands the hook runs reach the same server. A server
+    selected by `T3_SERVER_URL` is inherited as it is, and one selected by the
+    current profile is selected the same way by the hook's own `t3c`. A
+    credential given with `--credentials` is not passed on; such a hook passes
+    the file to its own `t3c` commands.
+
+    **Output.** The hook's stdout and stderr go to t3c's stderr, never to its
+    stdout, line by line, each line prefixed with `t3c: hook <requestId>: `
+    with the request id as a JSON string. A last line without a newline is
+    written when the hook exits.
+
+    **Concurrency and timeout.** `--exec-concurrency` defaults to 4, so a slow
+    hook for one request does not hold back the others. A hook still running
+    after `--exec-timeout` receives SIGTERM to its process group, and SIGKILL
+    five seconds later if it is still running. Its slot frees when it exits.
+    The default of `10m` leaves room for a hook that asks a reviewer thread and
+    waits for its answer.
+
+    **Outcomes.** Each run ends with one outcome. A success prints a line at
+    `info` level; every other outcome prints at `error` level, and
+    `<requestId>` and `<threadId>` are JSON strings:
+
+    | Outcome | stderr line |
+    | --- | --- |
+    | Exit 0 | `t3c: hook finished for request <requestId>` |
+    | Nonzero exit | `t3c: hook failed for request <requestId> in thread <threadId>: exit <n>` |
+    | Ended by a signal it did not get from t3c | `t3c: hook failed for request <requestId> in thread <threadId>: signal <name>` |
+    | Timed out | `t3c: hook failed for request <requestId> in thread <threadId>: timed out after <duration>` |
+    | The process did not start | `t3c: hook failed for request <requestId> in thread <threadId>: could not start` |
+    | Stopped with the watcher | `t3c: hook stopped for request <requestId> in thread <threadId>` |
+    | Queued when the watcher stopped | `t3c: hook not run for request <requestId> in thread <threadId>` |
+
+    A failed hook is not retried, and the watcher keeps running.
+
+    **Stop.** When the watch ends, queued runs never start and are reported as
+    not run. Running hooks receive SIGTERM to their process groups; after five
+    seconds the survivors receive SIGKILL, and each is reported as stopped. The
+    runner registers a process `exit` handler that sends SIGKILL to every hook
+    process group still running, so no hook outlives a t3c that exits. A
+    request whose hook did not run, and that is still pending when the next run
+    starts, is reported by that run unless `--skip-existing` is given.
+  spawn-exception: |
+    Task 6 changes the rule's wording and adds its test.
+    [The decision record](../decisions/exec-hook-spawn-exception.yml) holds the
+    operator's approval and its reason.
+
+    The hook runner is the one place where application code spawns a process.
+    It exists because #169 requires a hook per request with stdin-only
+    delivery, failure isolation, bounded concurrency and a timeout, which a
+    consumer's own loop over the lines does not give. The library stays free of
+    child processes; the runner lives in the CLI, which adapts library output
+    to the operator's environment.
+
+    The conventions paragraph of the root `AGENTS.md` changes from
+
+    ```text
+    Application code must not spawn CLIs. The CLI composes the library and does
+    not implement wire protocol. Only build/test tools may spawn the test server.
+    ```
+
+    to
+
+    ```text
+    Application code must not spawn CLIs, with one exception: the hook runner of
+    `t3c requests watch` (`packages/t3code-cli/src/requests/hookRunner.ts`)
+    runs the operator's `--exec` command, with the request on stdin only. A test
+    fails when any other application source imports `node:child_process`. The
+    CLI composes the library and does not implement wire protocol. Only
+    build/test tools may spawn the test server.
+    ```
+
+    The test lists the files under `packages/*/src` that are not tests (`*.test.ts`)
+    and fails unless `hookRunner.ts` is the only one that imports
+    `node:child_process` or `child_process`.
+    `composition.yml` states the same exception.
+  config-defaults: |
+    Task 7 builds this.
+
+    A server profile in the t3c config (`config.json`, `docs/profiles.md`) can
+    hold default filters under `requestWatch`. Its keys are the library's
+    `RequestWatchFilters`:
+
+    ```json
+    {
+      "servers": {
+        "sample": {
+          "url": "https://server.example",
+          "requestWatch": {
+            "projectIds": ["project-1"],
+            "kind": "approval",
+            "excludeThreadIds": ["thread-reviewer"],
+            "excludeTags": ["reviewer"]
+          }
+        }
+      },
+      "current": "sample"
+    }
+    ```
+
+    - **Shape.** `requestWatch` is an object. `projectIds`, `excludeThreadIds`
+      and `excludeTags` are arrays of nonempty strings, each tag a valid
+      `ThreadTag`, and `kind` is `approval` or `user-input`. Every key is
+      optional, and unknown keys inside `requestWatch` are ignored. Only
+      filters are stored: `--skip-existing` and the `--exec` options come from
+      the command line alone, so no file can supply a command to run.
+    - **Reading.** `ProfileManager.requestWatchDefaults(name)` reads the named
+      profile's `requestWatch` and returns `RequestWatchFilters`, empty when
+      the key is absent. A malformed value raises `T3PreconditionError`, which
+      `requests watch` reports as exit 2 naming the profile. `loadConfig`
+      validates only each server's `url` and keeps its other keys, so a config
+      with `requestWatch`, well formed or not, loads unchanged for every other
+      command.
+    - **Which profile.** The defaults come from the profile that
+      `ProfileManager.resolve` selects for the server: the current profile, or
+      the profile whose normalized origin matches `--server` or
+      `T3_SERVER_URL`. A server without a matching profile has no defaults.
+      Credential overrides do not change which profile supplies them.
+    - **Precedence.** Each of the four filters is taken from its flag when the
+      flag is given, with all its occurrences, and from the profile otherwise.
+      A flag replaces the profile's value for that filter; it does not add to
+      it. `--ignore-defaults` reads no profile defaults, so the flags alone
+      apply.
+    - **Writes.** t3c never writes `requestWatch`; the operator edits the
+      config. Registering a profile again with `auth pair` or a session token
+      replaces only the entry's `url` and keeps its other keys, so a renewed
+      credential keeps its defaults. `auth switch` keeps every key, and
+      `auth logout` removes the entry with its defaults. Config writes stay
+      atomic as `profile-storage` defines. A config without `requestWatch`,
+      such as one the previous t3c release wrote, loads unchanged and watches
+      everything.
+  contract-changes: |
+    The specifications that contract tests bind to code change with that code:
+
+    - **Task 5:** `library-facades.yml` lists `RequestsApi` in its facade block
+      and links this design; the module map in `library.yml` adds
+      `api/requests.ts`, `api/requestWatch.ts` and `api/requestIndex.ts`; the
+      generated API reference (`task docs`) documents the new exports.
+    - **Task 6:** `docs/specifications/cli-surface.json` adds the `requests`
+      group and its `watch` leaf with the options above (except
+      `--ignore-defaults`), `requires` on `exec-concurrency` and `exec-timeout`,
+      the text and JSON output modes and the exit codes; its notes state the
+      filters, the line format, the hook contract and stopping.
+      `docs/specifications/command-line.yml` names request watching among the
+      capabilities the CLI composes. `docs/user/t3c/commands.md` gains a
+      section on watching requests, and `docs/user/t3c/policy.md` the watcher's
+      output and its exit 4 on a signal. `AGENTS.md` takes the wording in
+      `spawn-exception`.
+    - **Task 7:** `cli-surface.json` adds `--ignore-defaults` and states the
+      precedence; `docs/profiles.md` (Configuration) and
+      `docs/user/t3c/auth.md` describe `requestWatch`; `profile-storage.yml`
+      states that registration replaces only `url`.
+  traceability: |
+    How the design meets wyrd-company/t3code-client#169:
+
+    | #169 | Met by | Task |
+    | --- | --- | --- |
+    | Invariant: t3c never answers | `guarantees` 5; the watch reads only | 5, 6 |
+    | Invariant: content never on a command line or evaluated | `exec-hook` stdin and environment; `untrusted-content-and-hooks` | 6 |
+    | Invariant: read access only | `upstream-request-model` scopes; `command` preflight | 5, 6 |
+    | Invariant: no version pin, protocol 2 | `upstream-request-model` (same behavior on 0.1.9 and 0.1.10) | 5 |
+    | Invariant: public library API, CLI composes | `library-api`; `command` | 5, 6 |
+    | 1. Every thread, including new ones | `discovery` index without omissions | 5 |
+    | 2. Projects and request kind | `projectIds`, `kind`; `--project`, `--kind` | 5, 6 |
+    | 3. Exclude by id and tag | `discovery` inclusion, with subagent descendants | 5, 6 |
+    | 4. Once per run, one JSON line with its fields | `guarantees` 1; `output-line` | 5, 6 |
+    | 5. Existing requests reported; an option skips them | `synchronization-and-existing-requests`; `--skip-existing` | 5, 6 |
+    | 6. Survives restart and lost connection | `reconnects-and-restarts`; `guarantees` 2 and 3 | 5 |
+    | 7. `--exec`: stdin only, failures on stderr, bounded | `exec-hook`; `spawn-exception` | 6 |
+    | 8. Defaults per profile; flags override | `config-defaults` | 7 |
+    | 9. Exit codes, stderr, clean interrupt | `command` exit codes, output and stopping | 6 |
+    | Success: approval on stdout within 5 seconds | `discovery`: one shell row, then one thread subscription | 5 (live test), 8 |
+    | Success: exactly once across a server restart | `reconnects-and-restarts` | 5, 8 |
+    | Success: filters select exactly what is specified | `discovery` inclusion; `config-defaults` precedence | 6, 7 |
+    | Success: passes both gates for t3c | `tool-scope` verdict record | 4 |
+    | Acceptance scenario | the whole design; the guide's worked hook | 8 |
