@@ -369,9 +369,9 @@ proposed-design:
     `transport/socketClose.ts`). Every other failure is recoverable, as
     `recoverable-failures` says, and each retry waits with the transport's
     reconnect backoff. Thread watches take bounded snapshots and the shell
-    watch takes its listings over HTTP, so a socket frame carries one bounded
-    snapshot or one row. A thread watch that ends with `message_too_large` is
-    a failed thread watch like any other.
+    watch takes its listings over HTTP, so no socket frame carries a whole
+    thread or a whole listing. A thread watch that ends with
+    `message_too_large` is a failed thread watch like any other.
 
     Modules: `src/api/requests.ts` holds `RequestsApi`; `src/api/requestWatch.ts`
     the watch, which drives the HTTP shell snapshot, the shell watch, the
