@@ -47,6 +47,13 @@ error code and message.
 | `provider_status`               | optional `instanceId`                                            | Provider availability, authentication, installation and usage limits.               |
 | `usage_summary`                 | `sinceDay`, `untilDay`, `timeZone`, optional usage window fields | Historical usage buckets, source diagnostics, pricing and scan metadata.            |
 
+## Usage refresh
+
+`usage_summary` accepts two optional boolean inputs. Set `provisional: true` to
+use the last usage scan while sources refresh. The result may be stale, and those
+sources are marked `refreshing`. Set `awaitRefresh: true` to wait for slow sources
+to refresh; it takes precedence when both options are true.
+
 ## Queue recovery
 
 Stop, resume and selected start return dispatch acknowledgement. Inspect

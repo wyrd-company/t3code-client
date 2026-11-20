@@ -17,7 +17,7 @@ export const providerTools = [
   ),
   defineTool(
     "usage_summary",
-    "Read historical usage buckets for inclusive calendar days in an IANA time zone. Requires diagnostics:read. Preserves source diagnostics, pricing and scan metadata; session counts overlap across buckets. May scan provider transcripts.",
+    "Read historical usage buckets for inclusive calendar days in an IANA time zone. Requires diagnostics:read. Preserves source diagnostics, pricing and scan metadata; session counts overlap across buckets. May scan provider transcripts. Set provisional: true to use the last scan while sources refresh; results may be stale and sources are marked refreshing. Set awaitRefresh: true to wait for slow sources to refresh; it takes precedence over provisional.",
     schemas.usage.UsageSummaryInput.strict(),
     (input, client, signal) => client.server.usageSummary(input, signal),
   ),
