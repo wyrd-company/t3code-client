@@ -56,27 +56,33 @@ export interface TurnOutcome {
 export function pendingRequests(
   projection: Pick<OrchestrationV2ThreadProjection, "runtimeRequests" | "turnItems">,
 ): PendingRequest[] {
-  const out: PendingRequest[] = [];
-  const pending = projection.runtimeRequests
+  return projection.runtimeRequests
     .filter((request) => request.status === "pending")
-    .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
-  for (const request of pending) {
-    const requestId = request.id;
-    if (request.kind === "user_input") {
-      const item = projection.turnItems.find(
-        (candidate): candidate is OrchestrationV2TurnItemOfType<"user_input_request"> =>
-          isTurnItemOfType(candidate, "user_input_request") && candidate.requestId === requestId,
-      );
-      out.push({ kind: "user-input", requestId, request, item, questions: item?.questions ?? [] });
-      continue;
-    }
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id))
+    .map((request) => requestWithCard(projection, request));
+}
+
+/**
+ * One request, whatever its status, joined with its timeline card the way `pendingRequests`
+ * joins them: `user-input` for a `user_input` request, `approval` for every other kind.
+ */
+export function requestWithCard(
+  projection: Pick<OrchestrationV2ThreadProjection, "turnItems">,
+  request: OrchestrationV2RuntimeRequest,
+): PendingRequest {
+  const requestId = request.id;
+  if (request.kind === "user_input") {
     const item = projection.turnItems.find(
-      (candidate): candidate is OrchestrationV2TurnItemOfType<"approval_request"> =>
-        isTurnItemOfType(candidate, "approval_request") && candidate.requestId === requestId,
+      (candidate): candidate is OrchestrationV2TurnItemOfType<"user_input_request"> =>
+        isTurnItemOfType(candidate, "user_input_request") && candidate.requestId === requestId,
     );
-    out.push({ kind: "approval", requestId, request, item });
+    return { kind: "user-input", requestId, request, item, questions: item?.questions ?? [] };
   }
-  return out;
+  const item = projection.turnItems.find(
+    (candidate): candidate is OrchestrationV2TurnItemOfType<"approval_request"> =>
+      isTurnItemOfType(candidate, "approval_request") && candidate.requestId === requestId,
+  );
+  return { kind: "approval", requestId, request, item };
 }
 
 /** The outcome of a settled run; `undefined` while the run is not terminal. */
