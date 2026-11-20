@@ -381,10 +381,12 @@ proposed-design:
     can wait for it.
   reconnects-and-restarts: |
     Task 5 builds this, on the resume behavior of `shell.watch` and
-    `threads.watch` that `library-facades` defines. Task 5 also makes
-    `shell.watch` move its resume cursor only on an authoritative snapshot, as
-    `two-kinds-of-shell-snapshot` explains; a `shell.watch` that moves it on an
-    enrichment snapshot drops the rows of every replayed resume.
+    `threads.watch` that `library-facades` defines. The watch relies on
+    `shell.watch` moving its resume cursor only on an authoritative snapshot,
+    as `two-kinds-of-shell-snapshot` explains; a `shell.watch` that moves it on
+    an enrichment snapshot drops the rows that follow it. Task 2 fixes
+    `shell.watch` to that rule, and task 5's tests resume the request watch
+    through an enrichment snapshot and replayed rows.
 
     - **Dropped connection.** The transport reconnects with backoff. The shell
       watch and each open thread watch resubscribe with their own cursor, skip
@@ -707,11 +709,12 @@ proposed-design:
   contract-changes: |
     The specifications that contract tests bind to code change with that code:
 
-    - **Task 5:** `shell.watch` moves its cursor only on an authoritative
-      snapshot, with a test that resumes through an enrichment snapshot and
-      replayed rows. `library-facades.yml` lists `RequestsApi` in its facade
-      block, links this design, and states the snapshot rule in its watch
-      paragraph; the module map in `library.yml` adds
+    - **Task 2** fixes `shell.watch` to move its cursor only on an
+      authoritative snapshot.
+    - **Task 5:** a test resumes the request watch through an enrichment
+      snapshot and replayed rows. `library-facades.yml` lists `RequestsApi` in
+      its facade block, links this design, and states the snapshot rule in its
+      watch paragraph; the module map in `library.yml` adds
       `api/requests.ts`, `api/requestWatch.ts` and `api/requestIndex.ts`; the
       generated API reference (`task docs`) documents the new exports.
     - **Task 6:** `docs/specifications/cli-surface.json` adds the `requests`
