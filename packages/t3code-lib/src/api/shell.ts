@@ -27,6 +27,10 @@ import type { HttpTransport } from "../transport/http.ts";
 import { isKnownVariant } from "./threadProjection.ts";
 import { shouldResubscribe } from "./watchRetry.ts";
 
+/**
+ * A `snapshot` with `resolvedRepositoryIdentityRoots` is a metadata-only refresh: apply the
+ * repository identities of its projects for those roots, and keep the threads already held.
+ */
 export type ShellWatchItem =
   | Exclude<OrchestrationV2ShellStreamItem, { unknown: true }>
   | { readonly kind: "decode-error"; readonly error: T3DecodeError }
@@ -161,7 +165,11 @@ export class ShellApi {
               const value = item.value;
               if (!isKnownVariant(value)) continue;
               if (value.kind === "snapshot") {
-                afterSequence = Math.max(afterSequence ?? 0, value.snapshot.snapshotSequence);
+                // A marked snapshot only refreshes project identities. Its rows and its sequence
+                // are not authoritative, so it does not move the cursor past later deltas.
+                if (value.resolvedRepositoryIdentityRoots === undefined) {
+                  afterSequence = Math.max(afterSequence ?? 0, value.snapshot.snapshotSequence);
+                }
               } else if (value.kind !== "synchronized" && value.kind !== "snapshot-required") {
                 if (afterSequence !== undefined && value.sequence <= afterSequence) continue;
                 afterSequence = value.sequence;
