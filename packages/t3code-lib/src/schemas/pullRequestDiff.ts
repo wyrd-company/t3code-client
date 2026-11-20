@@ -32,6 +32,8 @@ export const PullRequestDiffResult = z.looseObject({
       }),
     )
     .optional(),
+  /** On the first page: the files this diff withholds can be read one at a time with `path`. */
+  withheldFilesReadable: z.boolean().optional(),
 });
 export type PullRequestDiffResult = z.infer<typeof PullRequestDiffResult>;
 

@@ -75,6 +75,7 @@ export const ThreadPullRequestSnapshot = z.looseObject({
   reviewDecision: PullRequestReviewDecision.nullable().optional(),
   checksState: PullRequestChecksState.nullable().optional(),
   mergeability: PullRequestMergeability.optional(),
+  rebaseRequired: z.boolean().optional(),
 });
 export type ThreadPullRequestSnapshot = z.infer<typeof ThreadPullRequestSnapshot>;
 export const ThreadPullRequestStackLayer = z.looseObject({
@@ -108,9 +109,16 @@ export const ThreadPullRequestWatch = z.looseObject({
   remarksThrough: IsoDateTime,
   remarkIds: z.array(TrimmedNonEmptyString),
   conflicting: z.boolean(),
+  rebaseRequired: z.boolean().optional(),
+  /** The last merge queue removal seen; null after an empty read, absent before the first read. */
+  mergeQueueRemovalId: TrimmedNonEmptyString.nullable().optional(),
   wakes: NonNegativeInt,
+  /** What is already on the pull request is recorded, not reported, until the first full read. */
+  awaitingBaseline: forwardCompatibleLiteral(["all", "checks"]).optional(),
   /** When the head was first read without any check. Null once a check showed up or the agent was told. */
   checksAwaitedSince: IsoDateTime.nullable().optional(),
+  /** The host was still running checks on the head at the last read; only then the thread waits. */
+  checksPending: z.boolean().optional(),
 });
 export type ThreadPullRequestWatch = z.infer<typeof ThreadPullRequestWatch>;
 export const ThreadPullRequestLink = z.looseObject({

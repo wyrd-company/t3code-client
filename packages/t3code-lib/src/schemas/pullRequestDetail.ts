@@ -27,7 +27,9 @@ import {
   PullRequestCommit,
   PullRequestLabel,
   PullRequestMergeMethod,
+  PullRequestMergeQueueRemoval,
   PullRequestMergeability,
+  PullRequestOverviewThread,
   PullRequestReaction,
   PullRequestReferenceSigil,
   PullRequestReviewDecision,
@@ -81,6 +83,8 @@ export const PullRequestCapabilities = z.looseObject({
   referenceSigils: forwardCompatibleArray(PullRequestReferenceSigil).optional(),
   /** Absent means that an empty check list says nothing. */
   checksAlwaysReport: z.boolean().optional(),
+  /** The diff reads one file the paged diff withheld as too large (`pullRequests.diff` `path`). */
+  withheldFileDiff: z.boolean().optional(),
 });
 export type PullRequestCapabilities = z.infer<typeof PullRequestCapabilities>;
 
@@ -115,6 +119,8 @@ export const PullRequestDetail = z.looseObject({
   state: PullRequestState,
   isDraft: z.boolean(),
   mergeability: PullRequestMergeability,
+  /** The host merges only after the branch is rebased onto its base. */
+  rebaseRequired: z.boolean().optional(),
   additions: NonNegativeInt,
   deletions: NonNegativeInt,
   changedFiles: NonNegativeInt,
@@ -134,6 +140,8 @@ export const PullRequestDetail = z.looseObject({
     merge: z.boolean(),
     squash: z.boolean(),
     rebase: z.boolean(),
+    /** Absent from older servers; absent means not allowed. */
+    "fast-forward": z.boolean().optional(),
   }),
   viewer: TrimmedNonEmptyString.optional(),
   baseComparison: forwardCompatibleLiteral(["up-to-date", "behind", "unknown"]).optional(),
@@ -142,6 +150,8 @@ export const PullRequestDetail = z.looseObject({
   autoMergeEnabled: z.boolean().optional(),
   autoMergeMethod: PullRequestMergeMethod.optional(),
   workflowApprovalsRequired: NonNegativeInt.optional(),
+  /** The latest time the host's merge queue let go of it. Absent without a merge queue. */
+  mergeQueueRemoval: PullRequestMergeQueueRemoval.optional(),
   maintainerCanModify: z.boolean().optional(),
 });
 export type PullRequestDetail = z.infer<typeof PullRequestDetail>;
@@ -168,6 +178,7 @@ export const PullRequestSummary = z.looseObject({
   reviewDecision: PullRequestReviewDecision.nullable().optional(),
   checksState: PullRequestChecksState.nullable().optional(),
   mergeability: PullRequestMergeability.optional(),
+  rebaseRequired: z.boolean().optional(),
   /** `null` when the host says that it is in no stack. Absent when the read did not ask. */
   stack: PullRequestStackMembership.nullable().optional(),
   headSha: TrimmedNonEmptyString.optional(),
@@ -225,6 +236,8 @@ export const PullRequestActivity = z.looseObject({
   commentsTruncated: z.boolean(),
   reviewThreadsTruncated: z.boolean().optional(),
   reviewThreads: z.array(PullRequestReviewThread),
+  /** Threads on the whole change request, apart so that `reviewThreads` keep a path. */
+  overviewThreads: z.array(PullRequestOverviewThread).optional(),
   commits: z.array(PullRequestCommit),
   reactions: z.array(PullRequestReaction).optional(),
 });

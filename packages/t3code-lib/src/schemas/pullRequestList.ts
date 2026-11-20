@@ -45,6 +45,7 @@ export const PullRequestListEntry = z.looseObject({
   state: PullRequestState,
   isDraft: z.boolean(),
   mergeability: PullRequestMergeability,
+  rebaseRequired: z.boolean().optional(),
   /** Zero until `pullRequests.listStats` reads it. A host's listing can omit the counts. */
   additions: NonNegativeInt,
   deletions: NonNegativeInt,
@@ -64,6 +65,8 @@ export const PullRequestProviderSummary = z.looseObject({
   searchesOnHost: z.boolean(),
   actions: forwardCompatibleArray(PullRequestAction).optional(),
   projectCount: PositiveInt,
+  /** The projects on the host; an SSH checkout can resolve to another HTTP authority. */
+  projectIds: z.array(ProjectId).optional(),
   configured: z.boolean(),
   detail: TrimmedNonEmptyString.nullable(),
 });
