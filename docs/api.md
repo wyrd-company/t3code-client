@@ -770,6 +770,17 @@ An unknown thread has an empty family; a deleted one still names its root.</p>
 <dd><p>Older settled threads below the cursor, newest settle first. A <code>limit: 0</code> read fills <code>counts</code>
 instead, per project. A cursor without an id is strict.</p>
 </dd>
+<dt><a href="#OrchestrationV2ShellHttpSnapshot">OrchestrationV2ShellHttpSnapshot</a></dt>
+<dd><p>The HTTP shell snapshot. <code>projectIdentities</code> names the projects&#39; repository identities; send it
+back as <code>knownProjectIdentities</code> when subscribing from this snapshot&#39;s cursor.</p>
+</dd>
+<dt><a href="#OrchestrationV2ShellResumable">OrchestrationV2ShellResumable</a></dt>
+<dd><p>The answer to <code>resumeFrom</code> when the socket can replay from that cursor: keep the rows held and
+subscribe from the cursor.</p>
+</dd>
+<dt><a href="#OrchestrationV2ShellResumeAnswer">OrchestrationV2ShellResumeAnswer</a></dt>
+<dd><p>A snapshot, or <code>resumable</code> when the server can replay from the cursor the client holds.</p>
+</dd>
 <dt><a href="#ProjectMutation">ProjectMutation</a></dt>
 <dd><p>What <code>projects.mutate</code> and <code>POST /api/projects/mutate</code> accept.</p>
 </dd>
@@ -822,6 +833,9 @@ listed, disabled, edited or deleted. A newer trigger type decodes as
 <dt><a href="#UsageTokenTotals">UsageTokenTotals</a></dt>
 <dd><p>Cached and cache-creation input tokens are disjoint from uncached input
 tokens. <code>reasoningTokens</code> is a subset of <code>outputTokens</code>; never add it on top.</p>
+</dd>
+<dt><a href="#ServerProviderDelta">ServerProviderDelta</a></dt>
+<dd><p>A provider whose lists are absent when they equal the reader&#39;s. No defaults fill them.</p>
 </dd>
 <dt><a href="#RpcErrorRecord">RpcErrorRecord</a></dt>
 <dd><p>Every tagged failure a registered RPC method declares. A failure with an
@@ -1004,6 +1018,15 @@ the active run.</p>
   item: OrchestrationV2TurnItem,
   type: T,
 ): item is OrchestrationV2TurnItemOfType&lt;T&gt;;
+</code></pre>
+</dd>
+<dt><a href="#applyServerProviderDeltas">applyServerProviderDeltas()</a></dt>
+<dd><p>Rebuilds the provider list from the one held and the deltas received. A provider whose list
+the reader never held cannot be rebuilt and is left out, as upstream drops it.</p>
+<pre><code class="language-ts">export function applyServerProviderDeltas(
+  previous: readonly ServerProvider[],
+  deltas: readonly ServerProviderDelta[],
+): ServerProvider[];
 </code></pre>
 </dd>
 <dt><a href="#isRpcErrorOfTag">isRpcErrorOfTag()</a></dt>
@@ -4448,6 +4471,29 @@ Older settled threads below the cursor, newest settle first. A `limit: 0` read f
 instead, per project. A cursor without an id is strict.
 
 **Kind**: global constant  
+<a name="OrchestrationV2ShellHttpSnapshot"></a>
+
+## OrchestrationV2ShellHttpSnapshot
+
+The HTTP shell snapshot. `projectIdentities` names the projects' repository identities; send it
+back as `knownProjectIdentities` when subscribing from this snapshot's cursor.
+
+**Kind**: global constant  
+<a name="OrchestrationV2ShellResumable"></a>
+
+## OrchestrationV2ShellResumable
+
+The answer to `resumeFrom` when the socket can replay from that cursor: keep the rows held and
+subscribe from the cursor.
+
+**Kind**: global constant  
+<a name="OrchestrationV2ShellResumeAnswer"></a>
+
+## OrchestrationV2ShellResumeAnswer
+
+A snapshot, or `resumable` when the server can replay from the cursor the client holds.
+
+**Kind**: global constant  
 <a name="ProjectMutation"></a>
 
 ## ProjectMutation
@@ -4559,6 +4605,13 @@ Calendar day as `YYYY-MM-DD`.
 
 Cached and cache-creation input tokens are disjoint from uncached input
 tokens. `reasoningTokens` is a subset of `outputTokens`; never add it on top.
+
+**Kind**: global constant  
+<a name="ServerProviderDelta"></a>
+
+## ServerProviderDelta
+
+A provider whose lists are absent when they equal the reader's. No defaults fill them.
 
 **Kind**: global constant  
 <a name="RpcErrorRecord"></a>
@@ -4896,6 +4949,21 @@ export function isTurnItemOfType<const T extends OrchestrationV2TurnItemType>(
   item: OrchestrationV2TurnItem,
   type: T,
 ): item is OrchestrationV2TurnItemOfType<T>;
+```
+
+**Kind**: global function  
+<a name="applyServerProviderDeltas"></a>
+
+## applyServerProviderDeltas()
+
+Rebuilds the provider list from the one held and the deltas received. A provider whose list
+the reader never held cannot be rebuilt and is left out, as upstream drops it.
+
+```ts
+export function applyServerProviderDeltas(
+  previous: readonly ServerProvider[],
+  deltas: readonly ServerProviderDelta[],
+): ServerProvider[];
 ```
 
 **Kind**: global function  

@@ -1,7 +1,7 @@
 $schema: https://refinery.systems/ontology/technical-design
 title: T3 Code HTTP and WebSocket protocol
 objective: >-
-  Implement library authentication, requests, responses and event handling against the verified protocol 2 interfaces of stock T3 Code 0.1.9.
+  Implement library authentication, requests, responses and event handling against the verified protocol 2 interfaces of stock T3 Code 0.1.10.
 relationships:
   related-to:
     - library
@@ -11,7 +11,7 @@ relationships:
     - releasing
 proposed-design:
   high-level-overview: >-
-    The library implements stock T3 Code 0.1.9 and orchestration protocol 2.
+    The library implements stock T3 Code 0.1.10 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade
     contracts. The library architecture links the canonical design family.
   wire-facts-verified-against-t-code: |
@@ -56,9 +56,11 @@ proposed-design:
     | `POST /api/auth/pairing-links/revoke`                 | bearer, access:write | `{id}` → `{revoked}`                                                                       |
     | `POST /api/auth/clients/revoke`                       | bearer, access:write | `{sessionId}` → `{revoked}`                                                                |
     | `POST /api/auth/clients/revoke-others`                | bearer, access:write | `{revokedCount}`                                                                           |
+    | `POST /api/auth/connect-devices/approve`              | bearer, access:write | `{pairingLinkId}` → `{approved}`: trusts the T3 Connect device waiting on that link        |
+    | `POST /api/auth/connect-devices/revoke`               | bearer, access:write | `{proofKeyThumbprint}` → `{revoked}`                                                       |
     | `GET /api/projects`                                   | bearer, orch:read    | `ProjectSnapshot`: every project record                                                    |
     | `POST /api/projects/mutate`                           | bearer, orch:operate | `ProjectMutation` → `Project`                                                              |
-    | `GET /api/orchestration/shell`                        | bearer, orch:read    | `OrchestrationV2ShellSnapshot` (protocol header)                                           |
+    | `GET /api/orchestration/shell`                        | bearer, orch:read    | `OrchestrationV2ShellHttpSnapshot` (protocol header); with `resumeFrom`, `{resumable: true}` or a snapshot |
     | `GET /api/orchestration/threads/:threadId`            | bearer, orch:read    | `OrchestrationV2ThreadDetailSnapshot`, the full projection; 404 `thread_not_found`         |
     | `GET /api/orchestration/threads/:threadId/bounded`    | bearer, orch:read    | `OrchestrationV2ThreadBoundedSnapshot`: a recent window plus `historyCursor`; query flags  |
     | `GET /api/orchestration/threads/:threadId/history`    | bearer, orch:read    | query `cursor`; `OrchestrationV2ThreadHistoryPage`; 400 `invalid_history_cursor`           |
@@ -159,7 +161,12 @@ proposed-design:
 
     The orchestration query options take effect only with the value `1`: `deferWork`
     and `compactTurnItems` on the bounded route, `deferWork` on the history route,
-    `omitIdleSubagents` and `omitOlderSettled` on the shell route. The route table
+    `omitIdleSubagents` and `omitOlderSettled` on the shell route. The shell route's
+    `resumeFrom` names the cursor of the rows a client holds, loaded with the same
+    omissions; the answer is `{resumable: true}` when the socket can replay from it,
+    and `orchestration.shellSnapshotResume` is its entry. A snapshot carries
+    `projectIdentities`, which a resumed `orchestration.subscribeShell` sends back as
+    `knownProjectIdentities`. The route table
     does not offer the wire forms `compactIds` and `dedupeBodies`: they save bytes,
     and the snapshot schemas decode whole ids and bodies.
 
@@ -169,6 +176,10 @@ proposed-design:
     (404), `EnvironmentInternalError` (500). Each carries `code`, `reason` and
     `traceId`. A scope error names the scope the request needs in
     `requiredPermission` and its legacy parent in `requiredScope`.
+    `EnvironmentConnectApprovalPendingError` (403, `code: connect_approval_pending`)
+    answers a T3 Connect device that waits for approval, including at the token
+    exchange. It is not a scope error: the library raises it as `T3HttpError` with
+    `reason: connect_approval_pending`, not as `T3AuthError`.
 
     Scopes are granular: `orchestration:read`, `orchestration:operate`,
     `settings:write`, `providers:manage`, `environment:maintain`,
@@ -185,8 +196,9 @@ proposed-design:
     `textGenerators`, or an empty patch with a `providerInstanceMutation`, needs
     `providers:manage` in its place. A patch with both kinds needs both. A patch
     that removes a secret provider (a null entry) needs both, since the server
-    also clears the settings that read from it. A key the target build does not
-    know counts for neither.
+    also clears the settings that read from it. `requireConnectDeviceApproval`
+    needs `access:write`, in place of `settings:write` when it is the only key. A
+    key the target build does not know counts for none.
 
     `server.retryResourceTelemetry` restarts the server's resource monitor, so it
     needs `diagnostics:read` and `environment:maintain`.
@@ -351,6 +363,8 @@ proposed-design:
     its `linkedPullRequest` as a one-link list first. Keys compare as upstream's
     shared `threadPullRequests` keys them: host and repository case-insensitively,
     with a Forgejo link's port and the Azure DevOps host forms folded in.
+    `thread.visit-recorded` is the other: its payload is `{lastVisitedAt, opens?}`,
+    applied to the thread without replacing the rest of it.
 
     Thread pull request links in app and shell threads, projections and
     `thread.pull-request-link-updated` events expose optional nonempty string
@@ -474,6 +488,8 @@ proposed-design:
     failure code, or null when none applies; older servers can omit it.
     A non-null `pendingRuntimeRequest` summary has optional boolean `blocking`: false
     for an async question the run keeps working past. Older servers can omit it.
+    Its optional boolean `userOnly` marks a secret or link card, which only the
+    user answers, never a coordinating agent.
     Null and nonboolean values fail decoding; unknown summary metadata survives.
     Reading this metadata does not answer the request or change run behavior.
     The shell snapshot has `threads` and
