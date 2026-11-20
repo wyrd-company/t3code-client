@@ -1,5 +1,5 @@
 $schema: https://refinery.systems/ontology/decision-record
-title: The request watcher reconciles each thread's durable request records
+title: The request watcher keeps complete per-thread inventories against one start cut
 relationships:
   related-to:
     - request-watch
@@ -8,21 +8,28 @@ relationships:
 description: >-
   The request watcher reports every request raised across a T3 Code server
   once, including requests raised and settled while it was disconnected and
-  requests in archived threads. The server's only cross-thread stream is the
-  shell (`orchestration.subscribeShell`). Each of its thread rows carries one
-  pending request summary, it coalesces a thread's events into the current
-  row, and it lists active threads only. The decision is how the watcher learns
-  about every request in every thread from what the server offers.
+  requests in archived threads, and `--skip-existing` skips exactly the
+  requests pending at its start. The server's only cross-thread stream is the
+  shell (`orchestration.subscribeShell`): its rows carry one pending request
+  summary each, it coalesces a thread's events into the current row, it holds
+  back equal rows for five seconds, and it lists active threads only. A
+  runtime request carries no sequence. The decision is how the watcher learns
+  about every request in every thread, and places each one before or after
+  its start, from what T3 Code 0.1.10 offers.
 considered-options:
-  reconcile-durable-records: >-
-    A thread projection's `runtimeRequests` hold every request the thread
-    raised, settled ones included. The watcher keeps a ledger of the requests it
-    has accounted for and reconciles each included thread's `runtimeRequests`
-    against it. A thread that waits or runs is reconciled from a `threads.watch`
-    subscription after every event. Any other thread is reconciled by a
-    projection read whenever its row changes or the stream removes it, and the
-    archived snapshot covers archived threads. Each thread's `updatedAt` in the
-    initial snapshots is its start boundary.
+  inventories-and-start-cut: >-
+    The start cut is the sequence of the HTTP shell snapshot. At startup the
+    watcher reads every thread once with the full thread snapshot, the only
+    complete read of a thread's requests. For a thread that changed after the
+    cut, it replays the thread's events from the cut to place each request.
+    Afterwards it keeps each thread's inventory of accounted request ids:
+    through a thread watch while the thread waits or runs, and through a full
+    thread snapshot on every row, removal and follow-up read of the others. A
+    request missing from an inventory is new.
+  timestamp-boundary: >-
+    Each thread's `updatedAt` in the initial snapshots is its start boundary,
+    compared with each request's `createdAt` and `resolvedAt`, and changes are
+    read with the bounded RPC projection.
   watch-waiting-threads: >-
     While an included thread's row shows a pending summary, the watcher holds a
     thread watch on it, and it reports the pending requests the watch's tracker
@@ -31,48 +38,54 @@ considered-options:
     After an outage, the watcher subscribes each changed thread from its
     last-known sequence and reads the replayed events for requests raised in
     between.
-  read-on-every-row-change: >-
-    The watcher reads a thread's pending requests whenever its shell row
-    changes, without thread watches.
   watch-every-thread: >-
     The watcher holds a thread watch on every thread on the server.
   poll-every-thread: >-
     The watcher reads every thread's requests on an interval.
 decision-outcome:
-  chosen-option: reconcile-durable-records
+  chosen-option: inventories-and-start-cut
   justification: |
     `runtimeRequests` is the only record the server keeps of a request after
-    it settles, and a bounded projection carries all of it
-    (`applyToProjection` in `ProjectionStore.ts`, `buildBoundedThreadProjection`
-    in `threadHistoryPaging.ts` at upstream v0.1.10). Reconciling against it
-    finds a request raised and answered while the watcher was away, which
-    nothing in the shell shows: the shell's replay is the thread's current row,
-    and a removal for an archived thread.
+    it settles, and only the full thread snapshot reads it without a window
+    (`getThreadSnapshot`, `ProjectionStore.ts` at upstream v0.1.10). A complete
+    inventory taken at a known point makes every later request exactly
+    identifiable as new, after any outage or restart, without timestamps. The
+    start cut is a sequence because a request's timestamps do not follow event
+    order: the adapter stamps `createdAt` when it builds a request, and the
+    ingestor stamps each event separately. A replay from the cut places a
+    request because the server updates only pending requests, and only
+    restart recovery leaves one pending; the lifecycle
+    `ready` event identifies a restart. Where 0.1.10 cannot place a request,
+    or cannot see a thread at all, the operator decided the behavior on
+    wyrd-company/t3code-client#169; two further startup cases are pending
+    there.
 
-    Watching only waiting threads misses exactly those requests. Replaying
-    events from cursors fails once the gap passes the server's replay budget or
-    pruned sequence, where the server sends a snapshot instead. Reading on every
-    row change reads busy threads on every streamed update. Watching every
-    thread streams the full activity of every thread. Polling bounds latency by
-    the interval. Combining watches for waiting and running threads with reads
-    for the rest keeps the stream on the threads where activity is, and reads
-    on the rare changes of the others.
+    The timestamp boundary misclasses requests whose events are applied out of
+    timestamp order, and the bounded projection drops settled requests outside
+    its window. Watching only waiting threads misses requests raised and
+    settled between observations. Replaying from cursors alone fails past the
+    server's replay limits of 128 events and 1 MiB per thread. Watching every
+    thread opens a server stream per thread. Polling bounds latency by the
+    interval and reads every thread on each pass.
 expected-outcomes:
   positive: |
     - Every request raised after the start is reported, settled or not, after
-      any outage and in archived threads.
-    - A start boundary from server timestamps classifies a request the same
-      way whichever source reaches it first.
+      any outage and in archived and deleted threads, except a thread created
+      and deleted inside an outage longer than the shell's replay window.
+    - Each request is placed before or after one start cut, whichever source
+      reaches it first.
     - The thread watch's resume and replay semantics carry over unchanged. The
       ledger makes every repeat harmless, so reconciliation is idempotent.
   negative: |
-    - Each waiting or running included thread costs one subscription, with a
-      bounded snapshot when it opens, and streams all its events to the
-      watcher while it runs.
-    - A change to an idle thread costs one bounded projection read, and the
-      watcher reads the archived snapshot at start and after an authoritative
-      resume.
-    - A settled request whose card is outside the bounded window costs one
-      full thread detail read.
+    - Startup reads every thread on the server once with the full thread
+      snapshot, so startup cost grows with the server's thread history.
+    - Each waiting or running included thread costs one subscription and one
+      full thread snapshot when it opens, and streams all its events while it
+      runs.
+    - Each change of an idle thread costs two full thread snapshots, one at
+      once and one six seconds later.
     - A request reported after it settled reaches consumers, which act on its
       status.
+    - In the two startup cases #169 defines, the watcher reports pending
+      requests that `--skip-existing` would otherwise skip, and treats
+      settled ones as settled before the start.
