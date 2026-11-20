@@ -219,7 +219,7 @@ proposed-design:
 
     | Capability | Tool | Gate 1 | Gate 2 |
     | --- | --- | --- | --- |
-    | Report each new pending request across the server's threads as a JSON line (`requests watch`) | t3c | Pass | Pass |
+    | Report each request raised across the server's threads, archived ones included, as a JSON line (`requests watch`) | t3c | Pass | Pass |
     | Run a hook for each reported request, with the request on stdin (`requests watch --exec`) | t3c | Pass | Pass |
 
     Gate 1, reporting requests. The stock `t3` 0.1.10 command line has four
@@ -230,7 +230,12 @@ proposed-design:
     id, kind or detail, none covers every project, and none follows the server
     as requests are raised. Polling `thread show` over `thread list` yields
     counts without ids or details and misses threads created between polls, so
-    stock does not reach the outcome.
+    stock does not reach the outcome. The closest stock control is
+    `t3 connect publish` (`apps/server/src/cli/connect.ts`). It turns on
+    publishing agent activity, push notifications and Live Activities, to the
+    operator's mobile clients through T3 Connect. It gives a script no stream
+    of requests to read and runs no command, so it overlaps only in telling a
+    person that an agent waits.
 
     Gate 1, the hook. No stock command runs a command when a request is raised,
     and stock reports no requests to run one for.
