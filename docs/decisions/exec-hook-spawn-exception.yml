@@ -1,0 +1,55 @@
+$schema: https://refinery.systems/ontology/decision-record
+title: t3c runs the operator's --exec hook as the one exception to "Application code must not spawn CLIs"
+relationships:
+  related-to:
+    - request-watch
+    - composition
+  references:
+    - tool-scope
+description: >-
+  The workspace rule "Application code must not spawn CLIs" keeps the library
+  and the tools on native library APIs. `t3c requests watch --exec <command>`
+  starts the operator's command once for each reported request, which is a
+  process the CLI spawns. The decision is whether t3c runs hooks itself, and
+  how far the rule bends to allow it.
+considered-options:
+  keep-the-rule: >-
+    t3c only writes request lines to stdout. Each consumer writes its own loop
+    over the lines, for example a shell `while read` loop, and starts its own
+    commands.
+  exec-exception: >-
+    t3c runs the hook. The rule keeps its force everywhere else and names one
+    exception: the hook runner module of the `requests watch` command, which
+    runs the operator's `--exec` command with the request on stdin. A test
+    fails when any other application source file imports `node:child_process`.
+  lift-the-rule: >-
+    The rule is removed, and application code may spawn commands where a
+    design calls for it.
+decision-outcome:
+  chosen-option: exec-exception
+  justification: |
+    The operator approved the exception for wyrd-company/t3code-client#169,
+    whose requirement 7 asks for `--exec` with stdin-only delivery, failure
+    isolation, bounded concurrency and a timeout.
+
+    A loop that each consumer writes has none of those properties unless every
+    consumer builds them: a hook that hangs stops the loop, a hook that fails
+    can end it, hooks run one at a time, and a loop that passes the line as an
+    argument (`hook "$line"`) puts agent-written content on a command line. The
+    hook runner gives every consumer the safe delivery path by default.
+
+    Lifting the rule would let protocol and integration work drift into child
+    processes, which the rule exists to prevent. Confining the exception to one
+    module, and enforcing the boundary with a test, keeps the rule checkable.
+expected-outcomes:
+  positive: |
+    - Request content reaches a hook only on stdin, by construction.
+    - A failing or hanging hook cannot stop the watcher or starve other hooks
+      beyond the concurrency bound and the timeout.
+    - The library stays free of child processes. The exception lives in the
+      CLI, which adapts library output to the operator's environment.
+  negative: |
+    - t3c owns process supervision for hooks: process groups, timeouts, output
+      forwarding and termination when the watcher stops.
+    - Hooks that t3c started survive if t3c itself is killed with SIGKILL,
+      because nothing is left to stop them.

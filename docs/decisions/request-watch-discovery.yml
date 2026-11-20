@@ -1,0 +1,67 @@
+$schema: https://refinery.systems/ontology/decision-record
+title: The request watcher finds requests through the shell and watches each waiting thread
+relationships:
+  related-to:
+    - request-watch
+  references:
+    - library-facades
+description: >-
+  The request watcher reports every new pending request across a T3 Code
+  server. The server's only cross-thread stream is the shell
+  (`orchestration.subscribeShell`), and each thread row in it carries one
+  pending request summary, not the list of a thread's pending requests. The
+  decision is how the watcher learns about every request in every thread from
+  that stream.
+considered-options:
+  shell-index-and-thread-watches: >-
+    The shell is an index of waiting threads. While an included thread's row
+    shows a pending request, the watcher holds a `threads.watch` subscription
+    on that thread, and reports what the thread watch's tracker announces. The
+    thread watch closes when the row shows no pending request.
+  shell-index-and-reads: >-
+    The shell is an index of waiting threads. When a waiting thread's row
+    changes, the watcher reads that thread's pending requests with
+    `threads.pendingRequests` and reports the ones it has not reported.
+  watch-every-thread: >-
+    The watcher holds a `threads.watch` subscription on every thread on the
+    server, and the shell only tells it which threads exist.
+  poll-every-thread: >-
+    The watcher reads every thread's pending requests on an interval.
+decision-outcome:
+  chosen-option: shell-index-and-thread-watches
+  justification: |
+    The shell row's summary is non-null exactly when the thread has a pending
+    runtime request or a waiting secret or link card, and the server publishes
+    a new row whenever a thread event changes the row (`ShellStream.ts`,
+    `ProjectionStore.ts` at upstream v0.1.10). The summary names one request:
+    approvals before questions, newest first. A question raised while an
+    approval is pending, or a question whose timeline card arrives after the
+    request, leaves the summary unchanged. A thread watch applies every event
+    of its thread, so it sees those requests without depending on which shell
+    fields change.
+
+    Reads on row changes depend on some row field changing for every new
+    request, which the server does not promise. The server also leaves a
+    subagent thread's turn-item updates out of the shell stream, so a subagent
+    question whose card arrives after the request produces no row at all. Reads
+    also repeat for every row change of a waiting thread whose run keeps
+    working. Watching every thread streams the full activity of every running
+    thread to the watcher. Polling bounds latency by the interval and reads
+    every thread on each pass.
+expected-outcomes:
+  positive: |
+    - Requests inside a waiting thread are seen exactly, including requests the
+      shell summary hides and question cards that arrive late.
+    - The thread watch's resume, replay and tracker semantics carry over
+      unchanged, so a reconnect needs no logic of its own beyond the
+      watcher's set of reported requests.
+    - Subscriptions follow the number of waiting threads, not the number of
+      threads on the server.
+  negative: |
+    - Each waiting, included thread costs one subscription and a bounded
+      snapshot when the subscription opens.
+    - A waiting thread whose run keeps working, such as one with a question
+      that does not block its run, streams all its events to the watcher until
+      the question is answered.
+    - A request raised and resolved before the watcher's view of its thread
+      reaches it is never reported. Such a request needs no answer by then.
