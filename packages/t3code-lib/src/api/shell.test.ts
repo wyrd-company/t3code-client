@@ -288,6 +288,30 @@ describe("ShellApi", () => {
     expect(sequences).toEqual([13]);
   });
 
+  it("asks for the HTTP snapshot fallback only with a cursor and yields snapshot-required", async () => {
+    const payloads: Record<string, unknown>[] = [];
+    server.handle("orchestration.subscribeShell", (payload, context) => {
+      payloads.push(payload as Record<string, unknown>);
+      if (payloads.length > 1) return { kind: "stream", chunks: [[{ kind: "snapshot-required" }]] };
+      context.connection.send({
+        _tag: "Chunk",
+        requestId: context.requestId,
+        values: [threadUpdated(7)],
+      });
+      return { kind: "hang" };
+    });
+    const kinds: string[] = [];
+    for await (const item of shell.watch({ httpSnapshotFallback: true })) {
+      kinds.push(item.kind);
+      if (item.kind === "thread.updated") server.connections[0]?.drop();
+    }
+    expect(payloads).toEqual([
+      { requestCompletionMarker: true },
+      { requestCompletionMarker: true, afterSequence: 7, httpSnapshotFallback: true },
+    ]);
+    expect(kinds).toEqual(["thread.updated", "reconnected", "snapshot-required"]);
+  });
+
   it("returns silently on abort", async () => {
     server.handle("orchestration.subscribeShell", (_payload, context) => {
       context.connection.send({
