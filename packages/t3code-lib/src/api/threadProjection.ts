@@ -73,6 +73,13 @@ function applyKnownEvent(p: Projection, event: KnownOrchestrationV2DomainEvent):
   switch (event.type) {
     case "thread.pull-request-link-updated":
       return { ...p, thread: { ...p.thread, pullRequests: replaceLink(p.thread, event.payload) } };
+    case "thread.visit-recorded": {
+      const { lastVisitedAt, opens } = event.payload;
+      return {
+        ...p,
+        thread: { ...p.thread, lastVisitedAt, ...(opens === undefined ? {} : { opens }) },
+      };
+    }
     case "run.created":
     case "run.updated":
       return { ...p, runs: upsertById(p.runs, event.payload) };

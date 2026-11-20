@@ -11,6 +11,7 @@ import {
   GuestMessageId,
   MessageId,
   NodeId,
+  NonNegativeInt,
   PlanId,
   PositiveInt,
   RunId,
@@ -31,6 +32,7 @@ import {
   UserInputAttachments,
 } from "../model.ts";
 import { OrchestrationV2ThreadLaunchWorkspaceStrategy } from "../runs.ts";
+import { OrchestrationV2LinkedSender } from "../threadLink.ts";
 import { OrchestrationV2ProviderFailure } from "../turnItemParts.ts";
 
 const stamped = { commandId: CommandId, threadId: ThreadId } as const;
@@ -57,6 +59,8 @@ export const MessageDispatchCommand = z.looseObject({
   ...OrchestrationV2CreationFields,
   scheduledTaskId: ScheduledTaskId.optional(),
   senderThreadId: ThreadId.optional(),
+  /** The sending agent's thread in a linked environment. */
+  linkedSender: OrchestrationV2LinkedSender.optional(),
   idleCompaction: OrchestrationV2IdleCompaction.optional(),
   /** Start a new provider session without the thread's earlier context. Never steers. */
   freshContext: z.boolean().optional(),
@@ -72,6 +76,12 @@ export const MessageDispatchCommand = z.looseObject({
   restartContinuationOfRunId: RunId.optional(),
   usageLimitContinuationOfRunId: RunId.optional(),
   manualContinuationOfRunId: RunId.optional(),
+  /**
+   * Queues this message after a steer that `runId` could not take, so it follows that run. The
+   * server drops it when the run was stopped or the message is not that run's.
+   */
+  steerFollowUpOfRunId: RunId.optional(),
+  steerFollowUpAfterRunOrdinal: NonNegativeInt.optional(),
   usageLimitRecoveryRequestId: CommandId.optional(),
   /** Let the server resolve steer, queue, or start against its serialized thread state. */
   deliveryIntent: MessageDeliveryIntent.optional(),

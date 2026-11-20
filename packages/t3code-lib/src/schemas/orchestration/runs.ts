@@ -155,12 +155,16 @@ export const OrchestrationV2Run = z.looseObject({
   status: OrchestrationV2RunStatus,
   queuePosition: PositiveInt.nullable().optional(),
   queueHeld: z.boolean().optional(),
+  /** The active run this queued run steers into once that run can take a steer. */
+  steerWhenReadyRunId: RunId.optional(),
   requestedAt: IsoDateTime,
   startedAt: IsoDateTime.nullable(),
   completedAt: IsoDateTime.nullable(),
   checkpointId: CheckpointId.nullable(),
   contextHandoffId: ContextHandoffId.nullable(),
   restartContinuationOfRunId: RunId.optional(),
+  /** The run a user's manual continue picks up. */
+  manualContinuationOfRunId: RunId.optional(),
   usageLimitContinuationOfRunId: RunId.optional(),
   /** The delegated task this run answers, including a follow-up in an existing child thread. */
   delegatedTaskId: NodeId.optional(),
@@ -270,8 +274,12 @@ export const OrchestrationV2Subagent = z.looseObject({
   title: z.string().nullable(),
   model: z.string().nullable(),
   modelSelection: ModelSelection.optional(),
+  /** The model the task's provider reported running, when it differs from the request. */
+  executedModel: z.string().optional(),
   completionWake: forwardCompatibleLiteral(["always", "settled_only"]).optional(),
   completionDelivery: OrchestrationV2DelegatedCompletionTaskDelivery.optional(),
+  /** The run whose unfinished task a Stop cancelled. */
+  cancelledRunId: RunId.optional(),
   status: forwardCompatibleLiteral([
     "idle",
     "pending",

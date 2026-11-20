@@ -79,6 +79,8 @@ const pendingBackgroundTask = z.looseObject({
   description: TrimmedNonEmptyString.optional(),
   /** The subagent task that started this work and waits on it. */
   parentTaskId: TrimmedNonEmptyString.optional(),
+  /** Native id of the turn item that started this work, when it is not `taskId`. */
+  nativeItemId: TrimmedNonEmptyString.optional(),
   /** The agent declared that it resumes when this work ends, so the thread holds for it. */
   awaited: z.literal(true).optional(),
   kind: z.string().optional(),
@@ -108,6 +110,8 @@ export type OrchestrationV2PendingBackgroundTask = z.infer<
 >;
 
 export const OrchestrationV2ProviderThreadNativeMetadata = z.looseObject({
+  /** The folder whose provider store holds a Cursor thread. */
+  cursorStoreCwd: TrimmedNonEmptyString.optional(),
   modelSelection: ModelSelection.optional(),
   title: TrimmedNonEmptyString.nullable().optional(),
   updatedAt: TrimmedNonEmptyString.nullable().optional(),

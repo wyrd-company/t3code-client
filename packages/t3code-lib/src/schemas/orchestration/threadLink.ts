@@ -33,6 +33,17 @@ export const OrchestrationV2DelegatedFrom = z.looseObject({
 });
 export type OrchestrationV2DelegatedFrom = z.infer<typeof OrchestrationV2DelegatedFrom>;
 
+/**
+ * The thread in a linked environment whose agent sent a message here, and its title then.
+ * `senderThreadId` names only a thread in this environment.
+ */
+export const OrchestrationV2LinkedSender = z.looseObject({
+  environmentId: EnvironmentId,
+  threadId: ThreadId,
+  title: z.string(),
+});
+export type OrchestrationV2LinkedSender = z.infer<typeof OrchestrationV2LinkedSender>;
+
 /** The thread in a linked environment that does the work of a delegated task. */
 export const OrchestrationV2RemoteTaskChild = z.looseObject({
   environmentId: EnvironmentId,

@@ -66,6 +66,7 @@ export * as orchestrationPullRequest from "./orchestration/pullRequest.ts";
 export * as orchestrationRuns from "./orchestration/runs.ts";
 export * as orchestrationShell from "./orchestration/shell.ts";
 export * as orchestrationShellOmittedRows from "./orchestration/shellOmittedRows.ts";
+export * as orchestrationShellHttp from "./orchestration/shellHttp.ts";
 export * as orchestrationStream from "./orchestration/stream.ts";
 export * as orchestrationThreadLink from "./orchestration/threadLink.ts";
 export * as orchestrationThreadReads from "./orchestration/threadReads.ts";

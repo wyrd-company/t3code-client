@@ -42,6 +42,7 @@ import {
   OrchestrationV2AppThreadLineage,
   OrchestrationV2LenientThreadOpens,
   OrchestrationV2LimitRecovery,
+  LastThreadTitleRegeneration,
   OrchestrationV2ThreadForkedFrom,
   ThreadTitleRegeneration,
 } from "./thread.ts";
@@ -51,6 +52,8 @@ import { OrchestrationV2ProviderFailureClass } from "./turnItemParts.ts";
 export const OrchestrationProjectShell = z.looseObject({
   id: ProjectId,
   title: TrimmedNonEmptyString,
+  /** Set once someone renames the project; a folder-default title can equal the repository name. */
+  hasCustomTitle: z.boolean().optional(),
   workspaceRoot: TrimmedNonEmptyString,
   repositoryIdentity: RepositoryIdentity.nullable().optional(),
   defaultModelSelection: ModelSelection.nullable(),
@@ -88,6 +91,8 @@ export const OrchestrationV2PendingRuntimeRequestSummary = z.looseObject({
   createdAt: IsoDateTime,
   /** False for async questions the run keeps working past; older servers can omit it. */
   blocking: z.boolean().optional(),
+  /** Secret and link cards: only the user answers them, never a coordinating agent. */
+  userOnly: z.boolean().optional(),
 });
 export type OrchestrationV2PendingRuntimeRequestSummary = z.infer<
   typeof OrchestrationV2PendingRuntimeRequestSummary
@@ -172,6 +177,7 @@ export const OrchestrationV2ThreadShell = z.looseObject({
   tags: StoredThreadTags.optional(),
   lastVisitedAt: IsoDateTime.nullable().optional(),
   titleRegeneration: ThreadTitleRegeneration.nullable().optional(),
+  lastTitleRegeneration: LastThreadTitleRegeneration.nullable().optional(),
   deletedAt: IsoDateTime.nullable(),
 });
 export type OrchestrationV2ThreadShell = z.infer<typeof OrchestrationV2ThreadShell>;
@@ -252,6 +258,11 @@ export const OrchestrationV2SubscribeShellInput = z.looseObject({
    * instead of a socket snapshot.
    */
   httpSnapshotFallback: z.literal(true).optional(),
+  /**
+   * The `projectIdentities` of the HTTP snapshot whose cursor is `afterSequence`, when nothing
+   * changed since. A resume that still has the same identities does not resend them.
+   */
+  knownProjectIdentities: z.string().optional(),
   requestCompletionMarker: z.boolean().optional(),
   /**
    * Snapshots leave out idle subagent children; read them with `orchestration.getThreadFamily`.

@@ -8,6 +8,7 @@ import {
   CommandId,
   GuestMessageId,
   IsoDateTime,
+  MessageId,
   ProjectId,
   ProviderDriverKind,
   ProviderSessionId,
@@ -24,7 +25,7 @@ import {
 import { OrchestrationV2ProviderThreadNativeMetadata } from "../providerState.ts";
 import { ThreadLinkedPullRequest } from "../pullRequest.ts";
 import { ThreadTag } from "../threadTags.ts";
-import { OrchestrationV2LimitRecoveryUpdate } from "../thread.ts";
+import { OrchestrationV2LimitRecoveryUpdate, ThreadTitleRegenerationOutcome } from "../thread.ts";
 
 const stamped = { commandId: CommandId, threadId: ThreadId } as const;
 
@@ -101,6 +102,8 @@ export const ThreadUnsettleCommand = z.looseObject({
   type: z.literal("thread.unsettle"),
   ...stamped,
   reason: z.literal("user"),
+  /** Undoing a settle restores the Active anchor it cleared instead of moving the thread up. */
+  restoreUnsettledAt: IsoDateTime.nullable().optional(),
 });
 export const ThreadSnoozeCommand = z.looseObject({
   type: z.literal("thread.snooze"),
@@ -158,6 +161,8 @@ export const ThreadMetadataUpdatePayload = z.looseObject({
   worktreePath: TrimmedNonEmptyString.nullable().optional(),
   expectedWorktreePath: TrimmedNonEmptyString.nullable().optional(),
   expectedBranch: TrimmedNonEmptyString.nullable().optional(),
+  /** A message queued in the same commit, so a workspace change cannot settle the thread first. */
+  continuation: z.looseObject({ messageId: MessageId, text: z.string() }).optional(),
   /** Reject unless no message or run has landed on this thread. */
   expectedEmpty: z.boolean().optional(),
   limitRecovery: OrchestrationV2LimitRecoveryUpdate.nullable().optional(),
@@ -176,6 +181,7 @@ export const ThreadTitleRegenerationCompleteCommand = z.looseObject({
   ...stamped,
   requestId: CommandId,
   title: TrimmedNonEmptyString.optional(),
+  outcome: ThreadTitleRegenerationOutcome.optional(),
 });
 export const ThreadRuntimeModeSetCommand = z.looseObject({
   type: z.literal("thread.runtime-mode.set"),

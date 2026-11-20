@@ -89,6 +89,21 @@ export const ThreadTitleRegeneration = z.looseObject({
 });
 export type ThreadTitleRegeneration = z.infer<typeof ThreadTitleRegeneration>;
 
+/** How a title regeneration ended. `message` says why it failed or kept the title. */
+export const ThreadTitleRegenerationOutcome = z.looseObject({
+  status: forwardCompatibleLiteral(["renamed", "unchanged", "failed"]),
+  message: z.string().optional(),
+});
+export type ThreadTitleRegenerationOutcome = z.infer<typeof ThreadTitleRegenerationOutcome>;
+
+/** The latest title regeneration that finished. Absent from older servers. */
+export const LastThreadTitleRegeneration = z.looseObject({
+  ...ThreadTitleRegenerationOutcome.shape,
+  requestId: CommandId,
+  completedAt: IsoDateTime,
+});
+export type LastThreadTitleRegeneration = z.infer<typeof LastThreadTitleRegeneration>;
+
 export const OrchestrationV2AppThread = z.looseObject({
   ...OrchestrationV2CreationFields,
   id: ThreadId,
@@ -129,6 +144,7 @@ export const OrchestrationV2AppThread = z.looseObject({
   tags: StoredThreadTags.optional(),
   lastVisitedAt: IsoDateTime.nullable().default(null),
   titleRegeneration: ThreadTitleRegeneration.nullable().optional(),
+  lastTitleRegeneration: LastThreadTitleRegeneration.nullable().optional(),
   /** Latest accepted rollback. Only its failure is recorded in `rollbackFailure`. */
   rollbackRequestId: CommandId.optional(),
   rollbackFailure: z
@@ -138,6 +154,13 @@ export const OrchestrationV2AppThread = z.looseObject({
   deletedAt: IsoDateTime.nullable(),
 });
 export type OrchestrationV2AppThread = z.infer<typeof OrchestrationV2AppThread>;
+
+/** A visit changes read state only, so its event leaves the rest of the thread out. */
+export const OrchestrationV2ThreadVisit = z.looseObject({
+  lastVisitedAt: OrchestrationV2AppThread.shape.lastVisitedAt,
+  opens: OrchestrationV2AppThread.shape.opens,
+});
+export type OrchestrationV2ThreadVisit = z.infer<typeof OrchestrationV2ThreadVisit>;
 
 /**
  * A subagent the provider spawned on its own. The provider owns its

@@ -35,7 +35,8 @@ export const OrchestrationV2CheckpointScope = z.looseObject({
 export type OrchestrationV2CheckpointScope = z.infer<typeof OrchestrationV2CheckpointScope>;
 
 export const OrchestrationV2CheckpointFileSummary = z.looseObject({
-  path: TrimmedNonEmptyString,
+  /** Exact, as git reports it: a file name may start or end with whitespace. */
+  path: z.string().min(1),
   kind: TrimmedNonEmptyString,
   additions: NonNegativeInt,
   deletions: NonNegativeInt,

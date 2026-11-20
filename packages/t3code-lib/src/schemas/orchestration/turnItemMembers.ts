@@ -27,6 +27,7 @@ import {
 } from "../common.ts";
 import { ChatAttachment } from "./attachments.ts";
 import { OrchestrationMessageContext } from "./messageContext.ts";
+import { OrchestrationV2LinkedSender } from "./threadLink.ts";
 import {
   ModelSelection,
   OrchestrationV2CreationFields,
@@ -80,6 +81,7 @@ export const OrchestrationV2TurnItemMembers = [
     messageId: MessageId,
     scheduledTaskId: ScheduledTaskId.optional(),
     senderThreadId: ThreadId.optional(),
+    linkedSender: OrchestrationV2LinkedSender.optional(),
     idleCompaction: OrchestrationV2IdleCompaction.optional(),
     workflowScript: z.boolean().optional(),
     freshContext: z.boolean().optional(),
@@ -92,6 +94,8 @@ export const OrchestrationV2TurnItemMembers = [
   z.looseObject({
     ...base,
     type: z.literal("assistant_message"),
+    /** Where the text stands in the turn. Absent from older servers and some providers. */
+    phase: forwardCompatibleLiteral(["commentary", "partial_answer", "final_answer"]).optional(),
     messageId: MessageId,
     text: z.string(),
     attachments: z.array(ChatAttachment).optional(),
@@ -147,6 +151,8 @@ export const OrchestrationV2TurnItemMembers = [
     exitCode: z.number().int().optional(),
     /** Set when the command is a monitor, so background work lists it as a monitor. */
     monitor: z.boolean().optional(),
+    /** The provider wakes the agent when this command finishes after its turn. */
+    completionWake: z.literal("always").optional(),
   }),
   z.looseObject({
     ...base,
@@ -194,7 +200,13 @@ export const OrchestrationV2TurnItemMembers = [
     unresponsiveAt: IsoDateTime.optional(),
   }),
   z.looseObject({ ...base, type: z.literal("run_interrupt_result"), message: z.string() }),
-  z.looseObject({ ...base, type: z.literal("system_notice"), message: z.string() }),
+  z.looseObject({
+    ...base,
+    type: z.literal("system_notice"),
+    message: z.string(),
+    /** Notices without a level predate it and are warnings. */
+    level: forwardCompatibleLiteral(["info", "warning", "error"]).optional(),
+  }),
   z.looseObject({
     ...base,
     type: z.literal("error"),
