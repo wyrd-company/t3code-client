@@ -12,6 +12,7 @@ relationships:
     - library
     - automation-capabilities
     - releasing
+    - request-watch
 proposed-design:
   gates: |
     A capability enters a tool only when it passes both gates for that tool.
@@ -208,3 +209,43 @@ proposed-design:
     The t3code-mcp inventory tests reject names that collide with the pinned
     stock tool set. Behavioral overlap is checked by the gate 1 review in each
     upstream update.
+  verdict-record: |
+    Verdicts are grouped by the upstream build or the issue that judged them.
+    Each row names the capability, the tool and both gate results; the reasons
+    follow the table.
+
+    **Request watcher (wyrd-company/t3code-client#169), judged against stock T3
+    Code 0.1.10.** The capability is designed in [request-watch](request-watch.yml).
+
+    | Capability | Tool | Gate 1 | Gate 2 |
+    | --- | --- | --- | --- |
+    | Report each new pending request across the server's threads as a JSON line (`requests watch`) | t3c | Pass | Pass |
+    | Run a hook for each reported request, with the request on stdin (`requests watch --exec`) | t3c | Pass | Pass |
+
+    Gate 1, reporting requests. The stock `t3` 0.1.10 command line has four
+    thread commands (`apps/server/src/cli/thread.ts`): `thread list` lists one
+    project's threads, `thread show` prints one thread's state with a count of
+    the answers it waits for, and `thread start` and `thread send` start and
+    continue runs, waiting on their own run when asked. None reports a request's
+    id, kind or detail, none covers every project, and none follows the server
+    as requests are raised. Polling `thread show` over `thread list` yields
+    counts without ids or details and misses threads created between polls, so
+    stock does not reach the outcome.
+
+    Gate 1, the hook. No stock command runs a command when a request is raised,
+    and stock reports no requests to run one for.
+
+    Gate 2, reporting requests. #169's first use is a workspace hook that sends
+    each approval our agents raise to a reviewer thread, which approves it when
+    it is safe. It acts on every approval in every thread, which is recurring
+    work (principle 5), and it replaces polling `t3c thread requests` thread by
+    thread. The watcher only reads, and answering stays with `t3c thread
+    respond` (principles 6 and 7). The watch logic is the library's
+    `RequestsApi` (principle 3).
+
+    Gate 2, the hook. The same workflow needs each request delivered to a
+    command. A consumer's own loop over the lines has no timeout, no failure
+    isolation and no concurrency unless each consumer builds them, and it
+    invites passing agent-written content as an argument. `--exec` gives every
+    consumer the stdin-only path; [the spawn exception](../decisions/exec-hook-spawn-exception.yml)
+    records why t3c runs it.
