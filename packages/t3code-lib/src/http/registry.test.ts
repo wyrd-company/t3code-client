@@ -25,6 +25,18 @@ const expected: Record<string, [string, string, string, string | undefined]> = {
     "required",
     "access:write",
   ],
+  "auth.approveConnectDevice": [
+    "POST",
+    "/api/auth/connect-devices/approve",
+    "required",
+    "access:write",
+  ],
+  "auth.revokeConnectDevice": [
+    "POST",
+    "/api/auth/connect-devices/revoke",
+    "required",
+    "access:write",
+  ],
   "connect.linkProof": ["POST", "/api/connect/link-proof", "required", "relay:write"],
   "connect.relayConfig": ["POST", "/api/connect/relay-config", "required", "relay:write"],
   "connect.linkState": ["GET", "/api/connect/link-state", "required", "relay:read"],

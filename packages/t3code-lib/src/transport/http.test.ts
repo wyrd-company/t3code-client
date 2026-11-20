@@ -92,6 +92,21 @@ describe("HttpTransport", () => {
       T3HttpError,
       { code: "http", reason: "invalid_request", traceId: "trace-2" },
     ],
+    [
+      403,
+      {
+        _tag: "EnvironmentConnectApprovalPendingError",
+        code: "connect_approval_pending",
+        traceId: "trace-3",
+      },
+      T3HttpError,
+      {
+        code: "http",
+        status: 403,
+        tag: "EnvironmentConnectApprovalPendingError",
+        reason: "connect_approval_pending",
+      },
+    ],
     [500, "not json", T3HttpError, { code: "http", body: "not json" }],
   ])("maps HTTP %i responses", async (status, body, errorType, fields) => {
     const fetch = vi.fn<typeof globalThis.fetch>(async () =>

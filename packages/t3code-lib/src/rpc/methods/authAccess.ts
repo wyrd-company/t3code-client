@@ -4,6 +4,7 @@
 // ---
 import { z } from "zod";
 import { AuthClientSession, AuthPairingLink } from "../../schemas/auth.ts";
+import { AuthConnectDevice } from "../../schemas/authConnectDevice.ts";
 import {
   AuthSessionId,
   TrimmedNonEmptyString,
@@ -47,6 +48,8 @@ export type AuthAccessStreamPairingLinkUpsertedEvent = z.infer<
 export const AuthAccessSnapshot = z.looseObject({
   pairingLinks: z.array(AuthPairingLink),
   clientSessions: z.array(AuthClientSession),
+  /** The T3 Connect devices this environment trusts. Older servers omit it. */
+  connectDevices: z.array(AuthConnectDevice).optional(),
 });
 export type AuthAccessSnapshot = z.infer<typeof AuthAccessSnapshot>;
 export const AuthAccessStreamSnapshotEvent = z.looseObject({

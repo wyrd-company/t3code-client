@@ -19,6 +19,12 @@ import {
   AuthWebSocketTicketResult,
   AuthWebSocketTicketUse,
 } from "../../schemas/auth.ts";
+import {
+  AuthApproveConnectDeviceInput,
+  AuthApproveConnectDeviceResult,
+  AuthRevokeConnectDeviceInput,
+  AuthRevokeConnectDeviceResult,
+} from "../../schemas/authConnectDevice.ts";
 import { ExecutionEnvironmentDescriptor } from "../../schemas/environment.ts";
 import { defineRoute } from "../spec.ts";
 
@@ -100,5 +106,23 @@ export const authRoutes = {
     scope: "access:write",
     input: NoInput,
     success: AuthOtherClientSessionsRevokeResult,
+  }),
+  /** Trusts the T3 Connect device waiting on a pairing link, when the server requires approval. */
+  "auth.approveConnectDevice": defineRoute({
+    method: "POST",
+    path: "/api/auth/connect-devices/approve",
+    auth: "required",
+    scope: "access:write",
+    input: z.strictObject({ body: AuthApproveConnectDeviceInput }),
+    success: AuthApproveConnectDeviceResult,
+  }),
+  /** Stops trusting a T3 Connect device key. */
+  "auth.revokeConnectDevice": defineRoute({
+    method: "POST",
+    path: "/api/auth/connect-devices/revoke",
+    auth: "required",
+    scope: "access:write",
+    input: z.strictObject({ body: AuthRevokeConnectDeviceInput }),
+    success: AuthRevokeConnectDeviceResult,
   }),
 };

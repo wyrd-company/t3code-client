@@ -221,16 +221,6 @@ export const AuthPairingCredentialResult = z.looseObject({
 });
 export type AuthPairingCredentialResult = z.infer<typeof AuthPairingCredentialResult>;
 
-export const AuthPairingLink = z.looseObject({
-  id: TrimmedNonEmptyString,
-  ...authScopeResponseFields,
-  subject: TrimmedNonEmptyString,
-  label: TrimmedNonEmptyString.optional(),
-  createdAt: IsoDateTime,
-  expiresAt: IsoDateTime,
-});
-export type AuthPairingLink = z.infer<typeof AuthPairingLink>;
-
 export const AuthClientMetadataDeviceType = z.enum([
   "desktop",
   "mobile",
@@ -239,6 +229,37 @@ export const AuthClientMetadataDeviceType = z.enum([
   "unknown",
 ]);
 export type AuthClientMetadataDeviceType = z.infer<typeof AuthClientMetadataDeviceType>;
+
+export const AuthClientMetadata = z.looseObject({
+  label: TrimmedNonEmptyString.optional(),
+  ipAddress: TrimmedNonEmptyString.optional(),
+  userAgent: TrimmedNonEmptyString.optional(),
+  deviceType: AuthClientMetadataDeviceType,
+  os: TrimmedNonEmptyString.optional(),
+  browser: TrimmedNonEmptyString.optional(),
+});
+export type AuthClientMetadata = z.infer<typeof AuthClientMetadata>;
+
+/** A T3 Connect device waiting for someone on this environment to approve it. */
+export const AuthConnectDeviceRequest = z.looseObject({
+  /** The short code both the waiting device and the approver show. */
+  verificationCode: TrimmedNonEmptyString,
+  /** What the device said about itself when it first asked. Absent until it does. */
+  client: AuthClientMetadata.optional(),
+});
+export type AuthConnectDeviceRequest = z.infer<typeof AuthConnectDeviceRequest>;
+
+export const AuthPairingLink = z.looseObject({
+  id: TrimmedNonEmptyString,
+  ...authScopeResponseFields,
+  subject: TrimmedNonEmptyString,
+  label: TrimmedNonEmptyString.optional(),
+  createdAt: IsoDateTime,
+  expiresAt: IsoDateTime,
+  /** Set while a T3 Connect device waits for approval. Older servers never send it. */
+  connectDeviceRequest: AuthConnectDeviceRequest.optional(),
+});
+export type AuthPairingLink = z.infer<typeof AuthPairingLink>;
 
 /** The form body of `POST /oauth/token`. */
 export const AuthTokenExchangeRequest = z.looseObject({
@@ -252,16 +273,6 @@ export const AuthTokenExchangeRequest = z.looseObject({
   client_os: TrimmedNonEmptyString.optional(),
 });
 export type AuthTokenExchangeRequest = z.infer<typeof AuthTokenExchangeRequest>;
-
-export const AuthClientMetadata = z.looseObject({
-  label: TrimmedNonEmptyString.optional(),
-  ipAddress: TrimmedNonEmptyString.optional(),
-  userAgent: TrimmedNonEmptyString.optional(),
-  deviceType: AuthClientMetadataDeviceType,
-  os: TrimmedNonEmptyString.optional(),
-  browser: TrimmedNonEmptyString.optional(),
-});
-export type AuthClientMetadata = z.infer<typeof AuthClientMetadata>;
 
 /** What a client says about itself, for example to name it in a triage session. */
 export const AuthClientPresentationMetadata = z.looseObject({

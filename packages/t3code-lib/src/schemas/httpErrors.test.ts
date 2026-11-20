@@ -35,6 +35,32 @@ describe("HTTP error schemas", () => {
       }).requiredScope,
     ).toBe("future:scope");
   });
+  it("decodes a T3 Connect device that waits for approval and the device route failures", () => {
+    expect(
+      EnvironmentHttpCommonError.parse({
+        _tag: "EnvironmentConnectApprovalPendingError",
+        code: "connect_approval_pending",
+        traceId: "trace-1",
+      }),
+    ).toMatchObject({ code: "connect_approval_pending" });
+    expect(
+      EnvironmentHttpCommonError.safeParse({
+        _tag: "EnvironmentConnectApprovalPendingError",
+        code: "insufficient_scope",
+        traceId: "trace-1",
+      }).success,
+    ).toBe(false);
+    for (const reason of ["connect_device_approve_failed", "connect_device_revoke_failed"]) {
+      expect(
+        EnvironmentHttpCommonError.parse({
+          _tag: "EnvironmentInternalError",
+          code: "internal_error",
+          reason,
+          traceId: "trace-1",
+        }),
+      ).toMatchObject({ reason });
+    }
+  });
   it("decodes the request, auth, forbidden, and not-found reasons", () => {
     const invalid = (reason: string) =>
       EnvironmentHttpCommonError.parse({
