@@ -1,105 +1,87 @@
 $schema: https://refinery.systems/ontology/decision-record
-title: The request watcher keeps complete per-thread inventories from each thread's startup read
+title: The request watcher watches the threads that wait, and reads requests from thread watches
 relationships:
   related-to:
     - request-watch
   references:
     - library-facades
 description: >-
-  The request watcher reports every request pending at its start and every
-  request raised after it, once, including requests raised and settled while
-  it was disconnected and requests in archived threads. The server's only
-  cross-thread stream is the shell (`orchestration.subscribeShell`): its rows
-  carry one pending request summary each, it coalesces a thread's events into
-  the current row, it holds back equal rows for five seconds, and it lists
-  active threads only. A runtime request carries no sequence. The decision is
-  how the watcher learns about every request in every thread, and tells a
-  request raised after its start from one it has already accounted for, from
-  what T3 Code 0.1.10 offers.
+  The request watcher reports every request it can see pending, once per run:
+  the requests pending at its start and at each reconnect, and each request
+  that becomes pending while it is connected, within five seconds
+  (wyrd-company/t3code-client#169, issuecomment-7044502674). The server's only
+  cross-thread stream is the shell (`orchestration.subscribeShell`): each row
+  carries one pending summary, the server coalesces a thread's events into the
+  current row, holds back an equal row for five seconds, lists active threads
+  only and publishes every event of an archived thread as a removal. The
+  decision is how the watcher learns which threads hold pending requests, and
+  reads those requests, from what T3 Code 0.1.10 offers.
 considered-options:
-  inventories-from-startup-reads: >-
-    At startup the watcher lists every thread, from the HTTP shell snapshot,
-    the archived snapshot and the shell's catch-up, and reads each one once
-    with the full thread snapshot, the only complete read of a thread's
-    requests. That read is the thread's start: its pending requests are
-    reported, and every request id in it joins the thread's inventory. A
-    thread first named later was created after the start and begins with an
-    empty inventory. Afterwards the watcher keeps each inventory current:
-    through a thread watch while the thread waits or runs, and through a full
-    thread snapshot on every row, removal and follow-up read of the others. A
-    request missing from an inventory is new.
-  inventories-and-start-cut: >-
-    As above, but every request is placed before or after one start cut, the
-    sequence of the HTTP shell snapshot, by replaying each changed thread's
-    events from the cut, so that an option can skip exactly the requests
-    pending at the cut.
-  timestamp-boundary: >-
-    Each thread's `updatedAt` in the initial snapshots is its start boundary,
-    compared with each request's `createdAt` and `resolvedAt`, and changes are
-    read with the bounded RPC projection.
   watch-waiting-threads: >-
-    While an included thread's row shows a pending summary, the watcher holds a
-    thread watch on it, and it reports the pending requests the watch's tracker
-    announces.
-  replay-events-from-cursors: >-
-    After an outage, the watcher subscribes each changed thread from its
-    last-known sequence and reads the replayed events for requests raised in
-    between.
+    The shell's rows and removals say which threads to look at. An included
+    thread whose row shows a summary gets a thread watch, a bounded
+    subscription that holds every pending request with its card, and keeps it
+    while its row shows a summary or the thread watch holds a pending request.
+    A removed thread gets one while it holds a pending request or a running
+    run. Every report comes from a request a thread watch holds pending.
+  inventories-from-startup-reads: >-
+    At startup the watcher lists every thread, active and archived, and reads
+    each one in full, keeping an inventory of every request id it holds. A
+    request missing from an inventory, seen in any later read, is new and is
+    reported, settled or not.
   watch-every-thread: >-
     The watcher holds a thread watch on every thread on the server.
-  poll-every-thread: >-
-    The watcher reads every thread's requests on an interval.
+  poll-waiting-threads: >-
+    The watcher reads the shell on an interval, and reads the pending requests
+    of each thread whose row shows a summary.
+  listing-archived-threads: >-
+    As the chosen option, and the watcher also reads
+    `orchestration.getArchivedShellSnapshot` at its start and at each resync,
+    so that requests pending in archived threads are found.
 decision-outcome:
-  chosen-option: inventories-from-startup-reads
+  chosen-option: watch-waiting-threads
   justification: |
-    `runtimeRequests` is the only record the server keeps of a request after
-    it settles, and only the full thread snapshot reads it without a window
-    (`getThreadSnapshot`, `ProjectionStore.ts` at upstream v0.1.10). A complete
-    inventory taken at each thread's start makes every later request exactly
-    identifiable as new, after any outage or restart, without timestamps:
-    providers that re-send a request or repeat a settlement keep its id. With
-    no option to skip existing requests (wyrd-company/t3code-client#169,
-    issuecomment-7043533011), a request pending at the start and one raised
-    after it are both reported, so the watcher never has to place a request
-    against a single cut. Each thread's start is its own read.
+    A row's summary is non-null whenever its thread holds a pending runtime
+    request, and the server never holds back a row whose summary changed from
+    null. A thread watch opened on that row, and kept while the thread waits,
+    sees every later request as it is raised, so the five-second bound holds
+    whichever rows the server holds back. A bounded thread snapshot keeps
+    every pending request and its card, so a thread watch's first snapshot is
+    a complete view of what the thread holds pending, and no full thread read
+    is needed. Startup and each resync read only the threads that wait, and
+    reports come from one path.
 
-    The start cut placed requests by replaying events, which 0.1.10 cannot do
-    exactly: a replay past 128 events or 1 MiB is answered with a snapshot, a
-    restart re-sends pending questions, and some providers re-emit
-    settlements, so the cut needed decided exceptions for each case. The
-    timestamp boundary misclasses requests whose events are applied out of
-    timestamp order, and the bounded projection drops settled requests
-    outside its window. Watching only waiting threads misses requests raised
-    and settled between observations. Replaying from cursors alone fails past
-    the server's replay limits. Watching every thread opens a server stream
-    per thread. Polling bounds latency by the interval and reads every thread
-    on each pass.
+    Inventories report requests settled before the watcher saw them, which
+    the contract leaves out, and cost a full read of every thread at startup.
+    Watching every thread opens a server stream per thread. Polling bounds
+    latency by the interval and reads the whole shell on every pass. The
+    archived listing is a single unpaged socket call that can exceed the
+    client's message limit on a large server, and the operator left requests
+    already pending in archived threads at start out of the contract (item 5).
 expected-outcomes:
   positive: |
-    - Every request pending at its thread's start is reported, so a restarted
-      watcher loses nothing that is still pending.
-    - Every request raised after its thread's start is reported, settled or
-      not, after any outage and in archived and deleted threads, except a
-      thread created and deleted inside an outage longer than the shell's
-      replay window (issuecomment-7038649689).
+    - Every request a thread watch holds pending at the start or a resync is
+      reported, and every request that becomes pending while the run is
+      synchronized is reported within five seconds.
+    - Startup reads only the threads that wait, so its cost grows with the
+      number of waiting threads, not with the server's thread history.
     - The thread watch's resume and replay semantics carry over unchanged. The
-      ledger makes every repeat harmless, so reconciliation is idempotent.
+      set of reported keys makes every repeat harmless.
+    - Each report carries the status a thread watch saw, `pending` unless the
+      request settled while the watcher waited for its card.
   negative: |
-    - Startup reads every thread on the server once with the full thread
-      snapshot, so startup cost grows with the server's thread history.
-    - Each thread's start is its read, not the launch. A request raised and
-      settled, or pending at the launch and settled, before its thread's read
-      is not reported unless the watcher saw it pending on the shell or in the
-      thread's watch. Reading waiting and running threads first, and watching
-      them at once, keeps the gap short.
-    - A thread deleted before the launch and deleted again counts as created
-      after the start, so its settled requests are reported.
-    - Each waiting or running included thread costs one subscription and one
-      full thread snapshot when it opens, and streams all its events while it
-      runs.
-    - Each change of an idle thread costs two full thread snapshots, one at
-      once and one six seconds later.
-    - A request reported after it settled reaches consumers, which act on its
-      status.
-    - Startup reads the listing again, and reports `degraded`, while the
-      shell's catch-up from the HTTP shell snapshot does not replay.
+    - A request that settles before a thread watch holds it pending is not
+      reported, including one named by a summary in the shell snapshot that
+      settles before the thread watch's first snapshot.
+    - Requests already pending in an archived thread at start are reported
+      only if a later event of the thread publishes a removal while they are
+      pending.
+    - An archived thread that no listing, row or removal has named, and that
+      raises a request inside a gap the shell cannot replay (an outage past
+      the replay window, or a start whose catch-up the server refuses), is
+      outside the view until its next event publishes a removal. This follows
+      from item 5 of the operator's contract; wyrd-company/t3code-client#176
+      covers it.
+    - Each waiting included thread costs one subscription and one bounded
+      snapshot when it opens, and streams all its events while it waits. A
+      removed thread costs the same while it runs.
