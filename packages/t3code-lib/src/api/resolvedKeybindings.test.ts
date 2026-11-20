@@ -48,7 +48,8 @@ const malformed = [
   { shortcut },
   { command: 7, shortcut },
   { command: "chat.new" },
-  { command: "chat.new", shortcut: { ...shortcut, key: " " } },
+  // A blank key is the space bar in 0.1.10; only an empty key is malformed.
+  { command: "chat.new", shortcut: { ...shortcut, key: "" } },
   { command: "chat.new", shortcut: { ...shortcut, modKey: "true" } },
   { command: "chat.new", shortcut, whenAst: { type: "identifier", name: "" } },
   { command: "chat.new", shortcut, whenAst: { type: "not", node: { type: "and" } } },

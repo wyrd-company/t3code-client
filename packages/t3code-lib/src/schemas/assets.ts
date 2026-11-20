@@ -42,6 +42,8 @@ export const AssetResource = z.discriminatedUnion("_tag", [
     threadId: ThreadId,
     path: AssetPath,
     disposition: z.literal("attachment").optional(),
+    /** Written relative to the thread's workspace, so only that host's file is meant. */
+    hostOnly: z.literal(true).optional(),
   }),
   z.looseObject({ _tag: z.literal("draft-workspace-file"), cwd: AssetPath, path: AssetPath }),
   z.looseObject({
@@ -65,6 +67,11 @@ export const AssetResource = z.discriminatedUnion("_tag", [
     path: ProjectFaviconPath.optional(),
   }),
   z.looseObject({ _tag: z.literal("native-app-icon"), app: NativeAppIconReference }),
+  /** The image published beside an environment theme (`EnvironmentTheme.background`). */
+  z.looseObject({
+    _tag: z.literal("environment-theme-background"),
+    themeId: z.string().regex(/^(?!(?:system|light|dark)$)[a-z0-9](?:[a-z0-9-]{0,47})$/),
+  }),
   z.looseObject({
     _tag: z.literal(SOURCE_CONTROL_MEDIA_ASSET),
     cwd: AssetPath,

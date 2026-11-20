@@ -31,6 +31,7 @@ export const GitCommandError = taggedError("GitCommandError", {
     "path_already_exists",
     "push_rejected_by_remote",
     "push_rejected_non_fast_forward",
+    "ref_name_conflict",
     "ref_not_found",
     "remote_unreachable",
     "tag_would_be_clobbered",
@@ -131,8 +132,17 @@ export const VcsUnsupportedOperationError = taggedError("VcsUnsupportedOperation
   detail: z.string(),
 });
 
+/** Checkpoint objects could not be kept apart from the repository, or published to it. */
+export const VcsCheckpointStorageError = taggedError("VcsCheckpointStorageError", {
+  operation: z.string(),
+  cwd: z.string(),
+  stage: forwardCompatibleLiteral(["isolate", "publish"]),
+  cause: Defect,
+});
+
 /** The failures of the contracts' `VcsError`, in the order `RpcErrorRecord` lists them. */
 export const vcsRpcErrors = [
+  VcsCheckpointStorageError,
   VcsProcessSpawnError,
   VcsProcessExitError,
   VcsProcessTimeoutError,

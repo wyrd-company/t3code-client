@@ -109,6 +109,8 @@ export const AcpRegistrySession = z.looseObject({
   title: z.string().nullable(),
   updatedAt: z.string().nullable(),
   importedThreadId: ThreadId.nullable(),
+  /** The imported thread still lacks the session's history, so importing again copies it. */
+  nativeHistoryPending: z.boolean().optional(),
 });
 export type AcpRegistrySession = z.infer<typeof AcpRegistrySession>;
 

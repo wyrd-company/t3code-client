@@ -132,6 +132,13 @@ export type PreviewSessionSnapshot = z.infer<typeof PreviewSessionSnapshot>;
 
 const tabRef = { threadId: ThreadId, tabId: PreviewTabId } as const;
 
+/** The zoom steps of the desktop browser controls. */
+const PreviewZoomFactor = z.union(
+  [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5].map((step) =>
+    z.literal(step),
+  ) as [z.ZodLiteral<number>, z.ZodLiteral<number>, ...z.ZodLiteral<number>[]],
+);
+
 export const PreviewOpenInput = z.looseObject({
   threadId: ThreadId,
   url: PreviewUrl.optional(),
@@ -139,6 +146,9 @@ export const PreviewOpenInput = z.looseObject({
   profileId: BrowserProfileId.optional(),
   /** `server` runs the tab in the environment's headless browser. */
   runtime: z.enum(["desktop", "server"]).optional(),
+  /** The tab's appearance and zoom from its first load. */
+  colorScheme: z.enum(["system", "light", "dark"]).optional(),
+  zoomFactor: PreviewZoomFactor.optional(),
   reveal: z.boolean().optional(),
 });
 export type PreviewOpenInput = z.infer<typeof PreviewOpenInput>;
@@ -153,13 +163,6 @@ export type PreviewReportStatusInput = z.infer<typeof PreviewReportStatusInput>;
 
 export const PreviewResizeInput = z.looseObject({ ...tabRef, viewport: PreviewViewportInput });
 export type PreviewResizeInput = z.infer<typeof PreviewResizeInput>;
-
-/** The zoom steps of the desktop browser controls. */
-const PreviewZoomFactor = z.union(
-  [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5].map((step) =>
-    z.literal(step),
-  ) as [z.ZodLiteral<number>, z.ZodLiteral<number>, ...z.ZodLiteral<number>[]],
-);
 
 export const PreviewAdjustInput = z.looseObject({
   ...tabRef,

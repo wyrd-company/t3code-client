@@ -1,4 +1,5 @@
 /** Tagged failures of the project RPC methods, mirroring the contracts' `project.ts`. */
+import { z } from "zod";
 import {
   CommandId,
   NonNegativeInt,
@@ -50,14 +51,15 @@ const projectSearchFields = {
   queryLength: NonNegativeInt.optional(),
   limit: PositiveInt.optional(),
 };
+/** Paths are exact, as the server reports them. */
 const projectFileFields = {
   cwd: TrimmedNonEmptyString.optional(),
-  relativePath: TrimmedNonEmptyString.optional(),
+  relativePath: z.string().min(1).optional(),
   failure: ProjectFileFailure.optional(),
-  resolvedPath: TrimmedNonEmptyString.optional(),
+  resolvedPath: z.string().min(1).optional(),
   resolvedWorkspaceRoot: TrimmedNonEmptyString.optional(),
   operation: ProjectFileOperation.optional(),
-  operationPath: TrimmedNonEmptyString.optional(),
+  operationPath: z.string().min(1).optional(),
   ...messageAndCause,
 };
 export const ProjectListEntriesError = taggedError("ProjectListEntriesError", projectEntriesFields);

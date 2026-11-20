@@ -33,7 +33,12 @@ export const ModelSelection = z.preprocess(
     if (raw && typeof raw === "object" && !Array.isArray(raw)) {
       const value = raw as Record<string, unknown>;
       return {
-        ...Object.fromEntries(Object.entries(value).filter(([key]) => key !== "provider")),
+        // A null `options` reads as absent, as upstream decodes it.
+        ...Object.fromEntries(
+          Object.entries(value).filter(
+            ([key, entry]) => key !== "provider" && !(key === "options" && entry === null),
+          ),
+        ),
         instanceId: value["instanceId"] !== undefined ? value["instanceId"] : value["provider"],
       };
     }

@@ -41,6 +41,8 @@ export const ProviderAuthResponse = z.discriminatedUnion("type", [
   z.looseObject({
     type: z.literal("terminal"),
     data: z.string().max(4_096),
+    /** `data` holds one byte per UTF-16 code unit, as `terminal.write` with `binary`. */
+    binary: z.boolean().optional(),
     size: z
       .looseObject({
         cols: z.number().int().min(1).max(500),
@@ -96,18 +98,21 @@ export const ProviderAuthMethod = z.looseObject({
 });
 export type ProviderAuthMethod = z.infer<typeof ProviderAuthMethod>;
 
+/** Environments supply sign-in URLs and clients open them, so only `http` and `https` are read. */
+const SignInUrl = TrimmedNonEmptyString.max(16_384).regex(/^https?:\/\//i);
+
 export const ProviderAuthInteraction = taggedUnionWithUnknown("type", [
   z.looseObject({
     type: z.literal("browser"),
     id: TrimmedNonEmptyString,
-    url: TrimmedNonEmptyString,
+    url: SignInUrl,
     requiresConsent: z.boolean(),
     acceptsCallback: z.boolean().optional(),
   }),
   z.looseObject({
     type: z.literal("deviceCode"),
     id: TrimmedNonEmptyString,
-    url: TrimmedNonEmptyString,
+    url: SignInUrl,
     userCode: TrimmedNonEmptyString,
   }),
   z.looseObject({
@@ -142,7 +147,7 @@ export const ProviderAuthState = z.looseObject({
     "cancelled",
   ]),
   flowId: TrimmedNonEmptyString.nullable(),
-  authorizationUrl: z.string().nullable(),
+  authorizationUrl: SignInUrl.nullable(),
   expiresAt: IsoDateTime.nullable(),
   message: z.string().nullable(),
   methods: forwardCompatibleArray(ProviderAuthMethod).optional(),
