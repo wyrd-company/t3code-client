@@ -79,6 +79,8 @@ export const EnvironmentInternalError = z.looseObject({
     "pairing_link_revoke_failed",
     "client_sessions_load_failed",
     "client_session_revoke_failed",
+    "connect_device_approve_failed",
+    "connect_device_revoke_failed",
     "project_snapshot_failed",
     "project_mutation_failed",
     "orchestration_snapshot_failed",
@@ -91,6 +93,16 @@ export const EnvironmentInternalError = z.looseObject({
 });
 export type EnvironmentInternalError = z.infer<typeof EnvironmentInternalError>;
 
+/** A 403: the host requires approval for this T3 Connect device and nobody has given it yet. */
+export const EnvironmentConnectApprovalPendingError = z.looseObject({
+  _tag: z.literal("EnvironmentConnectApprovalPendingError"),
+  code: z.literal("connect_approval_pending"),
+  traceId: TrimmedNonEmptyString,
+});
+export type EnvironmentConnectApprovalPendingError = z.infer<
+  typeof EnvironmentConnectApprovalPendingError
+>;
+
 export const EnvironmentHttpCommonError = z.discriminatedUnion("_tag", [
   EnvironmentRequestInvalidError,
   EnvironmentAuthInvalidError,
@@ -98,6 +110,7 @@ export const EnvironmentHttpCommonError = z.discriminatedUnion("_tag", [
   EnvironmentOperationForbiddenError,
   EnvironmentResourceNotFoundError,
   EnvironmentInternalError,
+  EnvironmentConnectApprovalPendingError,
 ]);
 export type EnvironmentHttpCommonError = z.infer<typeof EnvironmentHttpCommonError>;
 

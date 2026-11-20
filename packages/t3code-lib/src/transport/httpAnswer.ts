@@ -19,7 +19,12 @@ export function httpError(
 ): T3HttpError {
   const record = asRecord(body);
   const tag = stringField(record, "_tag");
-  const reason = stringField(record, "reason") ?? stringField(record, "error");
+  // A device awaiting approval names it only in `code`; it is not a missing scope.
+  const approvalPending = stringField(record, "code") === "connect_approval_pending";
+  const reason =
+    stringField(record, "reason") ??
+    stringField(record, "error") ??
+    (approvalPending ? "connect_approval_pending" : undefined);
   const traceId = stringField(record, "traceId");
   const requiredScope = stringField(record, "requiredScope");
   const details: T3HttpErrorDetails = {
@@ -33,7 +38,7 @@ export function httpError(
   };
   const message = `${method} ${path} failed with HTTP ${status}${reason ? ` (${reason})` : ""}.`;
   if (status === 401) return new T3AuthError(message, { ...details, code: "auth_invalid" });
-  if (status === 403) {
+  if (status === 403 && !approvalPending) {
     return new T3AuthError(message, {
       ...details,
       code: "insufficient_scope",
