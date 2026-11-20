@@ -88,7 +88,7 @@ it("prints the complete environment descriptor and live catalog", async () => {
   });
   const text = (await run(["server", "info"], false)).stdout;
   expect(text).not.toContain("{");
-  expect(text).toContain(`server\tsample-environment\t0.1.9\tprotocol 2`);
+  expect(text).toContain(`server\tsample-environment\t${environment.serverVersion}\tprotocol 2`);
   expect(text).toContain(`environment\t${environment.environmentId}`);
   expect(text).toContain("capabilities\t");
   expect(text).toContain("disabled agentActivityPublishing");
@@ -115,6 +115,8 @@ it("renders boolean, free-form, unknown and update-required catalog entries", as
     ...base,
     installed: false,
     version: null,
+    // The captured login state depends on the capturing machine.
+    auth: { status: "authenticated" },
     message: "Sample message.",
     models: [
       {
