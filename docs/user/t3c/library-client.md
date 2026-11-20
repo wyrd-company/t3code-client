@@ -55,6 +55,7 @@ Client composition root for HTTP, auth, RPC and server facades.
 
 - [T3Client](#T3Client)
   - _instance_
+    - [.requests](#T3Client+requests)
     - [.openPreviewViewer()](#T3Client+openPreviewViewer)
     - [.openSpeechStream()](#T3Client+openSpeechStream)
     - [.connect()](#T3Client+connect)
@@ -62,6 +63,13 @@ Client composition root for HTTP, auth, RPC and server facades.
   - _static_
     - [.create()](#T3Client.create)
 
+<a name="T3Client+requests"></a>
+
+### t3Client.requests
+
+Pending approvals and questions across every thread, read-only.
+
+**Kind**: instance property of [<code>T3Client</code>](#T3Client)  
 <a name="T3Client+openPreviewViewer"></a>
 
 ### t3Client.openPreviewViewer()

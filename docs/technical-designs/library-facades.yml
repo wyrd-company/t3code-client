@@ -10,6 +10,7 @@ relationships:
     - testing
     - releasing
     - automation-capabilities
+    - request-watch
 proposed-design:
   native-session-lookup: |
     `threads.findByNativeSession(providerInstanceId, nativeSessionId, signal?)`
@@ -160,6 +161,11 @@ proposed-design:
     error raised while the socket is open, including an HTTP detail failure while
     seeding a resumed thread watch, ends the watch with that error.
 
+    `requests.watch` composes the shell and thread watches into one read-only
+    watch of the approvals and questions every thread holds pending, with
+    filters by project, kind, exact thread id and tag.
+    [request-watch](request-watch.yml) defines what it reports and when.
+
     The shell watch moves its cursor on sequenced items and on a snapshot without
     `resolvedRepositoryIdentityRoots`. A snapshot with them only refreshes the
     repository identities of its projects, so its rows and sequence are not
@@ -185,6 +191,9 @@ proposed-design:
       worktreeThreadIds(worktreePath, signal?): Promise<ThreadId[]>; // RPC
       olderSettledThreads(input, signal?): Promise<OrchestrationV2OlderSettledThreadsPage>; // RPC
       watch(options?): AsyncIterable<ShellWatchItem>; // resumable like threads; takes ShellOmitOptions and httpSnapshotFallback
+    }
+    export class RequestsApi {
+      watch(options?: RequestWatchOptions): AsyncIterable<RequestWatchItem>; // every selected pending request, once per run; read-only
     }
     export class ServerApi {
       probe();
