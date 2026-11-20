@@ -91,7 +91,7 @@ proposed-design:
     | Provider auth endpoint and limit attribution (`auth.endpoint`, `modelIds`, `providerIds`, `zeroSpendCap`) | Pass: stock doctor is not a provider-instance limit/status query. | Pass: budget jobs need to identify the affected endpoint and quota; existing `provider status --json` preserves the fields. | Pass: the stock catalog is not the instance's detailed limit/status report. | Pass: agents check the right budget before delegating; existing `provider_status` preserves the fields. |
     | Separate usage-limit source snapshots (`origin`, `endpoint`) | Pass: stock has no CLI listing configured hub source snapshots. | Fail: the current budget jobs read provider-instance quotas; they do not reconcile accounts across configured hubs. | Pass: stock capability discovery is not a configured hub account list. | Fail: provider-instance limits suffice to pick a delegation target; agents do not administer the hubs. |
     | Usage accounting (`unpricedTokens`, `physicalSourceId`) | Pass: stock has no historical usage summary command. | Pass: cost jobs must identify missing prices and avoid counting the same physical source twice; existing `usage summary --json` preserves both. | Pass: stock has no diagnostic usage-bucket tool. | Pass: agents interpreting usage need the same distinctions; existing `usage_summary` preserves both. |
-    | Provisional historical usage (`provisional`) | Pass: stock has no provisional query. | Pass: recurring budget polls should not force scans; #174 covers the CLI opt-in. | Pass: stock has no provisional usage tool. | Pass: agents can check cached usage cheaply; existing `usage_summary` accepts the library input. |
+    | Provisional historical usage (`provisional`) | Pass: stock has no provisional query. | Pass: recurring budget polls should not force scans; #174 covers the CLI opt-in. | Pass: stock has no provisional usage tool. | Pass: agents can check cached usage cheaply; `usage_summary` advertises the opt-in and how to wait for a refresh. |
     | Server `hostname` and `serverTime` | Pass: no stock command returns both fields from a selected server's config. | Fail: our scripts need environment identity and run timestamps, not a clock/hostname probe. | Pass: `t3_environment_read` is not a server-clock sample. | Fail: agents use server-reported run timestamps and do not calculate clock skew. |
     | Resume shell snapshot/stream (`resumeFrom`, `resumable`, `knownProjectIdentities`, `projectIdentities`, marked `resolvedRepositoryIdentityRoots`) and shell capability flags (`shellThreadFamilies`, `shellOlderSettled`) | Pass: no stock command exposes shell cursors or coverage flags. | Fail: resume and capability negotiation stay inside the library; new flags do not add a tool-level outcome. | Pass: stock thread list is not a shell stream. | Fail: agents need the resulting records, not resume cursors; `thread_family` and `worktree_threads` already use the library. |
     | Custom project title (`hasCustomTitle`) and `followsThreadSelection` | Pass: stock project/thread commands do not expose these client presentation states. | Fail: scripts select stable project/thread IDs; app titles and selection are not automation policy. | Pass: stock project/thread queries do not expose those states as controls. | Fail: agent project and thread selection is explicit, not the app's selection. |
@@ -124,20 +124,86 @@ proposed-design:
     errors, Origin refusal, HTTPS cookie policy and the removed serve bootstrap
     flag are stock server behavior, not operations an additive tool can expose.
 
-    Existing inventory: no open cli or mcp issue predated this review. Rechecked
-    the existing CLI workflow outcomes against the 0.1.10 command tree. In
-    particular, stock thread list/start/send/show are not the t3c remote-profile
-    JSON, correlation and wait workflows; stock auth device administration does
-    not overlap t3c credential/profile storage. These remain useful to scripts.
-    The other existing CLI outcomes have no newly equivalent stock command;
-    schedule, requests, queue recovery, usage and diagnostics keep their
-    scripting use. The MCP name inventory contains all 75 stock tool names;
-    stock list/read/search, organize, interrupt, schedule, queue and PR tools
-    still do not substitute for the complementary scheduler webhooks/config,
-    thread status/family/tags/recovery/usage/diff/within-thread search, terminal
-    reads, process/resources/trace diagnostics, local-server tools or provider
-    budget/usage tools. Those support recurring agent inspection and recovery.
-    No removal is proposed in this update.
+  existing-tools-0-1-10: |
+    Rechecked the CLI command reference and the 30 complementary MCP tools
+    against stock v0.1.10 (`7d32075`). No open `cli` or `mcp` issue predated this
+    review. No removal is proposed.
+
+    | t3c command | Gate 1: closest stock command and gap | Gate 2: recurring script use |
+    | --- | --- | --- |
+    | `run` | Pass: `t3 thread start --wait` launches and waits, but lacks the paired-profile workflow and script result/exit contract. | Pass: run a job step and branch on its outcome. |
+    | `thread start` | Pass: `t3 thread start` lacks paired-profile targeting and the launch-time mode/model-option inputs. | Pass: launch the job's configured agent and capture its thread id. |
+    | `thread send` | Pass: `t3 thread send` queues or waits, but lacks paired-profile targeting and t3c's script result contract. | Pass: continue a job in its existing thread. |
+    | `thread wait` | Pass: stock start/send can wait as part of dispatch, but cannot wait on a previously selected run. | Pass: resume monitoring a run without sending another prompt. |
+    | `thread read` | Pass: `t3 thread show` reads a recent message slice, not the transcript with oversized-transcript fallback. | Pass: collect run transcripts for job records and diagnosis. |
+    | `thread list` | Pass: `t3 thread list` lists one project's threads; t3c lists threads across the selected server profile. | Pass: discover active work across projects before coordinating jobs. |
+    | `thread find` | Pass: `t3 thread list` has no lookup by provider instance and native session id. | Pass: correlate provider sessions to T3 threads in automation. |
+    | `thread status` | Pass: `t3 thread show` does not report the run, queue, requests and background-work state together. | Pass: decide whether to wait, recover, or hand off a thread. |
+    | `thread requests` | Pass: `t3 thread show` does not list pending approval and input requests. | Pass: surface blocked runs and the requests that need a response. |
+    | `thread usage` | Pass: `t3 thread show` does not expose provider context and per-turn usage. | Pass: track context and cost for job runs. |
+    | `thread diff` | Pass: `t3 thread show` does not return checkpoint diffs. | Pass: collect the patch from a job for downstream checks. |
+    | `thread search` | Pass: `t3 thread list` and `thread show` do not search message content. | Pass: find earlier work from a term rather than a known thread id. |
+    | `thread interrupt` | Pass: `t3 thread send` queues a prompt without interrupting the active run; stock has no interrupt command. | Pass: cancel the run when its job stops. |
+    | `thread respond` | Pass: `t3 thread send` sends a message, not a response to a pending request id. | Pass: route explicit answers and approval decisions into blocked jobs. |
+    | `thread stop` | Pass: stock has no native thread Stop command; `t3 thread send` does not stop runs. | Pass: request a native Stop during job recovery. |
+    | `thread tag` | Pass: stock thread commands have no add/remove-one-tag operation. | Pass: mark pipeline threads for later filtering. |
+    | `thread queue resume` | Pass: `t3 thread send` can enqueue work but cannot release a held queue. | Pass: resume processing after the cause of the hold is fixed. |
+    | `thread queue start` | Pass: `t3 thread send` cannot start a selected queued run ahead of the others. | Pass: prioritize a recovery message already in the queue. |
+    | `project list` | Pass: `t3 project` manages projects but does not list them; `t3 thread list` requires a project. | Pass: find project ids and paths on the automation target. |
+    | `project ensure` | Pass: `t3 project add` registers a project; it does not resolve-or-create by path on a paired profile. | Pass: use the same workspace setup step on initial and repeated jobs. |
+    | `auth pair` | Pass: `t3 pair` mints a server pairing token, not a validated t3c client profile. | Pass: provision named credentials for automated targets. |
+    | `auth status` | Pass: `t3 auth session list` lists server sessions, not t3c profile connection status and selection. | Pass: preflight saved targets before dispatch. |
+    | `auth switch` | Pass: stock has no selection operation for t3c client profiles. | Pass: change the default target for steps that use the selected profile. |
+    | `auth logout` | Pass: `t3 auth session revoke` revokes a server session, not the client's saved credential. | Pass: remove local target credentials during teardown or rotation. |
+    | `server info` | Pass: `t3 doctor` diagnoses installation/runtime health, not the paired server's descriptor and live model catalog. | Pass: choose compatible models and capabilities before launch. |
+    | `version` | Pass: `t3 --version` prints its own version, not the CLI/library target and reachable-server comparison. | Pass: diagnose version drift in job logs without gating execution. |
+    | `schedule list` | Pass: stock CLI has no schedule inventory command. | Pass: enumerate jobs on a selected server before reconciliation. |
+    | `schedule show` | Pass: stock CLI has no scheduled-task detail command. | Pass: inspect an individual job's configuration and state. |
+    | `schedule create` | Pass: stock CLI has no scheduled-task creation command. | Pass: provision recurring or triggered jobs from automation. |
+    | `schedule update` | Pass: stock CLI has no scheduled-task update command. | Pass: change job settings without resetting omitted values. |
+    | `schedule enable` | Pass: stock CLI cannot enable a schedule. | Pass: restore jobs after a maintenance window. |
+    | `schedule disable` | Pass: stock CLI cannot disable a schedule. | Pass: pause jobs without deleting configuration. |
+    | `schedule delete` | Pass: stock CLI cannot delete a schedule. | Pass: remove jobs when their automation is retired. |
+    | `schedule run` | Pass: stock CLI has no run-now command for an existing schedule. | Pass: start the configured job for on-demand workflows. |
+    | `schedule endpoint` | Pass: stock CLI cannot read a schedule's webhook endpoint. | Pass: configure the caller using the live endpoint. |
+    | `schedule rotate-token` | Pass: stock CLI cannot rotate a schedule's webhook token. | Pass: rotate trigger credentials without recreating the job. |
+    | `schedule delivery list` | Pass: stock CLI has no webhook delivery list. | Pass: find failed triggers and their delivery ids. |
+    | `schedule delivery show` | Pass: stock CLI has no per-delivery diagnostic command. | Pass: inspect one trigger's payload and error during recovery. |
+    | `provider status` | Pass: `t3 doctor` does not report the paired server's per-instance auth, availability and quota windows. | Pass: select an available provider with budget before dispatch. |
+    | `usage summary` | Pass: stock CLI has no historical token and cost report. | Pass: collect usage and cost for recurring budget jobs. |
+
+    | MCP tool | Gate 1: closest stock tool and gap | Gate 2: recurring agent use |
+    | --- | --- | --- |
+    | `scheduled_task_endpoint` | Pass: `schedule_task` can return a URL on creation, but `list_scheduled_tasks` cannot read the existing token-bearing endpoint. | Pass: wire up a trigger for an existing job. |
+    | `scheduled_task_deliveries` | Pass: `list_scheduled_tasks` lists tasks, not webhook deliveries. | Pass: locate failed trigger attempts. |
+    | `scheduled_task_delivery` | Pass: `list_scheduled_tasks` does not return a delivery's request, rendered prompt or error. | Pass: diagnose why a specific webhook attempt failed. |
+    | `rotate_scheduled_task_webhook` | Pass: `schedule_task` does not rotate an existing hook's token. | Pass: recover from an exposed or retired trigger URL without recreating the schedule. |
+    | `scheduled_task_configuration` | Pass: `list_scheduled_tasks` does not expose the full execution configuration and run diagnostics. | Pass: inspect the model, workspace and thread selection before repairing a job. |
+    | `configure_scheduled_task` | Pass: `schedule_task` can bind to the current thread, but lacks model, mode and workspace selections. | Pass: correct the execution target without rewriting the schedule. |
+    | `thread_status` | Pass: `t3_thread_read` and `t3_queue` do not combine run, queue, request and background-work state. | Pass: determine why a managed thread is not progressing. |
+    | `thread_stop` | Pass: `t3_thread_interrupt` interrupts a run, not the native Stop operation. | Pass: request clean native Stop during recovery. |
+    | `thread_force_stop` | Pass: `t3_thread_interrupt` does not force-stop the provider process and report sharing. | Pass: recover a thread that ignored native Stop. |
+    | `thread_queue_resume` | Pass: `t3_queue` cannot release thread message holds. | Pass: restart held work after recovery without resending it. |
+    | `thread_queue_start` | Pass: `t3_queue` cannot start a selected held message and release the hold. | Pass: run the queued recovery step first. |
+    | `thread_approvals` | Pass: `t3_pending_request` handles questions, not pending approvals. | Pass: surface approval blockers for a human without deciding them. |
+    | `thread_usage` | Pass: `t3_thread_read` does not return detailed provider context and turn usage. | Pass: assess remaining context and cost before steering or delegating. |
+    | `thread_diff` | Pass: `t3_thread_read` shows thread activity, not the full or ranged checkpoint diff. | Pass: inspect the actual changes a thread produced. |
+    | `thread_search_content` | Pass: `t3_thread_search` finds threads, not native matches and the selected match within one thread. | Pass: locate a detail within a long known transcript. |
+    | `thread_family` | Pass: `t3_thread_list` can include subagents but does not resolve the fork/root family. | Pass: find related threads during coordinated recovery or cleanup. |
+    | `worktree_threads` | Pass: `t3_worktree_list` returns refs and paths, not all active threads using a path. | Pass: check for other users before removing a worktree. |
+    | `thread_tag` | Pass: `t3_thread_organize` changes lifecycle and attention state, not tags. | Pass: classify threads by job or group. |
+    | `tagged_threads` | Pass: `t3_thread_list` has no tag filter. | Pass: retrieve all threads from a tagged job. |
+    | `thread_terminals` | Pass: `t3_thread_read` does not list server terminals and their process state. | Pass: locate a terminal that hosts a job process. |
+    | `terminal_output` | Pass: `t3_thread_read` has no retained terminal output read. | Pass: inspect the actual error from an existing process. |
+    | `server_traces` | Pass: `t3_thread_read` reports one thread's events, not server-wide trace diagnostics. | Pass: diagnose slow or failing operations across threads. |
+    | `server_processes` | Pass: no stock tool lists backend descendants and their resource use. | Pass: identify a process associated with slowdown or memory pressure. |
+    | `server_host_resources` | Pass: no stock tool reports current server-host CPU and memory. | Pass: check capacity before adding parallel work. |
+    | `server_resource_history` | Pass: no stock tool reports historical server resource samples. | Pass: relate sustained pressure or spikes to failed work. |
+    | `server_storage_cleanup_report` | Pass: `t3_worktree_list` is not a storage-cleanup report. | Pass: investigate disk use before asking for cleanup. |
+    | `local_servers` | Pass: `preview_status` shows tabs, not a thread's listening local server processes. | Pass: find the port and owner of a dev server. |
+    | `stop_local_server` | Pass: `t3_preview_close` closes a tab, not its listening server process. | Pass: stop a thread-owned dev server when its job ends. |
+    | `provider_status` | Pass: `orchestrator_capabilities` lists selection options, not instance health and budget windows. | Pass: choose a provider with available quota before delegating. |
+    | `usage_summary` | Pass: stock has no historical usage and cost tool. | Pass: check agent budgets over time and distinguish missing prices from zero cost. |
   verification: |
     The t3code-mcp inventory tests reject names that collide with the pinned
     stock tool set. Behavioral overlap is checked by the gate 1 review in each

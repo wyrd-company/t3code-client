@@ -15,6 +15,9 @@ it("negotiates and advertises only the complementary tool contract with accurate
   const { tools } = await client.listTools();
   expect(tools.map((tool) => tool.name)).toEqual(toolNames);
   expect(tools).toHaveLength(30);
+  const usageDescription = tools.find((tool) => tool.name === "usage_summary")?.description;
+  expect(usageDescription).toContain("provisional: true to use the last scan");
+  expect(usageDescription).toContain("awaitRefresh: true to wait for slow sources to refresh");
   const destructive = [
     "configure_scheduled_task",
     "rotate_scheduled_task_webhook",
@@ -81,6 +84,7 @@ it("returns matching structured/text values and forwards provider and usage sele
     sinceDay: "2026-01-01",
     untilDay: "2026-01-02",
     timeZone: "Etc/UTC",
+    awaitRefresh: true,
     provisional: true,
   };
   const failed = await client.callTool({ name: "usage_summary", arguments: input });
