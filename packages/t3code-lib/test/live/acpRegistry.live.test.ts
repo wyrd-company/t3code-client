@@ -58,6 +58,16 @@ describe.skipIf(!hasLiveServer)("ACP registry methods", () => {
       { timeoutMs: 60_000 },
     );
 
+  /**
+   * 0.1.10 publishes no probe result after a provider change: the agent's snapshot loses
+   * `configurableProviders`, `nativeSessions` and `auth.canLogout`, and does not get them back
+   * within a minute, though the agent sees a new probe. A restart probes it afresh.
+   */
+  const reprobe = async () => {
+    await peer.restart(async () => undefined);
+    client = peer.client;
+  };
+
   beforeAll(async () => {
     peer = await startScratchServer("t3code-lib-acp-registry-", (dir) => {
       home = dir;
@@ -120,7 +130,8 @@ describe.skipIf(!hasLiveServer)("ACP registry methods", () => {
     expect(
       await client.rpc.call("server.deleteAcpRegistrySession", { ...input, sessionId }),
     ).toEqual({ deleted: true });
-    expect(agentRequests("session/delete")[0]).toMatchObject({ sessionId });
+    // 0.1.10 also deletes each probe's own session, so the list holds more than this one.
+    expect(agentRequests("session/delete")).toContainEqual(expect.objectContaining({ sessionId }));
     expect((await client.rpc.call("server.listAcpRegistrySessions", input)).sessions).toEqual([]);
   }, 120_000);
 
@@ -148,6 +159,7 @@ describe.skipIf(!hasLiveServer)("ACP registry methods", () => {
       baseUrl,
       headers: { "x-sample": "sample-value" },
     });
+    await reprobe();
     const after = await listProviders();
     expect(after.providers[0]?.current).toEqual({ apiType: "openai", baseUrl });
     expect(JSON.stringify(after)).not.toContain("sample-value");
@@ -155,6 +167,7 @@ describe.skipIf(!hasLiveServer)("ACP registry methods", () => {
     expect(
       await client.rpc.call("server.disableAcpRegistryProvider", { ...input, providerId: "main" }),
     ).toEqual({ disabled: true });
+    await reprobe();
     const disabled = await listProviders();
     expect(disabled.providers[0]?.current).toBeNull();
   }, 120_000);
