@@ -88,5 +88,5 @@ expected-outcomes:
       snapshot when it opens, and streams all its events while it waits. A
       removed thread costs the same while it runs, and for each removal.
     - A resync past the shell's replay window costs one subscription and one
-      bounded snapshot for every thread the run holds as removed without a
-      thread watch, because the new listing shows active threads only.
+      bounded snapshot for every thread the run holds as removed, because the
+      new listing shows active threads only.
