@@ -122,8 +122,10 @@ describe.skipIf(!baseUrl || !token)("live command output", () => {
       });
       expect(observation["missingThread"]).toEqual([rejected, rejected]);
 
-      // A generic one-commit repository; the launch asks for a worktree from a ref that does not
-      // exist, so the server settles its own preparation command row before any provider turn.
+      // A generic one-commit repository; the launch asks for a worktree from a commit search that
+      // finds nothing, so the server settles its own preparation command row before any provider
+      // turn. 0.1.10 refuses a missing plain ref at launch, before any row exists; a `:/` search
+      // skips that check and fails in `git worktree add`.
       const git = (...args: string[]) =>
         NodeCP.execFileSync(
           "git",
@@ -144,17 +146,21 @@ describe.skipIf(!baseUrl || !token)("live command output", () => {
       git("commit", "-m", "Sample commit");
       projectId = (await client.projects.create({ workspaceRoot: root, title: "Sample output" }))
         .id;
-      const launched = await client.threads.launch({
-        projectId,
-        title: "Sample output",
-        modelSelection: { instanceId: ProviderInstanceId.parse("codex"), model: "gpt-6-luna" },
-        workspace: {
-          type: "worktree",
-          baseRef: "sample-missing-base-ref",
-          branch: "sample-output",
-        },
-        initialMessage: { text: "Sample message" },
-      });
+      const launch = (baseRef: string) =>
+        client.threads.launch({
+          projectId: projectId!,
+          title: "Sample output",
+          modelSelection: { instanceId: ProviderInstanceId.parse("codex"), model: "gpt-6-luna" },
+          workspace: { type: "worktree", baseRef, branch: "sample-output" },
+          initialMessage: { text: "Sample message" },
+        });
+      const refused = await launch("sample-missing-base-ref").then(
+        () => undefined,
+        (error: unknown) => error,
+      );
+      expect(refused).toBeInstanceOf(T3RpcError);
+      expect(String((refused as T3RpcError).message)).toContain("sample-missing-base-ref");
+      const launched = await launch(":/sample commit that does not exist");
       const id = launched.threadId;
       threadIds.push(id);
       const read = async () => {
