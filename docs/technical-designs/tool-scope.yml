@@ -82,7 +82,7 @@ proposed-design:
 
     | Capability | Tool | Gate 1 | Gate 2 |
     | --- | --- | --- | --- |
-    | Report each request raised across the server's threads, archived ones included, as a JSON line (`requests watch`) | t3c | Pass | Pass |
+    | Report each request pending at the start or raised after it, across the server's threads, archived ones included, as a JSON line (`requests watch`) | t3c | Pass | Pass |
     | Run a hook for each reported request, with the request on stdin (`requests watch --exec`) | t3c | Pass | Pass |
 
     Gate 1, reporting requests. The stock `t3` 0.1.10 command line has four
