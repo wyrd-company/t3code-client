@@ -15,6 +15,7 @@ import { GuestSharesApi } from "./api/guestShares.ts";
 import { previewViewerUrl, webSocketUrl, withMediaTicket } from "./api/mediaSockets.ts";
 import { PeerLinksApi } from "./api/peerLinks.ts";
 import { ProjectsApi } from "./api/projects.ts";
+import { RequestsApi } from "./api/requests.ts";
 import { ScheduledTasksApi } from "./api/scheduledTasks.ts";
 import { ServerApi } from "./api/server.ts";
 import { ShellApi } from "./api/shell.ts";
@@ -86,6 +87,8 @@ export class T3Client {
   readonly projects: ProjectsApi;
   readonly threads: ThreadsApi;
   readonly shell: ShellApi;
+  /** Pending approvals and questions across every thread, read-only. */
+  readonly requests: RequestsApi;
   readonly vcs: VcsApi;
   readonly terminal: TerminalApi;
   readonly diagnostics: DiagnosticsApi;
@@ -174,6 +177,18 @@ export class T3Client {
     this.projects = new ProjectsApi(http, this.rpc, dispatcher);
     this.threads = new ThreadsApi(http, this.rpc, dispatcher);
     this.shell = new ShellApi(http, this.rpc);
+    const socket = this.#socket;
+    this.requests = new RequestsApi({
+      shell: this.shell,
+      threads: this.threads,
+      connection: {
+        get state() {
+          return socket.state;
+        },
+        onStateChange: (handler) => socket.onStateChange(handler),
+      },
+      ...(options.backoff === undefined ? {} : { backoff: options.backoff }),
+    });
     this.vcs = new VcsApi(this.rpc);
     this.terminal = new TerminalApi(this.rpc);
     this.diagnostics = new DiagnosticsApi(this.rpc);

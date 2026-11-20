@@ -129,3 +129,19 @@ export function raceAbort<T>(
     promise.then(resolve, reject).finally(() => signal.removeEventListener("abort", abort));
   });
 }
+
+/** Calls `onItem` for each item, then `onEnd` once, with the error if iterating threw. */
+export function drain<T>(
+  iterable: AsyncIterable<T>,
+  onItem: (item: T) => void,
+  onEnd: (error: unknown) => void,
+): void {
+  void (async () => {
+    try {
+      for await (const item of iterable) onItem(item);
+      onEnd(undefined);
+    } catch (error) {
+      onEnd(error);
+    }
+  })();
+}
