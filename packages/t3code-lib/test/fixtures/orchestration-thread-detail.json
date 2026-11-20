@@ -5,7 +5,7 @@
       "createdBy": "user",
       "creationSource": "web",
       "id": "11111111-2222-4333-8444-555555555555",
-      "projectId": "7cc078a1-4ee5-4432-8f04-e48c775d8357",
+      "projectId": "b81939f7-0acb-4100-aa83-12ddad5d6faa",
       "title": "Example thread",
       "providerInstanceId": "codex",
       "modelSelection": {
@@ -24,8 +24,8 @@
         "rootThreadId": "11111111-2222-4333-8444-555555555555"
       },
       "forkedFrom": null,
-      "createdAt": "2026-11-11T13:19:43.555Z",
-      "updatedAt": "2026-11-11T13:19:43.555Z",
+      "createdAt": "2026-11-20T05:30:00.587Z",
+      "updatedAt": "2026-11-20T05:30:00.587Z",
       "archivedAt": null,
       "settledOverride": null,
       "settledAt": null,
@@ -50,6 +50,6 @@
     "contextHandoffs": [],
     "contextTransfers": [],
     "visibleTurnItems": [],
-    "updatedAt": "2026-11-11T13:19:43.555Z"
+    "updatedAt": "2026-11-20T05:30:00.587Z"
   }
 }

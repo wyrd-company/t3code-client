@@ -1,14 +1,14 @@
 {
-  "environmentId": "57433867-1395-4cdf-925a-1d5b6ab043bb",
+  "environmentId": "8e6c6a58-e401-4b46-a9cd-4f2b66015acf",
   "label": "sample-environment",
   "platform": {
     "os": "linux",
     "arch": "x64",
     "machine": "desktop"
   },
-  "serverVersion": "0.1.9",
+  "serverVersion": "0.1.10",
   "orchestrationProtocolVersion": 2,
-  "databaseMigration": 81,
+  "databaseMigration": 96,
   "capabilities": {
     "repositoryIdentity": true,
     "connectionProbe": true,
@@ -29,6 +29,7 @@
     "storageCleanupRun": true,
     "databaseStorage": true,
     "otlpEndpointCheck": true,
+    "secretSourceCheck": true,
     "projectWorktreeCleanup": true,
     "settledWorktreeCleanup": true,
     "worktreesDirectory": true,
@@ -63,6 +64,7 @@
     "projectCloneTracking": true,
     "projectOrganization": true,
     "ignoredFileListing": true,
+    "ignoredFileSearch": true,
     "environmentIcon": true,
     "commandOutputStreaming": true,
     "serverBrowser": true,
@@ -76,6 +78,9 @@
     "freshContext": true,
     "scheduledTaskThreadModes": true,
     "voiceTranscription": true,
-    "cloudVoiceTranscription": true
+    "cloudVoiceTranscription": true,
+    "shellThreadFamilies": true,
+    "shellOlderSettled": true,
+    "linkedThreadRefreshes": true
   }
 }

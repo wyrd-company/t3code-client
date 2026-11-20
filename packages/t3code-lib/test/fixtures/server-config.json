@@ -1,15 +1,15 @@
 {
   "environment": {
-    "environmentId": "57433867-1395-4cdf-925a-1d5b6ab043bb",
+    "environmentId": "8e6c6a58-e401-4b46-a9cd-4f2b66015acf",
     "label": "sample-environment",
     "platform": {
       "os": "linux",
       "arch": "x64",
       "machine": "desktop"
     },
-    "serverVersion": "0.1.9",
+    "serverVersion": "0.1.10",
     "orchestrationProtocolVersion": 2,
-    "databaseMigration": 81,
+    "databaseMigration": 96,
     "capabilities": {
       "repositoryIdentity": true,
       "connectionProbe": true,
@@ -30,6 +30,7 @@
       "storageCleanupRun": true,
       "databaseStorage": true,
       "otlpEndpointCheck": true,
+      "secretSourceCheck": true,
       "projectWorktreeCleanup": true,
       "settledWorktreeCleanup": true,
       "worktreesDirectory": true,
@@ -64,6 +65,7 @@
       "projectCloneTracking": true,
       "projectOrganization": true,
       "ignoredFileListing": true,
+      "ignoredFileSearch": true,
       "environmentIcon": true,
       "commandOutputStreaming": true,
       "serverBrowser": true,
@@ -77,17 +79,21 @@
       "freshContext": true,
       "scheduledTaskThreadModes": true,
       "voiceTranscription": true,
-      "cloudVoiceTranscription": true
+      "cloudVoiceTranscription": true,
+      "shellThreadFamilies": true,
+      "shellOlderSettled": true,
+      "linkedThreadRefreshes": true
     }
   },
   "auth": {
     "policy": "loopback-browser",
     "bootstrapMethods": ["one-time-token"],
     "sessionMethods": ["browser-session-cookie", "bearer-access-token", "dpop-access-token"],
-    "sessionCookieName": "t3_session_37763_3a1fa2cc21a0",
+    "sessionCookieName": "t3_session_45271_20deb820dc03",
     "serverUpdateScope": "environment:maintain"
   },
   "cwd": "/srv/sample",
+  "hostname": "sample-environment",
   "keybindingsConfigPath": "/home/sample/.t3/userdata/keybindings.json",
   "keybindings": [
     {
@@ -461,6 +467,21 @@
       "command": "preview.resetZoom",
       "shortcut": {
         "key": "0",
+        "metaKey": false,
+        "ctrlKey": false,
+        "shiftKey": false,
+        "altKey": false,
+        "modKey": true
+      },
+      "whenAst": {
+        "type": "identifier",
+        "name": "previewFocus"
+      }
+    },
+    {
+      "command": "preview.find",
+      "shortcut": {
+        "key": "f",
         "metaKey": false,
         "ctrlKey": false,
         "shiftKey": false,
@@ -1668,17 +1689,194 @@
       },
       "enabled": true,
       "installed": true,
-      "version": "0.167.1",
+      "version": "0.171.0",
       "status": "ready",
       "auth": {
-        "status": "authenticated",
-        "type": "sample-plan",
-        "label": "Sample subscription",
-        "email": "user@example.test",
-        "workspaceId": "00000000-0000-4000-8000-000000000001"
+        "status": "unknown",
+        "endpoint": "https://models.example.test"
       },
-      "checkedAt": "2026-11-11T13:19:43.591Z",
+      "checkedAt": "2026-11-20T05:30:00.633Z",
       "models": [
+        {
+          "slug": "gpt-6.2-sol",
+          "name": "GPT-6.2-Sol",
+          "isCustom": false,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "id": "reasoningEffort",
+                "label": "Reasoning",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "low",
+                    "label": "Low",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "medium",
+                    "label": "Medium"
+                  },
+                  {
+                    "id": "high",
+                    "label": "High"
+                  },
+                  {
+                    "id": "xhigh",
+                    "label": "Extra High"
+                  },
+                  {
+                    "id": "max",
+                    "label": "Max"
+                  },
+                  {
+                    "id": "ultra",
+                    "label": "Ultra"
+                  }
+                ],
+                "currentValue": "low"
+              },
+              {
+                "id": "serviceTier",
+                "label": "Service Tier",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "default",
+                    "label": "Standard",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "priority",
+                    "label": "Fast",
+                    "description": "2x speed, increased usage"
+                  }
+                ],
+                "currentValue": "default"
+              }
+            ]
+          }
+        },
+        {
+          "slug": "gpt-6.2-astra",
+          "name": "GPT-6.2-Astra",
+          "isCustom": false,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "id": "reasoningEffort",
+                "label": "Reasoning",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "low",
+                    "label": "Low",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "medium",
+                    "label": "Medium"
+                  },
+                  {
+                    "id": "high",
+                    "label": "High"
+                  },
+                  {
+                    "id": "xhigh",
+                    "label": "Extra High"
+                  },
+                  {
+                    "id": "max",
+                    "label": "Max"
+                  },
+                  {
+                    "id": "ultra",
+                    "label": "Ultra"
+                  }
+                ],
+                "currentValue": "low"
+              },
+              {
+                "id": "serviceTier",
+                "label": "Service Tier",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "default",
+                    "label": "Standard",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "priority",
+                    "label": "Fast",
+                    "description": "2x speed, increased usage"
+                  }
+                ],
+                "currentValue": "default"
+              }
+            ]
+          }
+        },
+        {
+          "slug": "gpt-6.1-terra",
+          "name": "GPT-6.1 Terra",
+          "isCustom": false,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "id": "reasoningEffort",
+                "label": "Reasoning",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "low",
+                    "label": "Low",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "medium",
+                    "label": "Medium"
+                  },
+                  {
+                    "id": "high",
+                    "label": "High"
+                  },
+                  {
+                    "id": "xhigh",
+                    "label": "Extra High"
+                  },
+                  {
+                    "id": "max",
+                    "label": "Max"
+                  },
+                  {
+                    "id": "ultra",
+                    "label": "Ultra"
+                  }
+                ],
+                "currentValue": "low"
+              },
+              {
+                "id": "serviceTier",
+                "label": "Service Tier",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "default",
+                    "label": "Standard",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "priority",
+                    "label": "Fast",
+                    "description": "1.5x speed"
+                  }
+                ],
+                "currentValue": "default"
+              }
+            ]
+          }
+        },
         {
           "slug": "gpt-6.1-sol",
           "name": "GPT-6.1-Sol",
@@ -1801,66 +1999,6 @@
           }
         },
         {
-          "slug": "gpt-6.1-terra",
-          "name": "GPT-6.1 Terra",
-          "isCustom": false,
-          "capabilities": {
-            "optionDescriptors": [
-              {
-                "id": "reasoningEffort",
-                "label": "Reasoning",
-                "type": "select",
-                "options": [
-                  {
-                    "id": "low",
-                    "label": "Low",
-                    "isDefault": true
-                  },
-                  {
-                    "id": "medium",
-                    "label": "Medium"
-                  },
-                  {
-                    "id": "high",
-                    "label": "High"
-                  },
-                  {
-                    "id": "xhigh",
-                    "label": "Extra High"
-                  },
-                  {
-                    "id": "max",
-                    "label": "Max"
-                  },
-                  {
-                    "id": "ultra",
-                    "label": "Ultra"
-                  }
-                ],
-                "currentValue": "low"
-              },
-              {
-                "id": "serviceTier",
-                "label": "Service Tier",
-                "type": "select",
-                "options": [
-                  {
-                    "id": "default",
-                    "label": "Standard",
-                    "isDefault": true
-                  },
-                  {
-                    "id": "priority",
-                    "label": "Fast",
-                    "description": "1.5x speed"
-                  }
-                ],
-                "currentValue": "default"
-              }
-            ]
-          }
-        },
-        {
           "slug": "gpt-6-sol",
           "name": "GPT-6-Sol",
           "isCustom": false,
@@ -1907,16 +2045,16 @@
                 "options": [
                   {
                     "id": "default",
-                    "label": "Standard",
-                    "isDefault": true
+                    "label": "Standard"
                   },
                   {
                     "id": "priority",
                     "label": "Fast",
-                    "description": "1.5x speed"
+                    "description": "1.5x speed",
+                    "isDefault": true
                   }
                 ],
-                "currentValue": "default"
+                "currentValue": "priority"
               }
             ]
           }
@@ -1963,16 +2101,16 @@
                 "options": [
                   {
                     "id": "default",
-                    "label": "Standard",
-                    "isDefault": true
+                    "label": "Standard"
                   },
                   {
                     "id": "priority",
                     "label": "Fast",
-                    "description": "1.5x speed"
+                    "description": "1.5x speed",
+                    "isDefault": true
                   }
                 ],
-                "currentValue": "default"
+                "currentValue": "priority"
               }
             ]
           }
@@ -2155,35 +2293,78 @@
               }
             ]
           }
+        },
+        {
+          "slug": "gpt-5.5",
+          "name": "GPT-5.5",
+          "isCustom": false,
+          "isLegacy": true,
+          "capabilities": {
+            "optionDescriptors": [
+              {
+                "id": "reasoningEffort",
+                "label": "Reasoning",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "low",
+                    "label": "Low"
+                  },
+                  {
+                    "id": "medium",
+                    "label": "Medium",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "high",
+                    "label": "High"
+                  },
+                  {
+                    "id": "xhigh",
+                    "label": "Extra High"
+                  }
+                ],
+                "currentValue": "medium"
+              },
+              {
+                "id": "serviceTier",
+                "label": "Service Tier",
+                "type": "select",
+                "options": [
+                  {
+                    "id": "default",
+                    "label": "Standard",
+                    "isDefault": true
+                  },
+                  {
+                    "id": "priority",
+                    "label": "Fast",
+                    "description": "1.5x speed, increased usage"
+                  }
+                ],
+                "currentValue": "default"
+              }
+            ]
+          }
         }
       ],
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-11-11T13:19:43.591Z",
-        "windows": [
-          {
-            "id": "primary",
-            "kind": "weekly",
-            "label": "Weekly",
-            "usedPercent": 0,
-            "resetsAt": "2030-01-01T00:00:00.000Z",
-            "windowDurationMins": 10080
-          }
-        ],
-        "resetCredits": {
-          "availableCount": 1,
-          "nextExpiresAt": "2030-01-01T00:00:00.000Z"
+        "checkedAt": "2026-11-20T05:30:00.633Z",
+        "windows": [],
+        "unavailable": {
+          "reason": "unsupported"
         }
       },
       "versionAdvisory": {
         "status": "current",
-        "currentVersion": "0.167.1",
-        "latestVersion": "0.167.1",
-        "updateCommand": "/home/sample/.local/bin/codex update",
+        "currentVersion": "0.171.0",
+        "latestVersion": "0.171.0",
+        "updateCommand": "npm install -g --prefix /home/sample/.local --allow-scripts=@openai/codex @openai/codex@latest",
         "canUpdate": true,
-        "canInstallVersion": false,
-        "checkedAt": "2026-11-11T13:19:44.293Z",
+        "canInstallVersion": true,
+        "checkedAt": "2026-11-20T05:30:00.997Z",
         "message": null
       },
       "compatibilityAdvisory": {
@@ -2209,16 +2390,15 @@
       },
       "enabled": true,
       "installed": true,
-      "version": "2.1.322",
+      "version": "2.1.329",
       "status": "ready",
       "auth": {
         "status": "authenticated",
         "type": "sample-plan",
         "label": "Sample subscription",
-        "email": "user@example.test",
-        "workspaceId": "00000000-0000-4000-8000-000000000001"
+        "endpoint": "https://models.example.test"
       },
-      "checkedAt": "2026-11-11T13:19:43.581Z",
+      "checkedAt": "2026-11-20T05:30:00.632Z",
       "models": [
         {
           "slug": "claude-opus-5-5",
@@ -2893,34 +3073,20 @@
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-11-11T13:19:42.921Z",
-        "windows": [
-          {
-            "id": "seven_day",
-            "kind": "weekly",
-            "label": "Weekly",
-            "usedPercent": 0,
-            "resetsAt": "2030-01-01T00:00:00.000Z",
-            "windowDurationMins": 10080
-          },
-          {
-            "id": "seven_day_fable",
-            "kind": "weekly",
-            "label": "Weekly · Fable",
-            "usedPercent": 0,
-            "resetsAt": "2030-01-01T00:00:00.000Z",
-            "windowDurationMins": 10080
-          }
-        ]
+        "checkedAt": "2026-11-20T05:30:00.049Z",
+        "windows": [],
+        "unavailable": {
+          "reason": "unsupported"
+        }
       },
       "versionAdvisory": {
         "status": "current",
-        "currentVersion": "2.1.322",
-        "latestVersion": "2.1.322",
+        "currentVersion": "2.1.329",
+        "latestVersion": "2.1.329",
         "updateCommand": "/home/sample/.local/bin/claude update",
         "canUpdate": true,
         "canInstallVersion": false,
-        "checkedAt": "2026-11-11T13:19:43.630Z",
+        "checkedAt": "2026-11-20T05:30:00.674Z",
         "message": null
       },
       "compatibilityAdvisory": {
@@ -2952,7 +3118,7 @@
         "status": "unknown",
         "canLogout": true
       },
-      "checkedAt": "2026-11-11T13:19:43.577Z",
+      "checkedAt": "2026-11-20T05:30:00.626Z",
       "message": "Cursor is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -2979,7 +3145,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-11T13:19:43.581Z",
+      "checkedAt": "2026-11-20T05:30:00.645Z",
       "message": "Grok is disabled in T3 Code settings.",
       "models": [
         {
@@ -3013,13 +3179,13 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-11T13:19:43.574Z",
+      "checkedAt": "2026-11-20T05:30:00.622Z",
       "message": "OpenCode is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-11-11T13:19:43.574Z",
+        "checkedAt": "2026-11-20T05:30:00.622Z",
         "windows": [],
         "unavailable": {
           "reason": "unsupported"
@@ -3049,7 +3215,7 @@
         "status": "unknown",
         "type": "sample-plan"
       },
-      "checkedAt": "2026-11-11T13:19:42.628Z",
+      "checkedAt": "2026-11-20T05:29:59.220Z",
       "message": "Antigravity is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -3077,7 +3243,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-11T13:19:43.573Z",
+      "checkedAt": "2026-11-20T05:30:00.621Z",
       "message": "fx is disabled in T3 Code settings.",
       "models": [
         {
@@ -3132,7 +3298,7 @@
         "updateCommand": null,
         "canUpdate": false,
         "canInstallVersion": false,
-        "checkedAt": "2026-11-11T13:19:43.573Z",
+        "checkedAt": "2026-11-20T05:30:00.621Z",
         "message": null
       }
     },
@@ -3156,7 +3322,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-11T13:19:43.576Z",
+      "checkedAt": "2026-11-20T05:30:00.624Z",
       "message": "Kiro is disabled in T3 Code settings.",
       "models": [
         {
@@ -3177,7 +3343,7 @@
         "updateCommand": null,
         "canUpdate": false,
         "canInstallVersion": false,
-        "checkedAt": "2026-11-11T13:19:43.576Z",
+        "checkedAt": "2026-11-20T05:30:00.624Z",
         "message": null
       }
     },
@@ -3202,7 +3368,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-11T13:19:43.676Z",
+      "checkedAt": "2026-11-20T05:30:00.775Z",
       "message": "Muse Code is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -3229,7 +3395,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-11T13:19:43.601Z",
+      "checkedAt": "2026-11-20T05:30:00.662Z",
       "message": "Pi is disabled in T3 Code settings.",
       "models": [
         {
@@ -3245,7 +3411,7 @@
       "skills": []
     }
   ],
-  "availableEditors": ["cursor", "sample"],
+  "availableEditors": ["sample"],
   "remoteOpenTargets": [],
   "directEndpoints": [],
   "observability": {
@@ -3275,6 +3441,8 @@
     "responseStreamingMode": "paragraph",
     "enableProviderUpdateChecks": true,
     "continueThreadsAfterServerUpdate": true,
+    "keepAwakeWhileAgentsWork": true,
+    "requireConnectDeviceApproval": false,
     "enableAgentBrowserAccess": true,
     "cloudSpeechCredentials": {
       "openai": "",
@@ -3350,6 +3518,8 @@
     "backgroundActivityProfile": "balanced",
     "defaultTheme": "",
     "defaultThemeSetAt": "",
+    "defaultAppearance": "",
+    "defaultAppearanceSetAt": "",
     "environmentIcon": null,
     "newWorktreesStartFromOrigin": true,
     "worktreeSubmodules": null,
@@ -3387,6 +3557,7 @@
       "otlpLogsUrl": ""
     },
     "sourceControlHosts": {},
+    "offeredSourceControlProviders": {},
     "usageLimitSources": {},
     "textGenerators": {},
     "secretProviders": {},
@@ -3405,5 +3576,6 @@
   "secretReferences": true,
   "secretRequestReferences": true,
   "scratchWorkspaceRoot": "/home/sample/.t3/scratch",
-  "newProjectsRoot": "/home/sample/.t3/projects"
+  "newProjectsRoot": "/home/sample/.t3/projects",
+  "serverTime": "2026-11-20T05:30:01.130Z"
 }

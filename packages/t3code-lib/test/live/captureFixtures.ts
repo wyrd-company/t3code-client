@@ -37,6 +37,8 @@ function sanitizeProviders(config: { [key: string]: Json }): void {
     if ("label" in auth) auth["label"] = "Sample subscription";
     if ("type" in auth) auth["type"] = "sample-plan";
     if ("workspaceId" in auth) auth["workspaceId"] = SAMPLE_WORKSPACE_ID;
+    // A custom endpoint names this machine's model gateway.
+    if ("endpoint" in auth) auth["endpoint"] = "https://models.example.test";
   }
 }
 
