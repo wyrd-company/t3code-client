@@ -36,7 +36,16 @@ export type PullRequestReportStateInput = z.infer<typeof PullRequestReportStateI
 
 export const PullRequestSetFilesViewedInput = z.looseObject({
   ...refFields,
-  files: z.array(z.looseObject({ path: FilePath, viewed: z.boolean() })).max(500),
+  files: z
+    .array(
+      z.looseObject({
+        path: FilePath,
+        viewed: z.boolean(),
+        /** The file's version in the diff the reader saw; without it the head's is recorded. */
+        revision: TrimmedNonEmptyString.max(256).optional(),
+      }),
+    )
+    .max(500),
 });
 export type PullRequestSetFilesViewedInput = z.infer<typeof PullRequestSetFilesViewedInput>;
 

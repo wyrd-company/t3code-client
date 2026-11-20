@@ -26,7 +26,13 @@ export {
   PullRequestState,
 } from "./orchestration/pullRequest.ts";
 
-export const PullRequestMergeMethod = forwardCompatibleLiteral(["merge", "squash", "rebase"]);
+/** `fast-forward` refuses unless the head contains the base, where `rebase` rewrites the branch. */
+export const PullRequestMergeMethod = forwardCompatibleLiteral([
+  "merge",
+  "squash",
+  "rebase",
+  "fast-forward",
+]);
 export type PullRequestMergeMethod = z.infer<typeof PullRequestMergeMethod>;
 
 /** `#` references issues and GitHub pull requests. `!` references GitLab merge requests. */
@@ -127,6 +133,21 @@ export const PullRequestReviewThread = z.looseObject({
   canResolve: z.boolean().optional(),
 });
 export type PullRequestReviewThread = z.infer<typeof PullRequestReviewThread>;
+
+/** A thread on the change request as a whole, such as a GitLab overview thread. */
+export const PullRequestOverviewThread = PullRequestReviewThread.extend({
+  path: z.null(),
+  line: z.null(),
+});
+export type PullRequestOverviewThread = z.infer<typeof PullRequestOverviewThread>;
+
+/** The host's merge queue letting go of a pull request without merging it. */
+export const PullRequestMergeQueueRemoval = z.looseObject({
+  id: TrimmedNonEmptyString,
+  removedAt: IsoDateTime,
+  reason: z.string().nullable(),
+});
+export type PullRequestMergeQueueRemoval = z.infer<typeof PullRequestMergeQueueRemoval>;
 
 export const PullRequestCommit = z.looseObject({
   oid: TrimmedNonEmptyString,

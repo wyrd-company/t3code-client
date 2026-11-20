@@ -89,6 +89,8 @@ export const PullRequestDiffInput = z.looseObject({
   ...pullRequestRefFields,
   cursor: TrimmedNonEmptyString.optional(),
   commit: TrimmedNonEmptyString.optional(),
+  /** Reads one file the paged diff withheld as too large; `cursor` is then ignored. */
+  path: TrimmedNonEmptyString.optional(),
 });
 export type PullRequestDiffInput = z.infer<typeof PullRequestDiffInput>;
 
