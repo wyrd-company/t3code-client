@@ -104,7 +104,7 @@ string. A client that omits it sees a reference as a saved, redacted secret.</p>
 <dd><p>Cached and cache-creation input tokens are disjoint from uncached input
 tokens. <code>reasoningTokens</code> is a subset of <code>outputTokens</code>; never add it on top.</p>
 </dd>
-<dt><a href="#ServerProviderDelta">ServerProviderDelta</a></dt>
+<dt><a href="https://wyrd.foo/docs/t3c/library-types-2#ServerProviderDelta">ServerProviderDelta</a></dt>
 <dd><p>A provider whose lists are absent when they equal the reader&#39;s. No defaults fill them.</p>
 </dd>
 </dl>
@@ -112,12 +112,12 @@ tokens. <code>reasoningTokens</code> is a subset of <code>outputTokens</code>; n
 ## Functions
 
 <dl>
-<dt><a href="#assetUrlParams">assetUrlParams()</a></dt>
+<dt><a href="https://wyrd.foo/docs/t3c/library-types-2#assetUrlParams">assetUrlParams()</a></dt>
 <dd><p>The <code>assets.read</code> params of a <code>relativeUrl</code> from <code>assets.createUrl</code>.</p>
 <pre><code class="language-ts">export function assetUrlParams(relativeUrl: string): { token: string; path: string };
 </code></pre>
 </dd>
-<dt><a href="#attachmentUploadUrlParams">attachmentUploadUrlParams()</a></dt>
+<dt><a href="https://wyrd.foo/docs/t3c/library-types-2#attachmentUploadUrlParams">attachmentUploadUrlParams()</a></dt>
 <dd><p>The <code>attachments.upload</code> params of a <code>relativeUrl</code> from <code>attachments.createUploadUrl</code>.</p>
 <pre><code class="language-ts">export function attachmentUploadUrlParams(relativeUrl: string): { token: string };
 </code></pre>
@@ -161,13 +161,41 @@ shell and thread watches. Answering stays with `threads.respondToApproval`,
 
 ### requestsApi.watch()
 
-Every selected request the watch sees pending, once per run, with `synchronized` once the
-start's reports are out and `reconnected` after each resync's. Every thread is covered,
-including threads created and archived while the watch runs; requests already pending in
-archived threads at the start are not. A request that settles before the watch sees it
-pending is not reported. Raises `T3PreconditionError` for a malformed option before it
-subscribes. Aborting `signal` ends the iteration quietly; `client.close()` and a rejected
-credential end it with their error, and every other failure is retried with the
+Every selected request the watch sees pending, once per run. Read-only.
+
+Options, each optional; with none, every request of every thread is selected:
+
+- `projectIds`: only threads in these projects.
+- `kind`: `"approval"` or `"user-input"`, only requests of this kind.
+- `excludeThreadIds`: never the threads with exactly these ids. A subagent thread has its
+  own id, so excluding a manager does not exclude its workers.
+- `excludeTags`: never the threads that carry one of these tags, compared after trimming.
+- `signal`: aborting it ends the iteration quietly and stops every subscription at once.
+
+The filters are checked again on the thread record of the view that holds a request just
+before it is reported. A malformed option (an empty id, an unknown kind, a tag that is not a
+single line of at most 64 characters) raises `T3PreconditionError` before anything is
+subscribed.
+
+Items, by `kind`:
+
+- `request`: `request` is a `ReportedRequest`, the `PendingRequest` that
+  `threads.pendingRequests` returns (`kind`, `requestId`, the runtime `request` record, its
+  timeline card `item` or `undefined`, and `questions` for a question) plus
+  `thread: { id, title, tags }` and `project: { id, title }`, where `title` is null until
+  the watch has seen the project. `request.status` is `pending`, or the settled status of a
+  request that settled while its report waited up to two seconds for its card.
+- `synchronized`: once, after every request pending at the start has been reported.
+- `reconnected`: after each resync (a dropped socket, a server restart, a gap the server
+  cannot replay), once every request pending then has been reported.
+- `thread-error`: `threadId` and `error`, a thread watch that failed and is retried.
+- `decode-error`: `error`, a shell or thread item this client could not decode.
+
+Every thread is covered, including threads created and archived while the watch runs, and
+a request raised during an outage that is still pending at the reconnect. Not reported: a
+request that settles before the watch sees it pending, settled history, and requests
+already pending in archived threads at the start. `client.close()` and a rejected
+credential end the iteration with their error; every other failure is retried with the
 transport's backoff.
 
 ```ts
@@ -459,33 +487,4 @@ Calendar day as `YYYY-MM-DD`.
 Cached and cache-creation input tokens are disjoint from uncached input
 tokens. `reasoningTokens` is a subset of `outputTokens`; never add it on top.
 
-**Kind**: global constant  
-<a name="ServerProviderDelta"></a>
-
-## ServerProviderDelta
-
-A provider whose lists are absent when they equal the reader's. No defaults fill them.
-
-**Kind**: global constant  
-<a name="assetUrlParams"></a>
-
-## assetUrlParams()
-
-The `assets.read` params of a `relativeUrl` from `assets.createUrl`.
-
-```ts
-export function assetUrlParams(relativeUrl: string): { token: string; path: string };
-```
-
-**Kind**: global function  
-<a name="attachmentUploadUrlParams"></a>
-
-## attachmentUploadUrlParams()
-
-The `attachments.upload` params of a `relativeUrl` from `attachments.createUploadUrl`.
-
-```ts
-export function attachmentUploadUrlParams(relativeUrl: string): { token: string };
-```
-
-**Kind**: global function
+**Kind**: global constant

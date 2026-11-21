@@ -10,6 +10,35 @@ relationships:
 
 # Shared types and constants (2)
 
+<a name="ServerProviderDelta"></a>
+
+## ServerProviderDelta
+
+A provider whose lists are absent when they equal the reader's. No defaults fill them.
+
+**Kind**: global constant  
+<a name="assetUrlParams"></a>
+
+## assetUrlParams()
+
+The `assets.read` params of a `relativeUrl` from `assets.createUrl`.
+
+```ts
+export function assetUrlParams(relativeUrl: string): { token: string; path: string };
+```
+
+**Kind**: global function  
+<a name="attachmentUploadUrlParams"></a>
+
+## attachmentUploadUrlParams()
+
+The `attachments.upload` params of a `relativeUrl` from `attachments.createUploadUrl`.
+
+```ts
+export function attachmentUploadUrlParams(relativeUrl: string): { token: string };
+```
+
+**Kind**: global function  
 <a name="webhookUrlParams"></a>
 
 ## webhookUrlParams()
