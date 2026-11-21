@@ -5,7 +5,7 @@
 // ---
 import { ProfileManager, T3Client, type ResolvedProfile } from "@wyrd-company/t3code-lib";
 import { durationMs } from "./options.ts";
-import { Output } from "./output.ts";
+import { logEnabled, Output } from "./output.ts";
 import type { ErrorContext } from "./errors.ts";
 
 export interface GlobalOptions {
@@ -37,6 +37,7 @@ export function createInvocation(
   let connection: Promise<ResolvedProfile> | undefined;
   let client: T3Client | undefined;
   let clientPending: Promise<T3Client> | undefined;
+  let closing: Promise<void> | undefined;
   const invocation: Invocation = {
     options,
     output,
@@ -69,7 +70,10 @@ export function createInvocation(
     },
     async close() {
       // A creation still in flight yields a client that must close too.
-      await (client ?? (await clientPending?.catch(() => undefined)))?.close();
+      closing ??= Promise.resolve(client ?? clientPending)
+        .catch(() => undefined)
+        .then((opened) => opened?.close());
+      await closing;
     },
   };
   async function initializeClient(): Promise<T3Client> {
@@ -115,11 +119,9 @@ export function createInvocation(
     if (invocation.errorContext === "local") invocation.errorContext = "connection";
     return client;
   }
-  const levels = ["silent", "error", "warn", "info", "debug"];
   function diagnostic(level: string) {
     // Transport log payloads can contain caller/server data. Emit level only.
-    if (levels.indexOf(level) <= levels.indexOf(options.logLevel ?? "warn"))
-      output.progress(`t3c: ${level}: transport diagnostic`);
+    if (logEnabled(level, options.logLevel)) output.progress(`t3c: ${level}: transport diagnostic`);
   }
   return invocation;
 }
