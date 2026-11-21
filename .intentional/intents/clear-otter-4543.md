@@ -2,4 +2,4 @@
 t3c-docs: patch
 ---
 
-Add a worked guide for sending watched approvals to a reviewer thread and responding to its verdict.
+Follow the worked guide to pair a watcher with `orchestration:read`, forward watched approvals to a reviewer thread and respond to its verdict with a separate credential. The guide includes saved filters and replay behavior.
