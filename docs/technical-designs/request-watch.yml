@@ -293,9 +293,13 @@ proposed-design:
     the client's `shell` and `threads` facades and the socket's state. Like
     every facade it holds no state beyond those references; each iteration of
     `watch` holds its own index, thread watches and set of reported keys. The
-    socket's state tells a run when the socket drops: every subscription live
-    at that moment resumes, so its items until its `reconnected` came before
+    socket's state tells a run when the socket drops: every subscription made
+    before the drop resumes, so its items until its `reconnected` came before
     the drop, and its `synchronized` among them does not count as caught up.
+    The run counts drops as the socket reports them, and each subscription
+    records the count it was made under. A subscription made while the socket
+    was down is fresh: it delivers no `reconnected`, and its first
+    `synchronized` counts.
 
     ```ts
     import { ProfileManager, T3Client } from "@wyrd-company/t3code-lib";
