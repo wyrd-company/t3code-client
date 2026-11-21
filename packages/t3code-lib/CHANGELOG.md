@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.0
+
+### Breaking
+
+- For upgrades, `schemas.environment.ServerInstallation` changes from a Zod object to a union. If you use its `.shape` or `.extend()`, switch to parsing and narrowing the result with `schemas.environment.isT3LauncherInstallation`, or compose the union with another schema. A `t3-launcher` record requires both `launcher` and `baseDir`. Raw thread-stream consumers must handle `thread.visit-recorded` for visits from 0.1.10. Keep handling `thread.visited` for older servers. Update exhaustive consumers of typed events and errors for the new variants. Handle a 403 with reason `connect_approval_pending` as `T3HttpError` if you previously caught only `T3AuthError`. Changing `requireConnectDeviceApproval` requires `access:write`. Project file paths, checkpoint file paths and keybinding keys preserve whitespace. Provider sign-in URLs must start with `http://` or `https://`. On stock 0.1.10, launching a worktree with a missing plain base ref fails at launch before a preparation row appears. `shell.watch` keeps its cursor when a snapshot only refreshes project identities, so later replayed rows are still delivered.
+
+### Features
+
+- Read named profile request-watch filters with ProfileManager.requestWatchDefaults. Renewing a profile credential preserves its watch defaults and other profile keys.
+- Target stock T3 Code 0.1.10, orchestration protocol 2: `TARGET_T3_CODE_VERSION` is `0.1.10`, and every client-facing change of 0.1.10 is typed. New are the `server.getSettings`, `server.checkSecretSource` and `pullRequests.subscribeLinkedThreadRefreshes` methods; the T3 Connect device routes `auth.approveConnectDevice` and `auth.revokeConnectDevice`, with `connectDevices` on the access snapshot and `connectDeviceRequest` on pairing links; `orchestration.shellSnapshotResume` for the shell snapshot's `resumeFrom`; the `thread.visit-recorded` event, which the thread projection applies; `userOnly` on pending request summaries, set on secret and link cards; provider status deltas (`applyServerProviderDeltas`); linked senders, steer follow-ups and title regeneration outcomes; fast-forward merges, overview threads, required rebases, merge queue removals and withheld file diffs on pull requests; and the new settings, capabilities and fields. The t3c library reference moves the anchors for `assetUrlParams`, `attachmentUploadUrlParams`, `webhookUrlParams` and `encodeSpeechPcmRequest` from `library-types` to `library-types-2`. Update links to these anchors to use the new page.
+- Use the read-only `client.requests.watch` API to report each selected approval or question it sees pending once per run, including during catch-up and after a reconnect. Select requests by project ID and kind (`approval` or `user-input`). Exclude threads by exact ID or tag. The watch yields `synchronized` after the initial reports and `reconnected` after each resync. It discovers active threads through shell rows and archived threads through removals. Reporting excludes requests already pending in archived threads at startup and requests that settle before the watch sees them pending. The watch can also miss requests from an archived thread it has yet to discover when the server cannot replay a removal. `shell.watch` takes `httpSnapshotFallback`, which answers a gap the server cannot replay with `snapshot-required`. The published library reference in the t3c docs is regenerated.
+
 ## 0.4.3
 
 ### Fixes

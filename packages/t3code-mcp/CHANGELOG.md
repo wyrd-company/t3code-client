@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.5
+
+### Features
+
+- Target stock T3 Code 0.1.10 with orchestration protocol 2. The `usage_summary` tool adds the optional `provisional` input for returning the last scan while sources refresh. The existing `awaitRefresh` option takes precedence when both are true. Usage results can include unpriced token counts and a physical source ID.
+
 ## 0.1.4
 
 ### Fixes

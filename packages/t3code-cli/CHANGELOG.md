@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.4
+
+### Features
+
+- Set request watch filters in `config.json` under `servers.<name>.requestWatch`. Each supplied filter flag replaces the matching saved filter. Pass `--ignore-defaults` to use only flags.
+- Watch approvals and questions the client sees pending with `t3c requests watch` and an `orchestration:read` credential. Select requests by project with `--project` and kind with `--kind`. Exclude threads by exact ID with `--exclude-thread` or by tag with `--exclude-tag`. Reporting excludes requests already pending in archived threads at startup. Each selected request is reported once per run as a JSON line. Optional `--exec` hooks receive the line on stdin and run with bounded concurrency and a timeout. Hook output and failures go to stderr while the watch continues. Answer requests explicitly with `t3c thread respond`.
+
+### Fixes
+
+- Target stock T3 Code 0.1.10 with orchestration protocol 2. The `t3c version` command reports the new target for comparison with the connected server.
+
 ## 0.2.3
 
 ### Features
