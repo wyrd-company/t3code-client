@@ -26,13 +26,14 @@ interface WatchFlags {
   kind?: PendingRequestKind;
   excludeThread?: string[];
   excludeTag?: string[];
+  ignoreDefaults?: boolean;
   exec?: string;
   execConcurrency: string;
   execTimeout: string;
 }
 
 function parseList<T>(
-  values: string[] = [],
+  values: string[],
   schema: { safeParse(value: string): { success: true; data: T } | { success: false } },
   flag: string,
 ): T[] {
@@ -46,14 +47,28 @@ function parseList<T>(
 
 function parseFilters(flags: WatchFlags): RequestWatchFilters {
   return {
-    projectIds: parseList(flags.project, schemas.common.ProjectId, "--project"),
+    ...(flags.project === undefined
+      ? {}
+      : { projectIds: parseList(flags.project, schemas.common.ProjectId, "--project") }),
     ...(flags.kind === undefined ? {} : { kind: flags.kind }),
-    excludeThreadIds: parseList(flags.excludeThread, schemas.common.ThreadId, "--exclude-thread"),
-    excludeTags: parseList(
-      flags.excludeTag,
-      schemas.orchestrationThreadTags.ThreadTag,
-      "--exclude-tag",
-    ),
+    ...(flags.excludeThread === undefined
+      ? {}
+      : {
+          excludeThreadIds: parseList(
+            flags.excludeThread,
+            schemas.common.ThreadId,
+            "--exclude-thread",
+          ),
+        }),
+    ...(flags.excludeTag === undefined
+      ? {}
+      : {
+          excludeTags: parseList(
+            flags.excludeTag,
+            schemas.orchestrationThreadTags.ThreadTag,
+            "--exclude-tag",
+          ),
+        }),
   };
 }
 
@@ -93,11 +108,14 @@ export const watch: InvocationHandler = async (_args, command, invocation) => {
   let runner: HookRunner | undefined;
   let reported = 0;
   let missingProject: string | undefined;
+  let defaultsError: T3PreconditionError | undefined;
   const initialHooks = flags.exec === undefined ? null : emptyHookCounts();
   const result = (error: unknown) => {
     const failure = failureFor(error, invocation.errorContext);
     if (missingProject !== undefined && error !== interrupted)
       failure.message = `Selected project ${JSON.stringify(missingProject)} not found.`;
+    if (defaultsError !== undefined && error === defaultsError)
+      failure.message = defaultsError.message;
     return {
       data: { reported, hooks: runner?.counts ?? initialHooks },
       exitCode: exitCodeFor(error, invocation.errorContext),
@@ -115,8 +133,20 @@ export const watch: InvocationHandler = async (_args, command, invocation) => {
     let failure: unknown;
     let watching = false;
     try {
-      const filters = parseFilters(flags);
+      const flagFilters = parseFilters(flags);
       const hook = parseHook(command, flags);
+      const { baseUrl, profile } = await signals.until(invocation.resolve());
+      let defaults: RequestWatchFilters = {};
+      if (!flags.ignoreDefaults && profile !== undefined) {
+        try {
+          defaults = await signals.until(invocation.profiles.requestWatchDefaults(profile.name));
+        } catch (error) {
+          if (error instanceof T3PreconditionError) defaultsError = error;
+          throw error;
+        }
+      }
+      const filters = { ...defaults, ...flagFilters };
+      signals.signal.throwIfAborted();
       const client = await signals.until(invocation.client());
       signals.signal.throwIfAborted();
       const snapshot = await signals.until(client.projects.snapshot(signals.signal));
@@ -128,8 +158,6 @@ export const watch: InvocationHandler = async (_args, command, invocation) => {
       if (missingProject !== undefined) throw missingResource("project");
 
       if (hook !== undefined) {
-        const { baseUrl } = await signals.until(invocation.resolve());
-        signals.signal.throwIfAborted();
         runner = new HookRunner(hook, new URL(baseUrl).origin, log);
       }
 

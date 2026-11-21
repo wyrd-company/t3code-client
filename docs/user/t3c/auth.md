@@ -70,3 +70,39 @@ then `$XDG_CONFIG_HOME/t3c`, then `~/.config/t3c`. Each named profile has its ow
 0600 credential file. Logout removes the local profile and its credential;
 it does not revoke the upstream session. Removing current clears the current
 selection without choosing another profile.
+
+## Set request watch defaults
+
+Edit `config.json` in the config directory. For each server you want to filter,
+add `requestWatch` inside its `servers.<name>` entry, next to `url`.
+
+```json
+{
+  "servers": {
+    "sample": {
+      "url": "https://server.example",
+      "requestWatch": {
+        "projectIds": ["project-1"],
+        "kind": "approval",
+        "excludeThreadIds": ["thread-reviewer"],
+        "excludeTags": ["reviewer"]
+      }
+    }
+  },
+  "current": "sample"
+}
+```
+
+Each filter is optional. `projectIds`, `excludeThreadIds`, and `excludeTags`
+are arrays of nonempty strings. Tags are single lines of up to 64 characters
+after trimming. `kind` is either `approval` or `user-input`.
+
+`t3c requests watch` uses the selected server profile's defaults. When you
+supply `--project`, `--kind`, `--exclude-thread`, or `--exclude-tag`, all
+occurrences of that flag replace its matching default. For example,
+`t3c requests watch --kind user-input` watches questions with the saved
+project and exclusions. Use `--ignore-defaults` to use only CLI filters.
+Set any hook with `--exec` on the command line.
+
+Re-pairing or switching profiles preserves the defaults. A malformed
+`requestWatch` entry makes the watch command name the profile and exit 2.

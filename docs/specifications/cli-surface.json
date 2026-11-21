@@ -1430,6 +1430,12 @@
               "repeatable": true
             },
             {
+              "name": "ignore-defaults",
+              "flags": ["--ignore-defaults"],
+              "kind": "flag",
+              "description": "Skip the selected profile's request watch filters."
+            },
+            {
               "name": "exec",
               "flags": ["--exec"],
               "kind": "option",
@@ -1480,7 +1486,7 @@
               },
               {
                 "code": 2,
-                "meaning": "Usage error."
+                "meaning": "Usage error, including malformed profile requestWatch defaults."
               },
               {
                 "code": 4,
@@ -1501,7 +1507,8 @@
             ]
           },
           "notes": [
-            "Uses projects.snapshot for preflight and requires orchestration:read. Every explicitly selected project must exist. Watches through client.requests.watch and covers every project by default. Project and exact thread id or case-sensitive trimmed tag filters are repeatable and deduplicated. An excluded thread's subagents are selected by their own ids and tags.",
+            "Uses projects.snapshot for preflight and requires orchestration:read. Every selected project must exist. Watches through client.requests.watch and covers every project when no project filter applies. Project and exact thread id or case-sensitive trimmed tag flags are repeatable and deduplicated. An excluded thread's subagents are selected by their own ids and tags.",
+            "The profile selected for the server supplies requestWatch defaults. Each supplied filter flag replaces its matching default with all the flag's occurrences. --ignore-defaults uses only flags. An unmatched server has no defaults. Hook settings come only from the command line.",
             "Each selected request the library sees pending is reported once per watch, including requests pending at the start and requests still pending after an outage. Requests already pending in archived threads at startup are out of scope. Threads created or archived while watching can report requests. Reports are read-only.",
             "A request line contains type: request, kind, requestId, thread: {id, title, tags}, project: {id, title}, request, item, and questions for user input. Project title and item are nullable. Status may have settled while the watcher waited for its timeline card.",
             "At info or debug, emits watching for requests after initial reports and reconnected after reports from each resync. Thread and decode failures warn on stderr. An end after parsing adds a final result line only with --json. Its data contains reported and hooks: {succeeded, failed, stopped, notRun}, or null for hooks without --exec.",
