@@ -7,6 +7,7 @@ import type { Readable } from "node:stream";
 import { invocationDeadline } from "../execution/deadline.ts";
 
 const groupPollMs = 100;
+const pipeDrainMs = 100;
 const signalGraceMs = 5_000;
 
 export interface HookOptions {
@@ -50,6 +51,8 @@ class HookProcess {
   readonly #onDone: (failure?: string) => void;
   #poll: ReturnType<typeof setTimeout> | undefined;
   #escalation: ReturnType<typeof setTimeout> | undefined;
+  #pipeDrain: ReturnType<typeof setTimeout> | undefined;
+  #groupGone = false;
   #closed = false;
   #finished = false;
   #timeout: string | undefined;
@@ -96,15 +99,19 @@ class HookProcess {
   }
 
   #signal(signal: NodeJS.Signals | 0): boolean {
+    if (this.#groupGone) return false;
     const { pid, exitCode, signalCode } = this.#child;
-    if (pid === undefined || (!this.#group && (exitCode !== null || signalCode !== null)))
+    if (pid === undefined || (!this.#group && (exitCode !== null || signalCode !== null))) {
+      this.#groupGone = true;
       return false;
+    }
     try {
       return process.kill(this.#group ? -pid : pid, signal);
     } catch (error) {
-      // ESRCH means the group is gone. A group we cannot signal still holds a slot
-      // until the bounded timeout and escalation have elapsed.
-      return (error as NodeJS.ErrnoException).code !== "ESRCH";
+      // Once gone, this id may be reused. Never target it again.
+      // A group we lack permission to signal still occupies its slot.
+      this.#groupGone = (error as NodeJS.ErrnoException).code === "ESRCH";
+      return !this.#groupGone;
     }
   }
 
@@ -113,14 +120,17 @@ class HookProcess {
     clearTimeout(this.#poll);
     if (this.#signal(0)) {
       this.#poll = setTimeout(() => this.#observe(), groupPollMs);
-    } else if (this.#closed || this.#timeout !== undefined) {
-      this.#finish();
+      return;
     }
+    this.#cancelDeadline();
+    if (this.#closed) this.#finish();
+    // Let buffered output arrive even if a process outside the group owns a pipe.
+    else this.#pipeDrain ??= setTimeout(() => this.#finish(), pipeDrainMs);
   }
 
   #expire(timeout: string): void {
     if (!this.#signal(0)) {
-      this.#finish();
+      this.#observe();
       return;
     }
     this.#timeout = timeout;
@@ -156,6 +166,7 @@ class HookProcess {
     this.#cancelDeadline();
     clearTimeout(this.#poll);
     clearTimeout(this.#escalation);
+    clearTimeout(this.#pipeDrain);
   }
 
   kill(): void {

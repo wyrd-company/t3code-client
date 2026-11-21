@@ -156,6 +156,8 @@ it.skipIf(process.platform === "win32").each([false, true])(
         await vi.advanceTimersByTimeAsync(4_999);
         expect(NodeChildProcess.spawn).toHaveBeenCalledTimes(1);
         await vi.advanceTimersByTimeAsync(1);
+      } else {
+        first.emit("close", 0, null);
       }
       expect(NodeChildProcess.spawn).toHaveBeenCalledTimes(2);
       expect(log).toHaveBeenCalledWith(
@@ -204,6 +206,32 @@ it.skipIf(process.platform === "win32")(
         expect(NodeChildProcess.spawn).toHaveBeenCalledTimes(3);
       }
       await drain;
+    } finally {
+      runner.forceStop();
+    }
+  },
+);
+
+it.skipIf(process.platform === "win32")(
+  "never signals a disappeared group during pipe drain",
+  () => {
+    vi.useFakeTimers();
+    const shell = new Shell(100);
+    vi.mocked(NodeChildProcess.spawn).mockReturnValueOnce(
+      shell as unknown as NodeChildProcess.ChildProcess,
+    );
+    const kill = vi
+      .spyOn(process, "kill")
+      .mockImplementationOnce(() => {
+        throw Object.assign(new Error("No such process"), { code: "ESRCH" });
+      })
+      .mockReturnValue(true);
+    const runner = new HookRunner(options, serverOrigin, vi.fn());
+    try {
+      runner.enqueue(input);
+      shell.exit(0, false);
+      runner.forceStop();
+      expect(kill.mock.calls).toEqual([[-100, 0]]);
     } finally {
       runner.forceStop();
     }
