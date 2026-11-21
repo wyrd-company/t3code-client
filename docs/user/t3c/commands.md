@@ -171,6 +171,10 @@ to select one kind. Repeat `--exclude-thread <id>` and `--exclude-tag <tag>`
 to exclude specific threads. Ids match exactly. Tags match case-sensitively
 after trimming. A subagent's thread has its own id and tags.
 
+When the server matches a profile, the watch uses its saved filters for
+any filter flag you omit. Use `--ignore-defaults` to use only the flags you
+supply. See [Set request watch defaults](auth.md#set-request-watch-defaults).
+
 Stdout carries one JSON line per report in either output mode. The line has
 `type: "request"`, `kind`, `requestId`, the thread's id, title and tags, the
 project's id and title, the runtime `request` record, and its timeline card

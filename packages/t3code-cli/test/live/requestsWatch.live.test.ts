@@ -70,7 +70,14 @@ describe.skipIf(!hasLiveServer || process.platform === "win32")("built CLI reque
       JSON.stringify({
         current: "first",
         servers: {
-          first: { url: peer.baseUrl },
+          first: {
+            url: peer.baseUrl,
+            requestWatch: {
+              projectIds: ["unused-project"],
+              kind: "approval",
+              excludeTags: ["reviewer"],
+            },
+          },
           second: { url: "http://127.0.0.1:1" },
         },
       }),
@@ -123,12 +130,11 @@ while (!existsSync(process.argv[2])) await new Promise(resolve => setTimeout(res
           "--json",
           "--log-level",
           "info",
-          "--kind",
-          "approval",
           "--project",
           project.id,
-          "--exclude-tag",
-          "reviewer",
+          ...(force
+            ? ["--ignore-defaults", "--kind", "approval", "--exclude-tag", "reviewer"]
+            : []),
           "--exec",
           hook,
           "--exec-concurrency",

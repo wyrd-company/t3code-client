@@ -53,6 +53,46 @@ and malformed JSON is withheld entirely. Missing credential files load as an
 empty credential. Config/store failures propagate to the caller; they do not
 silently select another profile or backend.
 
+### Request watch defaults
+
+Set `requestWatch` on a server entry to give `t3c requests watch` default
+filters for that profile.
+
+```json
+{
+  "servers": {
+    "sample": {
+      "url": "https://server.example",
+      "requestWatch": {
+        "projectIds": ["project-1"],
+        "kind": "approval",
+        "excludeThreadIds": ["thread-reviewer"],
+        "excludeTags": ["reviewer"]
+      }
+    }
+  },
+  "current": "sample"
+}
+```
+
+All four keys are optional. `projectIds`, `excludeThreadIds`, and `excludeTags`
+take arrays of nonempty strings. Tags are single lines of up to 64 characters
+after trimming and match case-sensitively. `kind` accepts `approval` or `user-input`.
+Without filters the watcher covers all projects and both request kinds.
+
+The watcher uses defaults from the current profile or the profile whose
+normalized origin matches `--server` or `T3_SERVER_URL`. An unmatched server
+has no defaults. For each filter, the corresponding flag replaces the profile
+value with all occurrences of that flag. Use `--ignore-defaults` to use only
+flags. Hook settings come from flags.
+
+Edit the file to set defaults. Renewing a profile credential or switching the
+current profile preserves the defaults. Logout removes the profile and its
+defaults. `ProfileManager.requestWatchDefaults(name)` reads and validates these
+filters, ignores unknown keys, and returns an empty filter object when a profile
+has no `requestWatch` entry. Malformed defaults raise `T3PreconditionError` and
+make the watcher exit 2. Other commands can still load the profile.
+
 ## Resolution
 
 `resolve({server, credentialsFile, env})` returns connection options for

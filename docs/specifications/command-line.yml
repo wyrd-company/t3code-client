@@ -8,6 +8,9 @@ description: >-
   usage guides explain this contract. The CLI composes @wyrd-company/t3code-lib
   for profiles, auth, projects, dispatch, run and request watches, scheduling,
   inspection, provider status, usage, interruption and native Stop/queue recovery.
+  For requests watch, the selected server profile supplies requestWatch filters.
+  Each supplied filter flag replaces the corresponding profile value with all
+  its occurrences. With --ignore-defaults, only filter flags apply.
 format: cli
 validation-criteria: >-
   Validate cli-surface.json against the CLI Command Specification schema and
