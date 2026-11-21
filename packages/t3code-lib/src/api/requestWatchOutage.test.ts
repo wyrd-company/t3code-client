@@ -86,6 +86,28 @@ describe("client.requests.watch across connection loss", () => {
   });
 });
 
+describe("client.requests.watch replaying an open thread watch", () => {
+  it("reports only what is still pending when the replay catches up", async () => {
+    harness = await new Harness().start();
+    const { fake } = harness;
+    fake.createThread("thread-a");
+    fake.raise("thread-a", "request-1");
+    const watcher = harness.watch();
+    await watcher.until((w) => w.count("synchronized") === 1);
+    await harness.stopServer();
+    fake.raise("thread-a", "outage-settled");
+    fake.settle("thread-a", "outage-settled");
+    fake.raise("thread-a", "outage-pending");
+    await harness.restart();
+    await watcher.until((w) => w.count("reconnected") === 1);
+    await pause(200);
+    expect(afterStart(watcher.kinds)).toEqual(["thread-a/outage-pending", "reconnected"]);
+    // The open watch resumed from its cursor, so the gap came as replayed events.
+    const resumed = fake.streams.threadPayloads.filter((p) => p["threadId"] === "thread-a");
+    expect(resumed.map((p) => p["afterSequence"] !== undefined)).toEqual([false, true]);
+  });
+});
+
 describe("client.requests.watch failures and ends", () => {
   it("names a failing thread watch, retries it, and holds synchronized back", async () => {
     harness = await new Harness().start();

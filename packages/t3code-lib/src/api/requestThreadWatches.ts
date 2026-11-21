@@ -49,6 +49,8 @@ interface Watch {
   caughtUp: boolean;
   /** The socket dropped; items until the resumed subscription's `reconnected` are old. */
   resuming: boolean;
+  /** Between a subscription's first item or `reconnected` and its marker: views are not current. */
+  replaying: boolean;
   retry: ReturnType<typeof setTimeout> | undefined;
 }
 
@@ -61,6 +63,8 @@ interface Track {
   watch: Watch | undefined;
   view: OrchestrationV2ThreadProjection | undefined;
   viewSequence: number;
+  /** Card waits that ran out during a replay; they end at its marker. */
+  readonly due: Set<string>;
   readonly backoff: Backoff;
 }
 
@@ -70,6 +74,7 @@ function newWatch(): Watch {
     controller: new AbortController(),
     caughtUp: false,
     resuming: false,
+    replaying: false,
     retry: undefined,
   };
 }
@@ -160,6 +165,7 @@ export class ThreadWatches {
         watch: undefined,
         view: undefined,
         viewSequence: 0,
+        due: new Set(),
         backoff: createBackoff(this.#host.backoff),
       };
       this.#tracks.set(threadId, track);
@@ -182,6 +188,7 @@ export class ThreadWatches {
     watch.attempt = attempt;
     watch.caughtUp = false;
     watch.resuming = false;
+    watch.replaying = false;
     const signal = AbortSignal.any([this.#host.signal, watch.controller.signal]);
     const items = this.#host.watch(track.threadId, {
       acceptBoundedSnapshot: true,
@@ -215,6 +222,7 @@ export class ThreadWatches {
     if (watch === undefined || watch.attempt !== attempt) return;
     switch (item.kind) {
       case "snapshot":
+        if (!watch.caughtUp && !watch.resuming) watch.replaying = true;
         track.view = item.snapshot.projection;
         track.viewSequence = item.snapshot.snapshotSequence;
         if (track.recheckFrom !== undefined && attempt >= track.recheckFrom) {
@@ -223,6 +231,7 @@ export class ThreadWatches {
         this.#viewChanged(track);
         break;
       case "event":
+        if (!watch.caughtUp && !watch.resuming) watch.replaying = true;
         if (track.view === undefined) break;
         track.view = applyThreadEvent(track.view, item.event);
         track.viewSequence = Math.max(track.viewSequence, item.sequence);
@@ -231,11 +240,15 @@ export class ThreadWatches {
       case "synchronized":
         if (watch.resuming) break;
         watch.caughtUp = true;
+        watch.replaying = false;
         track.backoff.reset();
+        this.#viewChanged(track);
+        this.#finishDue(track);
         break;
       case "reconnected":
         watch.resuming = false;
         watch.caughtUp = false;
+        watch.replaying = true;
         break;
       case "decode-error":
         this.#host.decodeError(item);
@@ -252,21 +265,35 @@ export class ThreadWatches {
     }
   }
 
+  /**
+   * Answers removals the view reached, and reads it for requests only once its subscription has
+   * caught up: a replay's intermediate views can hold a request that settled later in the gap.
+   */
   #viewChanged(track: Track): void {
     this.#answerRemoval(track);
     const view = track.view;
-    if (view === undefined) return;
+    if (view === undefined || track.watch?.caughtUp !== true) return;
     const { reports, filters, cardWaitMs } = this.#host;
     const { seen, ready } = reports.read(track.threadId, view, filters);
     for (const { key } of seen) {
       this.#cardWaits.start(key, track.threadId, cardWaitMs, () => {
         this.#host.schedule(() => {
+          if (track.watch?.replaying === true) {
+            track.due.add(key);
+            return;
+          }
           this.#finish(key);
           this.evaluate(track.threadId);
         });
       });
     }
     for (const { key } of ready) this.#finish(key);
+  }
+
+  /** Ends the card waits that ran out while the watch replayed. */
+  #finishDue(track: Track): void {
+    for (const key of track.due) this.#finish(key);
+    track.due.clear();
   }
 
   /** Ends a request's card wait, with the latest view of its thread. */
@@ -289,6 +316,8 @@ export class ThreadWatches {
     watch.attempt = 0;
     watch.caughtUp = false;
     watch.resuming = false;
+    watch.replaying = false;
+    this.#finishDue(track);
     const removed = this.#host.index.get(track.threadId)?.location === "removed";
     if (removed && error !== undefined && !(error instanceof T3ConnectionError)) {
       this.#host.detail(track.threadId, this.#host.signal).then(
