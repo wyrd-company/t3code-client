@@ -110,7 +110,11 @@ class RequestWatchRun {
   }
 
   async *run(): AsyncGenerator<RequestWatchItem> {
-    const wake = () => this.#tasks.push(() => {});
+    // An abort stops every subscription and timer at once, even while the consumer holds an item.
+    const wake = () => {
+      this.#halt();
+      this.#tasks.push(() => {});
+    };
     this.#signal?.addEventListener("abort", wake, { once: true });
     const offState = this.#sources.connection.onStateChange((state, error) => {
       this.#tasks.push(() => this.#onSocketState(state, error));
@@ -133,11 +137,22 @@ class RequestWatchRun {
     } finally {
       this.#signal?.removeEventListener("abort", wake);
       offState();
-      this.#stop.abort();
-      this.#shellController?.abort();
-      if (this.#resyncTimer !== undefined) clearTimeout(this.#resyncTimer);
-      this.#threads.stopAll();
+      this.#halt();
     }
+  }
+
+  /** Stops the listing read, the shell watch, every thread watch and every timer. Idempotent. */
+  #halt(): void {
+    this.#stop.abort();
+    this.#shellController?.abort();
+    if (this.#resyncTimer !== undefined) clearTimeout(this.#resyncTimer);
+    this.#resyncTimer = undefined;
+    this.#threads.stopAll();
+  }
+
+  /** Ends the run with `error`: the loop throws it once the items before it are out. */
+  #fail(error: unknown): void {
+    this.#failure ??= { error };
   }
 
   /**
@@ -149,7 +164,7 @@ class RequestWatchRun {
       !(error instanceof T3Error) ||
       error instanceof T3AuthError ||
       (error instanceof T3RpcError && error.tag === "EnvironmentAuthorizationError");
-    if (ends) this.#failure ??= { error };
+    if (ends) this.#fail(error);
     return ends;
   }
 
@@ -157,9 +172,7 @@ class RequestWatchRun {
     const was = this.#socketState;
     this.#socketState = state;
     if (state === "closed") {
-      this.#failure ??= {
-        error: error ?? new T3ConnectionError("closed", "The connection was closed."),
-      };
+      this.#fail(error ?? new T3ConnectionError("closed", "The connection was closed."));
       return;
     }
     if (was !== "open" || state === "open") return;

@@ -62,6 +62,10 @@ export class FakeStreams {
     return this.#live(this.#shells).length;
   }
 
+  get liveThreads(): number {
+    return this.#live(this.#threads).length;
+  }
+
   threadSubscriptions(threadId: string): number {
     return this.threadPayloads.filter((payload) => payload["threadId"] === threadId).length;
   }

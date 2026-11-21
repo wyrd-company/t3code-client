@@ -4,7 +4,7 @@
 // ---
 /** The request watch across drops, outages, server restarts, failures and the end of a run. */
 import { afterEach, describe, expect, it } from "vite-plus/test";
-import { Harness, pause } from "../../test/support/requestWatchHarness.ts";
+import { Harness, pause, until } from "../../test/support/requestWatchHarness.ts";
 import { T3AuthError, T3ConnectionError, T3RpcError } from "../errors.ts";
 
 let harness: Harness;
@@ -197,5 +197,32 @@ describe("client.requests.watch failures and ends", () => {
     await watcher.until((w) => w.done);
     expect(watcher.error).toBeInstanceOf(T3RpcError);
     expect(watcher.kinds).toEqual([]);
+  });
+
+  it("stops its subscriptions when aborted while the consumer holds an item", async () => {
+    harness = await new Harness().start();
+    const { fake } = harness;
+    fake.createThread("thread-a");
+    fake.raise("thread-a", "request-1");
+    const controller = new AbortController();
+    const items = harness.client.requests.watch({ signal: controller.signal });
+    const iterator = items[Symbol.asyncIterator]();
+    expect((await iterator.next()).value).toMatchObject({ kind: "request" });
+    expect((await iterator.next()).value).toMatchObject({ kind: "synchronized" });
+    expect([fake.streams.liveShells, fake.streams.liveThreads]).toEqual([1, 1]);
+    controller.abort();
+    await until(() => fake.streams.liveShells === 0 && fake.streams.liveThreads === 0);
+    expect(await iterator.next()).toEqual({ done: true, value: undefined });
+  });
+
+  it("stops its subscriptions when the consumer stops iterating", async () => {
+    harness = await new Harness().start();
+    const { fake } = harness;
+    fake.createThread("thread-a");
+    fake.raise("thread-a", "request-1");
+    for await (const item of harness.client.requests.watch()) {
+      if (item.kind === "synchronized") break;
+    }
+    await until(() => fake.streams.liveShells === 0 && fake.streams.liveThreads === 0);
   });
 });
