@@ -18,17 +18,26 @@ import {
 
 useDispatchHarness("dispatch-signals");
 
-function signalledCommand(prompt: boolean, delay: number) {
+function signalledCommand(sampleDelayMs?: number) {
   return new Promise<{
     exit: number | null;
     signal: string | null;
     stdout: string;
     stderr: string;
     beforeThread: boolean;
+    stdinReadyAfterMs: number | undefined;
   }>((resolve, reject) => {
+    const waitForStdin = sampleDelayMs === undefined;
+    const startedAt = performance.now();
     const child = NodeChildProcess.spawn(
       process.execPath,
-      ["dist/cli.js", ...runCommand, ...(prompt ? ["Count slowly to one hundred."] : []), "--json"],
+      [
+        ...(waitForStdin ? ["--import", "./test/live/openStdinProbe.mjs"] : []),
+        "dist/cli.js",
+        ...runCommand,
+        ...(waitForStdin ? [] : ["Count slowly to one hundred."]),
+        "--json",
+      ],
       {
         env: {
           ...process.env,
@@ -36,44 +45,81 @@ function signalledCommand(prompt: boolean, delay: number) {
           T3_SERVER_URL: "",
           T3_TOKEN: "",
         },
-        stdio: ["pipe", "pipe", "pipe"],
+        stdio: waitForStdin ? ["pipe", "pipe", "pipe", "ipc"] : ["pipe", "pipe", "pipe"],
       },
     );
     let stdout = "",
       stderr = "",
       beforeThread = false;
-    child.stdout.on("data", (chunk: Buffer) => {
+    // Both stdio configurations pipe all three streams.
+    child.stdout!.on("data", (chunk: Buffer) => {
       stdout += chunk.toString();
     });
-    child.stderr.on("data", (chunk: Buffer) => {
+    child.stderr!.on("data", (chunk: Buffer) => {
       stderr += chunk.toString();
     });
-    const timer = setTimeout(() => {
+    function interrupt() {
       beforeThread = !stderr.includes("Thread: ");
       child.kill("SIGTERM");
-    }, delay);
-    child.once("error", reject);
-    child.once("close", (exit, signal) => {
-      clearTimeout(timer);
-      resolve({ exit, signal, stdout, stderr, beforeThread });
+    }
+    let stdinReadyAfterMs: number | undefined;
+    if (waitForStdin) {
+      child.once("message", (message) => {
+        if (message !== "waiting on stdin") return;
+        stdinReadyAfterMs = Math.round(performance.now() - startedAt);
+        interrupt();
+      });
+    } else child.stdin!.end();
+    const sample = sampleDelayMs === undefined ? undefined : setTimeout(interrupt, sampleDelayMs);
+    let timedOut = false;
+    const deadline = waitForStdin
+      ? setTimeout(() => {
+          timedOut = true;
+          child.kill("SIGKILL");
+        }, 30_000)
+      : undefined;
+    child.once("error", (error) => {
+      clearTimeout(sample);
+      clearTimeout(deadline);
+      reject(error);
     });
-    if (prompt) child.stdin.end();
+    child.once("close", (exit, signal) => {
+      clearTimeout(sample);
+      clearTimeout(deadline);
+      if (timedOut) {
+        const stage = stdinReadyAfterMs === undefined ? "stdin readiness" : "exit";
+        reject(new Error(`Timed out waiting for CLI ${stage}\n${stdout}${stderr}`));
+      } else resolve({ exit, signal, stdout, stderr, beforeThread, stdinReadyAfterMs });
+    });
   });
 }
 
 it("SIGTERM during open stdin exits 4 with no thread", async () => {
   const before = (await client.threads.list()).map((thread) => thread.id).sort();
-  const result = await signalledCommand(false, 500);
-  expect(result.signal).toBeNull();
+  const result = await signalledCommand();
+  expect(result.signal, JSON.stringify(result)).toBeNull();
+  expect(
+    result.stdinReadyAfterMs ?? 0,
+    "CLI must report stdin readiness after 500 ms",
+  ).toBeGreaterThan(500);
   expect(result.exit).toBe(4);
   expect(result.beforeThread).toBe(true);
-  expect(JSON.parse(result.stdout)).toMatchObject({ threadId: null, runId: null, exitCode: 4 });
+  expect(result.stderr).not.toContain("Thread: ");
+  const envelope = JSON.parse(result.stdout);
+  expect(envelope).toMatchObject({
+    threadId: null,
+    runId: null,
+    exitCode: 4,
+    error: { code: "interrupted" },
+  });
   expect((await client.threads.list()).map((thread) => thread.id).sort()).toEqual(before);
   record({
     case: "open stdin signal",
+    stdinReadyAfterMs: result.stdinReadyAfterMs,
     exit: result.exit,
-    threadId: null,
+    signal: result.signal,
     beforeThread: result.beforeThread,
+    envelope,
   });
 });
 
@@ -82,7 +128,7 @@ it.skipIf(!agent)(
   async () => {
     let hits = 0;
     for (const delay of [100, 150, 200]) {
-      const result = await signalledCommand(true, delay);
+      const result = await signalledCommand(delay);
       // Startup can precede handler installation. Such a sample is evidence of a missed window.
       if (result.signal !== null) {
         record({
