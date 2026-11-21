@@ -30,6 +30,8 @@ export interface ThreadWatchHost {
   readonly signal: AbortSignal;
   readonly backoff: BackoffPolicy | undefined;
   readonly cardWaitMs: number;
+  /** Socket drops counted so far. */
+  drops(): number;
   watch(threadId: ThreadId, options: ThreadWatchOptions): AsyncIterable<ThreadWatchItem>;
   detail(threadId: ThreadId, signal: AbortSignal): Promise<unknown>;
   /** Runs `task` in the run's task loop. */
@@ -47,6 +49,8 @@ interface Watch {
   controller: AbortController;
   /** Delivered `synchronized` since it last subscribed or resumed. */
   caughtUp: boolean;
+  /** Socket drops counted when it last subscribed: only a later drop makes it resume. */
+  drops: number;
   /** The socket dropped; items until the resumed subscription's `reconnected` are old. */
   resuming: boolean;
   /** Between a subscription's first item or `reconnected` and its marker: views are not current. */
@@ -73,6 +77,7 @@ function newWatch(): Watch {
     attempt: 0,
     controller: new AbortController(),
     caughtUp: false,
+    drops: 0,
     resuming: false,
     replaying: false,
     retry: undefined,
@@ -139,11 +144,14 @@ export class ThreadWatches {
     track.recheckFrom = this.#subscribe(track, track.watch);
   }
 
-  /** The socket dropped: every live subscription resumes and must deliver its marker again. */
-  dropped(): void {
+  /**
+   * The socket dropped: every subscription made before drop number `drop` resumes and must deliver
+   * its marker again. One made since, while the socket was down, is a fresh subscription.
+   */
+  dropped(drop: number): void {
     for (const track of this.#tracks.values()) {
       const watch = track.watch;
-      if (watch === undefined || watch.attempt === 0) continue;
+      if (watch === undefined || watch.attempt === 0 || watch.drops >= drop) continue;
       watch.caughtUp = false;
       watch.resuming = true;
     }
@@ -186,6 +194,7 @@ export class ThreadWatches {
   #subscribe(track: Track, watch: Watch): number {
     const attempt = ++this.#attempts;
     watch.attempt = attempt;
+    watch.drops = this.#host.drops();
     watch.caughtUp = false;
     watch.resuming = false;
     watch.replaying = false;

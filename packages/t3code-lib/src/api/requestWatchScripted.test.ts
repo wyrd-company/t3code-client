@@ -36,7 +36,10 @@ const event = (sequence: number, type: string, payload: Record<string, unknown>)
   return { kind: "event", sequence, event: parseEvent(raw.event) } as const;
 };
 
-function scripted(listing: OrchestrationV2ShellSnapshot) {
+function scripted(
+  listing: OrchestrationV2ShellSnapshot,
+  snapshot: () => Promise<OrchestrationV2ShellSnapshot> = async () => listing,
+) {
   const shell = createChannel<ShellWatchItem>();
   const threads = new Map<ThreadId, Channel<ThreadWatchItem>[]>();
   let stateHandler: ((state: SocketState) => void) | undefined;
@@ -44,7 +47,7 @@ function scripted(listing: OrchestrationV2ShellSnapshot) {
   const out: RequestWatchItem[] = [];
   const run = watchRequests(
     {
-      shell: { snapshot: async () => listing, watch: () => shell },
+      shell: { snapshot, watch: () => shell },
       threads: {
         watch: (threadId) => {
           const channel = createChannel<ThreadWatchItem>();
@@ -78,7 +81,10 @@ function scripted(listing: OrchestrationV2ShellSnapshot) {
     kinds,
     out,
     controller,
-    drop: () => stateHandler?.("connecting"),
+    drop: () => {
+      stateHandler?.("open");
+      stateHandler?.("connecting");
+    },
   };
 }
 
@@ -218,6 +224,39 @@ describe("request watch orderings", () => {
     await until(() => script.kinds().length === 2);
     expect(script.kinds()).toEqual(["request-1", "synchronized"]);
     expect(script.out[0]).toMatchObject({ request: { request: { status: "resolved" } } });
+    script.controller.abort();
+  });
+
+  it("takes subscriptions made after a drop, before its task runs, as fresh", async () => {
+    const waiting = makeShellThread({
+      pendingRuntimeRequest: { id: "request-1", kind: "command", createdAt: at(1) },
+    });
+    const listing = makeShellSnapshot({ snapshotSequence: 4, threads: [waiting] });
+    let drop = () => {};
+    // The socket drops after the listing arrives and before the run handles it, so the listing's
+    // shell and thread subscriptions are made while the socket is down: they are fresh.
+    const script = scripted(
+      listing,
+      () =>
+        new Promise((resolve) => {
+          setTimeout(() => {
+            resolve(listing);
+            queueMicrotask(() => drop());
+          }, 10);
+        }),
+    );
+    drop = script.drop;
+    await until(() => script.thread("thread-1") !== undefined);
+    const watch = script.thread("thread-1")!;
+    const view = makeProjection({
+      runtimeRequests: [request("request-1")],
+      turnItems: [items.approvalRequest("request-1")],
+    });
+    watch.push({ kind: "snapshot", snapshot: { snapshotSequence: 4, projection: view } });
+    watch.push({ kind: "synchronized" });
+    script.shell.push({ kind: "synchronized" });
+    await until(() => script.kinds().length === 2);
+    expect(script.kinds()).toEqual(["request-1", "synchronized"]);
     script.controller.abort();
   });
 });

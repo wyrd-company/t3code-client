@@ -76,9 +76,14 @@ class RequestWatchRun {
   readonly #threads: ThreadWatches;
   readonly #resyncBackoff: Backoff;
   #failure: { readonly error: unknown } | undefined;
+  /** The socket's state as its handler last saw it. */
   #socketState: SocketState;
+  /** Socket drops, counted by the handler as they happen, before their tasks run. */
+  #drops = 0;
   #shellGeneration = 0;
   #shellController: AbortController | undefined;
+  /** `#drops` when the shell subscription was made: only a later drop makes it resume. */
+  #shellDrops = 0;
   #shellResuming = false;
   #resyncTimer: ReturnType<typeof setTimeout> | undefined;
   /** `snapshot-required` answers since the shell last delivered `synchronized`. */
@@ -98,6 +103,7 @@ class RequestWatchRun {
       reports: new RequestReports(),
       signal: this.#stop.signal,
       backoff: sources.backoff,
+      drops: () => this.#drops,
       cardWaitMs: sources.cardWaitMs ?? 2_000,
       watch: (threadId, options) => sources.threads.watch(threadId, options),
       detail: (threadId, detailSignal) => sources.threads.detail(threadId, detailSignal),
@@ -117,7 +123,10 @@ class RequestWatchRun {
     };
     this.#signal?.addEventListener("abort", wake, { once: true });
     const offState = this.#sources.connection.onStateChange((state, error) => {
-      this.#tasks.push(() => this.#onSocketState(state, error));
+      // Counted now, so a subscription made before this drop's task runs knows it came after.
+      const drop = this.#socketState === "open" && state !== "open" ? ++this.#drops : undefined;
+      this.#socketState = state;
+      this.#tasks.push(() => this.#onSocketState(state, error, drop));
     });
     try {
       if (this.#socketState === "closed") this.#onSocketState("closed");
@@ -168,18 +177,16 @@ class RequestWatchRun {
     return ends;
   }
 
-  #onSocketState(state: SocketState, error?: T3ConnectionError): void {
-    const was = this.#socketState;
-    this.#socketState = state;
+  #onSocketState(state: SocketState, error?: T3ConnectionError, drop?: number): void {
     if (state === "closed") {
       this.#fail(error ?? new T3ConnectionError("closed", "The connection was closed."));
       return;
     }
-    if (was !== "open" || state === "open") return;
-    // Every live subscription resumes, and the run is not synchronized until a resync.
+    if (drop === undefined) return;
+    // Every subscription made before the drop resumes; the run is not synchronized until a resync.
     this.#pending();
-    if (this.#shellController !== undefined) this.#shellResuming = true;
-    this.#threads.dropped();
+    if (this.#shellController !== undefined && this.#shellDrops < drop) this.#shellResuming = true;
+    this.#threads.dropped(drop);
   }
 
   #pending(): void {
@@ -234,6 +241,7 @@ class RequestWatchRun {
   #subscribe(generation: number, afterSequence: number): void {
     const controller = new AbortController();
     this.#shellController = controller;
+    this.#shellDrops = this.#drops;
     const items = this.#sources.shell.watch({
       afterSequence,
       httpSnapshotFallback: true,
