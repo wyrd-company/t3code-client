@@ -474,8 +474,12 @@ proposed-design:
     snapshot item replaces the view; a resumed thread watch's replay advances
     it.
 
-    **Reporting.** After every snapshot and every event, the watch takes the
-    view's `pendingRequests`. Each selected one whose key is not in the run's
+    **Reporting.** The watch reads a view for requests only once its
+    subscription has caught up: at the `synchronized` it delivers after it
+    subscribed or resumed, and after every later snapshot and event. A
+    replay's intermediate views are applied but not read, because they can
+    hold a request that settled later in the same gap. At each read the watch
+    takes the view's `pendingRequests`. Each selected one whose key is not in the run's
     set is seen; its report is ready once the view holds its card, the
     `approval_request` or `user_input_request` turn item whose `requestId` is
     the request's id, or two seconds after it was first seen, whichever comes
@@ -485,7 +489,9 @@ proposed-design:
     joins them, or with the last ones a view held when that view no longer
     holds the request. A request no longer selected is dropped without a
     report, and is seen again when a later view selects it while it is
-    pending. Reporting adds the key to the set and builds the
+    pending. A card wait that runs out while the thread watch replays ends at
+    the replay's `synchronized`, with the caught-up view. Reporting adds the
+    key to the set and builds the
     `ReportedRequest` from the request, its card and the view's thread
     record: the thread's title and tags, and the project id with the index's
     project title.

@@ -71,7 +71,15 @@ function scripted(listing: OrchestrationV2ShellSnapshot) {
   const kinds = () =>
     out.map((item) => (item.kind === "request" ? item.request.requestId : item.kind));
   const thread = (threadId: string) => threads.get(threadId as ThreadId)?.at(-1);
-  return { shell, threads, thread, kinds, controller, drop: () => stateHandler?.("connecting") };
+  return {
+    shell,
+    threads,
+    thread,
+    kinds,
+    out,
+    controller,
+    drop: () => stateHandler?.("connecting"),
+  };
 }
 
 describe("request watch orderings", () => {
@@ -183,6 +191,33 @@ describe("request watch orderings", () => {
     script.shell.push({ kind: "synchronized" });
     await until(() => script.kinds().length === 2);
     expect(script.kinds()).toEqual(["request-1", "synchronized"]);
+    script.controller.abort();
+  });
+
+  it("ends a card wait that runs out during a replay at the replay's marker", async () => {
+    const waiting = makeShellThread({
+      pendingRuntimeRequest: { id: "request-1", kind: "command", createdAt: at(1) },
+    });
+    const script = scripted(makeShellSnapshot({ snapshotSequence: 4, threads: [waiting] }));
+    await until(() => script.thread("thread-1") !== undefined);
+    const watch = script.thread("thread-1")!;
+    // Seen pending without its card, so its report waits.
+    const view = makeProjection({ runtimeRequests: [request("request-1")] });
+    watch.push({ kind: "snapshot", snapshot: { snapshotSequence: 4, projection: view } });
+    watch.push({ kind: "synchronized" });
+    script.shell.push({ kind: "synchronized" });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    script.drop();
+    watch.push({ kind: "reconnected", afterSequence: 4 });
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(script.kinds()).toEqual([]);
+    watch.push(event(5, "runtime-request.updated", request("request-1", "resolved")));
+    watch.push({ kind: "synchronized" });
+    script.shell.push({ kind: "reconnected", afterSequence: 4 });
+    script.shell.push({ kind: "synchronized" });
+    await until(() => script.kinds().length === 2);
+    expect(script.kinds()).toEqual(["request-1", "synchronized"]);
+    expect(script.out[0]).toMatchObject({ request: { request: { status: "resolved" } } });
     script.controller.abort();
   });
 });
