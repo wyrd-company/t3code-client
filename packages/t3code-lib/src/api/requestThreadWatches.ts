@@ -108,15 +108,15 @@ export class ThreadWatches {
   /** Opens or closes the thread's watch as the watch rule says. */
   evaluate(threadId: ThreadId): void {
     const track = this.#tracks.get(threadId);
-    const needs = this.#needs(threadId, track);
     if (track?.watch === undefined) {
-      if (!needs) return;
+      // A card wait keeps a watch open; it does not open one, and reports from the last view.
+      if (!this.#needs(threadId, track, false)) return;
       const opened = this.#track(threadId);
       opened.watch = newWatch();
       this.#subscribe(opened, opened.watch);
       return;
     }
-    if (needs) return;
+    if (this.#needs(threadId, track)) return;
     if (track.watch.attempt === 0 || track.watch.caughtUp) this.#close(track);
   }
 
@@ -174,12 +174,12 @@ export class ThreadWatches {
   }
 
   /** Every condition of the watch rule but the wait for `synchronized`. */
-  #needs(threadId: ThreadId, track: Track | undefined): boolean {
+  #needs(threadId: ThreadId, track: Track | undefined, cardWait = true): boolean {
     return needsThreadWatch(this.#host.filters, {
       thread: this.#host.index.get(threadId),
       view: track?.view,
       outstanding: track?.removal !== undefined || track?.recheckFrom !== undefined,
-      cardWait: this.#host.reports.waiting(threadId),
+      cardWait: cardWait && this.#host.reports.waiting(threadId),
     });
   }
 
@@ -326,11 +326,15 @@ export class ThreadWatches {
           this.#host.schedule(() => {
             if (track.watch !== watch || this.#host.signal.aborted) return;
             if (detailError instanceof T3NotFoundError) {
+              // The server holds no such thread: its view is gone with it. Card waits already
+              // started still report, from the last record they held.
               track.removal = undefined;
               track.recheckFrom = undefined;
-            } else if (this.#host.endsRun(detailError)) {
+              this.#close(track);
+              this.evaluate(track.threadId);
               return;
             }
+            if (this.#host.endsRun(detailError)) return;
             this.#retry(track, watch);
           }),
       );

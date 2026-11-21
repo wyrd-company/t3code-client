@@ -194,4 +194,37 @@ describe("client.requests.watch and archived threads", () => {
     expect(afterStart(watcher.kinds)).toEqual(expected);
     expect(fake.streams.threadSubscriptions("thread-t")).toBe(n);
   });
+
+  it.each([
+    ["with no request waiting", false, ["thread-error", "reconnected"]],
+    [
+      "with a request waiting for its card",
+      true,
+      ["thread-error", "thread-t/request-1", "reconnected"],
+    ],
+  ])(
+    "closes the watch of a thread the server no longer holds, %s",
+    async (_c, waiting, expected) => {
+      harness = await new Harness().start();
+      const { fake } = harness;
+      fake.createThread("thread-t");
+      fake.run("thread-t", "run-1", "running");
+      const watcher = harness.watch();
+      await watcher.until((w) => w.count("synchronized") === 1);
+      fake.archive("thread-t");
+      await watcher.until(() => fake.streams.threadSubscriptions("thread-t") === 1);
+      await pause(200);
+      if (waiting) {
+        fake.raise("thread-t", "request-1", { card: false });
+        await pause(200);
+      }
+      // The open watch's view still holds the running run when the thread goes away.
+      fake.threads.get("thread-t")!.forgotten = true;
+      fake.streams.failShells();
+      await watcher.until((w) => w.count("reconnected") === 1, 4_000);
+      await pause(300);
+      expect(afterStart(watcher.kinds)).toEqual(expected);
+      expect(fake.streams.threadSubscriptions("thread-t")).toBe(2);
+    },
+  );
 });
