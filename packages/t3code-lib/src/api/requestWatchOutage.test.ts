@@ -106,6 +106,38 @@ describe("client.requests.watch replaying an open thread watch", () => {
     const resumed = fake.streams.threadPayloads.filter((p) => p["threadId"] === "thread-a");
     expect(resumed.map((p) => p["afterSequence"] !== undefined)).toEqual([false, true]);
   });
+
+  it("reports from a thread watch first opened while the socket is down", async () => {
+    harness = await new Harness().start();
+    const { fake } = harness;
+    const iterator = harness.client.requests.watch()[Symbol.asyncIterator]();
+    expect((await iterator.next()).value).toMatchObject({ kind: "synchronized" });
+    // The consumer holds the item: the new thread's row is buffered before the drop.
+    fake.createThread("thread-new");
+    fake.raise("thread-new", "request-1");
+    await pause(300);
+    await harness.stopServer();
+    await pause(100);
+    const pulled = iterator.next();
+    await pause(100);
+    await harness.restart();
+    const kinds: string[] = [];
+    for (let item = await pulled; ; item = await iterator.next()) {
+      if (item.done === true) break;
+      const value = item.value;
+      kinds.push(
+        value.kind === "request"
+          ? `${value.request.thread.id}/${value.request.requestId}`
+          : value.kind,
+      );
+      if (value.kind === "reconnected") break;
+    }
+    expect(kinds).toEqual(["thread-new/request-1", "reconnected"]);
+    // One fresh subscription for the thread: no cursor, so no reconnected item of its own.
+    const payloads = fake.streams.threadPayloads.filter((p) => p["threadId"] === "thread-new");
+    expect(payloads.map((p) => p["afterSequence"])).toEqual([undefined]);
+    await iterator.return?.();
+  });
 });
 
 describe("client.requests.watch failures and ends", () => {
