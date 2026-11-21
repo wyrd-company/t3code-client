@@ -14,11 +14,27 @@ hook below handles the single command `echo sample` in that project.
 
 ## Choose the server and projects
 
-Use a POSIX shell with `t3c` and `node` on your PATH. Pair a profile for your server
-with `orchestration:read` and `orchestration:operate`. The watcher uses read
-access and the hook needs operate access to send and respond. Select the paired
-profile and use its saved credential. The hook inherits the server URL from the
-watcher. See [Auth and profiles](auth.md).
+Use a POSIX shell with `t3c` and `node` on your PATH. The watcher needs
+`orchestration:read`, and the hook also needs `orchestration:operate` to send
+messages and respond to approvals.
+
+If you need a profile, create a short-lived credential on the server you
+want to watch.
+
+```sh
+t3 auth pairing create --scope orchestration:read --scope orchestration:operate
+```
+
+Use that credential as stdin to pair the CLI, and replace the example URL
+with your server's URL.
+
+```sh
+t3c auth pair --server https://server.example --name sample --pairing-token-stdin
+```
+
+Select your profile in a terminal that uses saved profile credentials. The
+hook inherits the server URL from the watcher and uses the saved credential
+for that URL. See [Auth and profiles](auth.md) for environment overrides.
 
 ```sh
 t3c auth switch sample
