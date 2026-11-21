@@ -200,7 +200,8 @@ run. A failed or timed-out hook leaves the watch running.
 Use `--log-level info` to see readiness and reconnect messages. Ctrl-C
 stops reporting and drains hooks for lines already printed. A second
 interrupt stops active hooks immediately. See [Output, exits and requests](policy.md)
-for the final result event and exit codes.
+for the final result event and exit codes. Follow the [worked approval hook](watch-approvals.md)
+to send approvals to a reviewer thread.
 
 ## Stop and queue recovery
 
