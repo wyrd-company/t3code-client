@@ -7,7 +7,10 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodeOS from "node:os";
 import * as NodePath from "node:path";
 import { z } from "zod";
+import type { RequestWatchFilters } from "../api/requests.ts";
 import { T3StorageError, T3PreconditionError } from "../errors.ts";
+import { ProjectId, ThreadId } from "../schemas/common.ts";
+import { ThreadTag } from "../schemas/orchestration/threadTags.ts";
 import { environmentValue } from "./environment.ts";
 
 /** A named server; credentials are stored separately. */
@@ -18,7 +21,7 @@ export interface Profile {
 
 /** Contents of config.json. Credentials never belong in this object. */
 export interface ProfileConfig {
-  servers: Record<string, { url: string }>;
+  servers: Record<string, { url: string; requestWatch?: unknown }>;
   current?: string;
 }
 
@@ -27,6 +30,13 @@ const Config = z.looseObject({
     (value) => typeof value === "object" && value !== null && !Array.isArray(value),
   ),
   current: z.string().min(1).optional(),
+});
+
+const WatchDefaults = z.looseObject({
+  projectIds: z.array(ProjectId).optional(),
+  kind: z.enum(["approval", "user-input"]).optional(),
+  excludeThreadIds: z.array(ThreadId).optional(),
+  excludeTags: z.array(ThreadTag).optional(),
 });
 
 export function configDirectory(env: NodeJS.ProcessEnv = process.env): string {
@@ -57,6 +67,26 @@ export function profileNamed(config: ProfileConfig, name: string): Profile {
     throw new T3PreconditionError("The selected profile does not exist.");
   }
   return { name, url: config.servers[name]!.url };
+}
+
+export function requestWatchDefaults(config: ProfileConfig, name: string): RequestWatchFilters {
+  profileNamed(config, name);
+  const raw = config.servers[name]!.requestWatch;
+  if (raw === undefined) return {};
+
+  const parsed = WatchDefaults.safeParse(raw);
+  if (!parsed.success) {
+    throw new T3PreconditionError(
+      `Invalid requestWatch defaults for profile ${JSON.stringify(name)}.`,
+    );
+  }
+  const { projectIds, kind, excludeThreadIds, excludeTags } = parsed.data;
+  return {
+    ...(projectIds === undefined ? {} : { projectIds }),
+    ...(kind === undefined ? {} : { kind }),
+    ...(excludeThreadIds === undefined ? {} : { excludeThreadIds }),
+    ...(excludeTags === undefined ? {} : { excludeTags }),
+  };
 }
 
 export async function loadConfig(directory: string): Promise<ProfileConfig> {
