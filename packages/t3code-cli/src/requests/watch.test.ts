@@ -262,6 +262,7 @@ it("warns about thread and decode failures, then stops watching on the first sig
   const f = fixture();
   const invalid = schemas.common.ThreadId.safeParse(null);
   if (invalid.success) throw new Error("Expected an invalid thread id.");
+  let abortedOnSignal: boolean | undefined;
   f.watch.mockImplementation(async function* (options) {
     yield { kind: "synchronized" };
     yield {
@@ -272,10 +273,11 @@ it("warns about thread and decode failures, then stops watching on the first sig
     yield { kind: "decode-error", error: new T3DecodeError("Sample", invalid.error, null) };
     yield { kind: "request", request: approval };
     process.emit("SIGTERM");
-    expect(options?.signal?.aborted).toBe(true);
+    abortedOnSignal = options?.signal?.aborted;
     yield { kind: "request", request: approval };
   });
   const { code, stderr, lines } = await f.run([]);
+  expect(abortedOnSignal).toBe(true);
   expect(code).toBe(4);
   expect(stderr).toEqual([
     't3c: could not watch thread "thread-1\\nextra": "Sample\\nerror."\n',
@@ -293,14 +295,48 @@ it("warns about thread and decode failures, then stops watching on the first sig
 
 it("cancels preflight and closes the client on SIGINT", async () => {
   const f = fixture();
+  let abortedOnSignal: boolean | undefined;
   f.snapshot.mockImplementation(async (signal) => {
     process.emit("SIGINT");
-    expect(signal?.aborted).toBe(true);
+    abortedOnSignal = signal?.aborted;
     return { projects: [], updatedAt: at };
   });
   const { code, lines } = await f.run([]);
+  expect(abortedOnSignal).toBe(true);
   expect(code).toBe(4);
   expect(lines).toEqual([expect.objectContaining({ type: "result", exitCode: 4 })]);
   expect(f.watch).not.toHaveBeenCalled();
   expect(f.close).toHaveBeenCalledTimes(1);
+});
+
+it("reports a failing hook and continues watching for the next request", async () => {
+  const f = fixture();
+  const firstFailure = 't3c: hook failed for request "request-1" in thread "thread-1": exit 3\n';
+  const requestId = schemas.common.RuntimeRequestId.parse("request-2");
+  f.watch.mockImplementation(async function* () {
+    yield { kind: "request", request: approval };
+    await vi.waitFor(() => expect(f.stderr).toContain(firstFailure));
+    yield {
+      kind: "request",
+      request: { ...approval, requestId, request: { ...approval.request, id: requestId } },
+    };
+    throw new T3ConnectionError("closed", "Sample connection closed.");
+  });
+  const { code, lines, stderr } = await f.run(["--exec", "exit 3", "--exec-concurrency", "1"]);
+  expect(code).toBe(8);
+  expect(lines).toEqual([
+    expect.objectContaining({ type: "request", requestId: "request-1" }),
+    expect.objectContaining({ type: "request", requestId: "request-2" }),
+    {
+      type: "result",
+      data: { reported: 2, hooks: { succeeded: 0, failed: 2, stopped: 0, notRun: 0 } },
+      exitCode: 8,
+      error: { code: "connection", message: "Server connection failed." },
+    },
+  ]);
+  expect(stderr).toEqual([
+    firstFailure,
+    't3c: hook failed for request "request-2" in thread "thread-1": exit 3\n',
+    "t3c: Server connection failed.\n",
+  ]);
 });
