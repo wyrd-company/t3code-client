@@ -3,6 +3,7 @@
 //   implements: profiles
 // ---
 import { T3Client, type T3ClientOptions } from "../client.ts";
+import type { RequestWatchFilters } from "../api/requests.ts";
 import type { ExchangePairingTokenOptions } from "../auth/authClient.ts";
 import {
   fileCredentialStore,
@@ -24,6 +25,7 @@ import {
   loadConfig,
   prepareCredentials,
   profileNamed,
+  requestWatchDefaults,
   saveConfig,
   serverUrl,
   type Profile,
@@ -86,6 +88,14 @@ export class ProfileManager {
   async getCurrent(): Promise<Profile | undefined> {
     const config = await loadConfig(this.configDir);
     return config.current === undefined ? undefined : profileNamed(config, config.current);
+  }
+
+  /**
+   * Read the named profile's request watch filters. An absent requestWatch entry gives no filters.
+   * @throws {T3PreconditionError} The profile does not exist or its watch defaults are malformed.
+   */
+  async requestWatchDefaults(name: string): Promise<RequestWatchFilters> {
+    return requestWatchDefaults(await loadConfig(this.configDir), name);
   }
 
   /**
@@ -218,7 +228,7 @@ export class ProfileManager {
       await client.close();
     }
     Object.defineProperty(config.servers, profile.name, {
-      value: { url: profile.url },
+      value: { ...config.servers[profile.name], url: profile.url },
       enumerable: true,
       configurable: true,
       writable: true,

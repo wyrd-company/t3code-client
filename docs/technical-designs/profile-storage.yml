@@ -24,6 +24,12 @@ proposed-design:
     are replaced atomically. These are individual file operations, not a transaction
     across the credential backend and config. Concurrent config writers must be
     serialized by the caller.
+  profile-entry: |
+    Registration replaces only the profile entry's url and preserves its other
+    keys. Switching keeps every entry, and logout removes the selected entry.
+    The optional requestWatch object holds filters as defined in request-watch.
+    Profile loading validates the URL, and requestWatchDefaults validates the
+    filters when the caller asks for them.
   credential-access-ownership: |
     Only `AuthClient` reads, writes or clears the selected store. `ProfileManager`
     selects it and composes a client for registration or logout. Explicit

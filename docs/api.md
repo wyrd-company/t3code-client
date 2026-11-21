@@ -4168,6 +4168,7 @@ transport failures retain connection and rejected credentials retain auth_invali
 - [ProfileManager](#ProfileManager)
   - [.list()](#ProfileManager+list)
   - [.getCurrent()](#ProfileManager+getCurrent)
+  - [.requestWatchDefaults()](#ProfileManager+requestWatchDefaults)
   - [.resolveProfile()](#ProfileManager+resolveProfile)
   - [.resolve()](#ProfileManager+resolve)
   - [.pair()](#ProfileManager+pair)
@@ -4197,6 +4198,21 @@ async getCurrent(): Promise<Profile | undefined>;
 ```
 
 **Kind**: instance method of [<code>ProfileManager</code>](#ProfileManager)  
+<a name="ProfileManager+requestWatchDefaults"></a>
+
+### profileManager.requestWatchDefaults()
+
+Read the named profile's request watch filters. An absent requestWatch entry gives no filters.
+
+```ts
+async requestWatchDefaults(name: string): Promise<RequestWatchFilters>;
+```
+
+**Kind**: instance method of [<code>ProfileManager</code>](#ProfileManager)  
+**Throws**:
+
+- [<code>T3PreconditionError</code>](#T3PreconditionError) The profile does not exist or its watch defaults are malformed.
+
 <a name="ProfileManager+resolveProfile"></a>
 
 ### profileManager.resolveProfile()
@@ -5114,7 +5130,7 @@ export interface Profile {
 }
 
 export interface ProfileConfig {
-  servers: Record<string, { url: string }>;
+  servers: Record<string, { url: string; requestWatch?: unknown }>;
   current?: string;
 }
 ```
