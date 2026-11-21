@@ -504,9 +504,12 @@ proposed-design:
     answers no removal or recheck. When a thread watch for a removed thread
     fails with an error that is not a `T3ConnectionError`, the watch reads
     `threads.detail(threadId)`. A `T3NotFoundError` there means the server
-    holds no such thread, and answers its removals and rechecks; any other
-    answer leaves them outstanding, and the thread watch opens again with
-    backoff. Two seconds after a request was first seen, its report uses the
+    holds no such thread: it answers its removals and rechecks, and the
+    thread watch closes with its view, so a run the view still holds does not
+    keep it open. Card waits already started still report, from the last
+    record they held. A card wait keeps an open thread watch open, but does
+    not open one. Any other answer leaves the removals and rechecks
+    outstanding, and the thread watch opens again with backoff. Two seconds after a request was first seen, its report uses the
     latest view, even when its thread watch is between attempts.
   startup: |
     Task 5 builds this.
