@@ -3,6 +3,7 @@ relationships:
   references: command-line
 assets:
   - t3c/assets/demo.gif
+  - t3c/assets/watch-approvals.gif
   - t3c/assets/logo.svg
   - t3mcp/assets/logo.svg
 products:
@@ -38,6 +39,9 @@ products:
             pages:
               - getting-started
               - auth
+          - group: How-to guides
+            pages:
+              - watch-approvals
       - section: Reference
         groups:
           - group: Using t3c
