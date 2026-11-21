@@ -24,7 +24,7 @@ Inspection, auth and version commands print their requested information.
 Non-execution JSON uses `{data, exitCode, error?}`; `thread start` without
 `--wait` places its thread/run ids in `data`.
 
-Without `--stream`, `--json` prints exactly one object on stdout. Execution
+Non-streaming commands print one object on stdout with `--json`. Execution
 results contain `threadId`, `runId`, `state`, `assistantMessage`,
 `pendingRequests`, `exitCode` and `durationMs`, plus `error` on failure.
 Dispatch results also report `runtimeMode`, the mode sent by this invocation, or
@@ -90,6 +90,26 @@ mode or in `pendingRequests` in JSON mode, and leave the thread open.
 `--approve accept|reject` applies the selected decision only to approval
 requests. User-input questions are never auto-answered. Interactive prompts
 are gated on a TTY; non-TTY harness execution follows the specified policy.
+
+## Request watch lifecycle
+
+`requests watch` streams newline-delimited request objects on stdout in both
+output modes. Readiness and reconnect progress go to stderr at `info` level.
+Thread and decode warnings, hook output and the short final error also go to
+stderr. A hook failure leaves the watch running and has no effect on its exit code.
+
+On the first SIGINT or SIGTERM the watch stops reporting, drains hooks for
+lines already printed, and exits `4`. A second signal stops active hooks,
+reports them as stopped and queued hooks as not run, and exits `4` immediately.
+A terminal watch error also drains hooks. Connection loss during a recoverable
+outage leaves the watch running. An error that ends the watch exits `1`, `2`,
+`8`, `9` or `10` according to the table below. Credential rejection after
+preflight exits `8`.
+
+With `--json`, an end after arguments parse adds a final `type: "result"`
+line with `data: {reported, hooks}`, `exitCode` and `error`. The hook totals
+are `{succeeded, failed, stopped, notRun}`. The value of `hooks` is null
+when `--exec` was omitted.
 
 ## Exit codes
 

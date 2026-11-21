@@ -10,7 +10,7 @@ type Command = {
   name: string;
   summary?: string;
   subcommands?: Command[];
-  output?: { "exit-codes": unknown[] };
+  output?: { modes: { name: string }[]; "exit-codes": { code: number; meaning: string }[] };
 };
 
 const surface = JSON.parse(
@@ -50,12 +50,19 @@ describe("normative CLI surface content", () => {
       "thread start",
       "thread send",
       "thread wait",
+      "requests watch",
     ]);
-    for (const [path, node] of outputs) {
+    for (const [path, node] of outputs.filter(([path]) => path !== "requests watch")) {
       expect(node.output?.["exit-codes"], path).toEqual(
         meanings.map((meaning, code) => ({ code, meaning })),
       );
     }
+  });
+
+  it("lists the request watch's streaming modes and exit codes", () => {
+    const watch = entries.find(([path]) => path === "requests watch")?.[1];
+    expect(watch?.output?.modes.map(({ name }) => name)).toEqual(["text", "json"]);
+    expect(watch?.output?.["exit-codes"].map(({ code }) => code)).toEqual([1, 2, 4, 8, 9, 10]);
   });
 
   it("retains every complete command summary", () => {
@@ -90,6 +97,8 @@ describe("normative CLI surface content", () => {
       "auth switch": "Select the current profile.",
       "auth logout": "Remove credentials for the named or current profile.",
       "server info": "Show environment descriptor, providers and models.",
+      requests: "Follow server requests.",
+      "requests watch": "Report pending approvals and questions as JSON lines.",
       "schedule list": "List scheduled tasks.",
       "schedule show": "Show one scheduled task.",
       "schedule create": "Create a scheduled task.",

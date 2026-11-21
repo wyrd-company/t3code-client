@@ -2,7 +2,14 @@
 // relationships:
 //   implements: command-line
 // ---
+import * as NodeFS from "node:fs";
 import type { CliFailure, ExitCode } from "./errors.ts";
+
+const logLevels = ["silent", "error", "warn", "info", "debug"];
+
+export function logEnabled(level: string, threshold = "warn"): boolean {
+  return logLevels.indexOf(level) <= logLevels.indexOf(threshold);
+}
 
 export interface OutputSink {
   stdout(text: string): void;
@@ -26,6 +33,14 @@ export interface InspectionResult {
   error?: CliFailure;
 }
 
+function writeForced(fd: 1 | 2, text: string): void {
+  try {
+    NodeFS.writeSync(fd, text);
+  } catch {
+    // A closed output stream must not prevent the other writes or the forced exit.
+  }
+}
+
 /** One invocation owns one output instance, and finishes it once. */
 export class Output {
   #finished = false;
@@ -44,6 +59,9 @@ export class Output {
     if (this.#finished) return;
     this.sink.stderr(`${message}\n`);
   }
+  line(line: string): void {
+    if (!this.#finished) this.sink.stdout(line);
+  }
   delta(text: string): void {
     if (!this.stream || this.#finished) return;
     this.#streamed = true;
@@ -54,15 +72,26 @@ export class Output {
     if (this.stream && this.json && !this.#finished) this.sink.stdout(`${JSON.stringify(event)}\n`);
   }
   finish(result: ExecutionResult | InspectionResult, text = ""): void {
+    this.#finish(result, text, this.sink);
+  }
+  finishForced(result: InspectionResult, diagnostics: readonly string[]): void {
+    if (this.#finished) return;
+    for (const message of diagnostics) writeForced(2, `${message}\n`);
+    this.#finish(result, "", {
+      stdout: (text) => writeForced(1, text),
+      stderr: (text) => writeForced(2, text),
+    });
+  }
+  #finish(result: ExecutionResult | InspectionResult, text: string, sink: OutputSink): void {
     if (this.#finished) throw new Error("Output already finished.");
     if (this.json) {
-      this.sink.stdout(`${JSON.stringify(this.stream ? { type: "result", ...result } : result)}\n`);
+      sink.stdout(`${JSON.stringify(this.stream ? { type: "result", ...result } : result)}\n`);
     } else if ("assistantMessage" in result) {
       if (!this.#streamed && result.assistantMessage !== null)
-        this.sink.stdout(`${result.assistantMessage}\n`);
-      else if (this.#streamed) this.sink.stdout("\n");
-    } else if (text) this.sink.stdout(`${text}\n`);
-    if (result.error) this.sink.stderr(`t3c: ${result.error.message}\n`);
+        sink.stdout(`${result.assistantMessage}\n`);
+      else if (this.#streamed) sink.stdout("\n");
+    } else if (text) sink.stdout(`${text}\n`);
+    if (result.error) sink.stderr(`t3c: ${result.error.message}\n`);
     this.exitCode = result.exitCode;
     this.#finished = true;
   }

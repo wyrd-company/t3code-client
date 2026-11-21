@@ -71,7 +71,11 @@ export async function main(
         else
           wrapped[path] = async (args, selected) => {
             const options = selected.optsWithGlobals();
-            output = new Output(sink, options["json"] === true, options["stream"] === true);
+            output = new Output(
+              sink,
+              options["json"] === true,
+              path === "requests watch" || options["stream"] === true,
+            );
             invocation = createInvocation(options, output, undefined, versions.cli);
             execution =
               path === "run" ||

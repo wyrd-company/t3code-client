@@ -1382,6 +1382,136 @@
       ]
     },
     {
+      "name": "requests",
+      "summary": "Follow server requests.",
+      "subcommands": [
+        {
+          "name": "watch",
+          "summary": "Report pending approvals and questions as JSON lines.",
+          "options": [
+            {
+              "name": "project",
+              "flags": ["--project"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "description": "Include this project id. Repeat to include several.",
+              "repeatable": true
+            },
+            {
+              "name": "kind",
+              "flags": ["--kind"],
+              "kind": "option",
+              "value": {
+                "type": "enum",
+                "values": ["approval", "user-input"]
+              },
+              "description": "Report only requests of this kind."
+            },
+            {
+              "name": "exclude-thread",
+              "flags": ["--exclude-thread"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "description": "Exclude this exact thread id. Repeat to exclude several.",
+              "repeatable": true
+            },
+            {
+              "name": "exclude-tag",
+              "flags": ["--exclude-tag"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "description": "Exclude threads with this tag. Repeat to exclude several.",
+              "repeatable": true
+            },
+            {
+              "name": "exec",
+              "flags": ["--exec"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "description": "Run this shell command for each reported request."
+            },
+            {
+              "name": "exec-concurrency",
+              "flags": ["--exec-concurrency"],
+              "kind": "option",
+              "value": {
+                "type": "string"
+              },
+              "description": "Maximum simultaneous hooks as a positive integer.",
+              "default": "4",
+              "requires": ["exec"]
+            },
+            {
+              "name": "exec-timeout",
+              "flags": ["--exec-timeout"],
+              "kind": "option",
+              "value": {
+                "type": "duration"
+              },
+              "description": "Time allowed per hook before termination.",
+              "default": "10m",
+              "requires": ["exec"]
+            }
+          ],
+          "output": {
+            "modes": [
+              {
+                "name": "text",
+                "description": "One JSON line on stdout per reported request. Diagnostics and hook output go to stderr."
+              },
+              {
+                "name": "json",
+                "machine-readable": true,
+                "description": "The same request lines, followed on stdout by a final result event with reported count, hook outcomes, exit code and error."
+              }
+            ],
+            "exit-codes": [
+              {
+                "code": 1,
+                "meaning": "Unexpected CLI error or profile or credential storage failure."
+              },
+              {
+                "code": 2,
+                "meaning": "Usage error."
+              },
+              {
+                "code": 4,
+                "meaning": "Interrupted by SIGINT or SIGTERM."
+              },
+              {
+                "code": 8,
+                "meaning": "Server unreachable or a connection error ended the watch."
+              },
+              {
+                "code": 9,
+                "meaning": "Preflight credential rejected or required scope missing."
+              },
+              {
+                "code": 10,
+                "meaning": "Selected project not found."
+              }
+            ]
+          },
+          "notes": [
+            "Uses projects.snapshot for preflight and requires orchestration:read. Every explicitly selected project must exist. Watches through client.requests.watch and covers every project by default. Project and exact thread id or case-sensitive trimmed tag filters are repeatable and deduplicated. An excluded thread's subagents are selected by their own ids and tags.",
+            "Each selected request the library sees pending is reported once per watch, including requests pending at the start and requests still pending after an outage. Requests already pending in archived threads at startup are out of scope. Threads created or archived while watching can report requests. Reports are read-only.",
+            "A request line contains type: request, kind, requestId, thread: {id, title, tags}, project: {id, title}, request, item, and questions for user input. Project title and item are nullable. Status may have settled while the watcher waited for its timeline card.",
+            "At info or debug, emits watching for requests after initial reports and reconnected after reports from each resync. Thread and decode failures warn on stderr. An end after parsing adds a final result line only with --json. Its data contains reported and hooks: {succeeded, failed, stopped, notRun}, or null for hooks without --exec.",
+            "--exec runs the operator's shell command with the exact report line on stdin. Its environment inherits the CLI environment with T3_SERVER_URL set to the selected server origin. The hook's output and outcomes go to stderr. Hooks start in report order subject to the concurrency bound and time out independently. On POSIX, slots track process groups through TERM and KILL escalation. A failed hook is reported and never retried.",
+            "An error ending the watch or the first SIGINT or SIGTERM stops reporting and drains the hooks for reports already written. A second signal kills active hooks, reports stopped and queued hooks, writes the final result with --json and exits 4."
+          ]
+        }
+      ]
+    },
+    {
       "name": "schedule",
       "subcommands": [
         {
@@ -2182,7 +2312,7 @@
     "--connect-timeout maps to library openTimeoutMs and defaults to 30 seconds. The CLI reports a failed connection as exit 8. This connection control is separate from the run deadline supplied through --timeout.",
     "In text execution mode stdout contains only the assistant message. Progress, thread id and warnings go to stderr. A failure ends stderr with one short error line; Dagu displays the last 1024 bytes. Diagnostic output redacts credentials. Successful thread start without --wait prints the thread id as its result. Inspection, auth and version commands print their requested information. Non-execution JSON uses {data, exitCode, error?}; thread start without --wait places its thread/run ids in data.",
     "Without --stream, --json prints exactly one object on stdout. Execution results contain threadId, runId, state, assistantMessage, pendingRequests, exitCode and durationMs, plus error on failure. Dispatch results also report runtimeMode, the mode sent by this invocation, or null when no mode was sent. Waiting on an existing run sends no mode. Nonwaiting thread start includes runtimeMode in data. The sent mode is printed on stderr only at info or debug log level. This execution envelope applies to run, thread start --wait, thread send and thread wait. Unavailable ids are null. durationMs is elapsed invocation time. Known thread/run identities remain available on failures after dispatch. Pre-dispatch failures carry no created thread identity. The object reports the actual observed state, including an active run at detach and pending requests at exit 7.",
-    "--stream writes assistant deltas in text mode and newline-delimited events in JSON mode. JSON streaming is the explicit exception to the one-object output contract. Stream consumers receive the final execution result with its exit code. Text streaming does not append a duplicate copy of the final answer.",
+    "--stream writes assistant deltas in text mode and newline-delimited events in JSON mode. JSON streaming, including requests watch, is the exception to the one-object output contract. Stream consumers receive the final execution result with its exit code. Text streaming does not append a duplicate copy of the final answer.",
     "The final answer source is the turn outcome's assistant message. When it is absent, the CLI falls back to the last assistant item in the transcript. Oversized-transcript fallback uses the detail route as defined in command behavior.",
     "The CLI never emits 124. Failures 2, 8, 9 and 10 detected before dispatch create no thread. Errors after launch preserve any created thread id; a failed command is not evidence that no thread exists. The CLI does not retry a launch blindly after an ambiguous transport failure.",
     "The CLI branches on library error classes, stable codes and typed records, rather than message text. The library uses T3StorageError (storage) for profile/config and credential backend I/O, and T3DecodeError for malformed stored credentials. These failures exit 1; server transport T3ConnectionError (connection) exits 8. Configuration and input checks precede dispatch; server reachability, authentication, required scopes and explicitly selected resources are resolved before a new thread is launched.",

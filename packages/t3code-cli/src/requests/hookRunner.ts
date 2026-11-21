@@ -171,8 +171,12 @@ class HookProcess {
   }
 }
 
+export function emptyHookCounts() {
+  return { succeeded: 0, failed: 0, stopped: 0, notRun: 0 };
+}
+
 export class HookRunner {
-  readonly counts = { succeeded: 0, failed: 0, stopped: 0, notRun: 0 };
+  readonly counts = emptyHookCounts();
   readonly #options: HookOptions;
   readonly #serverOrigin: string;
   readonly #log: HookLog;

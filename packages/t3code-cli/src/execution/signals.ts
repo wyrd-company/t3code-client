@@ -8,11 +8,15 @@ import type { Output } from "../output.ts";
 export type SignalScope = ReturnType<typeof followSignals>;
 
 /** One invocation owns the scope from preflight through following. */
-export function followSignals(output: Output): {
+export function followSignals(
+  output: Output,
+  options?: { onForcedStop?: () => void },
+): {
   first: Promise<"signal">;
   readonly interrupted: boolean;
   readonly signal: AbortSignal;
   until<T>(operation: Promise<T>): Promise<T>;
+  abort(): void;
   close(): void;
 } {
   const controller = new AbortController();
@@ -24,7 +28,8 @@ export function followSignals(output: Output): {
   const onSignal = () => {
     if (received) {
       try {
-        output.progress("t3c: Operation interrupted.");
+        if (options?.onForcedStop) options.onForcedStop();
+        else output.progress("t3c: Operation interrupted.");
       } finally {
         process.exit(4);
       }
@@ -49,6 +54,7 @@ export function followSignals(output: Output): {
     get interrupted() {
       return received;
     },
+    abort: () => controller.abort(),
     close() {
       controller.abort();
       process.off("SIGINT", onSignal);
