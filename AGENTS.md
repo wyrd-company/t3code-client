@@ -35,8 +35,12 @@ Node >=22.16, pnpm 12, vite-plus 1.5.1 and TypeScript 7. ESM/NodeNext,
 `.ts` relative imports, `erasableSyntaxOnly`, camelCase files, colocated
 `vite-plus/test` tests, no `any`, files about 300 lines or less.
 Use generic example/test values. Follow Conventional Commits.
-Application code must not spawn CLIs. The CLI composes the library and does
-not implement wire protocol. Only build/test tools may spawn the test server.
+Application code must not spawn CLIs, with one exception: the hook runner of
+`t3c requests watch` (`packages/t3code-cli/src/requests/hookRunner.ts`)
+runs the operator's `--exec` command, with the request on stdin only. A test
+fails when any other application source imports `node:child_process`. The
+CLI composes the library and does not implement wire protocol. Only
+build/test tools may spawn the test server.
 CLI command behavior is defined by `docs/specifications/command-line.yml`; canonical
 architecture is in `docs/technical-designs/`.
 The pinned `t3` devDependency is 0.1.10; runtime code must not enforce a pinned
