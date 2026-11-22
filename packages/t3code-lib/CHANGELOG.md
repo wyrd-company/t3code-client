@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.0
+
+### Breaking
+
+- The peer-link access check adds a refinement to `schemas.auth.AuthCreatePairingCredentialInput`. Use `.safeExtend()` to extend the schema while preserving that check. Build derived schemas from `.shape` when migrating uses of `.pick()`, `.omit()`, or `.partial()`, which now throw on this schema.
+
+### Features
+
+- Target stock T3 Code 0.1.11 with orchestration protocol 2. Use the typed issue and tracker RPCs and thread issue commands, renew a proof-bound pairing session with auth.renewAccessToken, and open a loopback preview port with openPreviewTunnel. Relay configuration on 0.1.11 requires relay:configure. Settings, pull request, speech, signed asset and orchestration contracts track the release.
+
 ## 0.5.0
 
 ### Breaking
