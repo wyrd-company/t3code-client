@@ -3,6 +3,7 @@
 //   implements: library
 // ---
 /** The lightweight cross-thread view: project and thread shells, their snapshot, and its stream. */
+import { ThreadIssueLink } from "../threadIssues.ts";
 import { z } from "zod";
 import {
   CommandId,
@@ -121,6 +122,7 @@ export const OrchestrationV2ThreadShell = z.looseObject({
   linkedPullRequest: ThreadLinkedPullRequest.nullable().optional(),
   pullRequests: z.array(ThreadPullRequestLink).optional(),
   branchPullRequest: ThreadLinkedPullRequest.nullable().optional(),
+  issues: z.array(ThreadIssueLink).optional(),
   lineage: OrchestrationV2AppThreadLineage,
   forkedFrom: OrchestrationV2ThreadForkedFrom.nullable(),
   activeProviderThreadId: ProviderThreadId.nullable(),

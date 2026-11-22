@@ -15,6 +15,7 @@ export const OrchestrationV2ThreadCapabilities = z.looseObject({
   canRollbackThread: z.boolean(),
   canForkThread: z.boolean(),
   canForkFromTurn: z.boolean(),
+  canForkWhileSourceRunning: z.boolean().optional(),
   canForkFromSubagentThread: z.boolean(),
   exposesNativeThreadId: z.boolean(),
 });
@@ -25,6 +26,7 @@ export const OrchestrationV2TurnCapabilities = z.looseObject({
   emitsTurnStarted: z.boolean(),
   emitsTurnCompleted: z.boolean(),
   supportsInterrupt: z.boolean(),
+  supportsNativeResume: z.boolean().optional(),
   supportsActiveSteering: z.boolean(),
   activeSteeringInterruptsTools: z.boolean().optional(),
   /** False when native steering takes text only, so a steer with attachments restarts the turn. */

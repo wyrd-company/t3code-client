@@ -1,0 +1,112 @@
+import { z } from "zod";
+import {
+  IssueCandidates,
+  IssueCommentInput,
+  IssueCommentsPage,
+  IssueCommentsPageInput,
+  IssueCreateInput,
+  IssueCreateResult,
+  IssueDetail,
+  IssueLinkedThreadsResult,
+  IssueListInput,
+  IssueListResult,
+  IssueReactionInput,
+  IssueRef,
+  IssueScopeRef,
+  IssueSetStateInput,
+  IssueTemplateList,
+  IssueTrackerBindProjectInput,
+  IssueTrackerConnectInput,
+  IssueTrackerConnection,
+  IssueTrackerConnectionList,
+  IssueUpdateInput,
+  ThreadIssueKey,
+} from "../../schemas/issues.ts";
+import { VoidSuccess, defineMethod } from "../spec.ts";
+
+export const issueMethods = {
+  "issues.list": defineMethod({
+    payload: IssueListInput,
+    success: IssueListResult,
+    stream: false,
+    scope: "orchestration:read",
+  }),
+  "issues.detail": defineMethod({
+    payload: IssueRef,
+    success: IssueDetail,
+    stream: false,
+    scope: "orchestration:read",
+  }),
+  "issues.comments": defineMethod({
+    payload: IssueCommentsPageInput,
+    success: IssueCommentsPage,
+    stream: false,
+    scope: "orchestration:read",
+  }),
+  "issues.templates": defineMethod({
+    payload: IssueScopeRef,
+    success: IssueTemplateList,
+    stream: false,
+    scope: "orchestration:read",
+  }),
+  "issues.candidates": defineMethod({
+    payload: IssueScopeRef,
+    success: IssueCandidates,
+    stream: false,
+    scope: "orchestration:read",
+  }),
+  "issues.linkedThreads": defineMethod({
+    payload: ThreadIssueKey,
+    success: IssueLinkedThreadsResult,
+    stream: false,
+    scope: "orchestration:read",
+  }),
+  "issues.create": defineMethod({
+    payload: IssueCreateInput,
+    success: IssueCreateResult,
+    stream: false,
+    scope: "source-control:write",
+  }),
+  "issues.comment": defineMethod({
+    payload: IssueCommentInput,
+    success: VoidSuccess,
+    stream: false,
+    scope: "source-control:write",
+  }),
+  "issues.update": defineMethod({
+    payload: IssueUpdateInput,
+    success: VoidSuccess,
+    stream: false,
+    scope: "source-control:write",
+  }),
+  "issues.setState": defineMethod({
+    payload: IssueSetStateInput,
+    success: VoidSuccess,
+    stream: false,
+    scope: "source-control:write",
+  }),
+  "issues.react": defineMethod({
+    payload: IssueReactionInput,
+    success: VoidSuccess,
+    stream: false,
+    scope: "source-control:write",
+  }),
+  "issueTrackers.list": defineMethod({
+    payload: z.looseObject({}),
+    success: IssueTrackerConnectionList,
+    stream: false,
+    scope: "orchestration:read",
+  }),
+  "issueTrackers.connect": defineMethod({
+    payload: IssueTrackerConnectInput,
+    success: IssueTrackerConnection,
+    stream: false,
+    scope: "settings:write",
+  }),
+  "issueTrackers.bindProject": defineMethod({
+    payload: IssueTrackerBindProjectInput,
+    success: VoidSuccess,
+    stream: false,
+    scope: "settings:write",
+  }),
+};

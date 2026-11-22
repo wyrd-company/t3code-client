@@ -31,11 +31,13 @@ const reachability = await client.routes.call("connect.checkReachability");
 await client.routes.call("connect.preferences", { body: { publishAgentActivity: true } });
 ```
 
-`connect.linkProof`, `connect.relayConfig` and `connect.unlink` make and remove a link. A proof
-is only for the server's own loopback origin, and `relayConfig` takes only an `https` relay.
-`connect.health` and `connect.mintCredential` are what a relay calls. They take no session,
-because the server checks the proof, which the relay signs with the key from `relayConfig`. A
-proof works once. The reads need `relay:read`, and the writes `relay:write`.
+`connect.linkProof` accepts loopback origins, and `connect.relayConfig` requires an HTTPS relay.
+Both routes require `relay:configure` on T3 Code 0.1.11. On 0.1.10, both require `relay:write`
+and the proof is tied to the server's own loopback origin. Link state and reachability require
+`relay:read`. Unlinking and preference updates require `relay:write`.
+
+`connect.health` and `connect.mintCredential` accept a single-use proof. The relay signs it
+with the key supplied when configuring the relay.
 
 ## Guests and webhooks
 

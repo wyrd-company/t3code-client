@@ -59,6 +59,7 @@ export const ManagedPolicySummaryLimits = z.looseObject({
   webhookTasks: z.boolean().optional(),
   telemetry: z.boolean().optional(),
   browserCookieImport: z.boolean().optional(),
+  previewTunnel: z.boolean().optional(),
   providers: ManagedPolicySummaryProviderLimits.optional(),
   updates: ManagedPolicySummaryUpdates.optional(),
 });

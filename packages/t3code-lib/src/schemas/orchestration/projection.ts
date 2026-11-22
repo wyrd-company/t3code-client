@@ -86,6 +86,7 @@ export type OrchestrationV2ThreadBoundedSnapshot = z.infer<
 
 /** An older timeline page for progressive history. Rows are chronological. */
 export const OrchestrationV2ThreadHistoryPage = z.looseObject({
+  subagents: z.array(OrchestrationV2Subagent).optional(),
   snapshotSequence: NonNegativeInt,
   items: OrchestrationV2ProjectedTurnItems,
   nextCursor: TrimmedNonEmptyString.nullable(),

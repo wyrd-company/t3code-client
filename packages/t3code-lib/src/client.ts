@@ -45,6 +45,12 @@ import { PreviewViewerTarget } from "./schemas/previewViewer.ts";
 import type { SpeechTranscriptionOptions } from "./schemas/speech.ts";
 import { SPEECH_STREAM_PATH } from "./schemas/speechStream.ts";
 import { HttpTransport } from "./transport/http.ts";
+import {
+  PREVIEW_TUNNEL_PATH,
+  PreviewTunnelPort,
+  connectPreviewTunnel,
+  type PreviewTunnel,
+} from "./transport/previewTunnel.ts";
 import { connectPreviewViewer, type PreviewViewer } from "./transport/previewViewer.ts";
 import { RpcConnection } from "./transport/rpcConnection.ts";
 import {
@@ -162,7 +168,9 @@ export class T3Client {
       ...(options.webSocket === undefined ? {} : { webSocket: options.webSocket }),
       ...(options.logger === undefined ? {} : { logger: options.logger }),
     });
-    this.auth.onCredentialsChange(() => this.#socket.reconnect());
+    this.auth.onCredentialsChange((change) => {
+      if (change === "replacement") this.#socket.reconnect();
+    });
     this.#connection = new RpcConnection(
       this.#socket,
       options.logger === undefined ? {} : { logger: options.logger },
@@ -230,6 +238,27 @@ export class T3Client {
       signal,
     );
     return connectPreviewViewer(this.#webSocket ?? (await defaultWebSocket()), url, signal);
+  }
+
+  /**
+   * Open a preview port on the environment's loopback interface. Sends and receives binary
+   * chunks with a fresh media ticket and requires terminal:operate. Close the tunnel when done.
+   */
+  async openPreviewTunnel(port: number, signal?: AbortSignal): Promise<PreviewTunnel> {
+    const parsed = PreviewTunnelPort.safeParse(port);
+    if (!parsed.success) {
+      throw new T3PreconditionError("Preview tunnel port must be an integer from 1 to 65535.");
+    }
+    const url = webSocketUrl(PREVIEW_TUNNEL_PATH, this.#baseUrl);
+    url.searchParams.set("port", String(parsed.data));
+    await withMediaTicket(
+      this.auth,
+      this.routes,
+      url,
+      { scope: "terminal:operate", operation: "openPreviewTunnel" },
+      signal,
+    );
+    return connectPreviewTunnel(this.#webSocket ?? (await defaultWebSocket()), url, signal);
   }
 
   /**

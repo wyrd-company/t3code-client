@@ -132,6 +132,8 @@ export const PullRequestDetail = z.looseObject({
   updatedAt: IsoDateTime,
   observedAt: z.number().optional(),
   mergedAt: IsoDateTime.nullable(),
+  mergeCommitSha: TrimmedNonEmptyString.optional(),
+  mergedBy: PullRequestActor.optional(),
   closedAt: IsoDateTime.nullable(),
   reviewers: z.array(PullRequestActor),
   labels: z.array(PullRequestLabel),

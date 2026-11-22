@@ -7,7 +7,7 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodePath from "node:path";
 import * as NodeReadline from "node:readline";
 import { fileURLToPath } from "node:url";
-import { providerInstanceId, schemas } from "@wyrd-company/t3code-lib";
+import { TARGET_T3_CODE_VERSION, providerInstanceId, schemas } from "@wyrd-company/t3code-lib";
 import { expect } from "vite-plus/test";
 import { waitFor } from "../../../t3code-lib/test/live/liveClient.ts";
 import { startScratchServer } from "../../../t3code-lib/test/live/peerServer.ts";
@@ -90,7 +90,7 @@ export async function startApprovalHookFixture(evidence: unknown[]) {
     const version = JSON.parse(await cli(["version", "--json"]));
     expect(version).toMatchObject({
       data: {
-        server: { version: "0.1.10", protocol: 2 },
+        server: { version: TARGET_T3_CODE_VERSION, protocol: 2 },
         sources: { server: "profile", credentials: "profile" },
       },
     });

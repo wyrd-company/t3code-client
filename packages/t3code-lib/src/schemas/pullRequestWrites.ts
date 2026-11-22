@@ -56,6 +56,7 @@ export const PullRequestStackHead = z.looseObject({
 export type PullRequestStackHead = z.infer<typeof PullRequestStackHead>;
 
 export const PullRequestActionInput = z.looseObject({
+  expectedHeadSha: TrimmedNonEmptyString.optional(),
   ...refFields,
   action: z.enum(PULL_REQUEST_ACTIONS),
   mergeMethod: z.enum(["merge", "squash", "rebase"]).optional(),

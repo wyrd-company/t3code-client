@@ -8,6 +8,7 @@
  * what the caller passes before it is sent.
  */
 import { z } from "zod";
+import { ThreadIssueLinkCommand, ThreadIssueUnlinkCommand } from "./commands/issues.ts";
 import { messageCommandMembers } from "./commands/message.ts";
 import { pullRequestCommandMembers } from "./commands/pullRequest.ts";
 import { relationCommandMembers } from "./commands/relations.ts";
@@ -16,6 +17,8 @@ import { threadCommandMembers } from "./commands/thread.ts";
 export const OrchestrationV2Command = z.discriminatedUnion("type", [
   ...threadCommandMembers,
   ...pullRequestCommandMembers,
+  ThreadIssueLinkCommand,
+  ThreadIssueUnlinkCommand,
   ...messageCommandMembers,
   ...relationCommandMembers,
 ]);
@@ -28,5 +31,6 @@ export type OrchestrationV2CommandOfType<T extends OrchestrationV2CommandType> =
 
 export * from "./commands/thread.ts";
 export * from "./commands/pullRequest.ts";
+export * from "./commands/issues.ts";
 export * from "./commands/message.ts";
 export * from "./commands/relations.ts";

@@ -73,6 +73,7 @@ export const THREAD_STATE_EVENT_TYPES = [
   "thread.marked-unread",
   "thread.metadata-updated",
   "thread.pull-request-synced",
+  "thread.issue-synced",
   "thread.runtime-mode-updated",
   "thread.interaction-mode-updated",
   "thread.model-selection-updated",

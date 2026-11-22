@@ -3,6 +3,7 @@
 //   implements: library
 // ---
 import { z } from "zod";
+import { containsSecretReference } from "../../schemas/providerInstance.ts";
 import { defineMethod, VoidSuccess } from "../spec.ts";
 import { ProviderInstanceId, TrimmedNonEmptyString } from "../../schemas/common.ts";
 import {
@@ -129,6 +130,7 @@ export const serverMethods = {
     success: ListTextGeneratorModelsResult,
     stream: false,
     scope: "settings:write",
+    payloadScopes: (input) => (containsSecretReference(input) ? ["providers:manage"] : []),
   }),
   "server.getUsageSummary": defineMethod({
     payload: UsageSummaryInput,

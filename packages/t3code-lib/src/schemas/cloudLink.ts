@@ -106,7 +106,7 @@ export const EnvironmentCloudLinkStateResult = z.looseObject({
   reachability: EnvironmentConnectReachability.nullish(),
   /** The tunnel's public hostname, once the tunnel has connected. Older servers omit it. */
   tunnelHostname: z.string().nullish(),
-  /** Whether this is the desktop app's own session, which may link from where it is. */
+  /** On 0.1.11, the session holds both relay:configure and relay:write. */
   linkableHere: z.boolean().nullish(),
 });
 export type EnvironmentCloudLinkStateResult = z.infer<typeof EnvironmentCloudLinkStateResult>;

@@ -196,6 +196,7 @@ describe("requiredScopesForSettingsUpdate", () => {
   it.each([
     ["an empty patch", {}, undefined, ["settings:write"]],
     ["a setting", { idleCompaction: "off" }, undefined, ["settings:write"]],
+    ["the preview tunnel", { enablePreviewTunnel: false }, undefined, ["access:write"]],
     ["a provider key", providers, undefined, ["providers:manage"]],
     ["a usage source", { usageLimitSources: {} }, undefined, ["providers:manage"]],
     ["a secret provider", { secretProviders: {} }, undefined, ["providers:manage"]],

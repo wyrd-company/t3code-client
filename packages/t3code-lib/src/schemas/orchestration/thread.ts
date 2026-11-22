@@ -3,6 +3,7 @@
 //   implements: library
 // ---
 /** The app-level thread record of `orchestrationV2.ts`: `OrchestrationV2AppThread` and its parts. */
+import { ThreadIssueLink } from "../threadIssues.ts";
 import { z } from "zod";
 import {
   CommandId,
@@ -118,6 +119,7 @@ export const OrchestrationV2AppThread = z.looseObject({
   linkedPullRequest: ThreadLinkedPullRequest.nullable().optional(),
   pullRequests: z.array(ThreadPullRequestLink).optional(),
   branchPullRequest: ThreadLinkedPullRequest.nullable().optional(),
+  issues: z.array(ThreadIssueLink).optional(),
   activeProviderThreadId: ProviderThreadId.nullable(),
   historyOrigin: OrchestrationV2ThreadHistoryOrigin.optional(),
   linkOrigin: OrchestrationV2LinkOrigin.optional(),
@@ -145,6 +147,7 @@ export const OrchestrationV2AppThread = z.looseObject({
   lastVisitedAt: IsoDateTime.nullable().default(null),
   titleRegeneration: ThreadTitleRegeneration.nullable().optional(),
   lastTitleRegeneration: LastThreadTitleRegeneration.nullable().optional(),
+  titleRenamed: z.boolean().optional(),
   /** Latest accepted rollback. Only its failure is recorded in `rollbackFailure`. */
   rollbackRequestId: CommandId.optional(),
   rollbackFailure: z

@@ -50,7 +50,8 @@ export interface SetAccessTokenOptions {
 export class AuthClient {
   #cached: StoredCredentials | undefined;
   #version = 0;
-  readonly #changeHandlers = new Set<() => void>();
+  #renewal: Promise<AuthAccessTokenResultType> | undefined;
+  readonly #changeHandlers = new Set<(change: "replacement" | "renewal") => void>();
 
   readonly http: HttpTransport;
   readonly credentials: CredentialStore;
@@ -67,8 +68,8 @@ export class AuthClient {
     return this.#version;
   }
 
-  /** Called after every change to the stored credential made through this client. */
-  onCredentialsChange(handler: () => void): () => void {
+  /** Called after a stored credential changes. A renewal keeps the current session and grants. */
+  onCredentialsChange(handler: (change: "replacement" | "renewal") => void): () => void {
     this.#changeHandlers.add(handler);
     return () => this.#changeHandlers.delete(handler);
   }
@@ -119,15 +120,70 @@ export class AuthClient {
       },
       { dpopKey: options.dpopKey },
     );
-    const bound = result.token_type === "DPoP";
-    await this.#save({
-      accessToken: result.access_token,
-      scopes: splitScopes(result.scope),
-      expiresAt: new Date(this.clock.now().getTime() + result.expires_in * 1_000).toISOString(),
-      sessionMethod: bound ? "dpop-access-token" : "bearer-access-token",
-      ...(bound && options.dpopKey !== undefined ? { dpopKey: options.dpopKey } : {}),
-    });
+    await this.#saveExchangeResult(result, options.dpopKey);
     return result;
+  }
+
+  /** Renews a DPoP pairing session on demand. The caller schedules renewal before expiry. */
+  renewAccessToken(): Promise<AuthAccessTokenResultType> {
+    this.#renewal ??= this.#renewAccessToken().finally(() => {
+      this.#renewal = undefined;
+    });
+    return this.#renewal;
+  }
+
+  async #renewAccessToken(): Promise<AuthAccessTokenResultType> {
+    const previous = await this.#load();
+    const { accessToken, dpopKey } = previous;
+    if (accessToken === undefined || dpopKey === undefined) {
+      throw new T3PreconditionError("Access token renewal requires a DPoP session.");
+    }
+    const version = this.#version;
+    const result = await callRoute(
+      this.http,
+      httpRoutes["auth.token"],
+      {
+        body: {
+          grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
+          subject_token: accessToken,
+          subject_token_type: "urn:ietf:params:oauth:token-type:access_token",
+          requested_token_type: "urn:ietf:params:oauth:token-type:access_token",
+        },
+      },
+      { dpopKey },
+    );
+    const stored = await this.credentials.load();
+    if (this.#version !== version || !sameCredentials(previous, stored)) {
+      throw new T3PreconditionError("The stored credential changed during renewal.");
+    }
+    if (result.token_type !== "DPoP") {
+      throw new T3PreconditionError("The renewal response did not contain a DPoP token.");
+    }
+    await this.#saveExchangeResult(result, dpopKey, previous);
+    return result;
+  }
+
+  async #saveExchangeResult(
+    result: AuthAccessTokenResultType,
+    dpopKey: DpopPrivateJwk | undefined,
+    renewedFrom?: StoredCredentials,
+  ): Promise<void> {
+    const bound = result.token_type === "DPoP";
+    const scopes = splitScopes(result.scope);
+    const isSameSession =
+      bound &&
+      renewedFrom?.sessionMethod === "dpop-access-token" &&
+      renewedFrom.scopes?.toSorted().join(" ") === scopes.toSorted().join(" ");
+    await this.#save(
+      {
+        accessToken: result.access_token,
+        scopes,
+        expiresAt: new Date(this.clock.now().getTime() + result.expires_in * 1_000).toISOString(),
+        sessionMethod: bound ? "dpop-access-token" : "bearer-access-token",
+        ...(bound && dpopKey !== undefined ? { dpopKey } : {}),
+      },
+      isSameSession ? "renewal" : "replacement",
+    );
   }
 
   /** Validate an issued token before saving its session metadata. */
@@ -226,18 +282,21 @@ export class AuthClient {
     return loaded;
   }
 
-  async #save(next: StoredCredentials): Promise<void> {
+  async #save(
+    next: StoredCredentials,
+    change: "replacement" | "renewal" = "replacement",
+  ): Promise<void> {
     await this.credentials.save(next);
-    this.#remember(next);
+    this.#remember(next, change);
   }
 
   /** Records the credential this client now holds; a real change bumps the version. */
-  #remember(next: StoredCredentials): void {
+  #remember(next: StoredCredentials, change: "replacement" | "renewal" = "replacement"): void {
     const changed = this.#cached === undefined || !sameCredentials(this.#cached, next);
     this.#cached = next;
     if (!changed) return;
     this.#version += 1;
-    for (const handler of this.#changeHandlers) handler();
+    for (const handler of this.#changeHandlers) handler(change);
   }
 }
 

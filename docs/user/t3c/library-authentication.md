@@ -107,6 +107,7 @@ Auth control plane and the sole owner of credential-store access.
   - [.descriptor()](#AuthClient+descriptor)
   - [.sessionState()](#AuthClient+sessionState)
   - [.exchangePairingToken()](#AuthClient+exchangePairingToken)
+  - [.renewAccessToken()](#AuthClient+renewAccessToken)
   - [.setAccessToken()](#AuthClient+setAccessToken)
   - [.clearCredentials()](#AuthClient+clearCredentials)
   - [.websocketTicket()](#AuthClient+websocketTicket)
@@ -135,10 +136,10 @@ get credentialsVersion(): number;
 
 ### authClient.onCredentialsChange()
 
-Called after every change to the stored credential made through this client.
+Called after a stored credential changes. A renewal keeps the current session and grants.
 
 ```ts
-onCredentialsChange(handler: () => void): () => void;
+onCredentialsChange(handler: (change: "replacement" | "renewal") => void): () => void;
 ```
 
 **Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
@@ -187,6 +188,17 @@ async exchangePairingToken(
     pairingToken: string,
     options: ExchangePairingTokenOptions = {},
   ): Promise<AuthAccessTokenResultType>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+renewAccessToken"></a>
+
+### authClient.renewAccessToken()
+
+Renews a DPoP pairing session on demand. The caller schedules renewal before expiry.
+
+```ts
+renewAccessToken(): Promise<AuthAccessTokenResultType>;
 ```
 
 **Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  

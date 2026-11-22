@@ -99,14 +99,15 @@ export async function createLocalForge(
   initBareRepository(bare);
   const cwd = NodePath.join(root, "work");
   await NodeFSP.mkdir(cwd);
-  const git = gitWith({ ...isolatedGit, GIT_SSH_COMMAND: sshCommand });
+  const environment = { ...isolatedGit, ...pathWith(bin), GIT_SSH_COMMAND: sshCommand };
+  const git = gitWith(environment);
   await seedRepository(git, cwd, remoteUrl);
   return {
     git,
     bare,
     cwd,
     sshCommand,
-    environment: { ...isolatedGit, ...pathWith(bin), GIT_SSH_COMMAND: sshCommand },
+    environment,
   };
 }
 

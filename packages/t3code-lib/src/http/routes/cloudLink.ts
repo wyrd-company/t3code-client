@@ -20,19 +20,19 @@ import {
 import { defineRoute } from "../spec.ts";
 
 export const cloudLinkRoutes = {
+  // The server enforces relay:configure on 0.1.11 and relay:write on older releases.
   "connect.linkProof": defineRoute({
     method: "POST",
     path: "/api/connect/link-proof",
     auth: "required",
-    scope: "relay:write",
     input: z.strictObject({ body: RelayLinkProofRequest }),
     success: RelayEnvironmentLinkProof,
   }),
+  // The server enforces relay:configure on 0.1.11 and relay:write on older releases.
   "connect.relayConfig": defineRoute({
     method: "POST",
     path: "/api/connect/relay-config",
     auth: "required",
-    scope: "relay:write",
     input: z.strictObject({ body: RelayEnvironmentConfigRequest }),
     success: EnvironmentCloudRelayConfigResult,
   }),
@@ -67,6 +67,14 @@ export const cloudLinkRoutes = {
     scope: "relay:write",
     input: z.strictObject({ body: EnvironmentCloudPreferencesRequest }),
     success: EnvironmentCloudLinkStateResult,
+  }),
+  "connect.liveActivityPreference": defineRoute({
+    method: "POST",
+    path: "/api/connect/live-activity-preference",
+    auth: "required",
+    scope: "relay:write",
+    input: z.strictObject({ body: z.looseObject({ liveActivitiesEnabled: z.boolean() }) }),
+    success: z.looseObject({ ok: z.boolean() }),
   }),
   /** The relay calls this, and its proof is the credential. */
   "connect.health": defineRoute({

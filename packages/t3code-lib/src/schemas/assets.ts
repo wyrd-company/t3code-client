@@ -92,7 +92,9 @@ export const AssetImageDimensions = z.looseObject({
 export type AssetImageDimensions = z.infer<typeof AssetImageDimensions>;
 
 export const AssetCreateUrlResult = z.looseObject({
-  relativeUrl: TrimmedNonEmptyString.max(4096),
+  relativeUrl: TrimmedNonEmptyString.max(4096).regex(
+    /^\/api\/assets\/(?!\.{1,2}\/)[\w.-]+\/(?!(?:\.|%2[eE]){1,2}$)[^/\\?#\s]+$/u,
+  ),
   expiresAt: z.number(),
   sourcePath: AssetPath.optional(),
   imageDimensions: AssetImageDimensions.optional(),
@@ -121,7 +123,9 @@ export type AttachmentCreateUploadUrlInput = z.infer<typeof AttachmentCreateUplo
 
 export const AttachmentCreateUploadUrlResult = z.looseObject({
   attachmentId: TrimmedNonEmptyString.max(256),
-  relativeUrl: TrimmedNonEmptyString.max(4096),
+  relativeUrl: TrimmedNonEmptyString.max(4096).regex(
+    /^\/api\/attachments\/upload\/(?!\.{1,2}$)[\w.-]+$/u,
+  ),
   expiresAt: z.number(),
 });
 export type AttachmentCreateUploadUrlResult = z.infer<typeof AttachmentCreateUploadUrlResult>;

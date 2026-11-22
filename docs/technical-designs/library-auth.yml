@@ -11,7 +11,7 @@ relationships:
     - releasing
 proposed-design:
   high-level-overview: >-
-    The library implements stock T3 Code 0.1.10 and orchestration protocol 2.
+    The library implements stock T3 Code 0.1.11 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade
     contracts. The library architecture links the canonical design family.
   auth: |
@@ -44,6 +44,7 @@ proposed-design:
           dpopKey?: DpopPrivateJwk; // binds the session to this key
         },
       ): Promise<AuthAccessTokenResult>; // saves to the store
+      renewAccessToken(): Promise<AuthAccessTokenResult>; // renews the access token of a DPoP session
       setAccessToken(token: string, options?: { dpopKey?: DpopPrivateJwk }): Promise<AuthSessionState>; // validates via /api/auth/session, saves
       clearCredentials(): Promise<void>;
       websocketTicket(signal?): Promise<AuthWebSocketTicketResult>;
@@ -59,7 +60,7 @@ proposed-design:
       currentDpopKey(): Promise<DpopPrivateJwk | undefined>;
       scopesSync(): AuthGrantedScope[] | undefined; // from the last credential loaded or saved; no store round trip
       readonly credentialsVersion: number; // increments on every save or clear that changes the credential
-      onCredentialsChange(handler: () => void): () => void;
+      onCredentialsChange(handler: (change: "replacement" | "renewal") => void): () => void;
     }
     ```
 
@@ -70,9 +71,11 @@ proposed-design:
     `ensureScopes`); everything the server reports (session state, token
     exchange, pairing links, client sessions) decodes as `AuthGrantedScope`, read
     from `permissions` when the server sends it and from `scopes` otherwise.
-    `RpcClient` reads `scopesSync()` for its local scope check, and `T3Client`
-    calls `SocketTransport.reconnect()` on every credential change so the open
-    socket authenticates as the new session.
+    `RpcClient` reads `scopesSync()` for its local scope check.
+    `AuthClient` emits `renewal` when it renews a DPoP session with the same key
+    and grants. `T3Client` keeps the socket open and in-flight RPCs continue.
+    Other credential changes emit `replacement`. `T3Client` reconnects the
+    socket so it can authenticate with the current credential.
 
   proof-bound-sessions: |
     ```ts
@@ -113,8 +116,16 @@ proposed-design:
     `T3ClientOptions.fetchAuthenticates`, so that a route that requires a session
     sends without a stored token. The client then mints socket tickets through
     that `fetch`.
+  access-token-renewal: |
+    `auth.renewAccessToken()` exchanges a stored DPoP access token from an
+    ordinary pairing link using the same proof key. Check the environment's
+    `accessTokenRenewal` capability before calling it. The server returns a
+    replacement token and the client saves it in the credential store. Schedule
+    renewal before expiry. An unchanged DPoP key and grant keep the open RPC
+    connection active.
   scope-groups: >-
-    AuthStandardClientScopes mirrors the stock 0.1.10 standard client grant,
-    including access:read, access:write and relay:write. There is no separate
-    administrative scope set. Callers choose explicit scopes for narrower grants.
-    AuthLegacyScopes retains the wire vocabulary for decoding older credentials.
+    AuthStandardClientScopes mirrors the stock standard client grant.
+    AuthAdministrativeClientScopes adds relay:configure for link proof and relay
+    configuration. The server enforces relay:write for these two routes on
+    0.1.10 and relay:configure on 0.1.11. AuthLegacyScopes retains the wire
+    vocabulary for decoding older credentials.

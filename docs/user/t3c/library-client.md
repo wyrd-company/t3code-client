@@ -57,6 +57,7 @@ Client composition root for HTTP, auth, RPC and server facades.
   - _instance_
     - [.requests](#T3Client+requests)
     - [.openPreviewViewer()](#T3Client+openPreviewViewer)
+    - [.openPreviewTunnel()](#T3Client+openPreviewTunnel)
     - [.openSpeechStream()](#T3Client+openSpeechStream)
     - [.connect()](#T3Client+connect)
     - [.close()](#T3Client+close)
@@ -86,6 +87,18 @@ async openPreviewViewer(
     target: PreviewViewerTarget,
     signal?: AbortSignal,
   ): Promise<PreviewViewer>;
+```
+
+**Kind**: instance method of [<code>T3Client</code>](#T3Client)  
+<a name="T3Client+openPreviewTunnel"></a>
+
+### t3Client.openPreviewTunnel()
+
+Open a preview port on the environment's loopback interface. Sends and receives binary
+chunks with a fresh media ticket and requires terminal:operate. Close the tunnel when done.
+
+```ts
+async openPreviewTunnel(port: number, signal?: AbortSignal): Promise<PreviewTunnel>;
 ```
 
 **Kind**: instance method of [<code>T3Client</code>](#T3Client)  

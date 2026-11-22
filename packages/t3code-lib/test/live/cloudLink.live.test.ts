@@ -12,6 +12,7 @@ import * as NodePath from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 import { WebSocket as WsWebSocket } from "ws";
 import {
+  AuthAdministrativeClientScopes,
   T3AuthError,
   T3Client,
   T3HttpError,
@@ -69,7 +70,11 @@ describe.skipIf(!hasLiveServer)("live T3 Connect routes", () => {
   };
 
   beforeAll(async () => {
-    server = await startScratchServer("t3code-lib-connect-");
+    server = await startScratchServer(
+      "t3code-lib-connect-",
+      undefined,
+      AuthAdministrativeClientScopes,
+    );
   });
   afterAll(async () => {
     await server.stop();
@@ -93,6 +98,9 @@ describe.skipIf(!hasLiveServer)("live T3 Connect routes", () => {
     expect(
       await routes.call("connect.preferences", { body: { publishAgentActivity: true } }),
     ).toMatchObject({ linked: false, publishAgentActivity: true });
+    await expect(
+      routes.call("connect.liveActivityPreference", { body: { liveActivitiesEnabled: true } }),
+    ).resolves.toEqual({ ok: false });
     const refused = await httpFailure(
       routes.call("connect.preferences", {
         body: { publishAgentActivity: true, holdWebhooksWhileOffline: true },
@@ -102,7 +110,7 @@ describe.skipIf(!hasLiveServer)("live T3 Connect routes", () => {
     expect(schemas.httpErrors.EnvironmentHttpCloudError.safeParse(refused.body).success).toBe(true);
   });
 
-  it("signs a link proof for its own origin, and refuses another", async () => {
+  it("signs a link proof with relay:configure", async () => {
     const { routes } = server.client;
     const port = Number(new URL(server.baseUrl).port);
     const request = {
@@ -130,13 +138,14 @@ describe.skipIf(!hasLiveServer)("live T3 Connect routes", () => {
         scopes: ["agent_activity_notifications", "managed_tunnels"],
       },
     });
-    const otherPort = port === 65_535 ? port - 1 : port + 1;
-    const refused = await httpFailure(
-      routes.call("connect.linkProof", {
-        body: { ...request, origin: { localHttpHost: "127.0.0.1", localHttpPort: otherPort } },
-      }),
-    );
-    expect(refused).toMatchObject({ status: 400, tag: "EnvironmentHttpBadRequestError" });
+    await withScopes(server, ["relay:write"], async (writer) => {
+      await expect(
+        writer.routes.call("connect.linkProof", { body: request }),
+      ).rejects.toMatchObject({
+        status: 403,
+        requiredScope: "relay:configure",
+      });
+    });
   });
 
   it("links, answers the relay's proofs, and unlinks", async () => {
@@ -233,13 +242,17 @@ describe.skipIf(!hasLiveServer)("live T3 Connect routes", () => {
   });
 
   it("reports a tunnel that the relay cannot confirm, and a relay it cannot reach", async () => {
-    const tunnel = await startScratchServer("t3code-lib-connect-", async (home) => {
-      const path = NodePath.join(home, "sample-tunnel-client");
-      await NodeFSP.writeFile(path, '#!/bin/sh\necho "cloudflared version 2099.1.0"\n', {
-        mode: 0o755,
-      });
-      return { T3CODE_CLOUDFLARED_PATH: path };
-    });
+    const tunnel = await startScratchServer(
+      "t3code-lib-connect-",
+      async (home) => {
+        const path = NodePath.join(home, "sample-tunnel-client");
+        await NodeFSP.writeFile(path, '#!/bin/sh\necho "cloudflared version 2099.1.0"\n', {
+          mode: 0o755,
+        });
+        return { T3CODE_CLOUDFLARED_PATH: path };
+      },
+      AuthAdministrativeClientScopes,
+    );
     try {
       const { routes } = tunnel.client;
       const refused = await httpFailure(

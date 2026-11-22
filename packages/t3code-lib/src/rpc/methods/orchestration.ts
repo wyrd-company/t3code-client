@@ -65,18 +65,42 @@ import {
 const read = "orchestration:read";
 const operate = "orchestration:operate";
 
+function signsOutProvider(text: string, attachments: readonly unknown[] | undefined): boolean {
+  return attachments?.length === 0 && text.trim().toLowerCase() === "/logout";
+}
+
+function dispatchScopes(command: z.infer<typeof OrchestrationV2Command>) {
+  switch (command.type) {
+    case "message.dispatch":
+    case "queued-run.edit":
+      return signsOutProvider(command.text, command.attachments)
+        ? ["providers:manage" as const]
+        : [];
+    case "delegated_task.request":
+      return signsOutProvider(command.task, []) ? ["providers:manage" as const] : [];
+    default:
+      return [];
+  }
+}
+
 export const orchestrationMethods = {
   "orchestration.dispatchCommand": defineMethod({
     payload: OrchestrationV2Command,
     success: OrchestrationV2DispatchCommandResult,
     stream: false,
     scope: operate,
+    payloadScopes: dispatchScopes,
   }),
   "orchestration.launchThread": defineMethod({
     payload: OrchestrationV2ThreadLaunchInput,
     success: OrchestrationV2ThreadLaunchResult,
     stream: false,
     scope: operate,
+    payloadScopes: ({ initialMessage }) =>
+      initialMessage !== undefined &&
+      signsOutProvider(initialMessage.text, initialMessage.attachments)
+        ? ["providers:manage"]
+        : [],
   }),
   "orchestration.getThreadProjection": defineMethod({
     payload: OrchestrationV2GetThreadProjectionInput,

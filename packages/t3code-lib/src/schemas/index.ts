@@ -39,6 +39,7 @@ export * as serverActions from "./serverActions.ts";
 export * as serverRelease from "./serverRelease.ts";
 export * as serverSelfUpdate from "./serverSelfUpdate.ts";
 export * as settingsPatch from "./settingsPatch.ts";
+export * as issues from "./issues.ts";
 export * as pullRequests from "./pullRequests.ts";
 export * as sourceControl from "./sourceControl.ts";
 export * as speech from "./speech.ts";

@@ -26,7 +26,8 @@ export function httpError(
     stringField(record, "error") ??
     (approvalPending ? "connect_approval_pending" : undefined);
   const traceId = stringField(record, "traceId");
-  const requiredScope = stringField(record, "requiredScope");
+  const requiredScope =
+    stringField(record, "requiredPermission") ?? stringField(record, "requiredScope");
   const details: T3HttpErrorDetails = {
     status,
     method,

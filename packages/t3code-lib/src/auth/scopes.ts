@@ -5,7 +5,12 @@
 import { T3AuthError } from "../errors.ts";
 import type { AuthEnvironmentScope, AuthGrantedScope } from "../schemas/auth.ts";
 
-export { AuthLegacyScopes, AuthStandardClientScopes, grantedScopes } from "../schemas/auth.ts";
+export {
+  AuthAdministrativeClientScopes,
+  AuthLegacyScopes,
+  AuthStandardClientScopes,
+  grantedScopes,
+} from "../schemas/auth.ts";
 
 export const AuthOrchestrationReadScope = "orchestration:read" as const;
 export const AuthOrchestrationOperateScope = "orchestration:operate" as const;
@@ -25,6 +30,7 @@ export const AuthAccessReadScope = "access:read" as const;
 export const AuthAccessWriteScope = "access:write" as const;
 export const AuthRelayReadScope = "relay:read" as const;
 export const AuthRelayWriteScope = "relay:write" as const;
+export const AuthRelayConfigureScope = "relay:configure" as const;
 
 /** `granted` is what the server reported and may hold scopes this client does not know. */
 export function hasScope(

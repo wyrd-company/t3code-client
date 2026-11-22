@@ -51,7 +51,10 @@ export function pathWith(dir: string): { readonly PATH: string } {
 }
 
 export async function startPeerServer(
-  options: { readonly environment?: NodeJS.ProcessEnv } = {},
+  options: {
+    readonly environment?: NodeJS.ProcessEnv;
+    readonly scopes?: readonly string[];
+  } = {},
 ): Promise<PeerServer> {
   const bin = serverBin();
   const { root, baseDir, workspace, port, baseUrl, log } =
@@ -65,7 +68,7 @@ export async function startPeerServer(
       logFd: log.fd,
       ...(options.environment === undefined ? {} : { environment: options.environment }),
     });
-  const connect = () => connectTo(baseUrl, issueToken(bin, baseDir));
+  const connect = () => connectTo(baseUrl, issueToken(bin, baseDir, options.scopes));
   let server = start();
   const stopServer = async () => {
     await stopServerProcess(server);
@@ -111,11 +114,13 @@ export async function startPeerServer(
 export async function startScratchServer(
   name: string,
   prepare: (home: string) => NodeJS.ProcessEnv | Promise<NodeJS.ProcessEnv> = () => ({}),
+  scopes?: readonly string[],
 ): Promise<PeerServer> {
   const home = await NodeFSP.realpath(await NodeFSP.mkdtemp(NodePath.join(NodeOS.tmpdir(), name)));
   const removeHome = () => NodeFSP.rm(home, { recursive: true, force: true });
   try {
     const peer = await startPeerServer({
+      ...(scopes === undefined ? {} : { scopes }),
       environment: {
         ...clearedMachineAccess(),
         ...(await prepare(home)),

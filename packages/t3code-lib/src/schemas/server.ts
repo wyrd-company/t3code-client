@@ -26,6 +26,7 @@ const EnvironmentThemeVariantColors = z.record(
   z.string().regex(/^[a-zA-Z][a-zA-Z0-9]{0,63}$/),
   TrimmedNonEmptyString.max(64),
 );
+export const THEME_CSS_MAX_LENGTH = 100_000;
 export const EnvironmentTheme = z.looseObject({
   variants: z
     .looseObject({
@@ -49,7 +50,7 @@ export const EnvironmentTheme = z.looseObject({
   name: z.string(),
   appearance: forwardCompatibleLiteral(["light", "dark"]),
   /** Custom styles for web and desktop clients. */
-  css: z.string().max(50_000).optional(),
+  css: z.string().max(THEME_CSS_MAX_LENGTH).optional(),
   /** Revision of the image published beside the theme (`environment-theme-background` asset). */
   background: TrimmedNonEmptyString.max(64).optional(),
 });
@@ -120,6 +121,8 @@ export const ServerSettings = z.looseObject({
   keepAwakeWhileAgentsWork: z.boolean().optional(),
   /** New T3 Connect device keys wait for approval. Absent from older servers. */
   requireConnectDeviceApproval: z.boolean().optional(),
+  enablePreviewTunnel: z.boolean().optional(),
+  usageHistoryRetentionDays: z.union([PositiveInt, z.literal("unlimited")]).optional(),
   /** The appearance clients apply once per `defaultAppearanceSetAt`; empty sets none. */
   defaultAppearance: forwardCompatibleLiteral(["", "light", "dark", "system"]).optional(),
   defaultAppearanceSetAt: z.string().max(64).optional(),
