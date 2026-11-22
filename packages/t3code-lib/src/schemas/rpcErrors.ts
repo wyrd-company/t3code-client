@@ -81,11 +81,13 @@ import { fileRpcErrors } from "./rpcErrors/files.ts";
 import { McpAppRequestError } from "./rpcErrors/mcpApps.ts";
 import { deviceRpcErrors } from "./rpcErrors/device.ts";
 import { previewRpcErrors } from "./rpcErrors/preview.ts";
+import { issueRpcErrors } from "./rpcErrors/issues.ts";
 import { pullRequestRpcErrors } from "./rpcErrors/pullRequests.ts";
 import { sourceControlRpcErrors } from "./rpcErrors/sourceControl.ts";
 import { ScheduledTaskError, UsageReadError } from "./rpcErrors/automation.ts";
 
 export * from "./rpcErrors/server.ts";
+export * from "./rpcErrors/issues.ts";
 export * from "./rpcErrors/projects.ts";
 export * from "./rpcErrors/terminal.ts";
 export * from "./rpcErrors/vcs.ts";
@@ -114,6 +116,7 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   ...previewRpcErrors,
   ...deviceRpcErrors,
   ...pullRequestRpcErrors,
+  ...issueRpcErrors,
   ...sourceControlRpcErrors,
   TextGenerationError,
   ...vcsRpcErrors,

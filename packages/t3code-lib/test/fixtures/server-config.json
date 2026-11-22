@@ -1,18 +1,19 @@
 {
   "environment": {
-    "environmentId": "8e6c6a58-e401-4b46-a9cd-4f2b66015acf",
+    "environmentId": "3967bcfe-af57-4cc5-8c70-202b76d5fe10",
     "label": "sample-environment",
     "platform": {
       "os": "linux",
       "arch": "x64",
       "machine": "desktop"
     },
-    "serverVersion": "0.1.10",
+    "serverVersion": "0.1.11",
     "orchestrationProtocolVersion": 2,
-    "databaseMigration": 96,
+    "databaseMigration": 102,
     "capabilities": {
       "repositoryIdentity": true,
       "connectionProbe": true,
+      "accessTokenRenewal": true,
       "attachmentUploads": true,
       "questionAttachments": true,
       "fileAttachments": {
@@ -20,6 +21,7 @@
       },
       "pullRequests": true,
       "pullRequestChecks": true,
+      "issues": true,
       "sideChats": true,
       "vcsBranchStatus": true,
       "inlineMessageContext": true,
@@ -57,6 +59,7 @@
       "serverResolvedCommandContext": true,
       "threadStop": true,
       "localServerStop": true,
+      "previewTunnelSetting": true,
       "threadPullRequests": true,
       "threadPullRequestWatch": true,
       "pullRequestStackActions": true,
@@ -73,6 +76,7 @@
       "mcpModeLimitHeader": true,
       "linkFence": true,
       "mcpApprovalCodes": true,
+      "peerLinkPairingCodes": true,
       "mcpHostedApproval": true,
       "triage": true,
       "oneTimeSchedules": true,
@@ -82,14 +86,15 @@
       "cloudVoiceTranscription": true,
       "shellThreadFamilies": true,
       "shellOlderSettled": true,
-      "linkedThreadRefreshes": true
+      "linkedThreadRefreshes": true,
+      "issueLinkedThreads": true
     }
   },
   "auth": {
     "policy": "loopback-browser",
     "bootstrapMethods": ["one-time-token"],
     "sessionMethods": ["browser-session-cookie", "bearer-access-token", "dpop-access-token"],
-    "sessionCookieName": "t3_session_45271_20deb820dc03",
+    "sessionCookieName": "t3_session_44731_8770ad674801",
     "serverUpdateScope": "environment:maintain"
   },
   "cwd": "/srv/sample",
@@ -1695,7 +1700,7 @@
         "status": "unknown",
         "endpoint": "https://models.example.test"
       },
-      "checkedAt": "2026-11-20T05:30:00.633Z",
+      "checkedAt": "2026-11-22T04:20:05.024Z",
       "models": [
         {
           "slug": "gpt-6.2-sol",
@@ -2351,7 +2356,7 @@
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-11-20T05:30:00.633Z",
+        "checkedAt": "2026-11-22T04:20:05.024Z",
         "windows": [],
         "unavailable": {
           "reason": "unsupported"
@@ -2364,7 +2369,7 @@
         "updateCommand": "npm install -g --prefix /home/sample/.local --allow-scripts=@openai/codex @openai/codex@latest",
         "canUpdate": true,
         "canInstallVersion": true,
-        "checkedAt": "2026-11-20T05:30:00.997Z",
+        "checkedAt": "2026-11-22T04:20:05.382Z",
         "message": null
       },
       "compatibilityAdvisory": {
@@ -2390,7 +2395,7 @@
       },
       "enabled": true,
       "installed": true,
-      "version": "2.1.329",
+      "version": "2.1.330",
       "status": "ready",
       "auth": {
         "status": "authenticated",
@@ -2398,7 +2403,7 @@
         "label": "Sample subscription",
         "endpoint": "https://models.example.test"
       },
-      "checkedAt": "2026-11-20T05:30:00.632Z",
+      "checkedAt": "2026-11-22T04:20:05.023Z",
       "models": [
         {
           "slug": "claude-opus-5-5",
@@ -2545,6 +2550,11 @@
               {
                 "id": "ultracode",
                 "label": "Ultracode",
+                "type": "boolean"
+              },
+              {
+                "id": "fastMode",
+                "label": "Fast Mode",
                 "type": "boolean"
               }
             ]
@@ -3073,7 +3083,7 @@
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-11-20T05:30:00.049Z",
+        "checkedAt": "2026-11-22T04:20:04.427Z",
         "windows": [],
         "unavailable": {
           "reason": "unsupported"
@@ -3081,12 +3091,12 @@
       },
       "versionAdvisory": {
         "status": "current",
-        "currentVersion": "2.1.329",
-        "latestVersion": "2.1.329",
+        "currentVersion": "2.1.330",
+        "latestVersion": "2.1.330",
         "updateCommand": "/home/sample/.local/bin/claude update",
         "canUpdate": true,
         "canInstallVersion": false,
-        "checkedAt": "2026-11-20T05:30:00.674Z",
+        "checkedAt": "2026-11-22T04:20:05.068Z",
         "message": null
       },
       "compatibilityAdvisory": {
@@ -3105,7 +3115,7 @@
         "groupKey": "cursor:instance:cursor"
       },
       "showInteractionModeToggle": true,
-      "supportsConversationRollback": false,
+      "supportsConversationRollback": true,
       "setup": {
         "canAuthenticate": true,
         "canInstall": false
@@ -3118,7 +3128,7 @@
         "status": "unknown",
         "canLogout": true
       },
-      "checkedAt": "2026-11-20T05:30:00.626Z",
+      "checkedAt": "2026-11-22T04:20:05.016Z",
       "message": "Cursor is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -3145,7 +3155,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-20T05:30:00.645Z",
+      "checkedAt": "2026-11-22T04:20:05.021Z",
       "message": "Grok is disabled in T3 Code settings.",
       "models": [
         {
@@ -3179,13 +3189,13 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-20T05:30:00.622Z",
+      "checkedAt": "2026-11-22T04:20:05.012Z",
       "message": "OpenCode is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-11-20T05:30:00.622Z",
+        "checkedAt": "2026-11-22T04:20:05.013Z",
         "windows": [],
         "unavailable": {
           "reason": "unsupported"
@@ -3201,7 +3211,7 @@
       },
       "showInteractionModeToggle": false,
       "supportedRuntimeModes": ["approval-required", "auto-accept-edits", "full-access"],
-      "supportsConversationRollback": false,
+      "supportsConversationRollback": true,
       "supportsTextGeneration": false,
       "setup": {
         "canAuthenticate": true,
@@ -3215,7 +3225,7 @@
         "status": "unknown",
         "type": "sample-plan"
       },
-      "checkedAt": "2026-11-20T05:29:59.220Z",
+      "checkedAt": "2026-11-22T04:20:03.652Z",
       "message": "Antigravity is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -3243,7 +3253,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-20T05:30:00.621Z",
+      "checkedAt": "2026-11-22T04:20:05.025Z",
       "message": "fx is disabled in T3 Code settings.",
       "models": [
         {
@@ -3298,7 +3308,7 @@
         "updateCommand": null,
         "canUpdate": false,
         "canInstallVersion": false,
-        "checkedAt": "2026-11-20T05:30:00.621Z",
+        "checkedAt": "2026-11-22T04:20:05.025Z",
         "message": null
       }
     },
@@ -3322,7 +3332,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-20T05:30:00.624Z",
+      "checkedAt": "2026-11-22T04:20:05.014Z",
       "message": "Kiro is disabled in T3 Code settings.",
       "models": [
         {
@@ -3343,7 +3353,7 @@
         "updateCommand": null,
         "canUpdate": false,
         "canInstallVersion": false,
-        "checkedAt": "2026-11-20T05:30:00.624Z",
+        "checkedAt": "2026-11-22T04:20:05.014Z",
         "message": null
       }
     },
@@ -3368,7 +3378,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-20T05:30:00.775Z",
+      "checkedAt": "2026-11-22T04:20:05.130Z",
       "message": "Muse Code is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -3395,7 +3405,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-20T05:30:00.662Z",
+      "checkedAt": "2026-11-22T04:20:05.055Z",
       "message": "Pi is disabled in T3 Code settings.",
       "models": [
         {
@@ -3444,6 +3454,7 @@
     "keepAwakeWhileAgentsWork": true,
     "requireConnectDeviceApproval": false,
     "enableAgentBrowserAccess": true,
+    "enablePreviewTunnel": true,
     "cloudSpeechCredentials": {
       "openai": "",
       "xai": "",
@@ -3561,6 +3572,7 @@
     "usageLimitSources": {},
     "textGenerators": {},
     "secretProviders": {},
+    "usageHistoryRetentionDays": 92,
     "usagePriceOverrides": {},
     "usageModelAliases": {}
   },
@@ -3577,5 +3589,5 @@
   "secretRequestReferences": true,
   "scratchWorkspaceRoot": "/home/sample/.t3/scratch",
   "newProjectsRoot": "/home/sample/.t3/projects",
-  "serverTime": "2026-11-20T05:30:01.130Z"
+  "serverTime": "2026-11-22T04:20:05.518Z"
 }

@@ -19,6 +19,7 @@ export const OrchestrationV2SearchThreadInput = z.looseObject({
     .max(1_000)
     .optional(),
   query: TrimmedNonEmptyString.max(200),
+  theme: z.enum(["dark", "light"]).optional(),
   index: NonNegativeInt.optional(),
   /** Select relative to `start`, so updates before it do not shift navigation. */
   offset: z.number().int().optional(),

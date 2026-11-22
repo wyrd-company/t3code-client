@@ -76,6 +76,7 @@ export function isT3LauncherInstallation(
 
 export const ExecutionEnvironmentCapabilities = z.looseObject({
   repositoryIdentity: z.boolean().default(false),
+  accessTokenRenewal: z.boolean().optional(),
   connectionProbe: z.boolean().optional(),
   attachmentUploads: z.boolean().optional(),
   questionAttachments: z.boolean().optional(),
@@ -194,6 +195,10 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   shellOlderSettled: z.boolean().optional(),
   /** Server answers `pullRequests.subscribeLinkedThreadRefreshes`; older servers need polling. */
   linkedThreadRefreshes: z.boolean().optional(),
+  issues: z.boolean().optional(),
+  issueLinkedThreads: z.boolean().optional(),
+  previewTunnelSetting: z.boolean().optional(),
+  peerLinkPairingCodes: z.boolean().optional(),
 });
 export type ExecutionEnvironmentCapabilities = z.infer<typeof ExecutionEnvironmentCapabilities>;
 

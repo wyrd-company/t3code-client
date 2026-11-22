@@ -1,17 +1,18 @@
 {
-  "environmentId": "8e6c6a58-e401-4b46-a9cd-4f2b66015acf",
+  "environmentId": "3967bcfe-af57-4cc5-8c70-202b76d5fe10",
   "label": "sample-environment",
   "platform": {
     "os": "linux",
     "arch": "x64",
     "machine": "desktop"
   },
-  "serverVersion": "0.1.10",
+  "serverVersion": "0.1.11",
   "orchestrationProtocolVersion": 2,
-  "databaseMigration": 96,
+  "databaseMigration": 102,
   "capabilities": {
     "repositoryIdentity": true,
     "connectionProbe": true,
+    "accessTokenRenewal": true,
     "attachmentUploads": true,
     "questionAttachments": true,
     "fileAttachments": {
@@ -19,6 +20,7 @@
     },
     "pullRequests": true,
     "pullRequestChecks": true,
+    "issues": true,
     "sideChats": true,
     "vcsBranchStatus": true,
     "inlineMessageContext": true,
@@ -56,6 +58,7 @@
     "serverResolvedCommandContext": true,
     "threadStop": true,
     "localServerStop": true,
+    "previewTunnelSetting": true,
     "threadPullRequests": true,
     "threadPullRequestWatch": true,
     "pullRequestStackActions": true,
@@ -72,6 +75,7 @@
     "mcpModeLimitHeader": true,
     "linkFence": true,
     "mcpApprovalCodes": true,
+    "peerLinkPairingCodes": true,
     "mcpHostedApproval": true,
     "triage": true,
     "oneTimeSchedules": true,
@@ -81,6 +85,7 @@
     "cloudVoiceTranscription": true,
     "shellThreadFamilies": true,
     "shellOlderSettled": true,
-    "linkedThreadRefreshes": true
+    "linkedThreadRefreshes": true,
+    "issueLinkedThreads": true
   }
 }

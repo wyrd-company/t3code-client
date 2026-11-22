@@ -50,6 +50,7 @@ export interface SetAccessTokenOptions {
 export class AuthClient {
   #cached: StoredCredentials | undefined;
   #version = 0;
+  #renewal: Promise<AuthAccessTokenResultType> | undefined;
   readonly #changeHandlers = new Set<() => void>();
 
   readonly http: HttpTransport;
@@ -119,15 +120,59 @@ export class AuthClient {
       },
       { dpopKey: options.dpopKey },
     );
+    await this.#saveExchangeResult(result, options.dpopKey);
+    return result;
+  }
+
+  /** Renews a DPoP session created by an ordinary pairing link on a server that supports renewal. */
+  renewAccessToken(): Promise<AuthAccessTokenResultType> {
+    this.#renewal ??= this.#renewAccessToken().finally(() => {
+      this.#renewal = undefined;
+    });
+    return this.#renewal;
+  }
+
+  async #renewAccessToken(): Promise<AuthAccessTokenResultType> {
+    const { accessToken, dpopKey } = await this.#load();
+    if (accessToken === undefined || dpopKey === undefined) {
+      throw new T3PreconditionError("Access token renewal requires a DPoP session.");
+    }
+    const version = this.#version;
+    const result = await callRoute(
+      this.http,
+      httpRoutes["auth.token"],
+      {
+        body: {
+          grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
+          subject_token: accessToken,
+          subject_token_type: "urn:ietf:params:oauth:token-type:access_token",
+          requested_token_type: "urn:ietf:params:oauth:token-type:access_token",
+        },
+      },
+      { dpopKey },
+    );
+    if (this.#version !== version) {
+      throw new T3PreconditionError("The stored credential changed during renewal.");
+    }
+    if (result.token_type !== "DPoP") {
+      throw new T3PreconditionError("The renewal response did not contain a DPoP token.");
+    }
+    await this.#saveExchangeResult(result, dpopKey);
+    return result;
+  }
+
+  async #saveExchangeResult(
+    result: AuthAccessTokenResultType,
+    dpopKey: DpopPrivateJwk | undefined,
+  ): Promise<void> {
     const bound = result.token_type === "DPoP";
     await this.#save({
       accessToken: result.access_token,
       scopes: splitScopes(result.scope),
       expiresAt: new Date(this.clock.now().getTime() + result.expires_in * 1_000).toISOString(),
       sessionMethod: bound ? "dpop-access-token" : "bearer-access-token",
-      ...(bound && options.dpopKey !== undefined ? { dpopKey: options.dpopKey } : {}),
+      ...(bound && dpopKey !== undefined ? { dpopKey } : {}),
     });
-    return result;
   }
 
   /** Validate an issued token before saving its session metadata. */

@@ -150,6 +150,11 @@ export type EnvironmentSpeechModel = z.infer<typeof EnvironmentSpeechModel>;
 export const EnvironmentSpeechModels = z.looseObject({ models: z.array(EnvironmentSpeechModel) });
 export type EnvironmentSpeechModels = z.infer<typeof EnvironmentSpeechModels>;
 
+export const EnvironmentSpeechModelDownload = EnvironmentSpeechModels.extend({
+  cancelled: z.boolean().optional(),
+});
+export type EnvironmentSpeechModelDownload = z.infer<typeof EnvironmentSpeechModelDownload>;
+
 export const EnvironmentSpeechModelRequest = z.looseObject({ modelId: SpeechModelId });
 /** A model file, or a folder to search for them, on the environment's own disk. */
 export const EnvironmentSpeechModelLinkRequest = z.looseObject({

@@ -98,8 +98,8 @@ export const PullRequestDiffFileContentsInput = z.looseObject({
   ...pullRequestRefFields,
   commit: TrimmedNonEmptyString.optional(),
   changeType: z.enum(["change", "rename-pure", "rename-changed", "new", "deleted"]),
-  oldPath: TrimmedNonEmptyString,
-  newPath: TrimmedNonEmptyString,
+  oldPath: z.string().min(1),
+  newPath: z.string().min(1),
 });
 export type PullRequestDiffFileContentsInput = z.infer<typeof PullRequestDiffFileContentsInput>;
 

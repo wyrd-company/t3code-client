@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { hasScope } from "../auth/scopes.ts";
 import {
+  AuthAdministrativeClientScopes,
   AuthClientSession,
   AuthCreatePairingCredentialInput,
   AuthEnvironmentScope,
@@ -25,6 +26,7 @@ const authDescriptor = {
 const granular = [
   "settings:write",
   "providers:manage",
+  "relay:configure",
   "environment:maintain",
   "preview:operate",
   "diagnostics:read",
@@ -35,15 +37,15 @@ const granular = [
 ] as const;
 
 describe("auth scope vocabulary", () => {
-  it("keeps the seventeen scopes strict for caller input", () => {
-    expect(AuthEnvironmentScope.options).toHaveLength(17);
+  it("keeps the eighteen scopes strict for caller input", () => {
+    expect(AuthEnvironmentScope.options).toHaveLength(18);
     for (const scope of granular)
       expect(AuthEnvironmentScope.safeParse(scope).success, scope).toBe(true);
     expect(AuthEnvironmentScope.safeParse("review:write").success).toBe(true);
     expect(AuthEnvironmentScope.safeParse("future:scope").success).toBe(false);
   });
   it("grants every scope but review:write", () => {
-    expect(AuthGrantScope.options).toHaveLength(16);
+    expect(AuthGrantScope.options).toHaveLength(17);
     expect(AuthGrantScope.safeParse("review:write").success).toBe(false);
     expect(AuthGrantScope.safeParse("filesystem:write").success).toBe(true);
     expect(AuthCreatePairingCredentialInput.safeParse({ scopes: ["review:write"] }).success).toBe(
@@ -78,6 +80,10 @@ describe("auth scope vocabulary", () => {
     expect(AuthCreatePairingCredentialInput.parse({ scopes: ["orchestration:read"] })).toEqual({
       scopes: ["orchestration:read"],
     });
+    expect(AuthAdministrativeClientScopes).toEqual([
+      ...AuthStandardClientScopes,
+      "relay:configure",
+    ]);
     expect(AuthLegacyScopes).toEqual([
       "orchestration:read",
       "orchestration:operate",

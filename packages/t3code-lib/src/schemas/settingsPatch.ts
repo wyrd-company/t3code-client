@@ -20,6 +20,7 @@ import {
   SecretProviderConfig,
   SecretProviderSlug,
   SettingsSecretValue,
+  containsSecretReference,
   UsageLimitSourceConfig,
 } from "./providerInstance.ts";
 import {
@@ -89,6 +90,7 @@ export const ServerSettingsPatch = z
     keepAwakeWhileAgentsWork: z.boolean(),
     /** New T3 Connect device keys wait for approval. Changing it needs `access:write`. */
     requireConnectDeviceApproval: z.boolean(),
+    enablePreviewTunnel: z.boolean(),
     enableAgentBrowserAccess: z.boolean(),
     /** A literal key goes to the server's secret store; an empty string removes it. */
     cloudSpeechCredentials: z
@@ -191,6 +193,7 @@ export const ServerSettingsPatch = z
     textGenerators: z.record(ProviderInstanceId, TextGeneratorConfig.nullable()),
     usagePriceOverrides: z.record(TrimmedNonEmptyString, UsageModelPriceOverride.nullable()),
     usageModelAliases: z.record(TrimmedNonEmptyString, TrimmedNonEmptyString.nullable()),
+    usageHistoryRetentionDays: z.union([z.number().int().positive(), z.literal("unlimited")]),
   })
   .partial();
 export type ServerSettingsPatch = z.infer<typeof ServerSettingsPatch>;
@@ -201,13 +204,16 @@ export const ServerUpdateSettingsInput = z.looseObject({
 });
 export type ServerUpdateSettingsInput = z.infer<typeof ServerUpdateSettingsInput>;
 
-/** The key whose change the server guards with `access:write` in place of a settings write. */
-const ACCESS_PATCH_KEY = "requireConnectDeviceApproval";
+/** Settings controlled by access administrators. */
+const ACCESS_PATCH_KEYS: ReadonlySet<string> = new Set([
+  "requireConnectDeviceApproval",
+  "enablePreviewTunnel",
+]);
 
 /**
  * The scopes the server requires, in its order: `settings:write` for any other
  * change or an empty patch with no mutation, `providers:manage` for provider
- * keys and a mutation, `access:write` for `requireConnectDeviceApproval`.
+ * changes or secret references, and `access:write` for device approval and the preview tunnel.
  * Removing a secret provider needs `settings:write` too, since it also clears
  * the settings that read from it. A key this build does not know counts for none.
  */
@@ -219,14 +225,15 @@ export function requiredScopesForSettingsUpdate(
     .map(([key]) => key);
   const changesProviders =
     input.providerInstanceMutation !== undefined ||
-    keys.some((key) => PROVIDER_PATCH_KEYS.has(key));
+    keys.some((key) => PROVIDER_PATCH_KEYS.has(key)) ||
+    containsSecretReference(input.patch);
   const removesSecretProvider = Object.values(input.patch.secretProviders ?? {}).some(
     (entry) => entry === null,
   );
-  const changesAccess = keys.includes(ACCESS_PATCH_KEY);
+  const changesAccess = keys.some((key) => ACCESS_PATCH_KEYS.has(key));
   const changesSettings =
     removesSecretProvider ||
-    keys.some((key) => !PROVIDER_PATCH_KEYS.has(key) && key !== ACCESS_PATCH_KEY);
+    keys.some((key) => !PROVIDER_PATCH_KEYS.has(key) && !ACCESS_PATCH_KEYS.has(key));
   const scopes: AuthEnvironmentScope[] = [
     ...(changesSettings || (!changesProviders && !changesAccess)
       ? ["settings:write" as const]

@@ -13,6 +13,7 @@ import {
 } from "../../common.ts";
 import {
   ThreadLinkedPullRequest,
+  PullRequestWatchUntil,
   ThreadPullRequestKey,
   ThreadPullRequestLinkSource,
   ThreadPullRequestSnapshot,
@@ -47,6 +48,8 @@ export const ThreadPullRequestWatchCommand = z.looseObject({
   ...stamped,
   ...ThreadPullRequestKey.shape,
   watching: z.boolean(),
+  until: PullRequestWatchUntil.optional(),
+  checksPending: z.boolean().optional(),
   link: z
     .looseObject({
       url: TrimmedNonEmptyString,

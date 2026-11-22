@@ -95,6 +95,7 @@ export const ThreadPullRequestStack = z.looseObject({
 export type ThreadPullRequestStack = z.infer<typeof ThreadPullRequestStack>;
 /** Present while the server watches the pull request for its thread. */
 export const ThreadPullRequestWatch = z.looseObject({
+  until: forwardCompatibleLiteral(["merged"]).optional(),
   startedAt: IsoDateTime,
   headSha: TrimmedNonEmptyString.nullable(),
   failedChecks: z.array(TrimmedNonEmptyString),
@@ -121,6 +122,9 @@ export const ThreadPullRequestWatch = z.looseObject({
   checksPending: z.boolean().optional(),
 });
 export type ThreadPullRequestWatch = z.infer<typeof ThreadPullRequestWatch>;
+
+export const PullRequestWatchUntil = z.enum(["checks", "merged"]);
+export type PullRequestWatchUntil = z.infer<typeof PullRequestWatchUntil>;
 export const ThreadPullRequestLink = z.looseObject({
   ...ThreadPullRequestKey.shape,
   url: TrimmedNonEmptyString,

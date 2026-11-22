@@ -1,8 +1,10 @@
 /** Tagged failures of peer links and guest links, mirroring `peerLink.ts` and `guestShare.ts`. */
+import { z } from "zod";
 import { forwardCompatibleLiteral } from "../common.ts";
 import { Defect, messageAndCause, taggedError } from "./shared.ts";
 
 export const PeerLinkError = taggedError("PeerLinkError", {
+  answeredAs: z.string().optional(),
   reason: forwardCompatibleLiteral([
     "unreachable",
     "not_a_t3_environment",

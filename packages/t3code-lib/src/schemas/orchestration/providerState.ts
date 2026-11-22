@@ -16,6 +16,7 @@ import {
   ProviderThreadId,
   ProviderTurnId,
   RunAttemptId,
+  RunId,
   RuntimeRequestId,
   ThreadId,
   TrimmedNonEmptyString,
@@ -81,6 +82,7 @@ const pendingBackgroundTask = z.looseObject({
   parentTaskId: TrimmedNonEmptyString.optional(),
   /** Native id of the turn item that started this work, when it is not `taskId`. */
   nativeItemId: TrimmedNonEmptyString.optional(),
+  runId: RunId.optional(),
   /** The agent declared that it resumes when this work ends, so the thread holds for it. */
   awaited: z.literal(true).optional(),
   kind: z.string().optional(),
@@ -195,6 +197,7 @@ export const OrchestrationV2ProviderTurn = z.looseObject({
   nodeId: NodeId,
   runAttemptId: RunAttemptId.nullable(),
   nativeTurnRef: OrchestrationV2ProviderRef.nullable(),
+  nativeThreadRef: OrchestrationV2ProviderRef.optional(),
   ordinal: PositiveInt,
   status: forwardCompatibleLiteral([
     "pending",

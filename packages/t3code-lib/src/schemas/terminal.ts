@@ -212,6 +212,7 @@ export const TerminalEvent = taggedUnionWithUnknown("type", [
 export type TerminalEvent = z.infer<typeof TerminalEvent>;
 export const TerminalAttachSnapshotEvent = z.looseObject({
   type: z.literal("snapshot"),
+  managerId: z.string().optional(),
   snapshot: TerminalSessionSnapshot,
 });
 export type TerminalAttachSnapshotEvent = z.infer<typeof TerminalAttachSnapshotEvent>;

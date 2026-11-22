@@ -3,6 +3,7 @@
 //   implements: library
 // ---
 import { z } from "zod";
+import { SnapShotSource } from "./attachments.ts";
 import {
   EnvironmentId,
   GuestMessageId,
@@ -37,6 +38,7 @@ const attachmentBinding = {
 
 export const ImageContextRecord = z.looseObject({
   ...recordBase,
+  source: SnapShotSource.optional(),
   kind: z.literal("image"),
   ...attachmentBinding,
 });

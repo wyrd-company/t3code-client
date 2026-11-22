@@ -124,7 +124,7 @@ describe("server field changes of 0.1.10", () => {
       css: "a{}",
       background: "rev-1",
     });
-    rejects(EnvironmentTheme, { ...theme, css: "x".repeat(50_001) });
+    rejects(EnvironmentTheme, { ...theme, css: "x".repeat(100_001) });
     const snapshot = ServerConfigStreamEvent.safeParse({
       version: 1,
       type: "snapshot",

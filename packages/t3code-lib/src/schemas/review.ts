@@ -83,8 +83,8 @@ export const ReviewDiffFileContentsInput = z.looseObject({
   changeType: ReviewDiffChangeType,
   baseRef: TrimmedNonEmptyString.nullable(),
   headRef: TrimmedNonEmptyString.nullable(),
-  oldPath: TrimmedNonEmptyString,
-  newPath: TrimmedNonEmptyString,
+  oldPath: z.string().min(1),
+  newPath: z.string().min(1),
 });
 export type ReviewDiffFileContentsInput = z.infer<typeof ReviewDiffFileContentsInput>;
 export const ReviewDiffFileContentsResult = z.looseObject({

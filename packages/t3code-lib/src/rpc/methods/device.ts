@@ -3,6 +3,7 @@
 //   implements: library
 // ---
 import { z } from "zod";
+import { containsSecretReference } from "../../schemas/providerInstance.ts";
 import { VoidSuccess, defineMethod } from "../spec.ts";
 import {
   DeviceActionInput,
@@ -54,12 +55,14 @@ export const deviceMethods = {
     success: DeviceEasAccount,
     stream: false,
     scope: "settings:write",
+    payloadScopes: (input) => (containsSecretReference(input) ? ["providers:manage"] : []),
   }),
   "device.simlockIdentity": defineMethod({
     payload: DeviceSimlockIdentityInput,
     success: DeviceSimlockIdentity,
     stream: false,
     scope: "settings:write",
+    payloadScopes: (input) => (containsSecretReference(input) ? ["providers:manage"] : []),
   }),
   "device.open": defineMethod({
     payload: DeviceOpenInput,

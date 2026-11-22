@@ -24,6 +24,8 @@ import { sourceControlMethods } from "./methods/sourceControl.ts";
 import { agentSessionsMethods } from "./methods/agentSessions.ts";
 import { pullRequestsMethods } from "./methods/pullRequests.ts";
 
+import { issueMethods } from "./methods/issues.ts";
+
 export const rpcMethods = {
   ...orchestrationMethods,
   ...serverMethods,
@@ -46,6 +48,7 @@ export const rpcMethods = {
   ...sourceControlMethods,
   ...agentSessionsMethods,
   ...pullRequestsMethods,
+  ...issueMethods,
 };
 export type RpcMethods = typeof rpcMethods;
 export type RpcMethodName = keyof RpcMethods;

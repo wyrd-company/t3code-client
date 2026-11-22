@@ -21,6 +21,13 @@ export const SecretReference = z.looseObject({
 });
 export type SecretReference = z.infer<typeof SecretReference>;
 
+/** Reports whether a settings or RPC payload contains a reference to a stored secret. */
+export function containsSecretReference(value: unknown): boolean {
+  if (value === null || typeof value !== "object") return false;
+  if (SecretReference.safeParse(value).success) return true;
+  return Object.values(value).some(containsSecretReference);
+}
+
 /**
  * A credential setting: the literal, which the server keeps in its secret
  * store and redacts for clients, or the secret provider reference to read it

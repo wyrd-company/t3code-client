@@ -300,6 +300,12 @@ export const ServerProviderWorkspaceSnapshot = z.looseObject({
   modelsPending: z.boolean().optional(),
 });
 export type ServerProviderWorkspaceSnapshot = z.infer<typeof ServerProviderWorkspaceSnapshot>;
+export const ServerProviderSubProvider = z.looseObject({
+  name: TrimmedNonEmptyString,
+  unavailableReason: TrimmedNonEmptyString.optional(),
+});
+export type ServerProviderSubProvider = z.infer<typeof ServerProviderSubProvider>;
+
 export const ServerProvider = z.looseObject({
   instanceId: ProviderInstanceId,
   driver: ProviderDriverKind,
@@ -347,6 +353,8 @@ export const ServerProvider = z.looseObject({
   availability: ServerProviderAvailability.optional(),
   unavailableReason: TrimmedNonEmptyString.optional(),
   models: z.array(ServerProviderModel),
+  subProviders: z.array(ServerProviderSubProvider).optional(),
+  modelsRetained: z.boolean().optional(),
   updateRequiredModels: z.array(ServerProviderUpdateRequiredModel).optional(),
   slashCommands: z.array(ServerProviderSlashCommand).default([]),
   skills: z.array(ServerProviderSkill).default([]),

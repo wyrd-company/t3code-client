@@ -22,6 +22,7 @@ describe("the voice settings of a patch", () => {
     expect(ServerSettingsPatch.parse(patch)).toEqual(patch);
     expect(requiredScopesForSettingsUpdate({ patch: ServerSettingsPatch.parse(patch) })).toEqual([
       "settings:write",
+      "providers:manage",
     ]);
   });
 

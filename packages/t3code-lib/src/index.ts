@@ -51,6 +51,7 @@ export type {
   PreviewViewerFrame,
   PreviewViewerOutput,
 } from "./transport/previewViewer.ts";
+export type { PreviewTunnel, PreviewTunnelClose } from "./transport/previewTunnel.ts";
 export type { SpeechStream, SpeechStreamClose } from "./transport/speechStream.ts";
 export {
   SPEECH_STREAM_MAX_CHUNK_BYTES,

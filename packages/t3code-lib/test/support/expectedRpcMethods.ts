@@ -4,6 +4,20 @@
 // ---
 /** Stream flag and scope of each RPC method, read from upstream's `RpcAuthorization.ts` and `clientRpcPermissions.ts`. */
 export const expectedRpcMethods = {
+  "issues.list": [false, "orchestration:read"],
+  "issues.detail": [false, "orchestration:read"],
+  "issues.comments": [false, "orchestration:read"],
+  "issues.templates": [false, "orchestration:read"],
+  "issues.candidates": [false, "orchestration:read"],
+  "issues.linkedThreads": [false, "orchestration:read"],
+  "issues.create": [false, "source-control:write"],
+  "issues.comment": [false, "source-control:write"],
+  "issues.update": [false, "source-control:write"],
+  "issues.setState": [false, "source-control:write"],
+  "issues.react": [false, "source-control:write"],
+  "issueTrackers.list": [false, "orchestration:read"],
+  "issueTrackers.connect": [false, "settings:write"],
+  "issueTrackers.bindProject": [false, "settings:write"],
   "orchestration.dispatchCommand": [false, "orchestration:operate"],
   "orchestration.launchThread": [false, "orchestration:operate"],
   "orchestration.getThreadProjection": [false, "orchestration:read"],

@@ -122,7 +122,7 @@ export function spawnServer(options: {
   );
 }
 
-export function issueToken(bin: string, baseDir: string): string {
+export function issueToken(bin: string, baseDir: string, scopes?: readonly string[]): string {
   const output = NodeChildProcess.execFileSync(
     process.execPath,
     [
@@ -135,6 +135,7 @@ export function issueToken(bin: string, baseDir: string): string {
       "--label",
       "live-tests",
       "--token-only",
+      ...(scopes ?? []).flatMap((scope) => ["--scope", scope]),
     ],
     { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], env: serverEnvironment() },
   );
