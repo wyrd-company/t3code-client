@@ -132,8 +132,10 @@ proposed-design:
     `GET /api/preview/tunnel` carries raw TCP bytes to one remote loopback port.
     `T3Client.openPreviewTunnel(port)` uses a media ticket and requires
     `terminal:operate`. The server controls access through the preview tunnel
-    setting and managed policy. Close the tunnel when its connection is no
-    longer needed.
+    setting and managed policy. Read the byte stream as data arrives, since
+    unread chunks are queued in memory. The client reports refused upgrades
+    as connection errors. Close the tunnel when its connection is no longer
+    needed.
 
     `GET /ws/voice` is one live transcription. `T3Client.openSpeechStream` opens it with a
     ticket for the `media` use and `orchestration:operate`; the upgrade is 401 without a
