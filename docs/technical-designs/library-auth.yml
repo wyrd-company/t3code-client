@@ -44,7 +44,7 @@ proposed-design:
           dpopKey?: DpopPrivateJwk; // binds the session to this key
         },
       ): Promise<AuthAccessTokenResult>; // saves to the store
-      renewAccessToken(): Promise<AuthAccessTokenResult>; // replaces a renewable DPoP session
+      renewAccessToken(): Promise<AuthAccessTokenResult>; // renews the access token of a DPoP session
       setAccessToken(token: string, options?: { dpopKey?: DpopPrivateJwk }): Promise<AuthSessionState>; // validates via /api/auth/session, saves
       clearCredentials(): Promise<void>;
       websocketTicket(signal?): Promise<AuthWebSocketTicketResult>;
@@ -60,7 +60,7 @@ proposed-design:
       currentDpopKey(): Promise<DpopPrivateJwk | undefined>;
       scopesSync(): AuthGrantedScope[] | undefined; // from the last credential loaded or saved; no store round trip
       readonly credentialsVersion: number; // increments on every save or clear that changes the credential
-      onCredentialsChange(handler: () => void): () => void;
+      onCredentialsChange(handler: (change: "replacement" | "renewal") => void): () => void;
     }
     ```
 
@@ -71,9 +71,11 @@ proposed-design:
     `ensureScopes`); everything the server reports (session state, token
     exchange, pairing links, client sessions) decodes as `AuthGrantedScope`, read
     from `permissions` when the server sends it and from `scopes` otherwise.
-    `RpcClient` reads `scopesSync()` for its local scope check, and `T3Client`
-    calls `SocketTransport.reconnect()` on every credential change so the open
-    socket authenticates as the new session.
+    `RpcClient` reads `scopesSync()` for its local scope check.
+    `AuthClient` emits `renewal` when it renews a DPoP session with the same key
+    and grants. `T3Client` keeps the socket open and in-flight RPCs continue.
+    Other credential changes emit `replacement`. `T3Client` reconnects the
+    socket so it can authenticate with the current credential.
 
   proof-bound-sessions: |
     ```ts
