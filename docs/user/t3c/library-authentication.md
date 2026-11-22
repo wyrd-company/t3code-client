@@ -136,10 +136,10 @@ get credentialsVersion(): number;
 
 ### authClient.onCredentialsChange()
 
-Called after every change to the stored credential made through this client.
+Called after a stored credential changes. A renewal keeps the current session and grants.
 
 ```ts
-onCredentialsChange(handler: () => void): () => void;
+onCredentialsChange(handler: (change: "replacement" | "renewal") => void): () => void;
 ```
 
 **Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
@@ -195,7 +195,7 @@ async exchangePairingToken(
 
 ### authClient.renewAccessToken()
 
-Renews a DPoP session created by an ordinary pairing link on a server that supports renewal.
+Renews a DPoP pairing session on demand. The caller schedules renewal before expiry.
 
 ```ts
 renewAccessToken(): Promise<AuthAccessTokenResultType>;

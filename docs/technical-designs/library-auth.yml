@@ -118,7 +118,9 @@ proposed-design:
     `auth.renewAccessToken()` exchanges a stored DPoP access token from an
     ordinary pairing link using the same proof key. Check the environment's
     `accessTokenRenewal` capability before calling it. The server returns a
-    replacement token and the client saves it in the credential store.
+    replacement token and the client saves it in the credential store. Schedule
+    renewal before expiry. An unchanged DPoP key and grant keep the open RPC
+    connection active.
   scope-groups: >-
     AuthStandardClientScopes mirrors the stock standard client grant.
     AuthAdministrativeClientScopes adds relay:configure for link proof and relay

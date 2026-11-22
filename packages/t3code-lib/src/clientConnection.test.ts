@@ -5,7 +5,7 @@
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { ids, makeShellSnapshot, snapshotItem } from "../test/support/threadFixtures.ts";
 import type { WebSocketConstructor } from "./internal/websocket.ts";
-import { T3Client, type BackoffPolicy } from "./index.ts";
+import { T3Client, generateDpopKey, memoryCredentialStore, type BackoffPolicy } from "./index.ts";
 
 class FakeSocket extends EventTarget {
   static sockets: FakeSocket[] = [];
@@ -40,7 +40,7 @@ let client: T3Client | undefined;
 const make = (options: Partial<Parameters<typeof T3Client.create>[0]> = {}) => {
   client = T3Client.create({
     baseUrl: "http://127.0.0.1:12345",
-    accessToken: "sample-token",
+    ...(options.credentials === undefined ? { accessToken: "sample-token" } : {}),
     fetch: fetchTicket,
     webSocket: FakeSocket as unknown as WebSocketConstructor,
     ...options,
@@ -55,6 +55,55 @@ afterEach(async () => {
   vi.useRealTimers();
   vi.restoreAllMocks();
   FakeSocket.sockets = [];
+});
+
+it("completes an in-flight command on the same socket after token renewal", async () => {
+  vi.useFakeTimers();
+  const credentials = memoryCredentialStore({
+    accessToken: "initial-token",
+    dpopKey: generateDpopKey(),
+    sessionMethod: "dpop-access-token",
+    scopes: ["orchestration:read", "orchestration:operate"],
+  });
+  const c = make({
+    credentials,
+    fetch: async (input, init) => {
+      const request = new Request(input, init);
+      if (new URL(request.url).pathname !== "/oauth/token") return fetchTicket(input, init);
+      return Response.json({
+        access_token: "renewed-token",
+        issued_token_type: "urn:ietf:params:oauth:token-type:access_token",
+        token_type: "DPoP",
+        expires_in: 3600,
+        scope: "orchestration:operate orchestration:read",
+      });
+    },
+  });
+  const connected = c.connect();
+  await tick(0);
+  const original = socket();
+  original.open();
+  await connected;
+
+  const command = c.threads.archive(ids.threadId);
+  void command.catch(() => {});
+  await tick(0);
+  const request = JSON.parse(original.sent[0] ?? "null") as { _tag: string; id: string };
+  expect(request._tag).toBe("Request");
+
+  await c.auth.renewAccessToken();
+  expect(c.auth.credentialsVersion).toBe(1);
+  expect((await credentials.load()).accessToken).toBe("renewed-token");
+  await tick(0);
+  expect(FakeSocket.sockets).toHaveLength(1);
+  expect(original.readyState).toBe(1);
+
+  original.message({
+    _tag: "Exit",
+    requestId: request.id,
+    exit: { _tag: "Success", value: { sequence: 1 } },
+  });
+  await expect(command).resolves.toBeUndefined();
 });
 
 describe("public client connection timing", () => {

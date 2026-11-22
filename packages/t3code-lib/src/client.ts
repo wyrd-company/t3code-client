@@ -168,7 +168,9 @@ export class T3Client {
       ...(options.webSocket === undefined ? {} : { webSocket: options.webSocket }),
       ...(options.logger === undefined ? {} : { logger: options.logger }),
     });
-    this.auth.onCredentialsChange(() => this.#socket.reconnect());
+    this.auth.onCredentialsChange((change) => {
+      if (change === "replacement") this.#socket.reconnect();
+    });
     this.#connection = new RpcConnection(
       this.#socket,
       options.logger === undefined ? {} : { logger: options.logger },
