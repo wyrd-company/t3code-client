@@ -95,6 +95,15 @@ describe("auth scope vocabulary", () => {
       "relay:write",
     ]);
   });
+  it("requires an access level for a peer-link pairing credential", () => {
+    expect(AuthCreatePairingCredentialInput.shape.access.safeParse("read-only").success).toBe(true);
+    expect(AuthCreatePairingCredentialInput.safeParse({ purpose: "peer-link" }).success).toBe(
+      false,
+    );
+    expect(
+      AuthCreatePairingCredentialInput.parse({ purpose: "peer-link", access: "read-only" }),
+    ).toEqual({ purpose: "peer-link", access: "read-only" });
+  });
   it("keeps descriptors loose and reads the optional server update scope", () => {
     expect(ServerAuthDescriptor.parse(authDescriptor)).toMatchObject({ futureField: true });
     expect(

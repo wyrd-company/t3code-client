@@ -312,23 +312,18 @@ export const AuthClientSession = z.looseObject({
 });
 export type AuthClientSession = z.infer<typeof AuthClientSession>;
 
-const pairingCredentialFields = {
-  label: TrimmedNonEmptyString.optional(),
-  scopes: z.array(AuthGrantScope).optional(),
-};
-export const AuthCreatePairingCredentialInput = z.union([
-  z.looseObject({
-    ...pairingCredentialFields,
-    purpose: z.undefined().optional(),
+export const AuthCreatePairingCredentialInput = z
+  .looseObject({
+    label: TrimmedNonEmptyString.optional(),
+    scopes: z.array(AuthGrantScope).optional(),
+    purpose: z.literal("peer-link").optional(),
     /** Derives scopes from the agent sign-in level on servers with mcpApprovalCodes. */
     access: AuthMcpClientAccess.optional(),
-  }),
-  z.looseObject({
-    ...pairingCredentialFields,
-    purpose: z.literal("peer-link"),
-    access: AuthMcpClientAccess,
-  }),
-]);
+  })
+  .refine((input) => input.purpose === undefined || input.access !== undefined, {
+    path: ["access"],
+    message: "Peer-link pairing requires an access level.",
+  });
 export type AuthCreatePairingCredentialInput = z.infer<typeof AuthCreatePairingCredentialInput>;
 
 export const ClientMetadataSurface = ClientSurface;
