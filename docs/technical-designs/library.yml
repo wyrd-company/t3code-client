@@ -21,7 +21,7 @@ relationships:
     - threadWatch
 proposed-design:
   high-level-overview: >-
-    The library implements stock T3 Code 0.1.10 and orchestration protocol 2.
+    The library implements stock T3 Code 0.1.11 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade
     contracts. The library architecture links the canonical design family.
   overview: |
@@ -85,6 +85,7 @@ proposed-design:
         editor.ts               editor ids and the editor launch input
         preview.ts              browser tabs, browser profiles and discovered local servers
         previewViewer.ts        viewer socket messages, and the bodies of the two routes beside it
+        issues.ts               issue records, tracker operations and links between issues and threads
         speechStream.ts         live transcription socket messages
         device.ts               device hosts, simulators and emulators, their sessions and actions
         serverSelfUpdate.ts     what moves a server to another version, and its progress
@@ -260,7 +261,7 @@ proposed-design:
   typed-coverage: |
     The library is fully typed against the target T3 Code build. Every RPC
     method, HTTP route and orchestration command that the build exposes to a
-    client has a schema-validated entry. This covers pull requests, previews,
+    client has a schema-validated entry. This covers pull requests, issue trackers, previews,
     devices, cloud relay, DPoP, desktop bootstrap, a guest's own `/api/guest`
     routes, attachment upload signing, voice transcription, source-control repository, clone and
     sign-in flows, MCP OAuth, forks and merge-backs, delegated tasks and settings

@@ -1056,6 +1056,7 @@ Client composition root for HTTP, auth, RPC and server facades.
   - _instance_
     - [.requests](#T3Client+requests)
     - [.openPreviewViewer()](#T3Client+openPreviewViewer)
+    - [.openPreviewTunnel()](#T3Client+openPreviewTunnel)
     - [.openSpeechStream()](#T3Client+openSpeechStream)
     - [.connect()](#T3Client+connect)
     - [.close()](#T3Client+close)
@@ -1085,6 +1086,18 @@ async openPreviewViewer(
     target: PreviewViewerTarget,
     signal?: AbortSignal,
   ): Promise<PreviewViewer>;
+```
+
+**Kind**: instance method of [<code>T3Client</code>](#T3Client)  
+<a name="T3Client+openPreviewTunnel"></a>
+
+### t3Client.openPreviewTunnel()
+
+Open a preview port on the environment's loopback interface. Sends and receives binary
+chunks with a fresh media ticket and requires terminal:operate. Close the tunnel when done.
+
+```ts
+async openPreviewTunnel(port: number, signal?: AbortSignal): Promise<PreviewTunnel>;
 ```
 
 **Kind**: instance method of [<code>T3Client</code>](#T3Client)  
@@ -1309,6 +1322,7 @@ Auth control plane and the sole owner of credential-store access.
   - [.descriptor()](#AuthClient+descriptor)
   - [.sessionState()](#AuthClient+sessionState)
   - [.exchangePairingToken()](#AuthClient+exchangePairingToken)
+  - [.renewAccessToken()](#AuthClient+renewAccessToken)
   - [.setAccessToken()](#AuthClient+setAccessToken)
   - [.clearCredentials()](#AuthClient+clearCredentials)
   - [.websocketTicket()](#AuthClient+websocketTicket)
@@ -1389,6 +1403,17 @@ async exchangePairingToken(
     pairingToken: string,
     options: ExchangePairingTokenOptions = {},
   ): Promise<AuthAccessTokenResultType>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+renewAccessToken"></a>
+
+### authClient.renewAccessToken()
+
+Renews a DPoP session created by an ordinary pairing link on a server that supports renewal.
+
+```ts
+renewAccessToken(): Promise<AuthAccessTokenResultType>;
 ```
 
 **Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  

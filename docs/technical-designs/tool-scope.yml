@@ -68,6 +68,31 @@ proposed-design:
        same tests, review and documentation as library changes.
     4. The update's pull request lists the tool changes made and each fail with
        its reason.
+  verdicts-0-1-11: |
+    Basis: stock T3 Code tags v0.1.10 and v0.1.11 (59651c1), the stock
+    `apps/server/src/cli` command tree and the 92 tools in its MCP toolkits.
+
+    | Capability | t3c gate 1 | t3c gate 2 | MCP gate 1 | MCP gate 2 |
+    | --- | --- | --- | --- | --- |
+    | Browse, file, comment on, move and link issues | Pass. Stock t3 has no issue command. | Fail. Current automated jobs use the issue workflow through stock MCP or the forge. | Fail. Stock provides issue list, read, create, comment, state and thread-link tools. | Pass. Agents use these stock tools to carry issues through delivery. |
+    | Edit issue fields, reactions, templates, candidates and tracker setup | Pass. Stock t3 has no corresponding commands. | Fail. Tracker administration and interactive editing have no recurring command-line job. | Pass. Stock issue tools cover filing, commenting, state and links. | Fail. The agent delivery workflow uses those stock actions. |
+    | Read, create, update, respond to, review and merge pull requests and inspect or rerun CI | Pass. Stock t3 has no equivalent remote forge commands. | Fail. Current delivery jobs use stock MCP or the forge. | Fail. Stock has pull request management and CI tools. | Pass. Agents use stock for pull request delivery. |
+    | Pull request watch until merge, merge head checks and merge attribution | Pass. Stock t3 does not expose these controls. | Fail. The agent delivery workflow owns pull request monitoring and merging. | Fail. Stock pull request tools expose watch and merge controls. | Pass. Agents wait on CI and merge the head they reviewed. |
+    | Model options at thread start | Fail for the option itself. Stock t3 accepts repeated `--option id=value`. The paired-profile workflow and structured exit contract still pass for `t3c run`. | Pass. Jobs preserve explicit model options when starting a run. | Fail. Stock thread launch already takes model options. | Pass. Agents choose options in stock. |
+    | Pairing renewal, peer-link codes, batch links and Connect notification preferences | Pass for renewal and the notification preference. Stock t3 handles peer links, including batch links. | Fail for new commands. Renewal belongs to credential handling and preference changes are operator setup. | Fail for peer links. Stock already exposes environment linking. Pass for direct renewal and preferences. | Fail for a new agent tool. The client owns renewal and the operator owns notification preferences. |
+    | Preview tunnel and policy, provider sign-out and secret-reference permissions, usage retention and theme size | Pass for the administrative policy and retention settings. Stock can set themes. | Fail. These are host or account settings, not recurring job steps. | Pass for the administrative settings. Stock has preview and theme tools. | Fail. These controls belong to the operator. |
+    | Provider, history, background-task, terminal, diff-path, speech and snapshot payload additions | Pass for additional protocol data. | Fail for a distinct command. Existing JSON outputs carry data their commands already return. | Pass for additional protocol data. | Fail for a distinct tool. Existing inspection tools use the library records. |
+
+    The stock changes do not overlap an existing complementary command or tool
+    outcome. The stock thread-start option leaves profile selection and script
+    results in t3c. The new issue and pull request tools cover a different set
+    of outcomes from the installed scheduler, thread and diagnostics tools.
+    The open proposals for staging remote server updates
+    (wyrd-company/t3code-client#173) and reading provisional usage
+    (wyrd-company/t3code-client#174) still pass both t3c gates. Stock t3 adds
+    a database compatibility check during update and has no stage-only action
+    for a remote profile or a provisional usage query.
+
   verdicts-0-1-10: |
     Basis: the v0.1.9..v0.1.10 inventory in wyrd-company/t3code-client#172,
     checked against the v0.1.10 CLI command tree in apps/server/src/cli and the

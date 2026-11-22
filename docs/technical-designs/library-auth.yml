@@ -11,7 +11,7 @@ relationships:
     - releasing
 proposed-design:
   high-level-overview: >-
-    The library implements stock T3 Code 0.1.10 and orchestration protocol 2.
+    The library implements stock T3 Code 0.1.11 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade
     contracts. The library architecture links the canonical design family.
   auth: |
@@ -113,8 +113,14 @@ proposed-design:
     `T3ClientOptions.fetchAuthenticates`, so that a route that requires a session
     sends without a stored token. The client then mints socket tickets through
     that `fetch`.
+  access-token-renewal: |
+    `auth.renewAccessToken()` exchanges a stored DPoP access token from an
+    ordinary pairing link using the same proof key. Check the environment's
+    `accessTokenRenewal` capability before calling it. The server returns a
+    replacement token and the client saves it in the credential store.
   scope-groups: >-
-    AuthStandardClientScopes mirrors the stock 0.1.10 standard client grant,
-    including access:read, access:write and relay:write. There is no separate
-    administrative scope set. Callers choose explicit scopes for narrower grants.
-    AuthLegacyScopes retains the wire vocabulary for decoding older credentials.
+    AuthStandardClientScopes mirrors the stock standard client grant.
+    AuthAdministrativeClientScopes adds relay:configure for link proof and relay
+    configuration. The server enforces relay:write for these two routes on
+    0.1.10 and relay:configure on 0.1.11. AuthLegacyScopes retains the wire
+    vocabulary for decoding older credentials.

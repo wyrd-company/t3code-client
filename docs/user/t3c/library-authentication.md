@@ -107,6 +107,7 @@ Auth control plane and the sole owner of credential-store access.
   - [.descriptor()](#AuthClient+descriptor)
   - [.sessionState()](#AuthClient+sessionState)
   - [.exchangePairingToken()](#AuthClient+exchangePairingToken)
+  - [.renewAccessToken()](#AuthClient+renewAccessToken)
   - [.setAccessToken()](#AuthClient+setAccessToken)
   - [.clearCredentials()](#AuthClient+clearCredentials)
   - [.websocketTicket()](#AuthClient+websocketTicket)
@@ -187,6 +188,17 @@ async exchangePairingToken(
     pairingToken: string,
     options: ExchangePairingTokenOptions = {},
   ): Promise<AuthAccessTokenResultType>;
+```
+
+**Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
+<a name="AuthClient+renewAccessToken"></a>
+
+### authClient.renewAccessToken()
+
+Renews a DPoP session created by an ordinary pairing link on a server that supports renewal.
+
+```ts
+renewAccessToken(): Promise<AuthAccessTokenResultType>;
 ```
 
 **Kind**: instance method of [<code>AuthClient</code>](#AuthClient)  
