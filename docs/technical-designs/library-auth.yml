@@ -44,6 +44,7 @@ proposed-design:
           dpopKey?: DpopPrivateJwk; // binds the session to this key
         },
       ): Promise<AuthAccessTokenResult>; // saves to the store
+      renewAccessToken(): Promise<AuthAccessTokenResult>; // replaces a renewable DPoP session
       setAccessToken(token: string, options?: { dpopKey?: DpopPrivateJwk }): Promise<AuthSessionState>; // validates via /api/auth/session, saves
       clearCredentials(): Promise<void>;
       websocketTicket(signal?): Promise<AuthWebSocketTicketResult>;
