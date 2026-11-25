@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.6
+
+### Features
+
+- Target stock T3 Code 0.1.12 with orchestration protocol 2. Use `t3c thread diff <id> --json` and read `data.repositories` for patches from changed tracked repositories, including projects whose root is outside Git. Plain text and the JSON `data.diff` field show the thread folder's own patch.
+
+### Fixes
+
+- Worktree launches and schedules preserve Unicode whitespace in `--base-ref`, `--branch` and scheduled JSON workspace strategies. Pass Git ref names exactly as stored on the server.
+
 ## 0.2.5
 
 ### Fixes

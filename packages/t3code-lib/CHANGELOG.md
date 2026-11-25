@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.7.0
+
+### Breaking
+
+- When upgrading the server to stock 0.1.12, update scoped credentials for the operations you use. `guestShare.create` needs `orchestration:read` in addition to `access:write`. Reference answers to `secrets.answerRequest` and reference-backed cloud speech keys need `providers:manage`. `server.updateSettings` patches that write project scripts need `orchestration:operate`. The server checks these added scopes.
+- The four `webhooks.webhook*` routes now return either `{ deliveryId }` for a scheduled-task hook or `{ runId }` for a durable-workflow hook. Before using either ID, narrow the result with `typeof result.deliveryId === "string"` or `typeof result.runId === "string"`. If you composed one of the route `success` schemas using object methods such as `.shape` or `.extend()`, compose the result union or use `schemas.scheduledTask.ScheduledTaskWebhookAccepted` and `schemas.workflow.WorkflowHookAccepted` individually.
+- The `kind` field of `schemas.providerInstance.UsageLimitSourceConfig` now accepts `http` as well as `cliproxy`. Handle both kinds when reading settings. Schema consumers can use `UsageLimitSourceConfig.shape.kind.options` in place of the former literal's `.value`. The client advertises `httpUsageLimitSources` automatically. Read HTTP quota windows from `quotaAccounts` and account model lists from `models` when provided.
+- Update exhaustive handlers for the known `run.output-submitted` event, `feedback_request` turn item, preview viewer `selectMenu` and `selectMenuClosed` messages, and static keybinding commands `terminal.previous` and `terminal.next`. Include the new RPC error tags `TaskFolderError`, `WorkspaceFoldersError`, `WorkflowRequestError`, `PeerLinkThreadReadError`, `ProviderMcpSignInError`, `AgentFeedbackRequestError`, and `ExternalLauncherRevealTargetMissingError`. Exhaustive route and RPC tables also need `mcpOAuth.revoke` and the new methods.
+- A `secrets.answerRequest` save can carry one `secret` or a `values` map keyed by the card's `fields`. After checking `answer.type === "save"`, check `typeof answer.secret === "string"` before using it as a single value. Send `{ type: "save", values }` when answering a multi-field card. `schemas.serverActions.SecretRequestAnswerInput.shape.answer` is now a plain union with two save variants. Compose it as a union and distinguish the save shapes by their fields.
+
+### Features
+
+- Request structured run output with `threads.startTurn` with `outputSchema` or `message.dispatch`. The thread projection records `run.output-submitted` and keeps the submitted output through later lifecycle events. Snapshots also expose workflow-step lineage, rollback repositories left unrestored, attempt modes, provider startup and dropped prompts, and tool background-wait support. Feedback cards appear in thread turn items and are answered through `agentFeedback.answerRequest`. Multi-field secret cards still appear in the pending runtime request summary.
+- Read the new review merge base and file change types, pull request visibility and approval checks, issue tracker accounts and multi-scope bindings, VCS `refsDigest`, optional probe `serverTime`, and auth session IDs. Use `expectedHeadSha` on review submission and `unbindThread` on scheduled-task upsert. The library also types the new feedback and workflow settings, layout command policy, linked-environment capabilities, speech hints, attachment dispositions, server update track mismatches and preview viewer select menus.
+- Read optional `repositories` patches from `threads.diff`, including when the thread folder has no Git checkpoint. `diff` contains the thread folder's patch. When calling `latestDiffTurnCount` with a subset of the projection, include `checkpointScopes` to select the completed run's checkpoint when only tracked repositories have patches.
+- Target stock T3 Code 0.1.12 with orchestration protocol 2. Use the typed `workspace.*` methods to discover folders, inspect and extend task-folder layouts, and read or approve layout commands. Project creation and update accept tracked folders. Use `trackFolders` and `untrackFolders` for incremental edits. The nine `workflows.*` methods cover run and question streams, run controls and definition files. `peerLinks.*` adds linked thread reads and pairing. `provider.mcpSignIn.*`, `agentFeedback.answerRequest` and `mcpOAuth.revoke` are also typed.
+
+### Fixes
+
+- On stock 0.1.12, a run can complete before its `checkpointId` arrives in a later `run.updated`. Wait for the checkpoint before requesting its patch. Queue slash commands as separate turns when another run is active. Guest thread reads omit file-change patch text. Refresh VCS status explicitly after `vcs.removeWorktree` if you rely on an immediate root-status refresh. Request `issues.list` with `sort: "created"` for creation-time order.
+- Branch, ref and remote names preserve Unicode whitespace at their edges. Use `schemas.common.GitRefName` or `schemas.common.trimAsciiWhitespace` if you normalize names before sending, comparing or storing them.
+- `T3HttpError.retryAfter` exposes the `Retry-After` header as sent, including on startup 503s and workflow-hook 429s. Parse the startup body with `schemas.httpErrors.ServerStartupStatus` and webhook refusal bodies with `schemas.workflow.WebhookFailure` for the error and optional problem detail.
+- On stock 0.1.12, handle checkout changes refused while a thread has an active run in the checkout. Finish or stop the run before retrying. A review preview's `sourceKind` must agree with the file's `sourceKind`, and pull request diff reads accept only commits listed on the change request. Reauthenticate if the server refuses a pending exchange after sessions were revoked. Scheduled-task webhook verification and delivery records omit the `Cookie` header.
+
 ## 0.6.0
 
 ### Breaking
