@@ -2,6 +2,7 @@
 // relationships:
 //   implements: library
 // ---
+import { AgentFeedbackAnswerInput } from "../../schemas/agentFeedback.ts";
 import { z } from "zod";
 import { containsSecretReference } from "../../schemas/providerInstance.ts";
 import { defineMethod, VoidSuccess } from "../spec.ts";
@@ -232,8 +233,17 @@ export const serverMethods = {
     stream: false,
     scope: "diagnostics:read",
   }),
+  // A reference answer also needs providers:manage on 0.1.12. 0.1.11 allowed it without, so
+  // the server checks it, not this client.
   "secrets.answerRequest": defineMethod({
     payload: SecretRequestAnswerInput,
+    success: VoidSuccess,
+    stream: false,
+    scope: "orchestration:operate",
+  }),
+  /** Send stores and sends a report from a thread's turn: the bar of running that thread. */
+  "agentFeedback.answerRequest": defineMethod({
+    payload: AgentFeedbackAnswerInput,
     success: VoidSuccess,
     stream: false,
     scope: "orchestration:operate",

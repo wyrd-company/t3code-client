@@ -25,8 +25,38 @@ import { agentSessionsMethods } from "./methods/agentSessions.ts";
 import { pullRequestsMethods } from "./methods/pullRequests.ts";
 
 import { issueMethods } from "./methods/issues.ts";
+import { workspaceMethods } from "./methods/workspace.ts";
+import { workflowsMethods } from "./methods/workflows.ts";
 
-export const rpcMethods = {
+/**
+ * The registry's type, named by family so that its declaration stays within what the compiler
+ * serializes: one inferred object type of every method is too long to emit.
+ */
+export type RpcMethods = typeof orchestrationMethods &
+  typeof serverMethods &
+  typeof vcsMethods &
+  typeof projectsMethods &
+  typeof terminalMethods &
+  typeof authAccessMethods &
+  typeof peerLinksMethods &
+  typeof guestShareMethods &
+  typeof mcpAppsMethods &
+  typeof previewMethods &
+  typeof deviceMethods &
+  typeof scheduledTasksMethods &
+  typeof filesMethods &
+  typeof gitMethods &
+  typeof diagnosticsMethods &
+  typeof providerAuthMethods &
+  typeof providerInstallMethods &
+  typeof acpRegistryMethods &
+  typeof sourceControlMethods &
+  typeof agentSessionsMethods &
+  typeof pullRequestsMethods &
+  typeof issueMethods &
+  typeof workspaceMethods &
+  typeof workflowsMethods;
+export const rpcMethods: RpcMethods = {
   ...orchestrationMethods,
   ...serverMethods,
   ...vcsMethods,
@@ -49,6 +79,7 @@ export const rpcMethods = {
   ...agentSessionsMethods,
   ...pullRequestsMethods,
   ...issueMethods,
+  ...workspaceMethods,
+  ...workflowsMethods,
 };
-export type RpcMethods = typeof rpcMethods;
 export type RpcMethodName = keyof RpcMethods;

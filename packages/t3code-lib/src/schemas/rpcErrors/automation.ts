@@ -9,6 +9,9 @@ export const ScheduledTaskError = taggedError("ScheduledTaskError", {
   cause: Defect.optional(),
 });
 
+/** A workflow service failure, its message built from the service's own attributes. */
+export const WorkflowRequestError = taggedError("WorkflowRequestError", { message: z.string() });
+
 export const UsageReadErrorReason = forwardCompatibleLiteral(["scanFailed", "invalidWindow"]);
 /** Its class derives `message` from `reason` and `detail`, so only those arrive. */
 export const UsageReadError = taggedError("UsageReadError", {

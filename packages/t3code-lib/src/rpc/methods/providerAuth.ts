@@ -21,8 +21,27 @@ import {
   ProviderUploadFeedbackInput,
   ProviderUploadFeedbackResult,
 } from "../../schemas/providerSetup.ts";
+import {
+  ProviderMcpSignInCompleteInput,
+  ProviderMcpSignInCompleteResult,
+  ProviderMcpSignInStartInput,
+  ProviderMcpSignInStartResult,
+} from "../../schemas/providerMcpSignIn.ts";
 
 export const providerAuthMethods = {
+  // An MCP sign-in stores a credential for the agent, as an account sign-in does.
+  "provider.mcpSignIn.start": defineMethod({
+    payload: ProviderMcpSignInStartInput,
+    success: ProviderMcpSignInStartResult,
+    stream: false,
+    scope: "providers:manage",
+  }),
+  "provider.mcpSignIn.complete": defineMethod({
+    payload: ProviderMcpSignInCompleteInput,
+    success: ProviderMcpSignInCompleteResult,
+    stream: false,
+    scope: "providers:manage",
+  }),
   "provider.auth.start": defineMethod({
     payload: ProviderAuthStartInput,
     success: ProviderAuthState,

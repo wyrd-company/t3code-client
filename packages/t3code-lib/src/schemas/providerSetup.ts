@@ -99,7 +99,7 @@ export const ProviderAuthMethod = z.looseObject({
 export type ProviderAuthMethod = z.infer<typeof ProviderAuthMethod>;
 
 /** Environments supply sign-in URLs and clients open them, so only `http` and `https` are read. */
-const SignInUrl = TrimmedNonEmptyString.max(16_384).regex(/^https?:\/\//i);
+export const SignInUrl = TrimmedNonEmptyString.max(16_384).regex(/^https?:\/\//i);
 
 export const ProviderAuthInteraction = taggedUnionWithUnknown("type", [
   z.looseObject({

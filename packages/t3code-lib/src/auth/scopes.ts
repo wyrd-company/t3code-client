@@ -3,7 +3,11 @@
 //   implements: library
 // ---
 import { T3AuthError } from "../errors.ts";
-import type { AuthEnvironmentScope, AuthGrantedScope } from "../schemas/auth.ts";
+import type {
+  AuthEnvironmentScope,
+  AuthGrantedScope,
+  AuthMcpClientAccess,
+} from "../schemas/auth.ts";
 
 export {
   AuthAdministrativeClientScopes,
@@ -28,6 +32,20 @@ export const AuthSourceControlWriteScope = "source-control:write" as const;
 export const AuthReviewWriteScope = "review:write" as const;
 export const AuthAccessReadScope = "access:read" as const;
 export const AuthAccessWriteScope = "access:write" as const;
+
+/** The scopes an MCP client at `access` holds, as `mcpClientScopes` in upstream `auth.ts`. */
+export function mcpClientScopes(access: AuthMcpClientAccess): readonly AuthEnvironmentScope[] {
+  if (access === "read-only") return [AuthOrchestrationReadScope];
+  if (access === "full-access") {
+    return [
+      AuthOrchestrationReadScope,
+      AuthOrchestrationOperateScope,
+      AuthSettingsWriteScope,
+      AuthSourceControlWriteScope,
+    ];
+  }
+  return [AuthOrchestrationReadScope, AuthOrchestrationOperateScope];
+}
 export const AuthRelayReadScope = "relay:read" as const;
 export const AuthRelayWriteScope = "relay:write" as const;
 export const AuthRelayConfigureScope = "relay:configure" as const;

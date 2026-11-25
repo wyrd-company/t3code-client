@@ -93,6 +93,22 @@ export const ProviderUploadFeedbackError = taggedError("ProviderUploadFeedbackEr
   threadId: z.string(),
   cause: Defect.optional(),
 });
+/** Safe to show: never carries the callback URL, codes or tokens. `message` is `detail`. */
+export const ProviderMcpSignInError = taggedError("ProviderMcpSignInError", {
+  server: z.string(),
+  detail: z.string(),
+});
+/** Its class derives `message` from `reason`, so only `reason` arrives. */
+export const AgentFeedbackRequestError = taggedError("AgentFeedbackRequestError", {
+  reason: forwardCompatibleLiteral([
+    "load_failed",
+    "not_found",
+    "already_answered",
+    "feedback_off",
+    "record_failed",
+  ]),
+  cause: Defect.optional(),
+});
 export const ServerNpmReleaseError = taggedError("ServerNpmReleaseError", {
   reason: z.string(),
 });
@@ -108,8 +124,14 @@ export const ServerProviderUpdateError = taggedError("ServerProviderUpdateError"
 export const DatabaseReclaimError = taggedError("DatabaseReclaimError", { reason: z.string() });
 /** A text generator API refused, was unreachable, or is not configured. */
 export const TextGeneratorError = taggedError("TextGeneratorError", { detail: z.string() });
+/** A desktop build's update track, as `trackMismatch` names it. */
+const DesktopUpdateChannel = forwardCompatibleLiteral(["latest", "nightly"]);
 export const ServerSelfUpdateError = taggedError("ServerSelfUpdateError", {
   reason: z.string(),
+  /** Set when the host's desktop app refused only because its build and saved tracks differ. */
+  trackMismatch: z
+    .looseObject({ buildChannel: DesktopUpdateChannel, savedChannel: DesktopUpdateChannel })
+    .optional(),
   cause: Defect.optional(),
 });
 export const RelayClientInstallFailedError = taggedError("RelayClientInstallFailedError", {
@@ -129,6 +151,7 @@ export const SecretRequestFailureReason = forwardCompatibleLiteral([
   "load_failed",
   "not_found",
   "already_answered",
+  "fields_mismatch",
   "agent_stopped",
   "store_failed",
   "reference_unreadable",

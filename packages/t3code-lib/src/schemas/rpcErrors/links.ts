@@ -28,6 +28,22 @@ export const PeerLinkRequestError = taggedError("PeerLinkRequestError", {
   cause: Defect.optional(),
 });
 
+/** Why a linked environment's thread could not be read. `label` names the link while it exists. */
+export const PeerLinkThreadReadError = taggedError("PeerLinkThreadReadError", {
+  reason: forwardCompatibleLiteral([
+    "disabled",
+    "unknown_link",
+    "expired",
+    "rejected",
+    "unreachable",
+    "thread_not_found",
+    "incompatible",
+  ]),
+  label: z.string().nullable(),
+  message: z.string(),
+  cause: Defect.optional(),
+});
+
 export const GuestShareCreateError = taggedError("GuestShareCreateError", {
   reason: forwardCompatibleLiteral([
     "disabled",

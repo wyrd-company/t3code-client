@@ -88,8 +88,13 @@ export type ClientActivityReportInput = z.infer<typeof ClientActivityReportInput
 export const SecretRequestAnswerInput = z.looseObject({
   threadId: ThreadId,
   turnItemId: TurnItemId,
-  answer: z.discriminatedUnion("type", [
+  answer: z.union([
     z.looseObject({ type: z.literal("save"), secret: TrimmedNonEmptyString }),
+    /** A card with `fields`: one value per field name. */
+    z.looseObject({
+      type: z.literal("save"),
+      values: z.record(z.string(), TrimmedNonEmptyString),
+    }),
     z.looseObject({ type: z.literal("decline") }),
     /** Read once through a secret provider. Needs a server with `secretRequestReferences`. */
     z.looseObject({ type: z.literal("reference"), reference: SecretReference }),

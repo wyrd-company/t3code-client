@@ -29,6 +29,8 @@ import {
   ProviderSetupError,
   AcpRegistryOperationError,
   ProviderUploadFeedbackError,
+  ProviderMcpSignInError,
+  AgentFeedbackRequestError,
   SecretRequestError,
   ServerNpmReleaseError,
   ServerPrepareTriageError,
@@ -76,7 +78,13 @@ import {
   OrchestrationV2StopWorkflowError,
   OrchestrationV2ThreadLaunchError,
 } from "./rpcErrors/orchestration.ts";
-import { GuestShareCreateError, PeerLinkError, PeerLinkRequestError } from "./rpcErrors/links.ts";
+import {
+  GuestShareCreateError,
+  PeerLinkError,
+  PeerLinkRequestError,
+  PeerLinkThreadReadError,
+} from "./rpcErrors/links.ts";
+import { workspaceRpcErrors } from "./rpcErrors/workspace.ts";
 import { fileRpcErrors } from "./rpcErrors/files.ts";
 import { McpAppRequestError } from "./rpcErrors/mcpApps.ts";
 import { deviceRpcErrors } from "./rpcErrors/device.ts";
@@ -84,7 +92,11 @@ import { previewRpcErrors } from "./rpcErrors/preview.ts";
 import { issueRpcErrors } from "./rpcErrors/issues.ts";
 import { pullRequestRpcErrors } from "./rpcErrors/pullRequests.ts";
 import { sourceControlRpcErrors } from "./rpcErrors/sourceControl.ts";
-import { ScheduledTaskError, UsageReadError } from "./rpcErrors/automation.ts";
+import {
+  ScheduledTaskError,
+  UsageReadError,
+  WorkflowRequestError,
+} from "./rpcErrors/automation.ts";
 
 export * from "./rpcErrors/server.ts";
 export * from "./rpcErrors/issues.ts";
@@ -100,6 +112,7 @@ export * from "./rpcErrors/preview.ts";
 export * from "./rpcErrors/pullRequests.ts";
 export * from "./rpcErrors/sourceControl.ts";
 export * from "./rpcErrors/automation.ts";
+export * from "./rpcErrors/workspace.ts";
 
 /**
  * Every tagged failure a registered RPC method declares. A failure with an
@@ -135,6 +148,8 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   ProviderSetupError,
   AcpRegistryOperationError,
   ProviderUploadFeedbackError,
+  ProviderMcpSignInError,
+  AgentFeedbackRequestError,
   UsageLimitSourceError,
   ServerNpmReleaseError,
   ServerPrepareTriageError,
@@ -146,7 +161,9 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   SecretRequestError,
   PeerLinkError,
   PeerLinkRequestError,
+  PeerLinkThreadReadError,
   GuestShareCreateError,
+  ...workspaceRpcErrors,
   ProjectListEntriesError,
   ProjectSearchEntriesError,
   ProjectSearchContentsError,
@@ -171,6 +188,7 @@ export const RpcErrorRecord = taggedUnionWithUnknown("_tag", [
   ...fileRpcErrors,
   ScheduledTaskError,
   UsageReadError,
+  WorkflowRequestError,
 ]);
 export type RpcErrorRecord = z.infer<typeof RpcErrorRecord>;
 export type UnknownRpcErrorRecord = UnknownVariant<"_tag">;
