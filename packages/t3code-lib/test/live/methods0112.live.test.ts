@@ -10,7 +10,7 @@
  */
 import { afterAll, describe, expect, it } from "vite-plus/test";
 import { WebSocket as WsWebSocket } from "ws";
-import { T3Client, T3RpcError } from "../../src/index.ts";
+import { T3AuthError, T3Client, T3RpcError } from "../../src/index.ts";
 import type { WebSocketConstructor } from "../../src/internal/websocket.ts";
 import {
   EnvironmentId,
@@ -182,6 +182,16 @@ describe.skipIf(!hasLiveServer)("live 0.1.12 methods", () => {
       linkWriter.rpc.call("guestShare.create", { threadId: "thread-missing" as never }),
       "orchestration:read",
     );
+    // A cloud speech key that is a secret reference: no provider login is needed to be refused.
+    const voice = await settingsWriter.routes
+      .call("voice.setCloudKey", {
+        params: { provider: "openai" },
+        body: { key: { provider: "sample", reference: "sample/key" } },
+      })
+      .catch((error: unknown) => error);
+    expect(voice).toBeInstanceOf(T3AuthError);
+    // `method` is the request's, not "LOCAL": the server refused it.
+    expect(voice).toMatchObject({ status: 403, method: "POST", requiredScope: "providers:manage" });
   });
 
   it("keeps a socket that hears only the server's heartbeat", async () => {
