@@ -20,7 +20,7 @@ proposed-design:
 
     ```ts
     export abstract class T3Error extends Error { readonly code: string; readonly cause?: unknown }
-    export class T3HttpError extends T3Error        // code: "http"; status, body (secrets redacted), tag?, reason?, traceId?
+    export class T3HttpError extends T3Error        // code: "http"; status, body (secrets redacted), tag?, reason?, traceId?, retryAfter?
     export class T3AuthError extends T3HttpError    // code: "auth_invalid" | "insufficient_scope"; requiredScope?
     export class T3NotFoundError extends T3HttpError // code: "not_found"; reason
     export class T3RpcError extends T3Error         // code: "rpc_failed"; tag, record: RpcErrorRecord (typed by _tag), is(tag) narrows record

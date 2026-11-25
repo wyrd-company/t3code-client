@@ -94,7 +94,8 @@ proposed-design:
     While a 0.1.12 server starts, before its routes serve, it answers every request
     with 503, `retry-after: 1` and the JSON `ServerStartupStatus`
     (`{status: "starting", migration}`, where `migration` counts database upgrade
-    steps or is null). The body arrives as `T3HttpError.body`. Older servers send the
+    steps or is null). The body arrives as `T3HttpError.body` and the header as
+    `T3HttpError.retryAfter`. Older servers send the
     503 with no body.
 
     The routes a linked environment serves over its link (`/api/peer-link/client-pairing`
@@ -108,7 +109,10 @@ proposed-design:
     HttpOnly and names one share, so a guest's client needs a `fetch` that keeps it,
     as for a browser session. A webhook's path holds its token, so no error names
     the path. The signature, when the task requires one, is over the raw bytes, and
-    `input.headers` carries it. `webhookUrlParams` splits an endpoint's `path` into
+    `input.headers` carries it; the server drops a `Cookie` header before it verifies or
+    records the request (0.1.12). A refusal's body decodes as `WebhookFailure`
+    (`{error, problem?}`): a workflow hook's 400 names its `problem`, and its 429 carries
+    `Retry-After: 60` (`T3HttpError.retryAfter`). `webhookUrlParams` splits an endpoint's `path` into
     route params.
 
     An MCP client gets a token for `/mcp` with these OAuth routes and PKCE, with no client
