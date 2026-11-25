@@ -53,6 +53,40 @@ const { bytes, contentType } = await client.routes.call("assets.read", {
 `assets.read` holds the whole file in memory. To read part of a large file, fetch
 `relativeUrl` yourself with a `range` header.
 
+## Workspace folders
+
+`workspace.scanFolders` takes a `workspaceRoot` on the server and returns
+repositories one level below it and folders named by its `.code-workspace` file.
+`workspace.listFolders` takes a `projectId` and lists its discovered repositories
+and tracked folders, each with a state of `git`, `plain` or `missing`. Both calls
+need `filesystem:read`.
+
+Use `trackedFolders` on project creation or to replace the entire list of added
+folders. Use `trackFolders` and `untrackFolders` to edit the server's current list
+without replacing other entries. Folder paths are absolute on the server, and
+`client.projects.update` needs `orchestration:operate`.
+
+```ts
+await client.projects.update(projectId, {
+  trackFolders: [{ path: "/workspace/shared", name: "Shared" }],
+  untrackFolders: ["/workspace/old-shared"],
+});
+```
+
+A multi-repository worktree thread can have a task folder with a separate
+worktree per selected repository. Read it with `workspace.taskFolder` and the
+thread's `worktreePath` (`filesystem:read`). The result's `taskFolder` is
+`null` for a single checkout. To add a worktree for a tracked Git repository,
+call `workspace.addTaskFolderRepository` with `{ threadId, repositoryPath }`
+and `source-control:write`.
+
+Use `workspace.layoutCommands` with `{ projectId }` and `filesystem:read`
+to see the create and remove commands declared in the project's `t3.json`
+and their approval state. With `terminal:operate`, pass
+`{ projectId, approvals }` to `workspace.approveLayoutCommands`. Each
+approval names the `kind` (`create` or `remove`) and the exact `command`
+text the user approved. Set `command` to `null` to withdraw approval.
+
 ## Voice
 
 The `voice.*` routes transcribe on the server machine with a local speech model,
@@ -85,7 +119,9 @@ if (status.supported && status.state === "ready") {
 
 `voice.transcribeCloud` sends the recording to the provider in `params`. Set the
 provider's key first with `voice.setCloudKey`, as a literal or a secret
-reference; `key: null` removes it. A cloud failure is a `T3HttpError` with
+reference. The route needs `settings:write`. On T3 Code 0.1.12 it also needs
+`providers:manage` for a secret reference. Set `key` to `null` to remove it.
+A cloud failure is a `T3HttpError` with
 status 422 and tag `CloudSpeechError`; `schemas.speech.CloudSpeechError` decodes
 its `body`. A local failure has reason `invalid_audio`, `speech_unavailable` or
 `speech_busy`.
@@ -153,8 +189,14 @@ the first item.
 ## Settings
 
 `server.updateSettings` takes a patch of only the keys to change, and answers with
-the whole settings. It needs `settings:write`, `providers:manage` for the provider
-keys and `providerInstanceMutation`, and both for a patch that has both:
+the whole settings. Ordinary settings need `settings:write`. Provider keys,
+`providerInstanceMutation` and secret references need `providers:manage`.
+Changes to `requireConnectDeviceApproval` or `enablePreviewTunnel` need
+`access:write`. Removing a secret provider also needs `settings:write`.
+On T3 Code 0.1.12, the server also requires `orchestration:operate` for a patch
+that writes project scripts, including `defaultProjectScripts`, a script
+override or a project's `defaultProjectScripts`. Include the scopes for all
+the changes in the patch.
 
 ```ts
 await client.rpc.call("server.updateSettings", { patch: { idleCompaction: "off" } });
@@ -172,8 +214,14 @@ const { keybindings, issues } = await client.rpc.call("server.upsertKeybinding",
 
 A patch's lists are closed, so a mistyped value fails before the call. The answer
 keeps loose fields. `server.updateProvider` runs the provider's installer on the
-server host. `secrets.answerRequest` saves or declines an agent's secret request:
-the server keeps the value, and the thread learns only the status.
+server host. `secrets.answerRequest` takes `{ threadId, turnItemId, answer }`
+and needs `orchestration:operate`. To save a card with `fields`, pass
+`{ type: "save", values }` with one value per field name. A single-value card
+takes `{ type: "save", secret }`. Send `{ type: "decline" }` to decline.
+To use `{ type: "reference", reference }`,
+the server must advertise `secretRequestReferences`. On T3 Code 0.1.12,
+reference answers also need `providers:manage`. The server keeps the saved
+values, and the thread learns only the status.
 
 A credential setting, such as a usage limit source's `managementKey` or an EAS
 host's `accessToken`, takes either the literal or a secret provider reference
@@ -195,6 +243,12 @@ await client.rpc.call("server.updateSettings", {
   },
 });
 ```
+
+Set a source's `kind` to `"cliproxy"` for a CLIProxyAPI hub or `"http"` for an
+HTTP quota endpoint. Read `usageLimitSources` on the result of
+`await client.server.getConfig()`.
+An HTTP source can report `quotaAccounts` with their usage windows, and entries
+in `accounts` can list the routed `models`.
 
 ### Managed policy
 

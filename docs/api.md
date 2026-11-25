@@ -22,7 +22,8 @@ TypeScript declarations ship with the package.
 <dd><p>Local profile configuration or credential backend I/O failed.</p>
 </dd>
 <dt><a href="#T3HttpError">T3HttpError</a></dt>
-<dd><p>A non-2xx HTTP response that is not one of the more specific classes below.</p>
+<dd><p>A non-2xx HTTP response. When the server sends a <code>Retry-After</code> header,
+<code>retryAfter</code> holds its original value as seconds or an HTTP date.</p>
 </dd>
 <dt><a href="#T3AuthError">T3AuthError</a></dt>
 <dd><p>401 (auth_invalid) or 403 (insufficient_scope), from HTTP or detected locally.</p>
@@ -1177,7 +1178,8 @@ Local profile configuration or credential backend I/O failed.
 
 ## T3HttpError
 
-A non-2xx HTTP response that is not one of the more specific classes below.
+A non-2xx HTTP response. When the server sends a `Retry-After` header,
+`retryAfter` holds its original value as seconds or an HTTP date.
 
 **Kind**: global class  
 <a name="T3AuthError"></a>
@@ -3966,7 +3968,9 @@ and existing links pause.
 Open a 24 hour guest link. It replaces the thread's earlier link. The `url`
 holds the guest's credential, so treat it as a secret. A refusal rejects with
 a `T3RpcError` whose `GuestShareCreateError` record has a `reason`, such as
-`disabled` or `connect_unavailable`. Needs `access:write`.
+`disabled` or `connect_unavailable`. Needs `access:write`. On T3 Code 0.1.12,
+the server also requires `orchestration:read`. The local check requires
+only `access:write` so it also works with T3 Code 0.1.11.
 
 ```ts
 create(threadId: ThreadId, signal?: AbortSignal): Promise<GuestShareCreateResult>;

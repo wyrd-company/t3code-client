@@ -42,7 +42,8 @@ with the key supplied when configuring the relay.
 ## Guests and webhooks
 
 `guest.*` are the routes of a person or program that has a share's link from
-`guestShares.create`. They send no session token. `guest.redeem` answers with a cookie for
+`guestShares.create`. On T3 Code 0.1.12, creating the share requires `access:write`
+and `orchestration:read`. The guest routes send no session token. `guest.redeem` answers with a cookie for
 that share, so give the client a `fetch` that keeps it, as for `auth.browserSession`. The
 credential is the link's fragment. `schemas.orchestrationGuestShare` and
 `schemas.orchestrationGuestStream` hold their shapes.
@@ -62,18 +63,58 @@ for await (const event of guest.routes.stream("guest.stream", { query }, signal)
 continues. A guest's refusal is a `T3HttpError` whose `reason` names the cause, such as
 `inactive` when the link is closed or `unavailable` when the thread does not show the item.
 
-`webhooks.webhookPost`, `webhookPut`, `webhookPatch` and `webhookGet` call a webhook task's
-endpoint. The path holds the token, so no error names it, and `webhookUrlParams` reads the
-params from `scheduledTasks.webhookEndpoint`. The server reads the body as raw bytes:
+The `webhooks.webhookPost`, `webhookPut`, `webhookPatch` and `webhookGet` routes accept
+paths from `client.scheduledTasks.webhookEndpoint(taskId)` or, for a durable workflow,
+from `t3 workflow hooks --json` on the server host. For workflows, use the POST
+route and follow the run in [Durable workflows](guide-threads.md#durable-workflows).
+The path holds the token, and the routes send no session token. Send the body as
+raw bytes and include the signature header if the scheduled task requires one.
 
 ```ts
-const params = webhookUrlParams(endpoint.path);
-const { deliveryId } = await client.routes.call("webhooks.webhookPost", {
-  params,
-  headers: { "content-type": "application/json", "x-sample-signature": signature },
+import { webhookUrlParams } from "@wyrd-company/t3code-lib";
+
+const accepted = await client.routes.call("webhooks.webhookPost", {
+  params: webhookUrlParams(hookPath),
+  headers: { "content-type": "application/json", ...signatureHeaders },
   body: new TextEncoder().encode(JSON.stringify({ action: "sample" })),
 });
+if (typeof accepted.deliveryId === "string") {
+  const deliveryId: string = accepted.deliveryId;
+  console.log("Scheduled task delivery", deliveryId);
+} else if (typeof accepted.runId === "string") {
+  const runId: string = accepted.runId;
+  console.log("Workflow run", runId);
+}
 ```
+
+Pass the endpoint's `path` as `hookPath`. Use an empty `signatureHeaders` object
+when the hook has no signature requirement. A scheduled-task hook returns
+`{ deliveryId }` for the delivery record, and a workflow hook returns `{ runId }`.
+Both response schemas allow extra fields, so check the field's type before using it.
+
+For a `T3HttpError`, use `schemas.workflow.WebhookFailure.safeParse(error.body)`
+to read the failure's `error` and optional `problem`. A workflow hook's 400 can
+include an input validation problem. A 429 carries `T3HttpError.retryAfter` with
+the server's suggested wait.
+
+## Linked environments
+
+Use `client.rpc.call("peerLinks.names", {})` to read linked environment IDs and
+labels with `orchestration:read`. With an `environmentId` and `threadId`,
+`peerLinks.subscribeThread` yields the same items as the local thread stream.
+Use `client.rpc.stream` for the subscription and `client.rpc.call` for
+`peerLinks.threadHistoryPage` with the snapshot's `historyCursor` as `cursor`,
+or `peerLinks.threadItem` with an `itemId`. All three use `orchestration:read`.
+
+`peerLinks.pairClient` takes `{ environmentId }` to ask the peer for a client
+pairing credential. `peerLinks.pairLink` takes `{ environmentId, access }` to get
+a credential for linking another environment to that peer. Both need
+`access:write`. For `pairLink`, also hold the scopes in
+`mcpClientScopes(access)`. A `credential` result includes the peer's `urls` and
+the one-time credential with its `expiresAt`. Use it with
+`auth.exchangePairingToken` on a client pointed at the peer, or with
+`peerLinks.link` on the environment making the link. An `unsupported` result
+gives the reason, such as `link_access` or `version`.
 
 ## MCP OAuth
 
@@ -132,3 +173,7 @@ const token = await client.routes.call("mcpOAuth.token", {
 A refused `register` or `token` is a `T3HttpError` whose `reason` is the OAuth `error`, such as
 `invalid_redirect_uri` or `invalid_grant`. A refused `approval` or `decision` has the `tag`
 `AuthMcpApprovalError`.
+
+To revoke the token, call `mcpOAuth.revoke` with
+`{ body: { token: token.access_token } }`. The route returns an empty 200
+for a revoked, unknown or already revoked token.

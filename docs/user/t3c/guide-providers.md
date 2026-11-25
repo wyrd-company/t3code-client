@@ -45,6 +45,17 @@ lists resets that refill different things, `creditId` picks one; without it the 
 spends the next credit. `provider.uploadFeedback` sends feedback on
 a thread's running provider session to that provider, and needs `orchestration:operate`.
 
+## MCP server sign-in from a thread
+
+A thread's `system_notice` with `mcpSignIn.server` names an MCP server that
+needs approval. Call `provider.mcpSignIn.start` with `{ threadId,
+providerThreadId, server }`, using the provider thread that raised the notice.
+If it returns an `authorizationUrl`, have the user open it and approve the
+sign-in. Pass the browser's final address as `callbackUrl` to
+`provider.mcpSignIn.complete` along with the same three fields. If the MCP
+server is already signed in, `start` can return a null URL and a
+`signedInAt` timestamp. Both calls need `providers:manage`.
+
 ## Provider install and the ACP registry
 
 `provider.install.start` downloads a managed provider's executable into the server's

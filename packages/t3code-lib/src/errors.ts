@@ -64,7 +64,10 @@ export interface T3HttpErrorDetails {
   readonly retryAfter?: string;
 }
 
-/** A non-2xx HTTP response that is not one of the more specific classes below. */
+/**
+ * A non-2xx HTTP response. When the server sends a `Retry-After` header,
+ * `retryAfter` holds its original value as seconds or an HTTP date.
+ */
 export class T3HttpError extends T3Error {
   override readonly code: T3ErrorCode = "http";
   readonly status: number;

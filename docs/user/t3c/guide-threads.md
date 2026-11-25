@@ -76,6 +76,24 @@ true` starts a new provider session without the thread's earlier context. The
 earlier runs stay visible, and the message never steers. The run and its user
 message report `freshContext`.
 
+Pass a JSON Schema object as `outputSchema` to ask a new run for structured
+data. A message with `outputSchema` cannot steer an active run. If the agent
+submits a value the server accepts, read it from `run.output.value`.
+
+```ts
+const turn = await client.threads.startTurn({
+  threadId,
+  text: "Summarize the changes in one sentence.",
+  outputSchema: {
+    type: "object",
+    properties: { summary: { type: "string" } },
+    required: ["summary"],
+  },
+});
+const { run } = await turn.completion;
+console.log(run.output?.value);
+```
+
 A `thread.settle` command can carry `expectedLatestRunId`. The server then
 refuses the settle with `OrchestrationV2DispatchCommandError` when the thread's
 latest run is a different one.
@@ -115,6 +133,58 @@ for (const item of detail.projection.turnItems) {
 
 `T3RpcError.record` is the server's error, typed by its `_tag`;
 `error.is("OrchestrationV2DispatchCommandError")` narrows it.
+
+When a `feedback_request` turn item is pending, show its `preview` to the user.
+Call `agentFeedback.answerRequest` with `{ threadId, turnItemId, answer }`,
+where `answer` is `"send"` or `"decline"`. Send `includeConversation: true`
+only if the user wants to include the card's conversation trace. The call
+needs `orchestration:operate`. Read these cards from thread turn items.
+
+## Scheduled tasks
+
+To clear a scheduled task's thread binding on T3 Code 0.1.12, send
+`unbindThread: true` with no `threadId` to `client.scheduledTasks.upsert`
+along with the task's configuration. The next run starts a thread.
+An omitted or null `threadId` alone can preserve the thread bound by a first
+run when the task retains a one-thread mode.
+
+## Durable workflows
+
+Enable the server's `workflowsEnabled` setting to use durable workflows.
+A workflow can run steps, wait for a person's answer and resume later.
+Use its [webhook](guide-remote-access.md#guests-and-webhooks) to start a
+webhook-triggered workflow, then use the returned `runId` to follow it.
+
+`workflows.subscribe` streams recent runs and open questions. Request
+`changes: true` to receive changes after the initial snapshot and apply each
+item with `schemas.workflow.applyWorkflowRunsUpdate`.
+
+```ts
+import { schemas } from "@wyrd-company/t3code-lib";
+
+let snapshot: schemas.workflow.WorkflowRunsSnapshot | undefined;
+for await (const item of client.rpc.stream("workflows.subscribe", { changes: true })) {
+  if (item.kind === "decode-error") throw item.error;
+  snapshot = schemas.workflow.applyWorkflowRunsUpdate(snapshot, item.value);
+  console.log(snapshot.runs.find((run) => run.runId === runId)?.status);
+}
+```
+
+Call `workflows.get` with `{ runId }` to read the result, steps and
+references. Use the `workflows.counts` stream for `needsYou`, `active`
+and `total` counts. Both calls and the subscription need
+`orchestration:read`.
+
+With `orchestration:operate`, answer an open question through
+`workflows.answer` with `{ runId, name, choice }`. Use
+`workflows.resume` or `workflows.cancel` with `{ runId }` to resume
+a paused run or cancel it.
+
+`workflows.getDefinition` reads definition files with `filesystem:read`.
+`workflows.saveDefinition` takes `{ name, source }`, and
+`workflows.deleteDefinition` takes `{ name }`. Both need
+`terminal:operate` and return `{ changed, problems }`. Check
+`problems` after saving to see whether the server could load the change.
 
 ## Idempotent operations
 

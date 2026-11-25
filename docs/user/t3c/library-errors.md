@@ -20,7 +20,8 @@ relationships:
 <dd><p>Local profile configuration or credential backend I/O failed.</p>
 </dd>
 <dt><a href="#T3HttpError">T3HttpError</a></dt>
-<dd><p>A non-2xx HTTP response that is not one of the more specific classes below.</p>
+<dd><p>A non-2xx HTTP response. When the server sends a <code>Retry-After</code> header,
+<code>retryAfter</code> holds its original value as seconds or an HTTP date.</p>
 </dd>
 <dt><a href="#T3AuthError">T3AuthError</a></dt>
 <dd><p>401 (auth_invalid) or 403 (insufficient_scope), from HTTP or detected locally.</p>
@@ -97,7 +98,8 @@ Local profile configuration or credential backend I/O failed.
 
 ## T3HttpError
 
-A non-2xx HTTP response that is not one of the more specific classes below.
+A non-2xx HTTP response. When the server sends a `Retry-After` header,
+`retryAfter` holds its original value as seconds or an HTTP date.
 
 **Kind**: global class  
 <a name="T3AuthError"></a>
