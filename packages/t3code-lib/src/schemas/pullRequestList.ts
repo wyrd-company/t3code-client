@@ -8,6 +8,7 @@
  */
 import { z } from "zod";
 import {
+  GitRefName,
   IsoDateTime,
   NonNegativeInt,
   PositiveInt,
@@ -40,8 +41,8 @@ export const PullRequestListEntry = z.looseObject({
   title: TrimmedNonEmptyString,
   url: TrimmedNonEmptyString,
   author: PullRequestActor.nullable(),
-  headBranch: TrimmedNonEmptyString,
-  baseBranch: TrimmedNonEmptyString,
+  headBranch: GitRefName,
+  baseBranch: GitRefName,
   state: PullRequestState,
   isDraft: z.boolean(),
   mergeability: PullRequestMergeability,

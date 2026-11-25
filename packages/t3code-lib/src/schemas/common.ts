@@ -11,6 +11,27 @@
 import { z } from "zod";
 
 export const TrimmedNonEmptyString = z.string().trim().min(1);
+
+/**
+ * Strips ASCII space and control characters from both ends. Git forbids them in
+ * ref names but allows Unicode whitespace such as U+00A0 and U+3000, which
+ * `String.prototype.trim` would also strip.
+ */
+export function trimAsciiWhitespace(value: string): string {
+  let start = 0;
+  let end = value.length;
+  while (start < end && isAsciiWhitespace(value.charCodeAt(start))) start++;
+  while (end > start && isAsciiWhitespace(value.charCodeAt(end - 1))) end--;
+  return end - start === value.length ? value : value.slice(start, end);
+}
+
+function isAsciiWhitespace(code: number): boolean {
+  return code === 0x20 || (code >= 0x09 && code <= 0x0d);
+}
+
+/** A branch, ref or remote name. Unlike `TrimmedNonEmptyString`, it keeps Unicode whitespace. */
+export const GitRefName = z.string().overwrite(trimAsciiWhitespace).min(1);
+
 export const NonNegativeInt = z.number().int().min(0);
 export const PositiveInt = z.number().int().min(1);
 export const IsoDateTime = z.string();

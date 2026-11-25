@@ -4,6 +4,7 @@
 // ---
 import { z } from "zod";
 import {
+  GitRefName,
   IsoDateTime,
   NonNegativeInt,
   ThreadId,
@@ -53,8 +54,8 @@ export const WorktreeSetupSnapshot = z.looseObject({
   phase: WorktreeSetupPhase,
   startedAt: IsoDateTime,
   endedAt: IsoDateTime.nullable(),
-  branch: TrimmedNonEmptyString.nullable(),
-  baseRef: TrimmedNonEmptyString.nullable(),
+  branch: GitRefName.nullable(),
+  baseRef: GitRefName.nullable(),
   worktreePath: TrimmedNonEmptyString.nullable(),
   setupScript: z
     .looseObject({

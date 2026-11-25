@@ -6,6 +6,7 @@
 import { z } from "zod";
 import {
   CommandId,
+  GitRefName,
   NonNegativeInt,
   ProjectId,
   ThreadId,
@@ -65,7 +66,7 @@ export const ThreadPullRequestSyncCommand = z.looseObject({
   snapshotSequence: NonNegativeInt,
   expected: z.looseObject({
     workspaceRoot: TrimmedNonEmptyString,
-    branch: TrimmedNonEmptyString.nullable(),
+    branch: GitRefName.nullable(),
     worktreePath: TrimmedNonEmptyString.nullable(),
     linkedPullRequest: ThreadLinkedPullRequest.nullable(),
     branchPullRequest: ThreadLinkedPullRequest.nullable(),

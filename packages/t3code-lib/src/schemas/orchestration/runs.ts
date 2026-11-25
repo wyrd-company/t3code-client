@@ -8,6 +8,7 @@ import {
   CheckpointId,
   CheckpointScopeId,
   ContextHandoffId,
+  GitRefName,
   IsoDateTime,
   MessageId,
   NodeId,
@@ -110,16 +111,16 @@ export type OrchestrationV2RunBackgroundWorkCancelled = z.infer<
 >;
 
 const workspaceStrategyMembers = [
-  z.looseObject({ type: z.literal("root"), branch: TrimmedNonEmptyString.optional() }),
+  z.looseObject({ type: z.literal("root"), branch: GitRefName.optional() }),
   z.looseObject({
     type: z.literal("existing_worktree"),
     worktreePath: TrimmedNonEmptyString,
-    branch: TrimmedNonEmptyString.optional(),
+    branch: GitRefName.optional(),
   }),
   z.looseObject({
     type: z.literal("worktree"),
-    baseRef: TrimmedNonEmptyString,
-    branch: TrimmedNonEmptyString.optional(),
+    baseRef: GitRefName,
+    branch: GitRefName.optional(),
     startFromOrigin: z.boolean().optional(),
   }),
 ] as const;

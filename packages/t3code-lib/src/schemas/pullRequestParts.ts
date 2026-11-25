@@ -9,6 +9,7 @@
  */
 import { z } from "zod";
 import {
+  GitRefName,
   IsoDateTime,
   NonNegativeInt,
   PositiveInt,
@@ -163,6 +164,6 @@ export const PullRequestStackMembership = z.looseObject({
   number: PositiveInt,
   position: PositiveInt,
   size: PositiveInt,
-  base: TrimmedNonEmptyString,
+  base: GitRefName,
 });
 export type PullRequestStackMembership = z.infer<typeof PullRequestStackMembership>;

@@ -7,6 +7,7 @@ import { ThreadIssueLink } from "../threadIssues.ts";
 import { z } from "zod";
 import {
   CommandId,
+  GitRefName,
   IsoDateTime,
   MessageId,
   NonNegativeInt,
@@ -117,7 +118,7 @@ export const OrchestrationV2ThreadShell = z.looseObject({
   modelSelection: ModelSelection,
   runtimeMode: RuntimeMode,
   interactionMode: ProviderInteractionMode,
-  branch: TrimmedNonEmptyString.nullable(),
+  branch: GitRefName.nullable(),
   worktreePath: TrimmedNonEmptyString.nullable(),
   linkedPullRequest: ThreadLinkedPullRequest.nullable().optional(),
   pullRequests: z.array(ThreadPullRequestLink).optional(),

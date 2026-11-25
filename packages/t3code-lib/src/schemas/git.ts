@@ -5,8 +5,9 @@
 /** Stacked Git actions and pull request resolution, mirroring the contracts' `git.ts`. */
 import { z } from "zod";
 import {
-  PositiveInt,
+  GitRefName,
   NonNegativeInt,
+  PositiveInt,
   ProjectId,
   ThreadId,
   TrimmedNonEmptyString,
@@ -52,8 +53,8 @@ export const GitResolvedPullRequest = z.looseObject({
   number: PositiveInt,
   title: TrimmedNonEmptyString,
   url: z.string(),
-  baseBranch: TrimmedNonEmptyString,
-  headBranch: TrimmedNonEmptyString,
+  baseBranch: GitRefName,
+  headBranch: GitRefName,
   state: forwardCompatibleLiteral(["open", "closed", "merged"]),
 });
 export type GitResolvedPullRequest = z.infer<typeof GitResolvedPullRequest>;
@@ -61,7 +62,7 @@ export const GitResolvePullRequestResult = z.looseObject({ pullRequest: GitResol
 export type GitResolvePullRequestResult = z.infer<typeof GitResolvePullRequestResult>;
 export const GitPreparePullRequestThreadResult = z.looseObject({
   pullRequest: GitResolvedPullRequest,
-  branch: TrimmedNonEmptyString,
+  branch: GitRefName,
   worktreePath: TrimmedNonEmptyString.nullable(),
   /** False when local commits or edits kept a reused worktree from the pull request's head. */
   isOnPullRequestHead: z.boolean().default(true),
@@ -82,7 +83,7 @@ export const GitRunStackedActionResult = z.looseObject({
   action: GitStackedAction,
   branch: z.looseObject({
     status: forwardCompatibleLiteral(["created", "skipped_not_requested"]),
-    name: TrimmedNonEmptyString.optional(),
+    name: GitRefName.optional(),
   }),
   commit: z.looseObject({
     status: forwardCompatibleLiteral(["created", "skipped_no_changes", "skipped_not_requested"]),
@@ -91,16 +92,16 @@ export const GitRunStackedActionResult = z.looseObject({
   }),
   push: z.looseObject({
     status: forwardCompatibleLiteral(["pushed", "skipped_not_requested", "skipped_up_to_date"]),
-    branch: TrimmedNonEmptyString.optional(),
-    upstreamBranch: TrimmedNonEmptyString.optional(),
+    branch: GitRefName.optional(),
+    upstreamBranch: GitRefName.optional(),
     setUpstream: z.boolean().optional(),
   }),
   pr: z.looseObject({
     status: forwardCompatibleLiteral(["created", "opened_existing", "skipped_not_requested"]),
     url: z.string().optional(),
     number: PositiveInt.optional(),
-    baseBranch: TrimmedNonEmptyString.optional(),
-    headBranch: TrimmedNonEmptyString.optional(),
+    baseBranch: GitRefName.optional(),
+    headBranch: GitRefName.optional(),
     title: TrimmedNonEmptyString.optional(),
   }),
   toast: z.looseObject({

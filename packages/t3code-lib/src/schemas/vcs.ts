@@ -4,6 +4,7 @@
 // ---
 import { z } from "zod";
 import {
+  GitRefName,
   NonNegativeInt,
   PositiveInt,
   TrimmedNonEmptyString,
@@ -14,10 +15,10 @@ import {
 export const VcsStatusChangeRequestState = forwardCompatibleLiteral(["open", "closed", "merged"]);
 export type VcsStatusChangeRequestState = z.infer<typeof VcsStatusChangeRequestState>;
 export const VcsRef = z.looseObject({
-  name: TrimmedNonEmptyString,
+  name: GitRefName,
   isRemote: z.boolean().optional(),
-  remoteName: TrimmedNonEmptyString.optional(),
-  upstreamRef: TrimmedNonEmptyString.optional(),
+  remoteName: GitRefName.optional(),
+  upstreamRef: GitRefName.optional(),
   current: z.boolean(),
   isDefault: z.boolean(),
   worktreePath: TrimmedNonEmptyString.nullable(),
@@ -25,7 +26,7 @@ export const VcsRef = z.looseObject({
 export type VcsRef = z.infer<typeof VcsRef>;
 export const VcsWorktree = z.looseObject({
   path: TrimmedNonEmptyString,
-  refName: TrimmedNonEmptyString,
+  refName: GitRefName,
 });
 export type VcsWorktree = z.infer<typeof VcsWorktree>;
 export const VcsStatusInput = z.looseObject({ cwd: TrimmedNonEmptyString });
@@ -47,8 +48,8 @@ export const VcsPullInput = z.looseObject({ cwd: TrimmedNonEmptyString });
 export type VcsPullInput = z.infer<typeof VcsPullInput>;
 export const VcsPullResult = z.looseObject({
   status: forwardCompatibleLiteral(["pulled", "skipped_up_to_date"]),
-  refName: TrimmedNonEmptyString,
-  upstreamRef: TrimmedNonEmptyString.nullable(),
+  refName: GitRefName,
+  upstreamRef: GitRefName.nullable(),
 });
 export type VcsPullResult = z.infer<typeof VcsPullResult>;
 export const VcsDriverKind = z.enum(["git", "jj", "unknown"]);
@@ -77,9 +78,9 @@ export const VcsListRefsInput = z.looseObject({
 export type VcsListRefsInput = z.infer<typeof VcsListRefsInput>;
 export const VcsCreateWorktreeInput = z.looseObject({
   cwd: TrimmedNonEmptyString,
-  refName: TrimmedNonEmptyString,
-  newRefName: TrimmedNonEmptyString.optional(),
-  baseRefName: TrimmedNonEmptyString.optional(),
+  refName: GitRefName,
+  newRefName: GitRefName.optional(),
+  baseRefName: GitRefName.optional(),
   /** Required on the wire; the server selects the managed worktree folder. */
   path: z.null(),
 });
@@ -92,23 +93,23 @@ export const VcsRemoveWorktreeInput = z.looseObject({
 export type VcsRemoveWorktreeInput = z.infer<typeof VcsRemoveWorktreeInput>;
 export const VcsCreateRefInput = z.looseObject({
   cwd: TrimmedNonEmptyString,
-  refName: TrimmedNonEmptyString,
+  refName: GitRefName,
   switchRef: z.boolean().optional(),
 });
 export type VcsCreateRefInput = z.infer<typeof VcsCreateRefInput>;
-export const VcsCreateRefResult = z.looseObject({ refName: TrimmedNonEmptyString });
+export const VcsCreateRefResult = z.looseObject({ refName: GitRefName });
 export type VcsCreateRefResult = z.infer<typeof VcsCreateRefResult>;
 export const VcsSwitchRefInput = z.looseObject({
   cwd: TrimmedNonEmptyString,
-  refName: TrimmedNonEmptyString,
+  refName: GitRefName,
 });
 export type VcsSwitchRefInput = z.infer<typeof VcsSwitchRefInput>;
 export const VcsStatusChangeRequest = z.looseObject({
   number: PositiveInt,
   title: TrimmedNonEmptyString,
   url: z.string(),
-  baseRef: TrimmedNonEmptyString,
-  headRef: TrimmedNonEmptyString,
+  baseRef: GitRefName,
+  headRef: GitRefName,
   state: VcsStatusChangeRequestState,
   isDraft: z.boolean().optional(),
   updatedAt: z.string().nullable().optional(),
@@ -131,7 +132,7 @@ export const VcsStatusLocalShape = {
   sourceControlProvider: SourceControlProviderInfo.optional(),
   hasPrimaryRemote: z.boolean(),
   isDefaultRef: z.boolean(),
-  refName: TrimmedNonEmptyString.nullable(),
+  refName: GitRefName.nullable(),
   hasWorkingTreeChanges: z.boolean(),
   workingTree: z.looseObject({
     rootPath: z.string().min(1).optional(),
@@ -147,7 +148,7 @@ export const VcsStatusLocalShape = {
   }),
   branchChanges: z
     .looseObject({
-      baseRef: TrimmedNonEmptyString.nullable(),
+      baseRef: GitRefName.nullable(),
       insertions: NonNegativeInt,
       deletions: NonNegativeInt,
     })
@@ -188,6 +189,6 @@ export type VcsListRefsResult = z.infer<typeof VcsListRefsResult>;
 export const VcsCreateWorktreeResult = z.looseObject({ worktree: VcsWorktree });
 export type VcsCreateWorktreeResult = z.infer<typeof VcsCreateWorktreeResult>;
 export const VcsSwitchRefResult = z.looseObject({
-  refName: TrimmedNonEmptyString.nullable(),
+  refName: GitRefName.nullable(),
 });
 export type VcsSwitchRefResult = z.infer<typeof VcsSwitchRefResult>;

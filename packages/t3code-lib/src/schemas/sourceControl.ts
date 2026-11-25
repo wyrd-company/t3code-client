@@ -11,6 +11,7 @@
  */
 import { z } from "zod";
 import {
+  GitRefName,
   TrimmedNonEmptyString,
   effectOption,
   forwardCompatibleArray,
@@ -140,7 +141,7 @@ export const SourceControlPublishRepositoryResult = z.looseObject({
   repository: SourceControlRepositoryInfo,
   remoteName: TrimmedNonEmptyString,
   remoteUrl: TrimmedNonEmptyString,
-  branch: TrimmedNonEmptyString,
+  branch: GitRefName,
   status: forwardCompatibleLiteral(["pushed", "remote_added"]),
 });
 export type SourceControlPublishRepositoryResult = z.infer<

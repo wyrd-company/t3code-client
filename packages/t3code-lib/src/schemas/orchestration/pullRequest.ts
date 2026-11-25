@@ -4,6 +4,7 @@
 // ---
 import { z } from "zod";
 import {
+  GitRefName,
   IsoDateTime,
   NonNegativeInt,
   PositiveInt,
@@ -61,8 +62,8 @@ export type PullRequestState = z.infer<typeof PullRequestState>;
 export const ThreadPullRequestSnapshot = z.looseObject({
   state: PullRequestState,
   title: TrimmedNonEmptyString,
-  headBranch: TrimmedNonEmptyString,
-  baseBranch: TrimmedNonEmptyString,
+  headBranch: GitRefName,
+  baseBranch: GitRefName,
   isDraft: z.boolean(),
   updatedAt: IsoDateTime.nullable(),
   syncedAt: IsoDateTime,
@@ -80,7 +81,7 @@ export const ThreadPullRequestSnapshot = z.looseObject({
 export type ThreadPullRequestSnapshot = z.infer<typeof ThreadPullRequestSnapshot>;
 export const ThreadPullRequestStackLayer = z.looseObject({
   number: PositiveInt,
-  headBranch: TrimmedNonEmptyString,
+  headBranch: GitRefName,
   state: PullRequestState,
 });
 export type ThreadPullRequestStackLayer = z.infer<typeof ThreadPullRequestStackLayer>;
@@ -89,7 +90,7 @@ export const ThreadPullRequestStack = z.looseObject({
   id: TrimmedNonEmptyString,
   number: PositiveInt,
   url: TrimmedNonEmptyString,
-  base: TrimmedNonEmptyString,
+  base: GitRefName,
   layers: z.array(ThreadPullRequestStackLayer),
 });
 export type ThreadPullRequestStack = z.infer<typeof ThreadPullRequestStack>;

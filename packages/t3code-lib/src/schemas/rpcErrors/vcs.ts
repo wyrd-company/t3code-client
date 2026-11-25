@@ -4,6 +4,7 @@
  */
 import { z } from "zod";
 import {
+  GitRefName,
   NonNegativeInt,
   PositiveInt,
   TrimmedNonEmptyString,
@@ -51,8 +52,8 @@ export const GitPullRequestMaterializationError = taggedError(
     cwd: TrimmedNonEmptyString,
     pullRequestNumber: PositiveInt,
     headRepository: TrimmedNonEmptyString.nullable(),
-    headBranch: TrimmedNonEmptyString,
-    localBranch: TrimmedNonEmptyString,
+    headBranch: GitRefName,
+    localBranch: GitRefName,
     cause: Defect,
   },
 );

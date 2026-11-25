@@ -6,6 +6,7 @@
 import { z } from "zod";
 import {
   CommandId,
+  GitRefName,
   GuestMessageId,
   IsoDateTime,
   MessageId,
@@ -52,7 +53,7 @@ export const ThreadCreateCommand = z.looseObject({
   modelSelection: ModelSelection,
   runtimeMode: RuntimeMode,
   interactionMode: ProviderInteractionMode,
-  branch: TrimmedNonEmptyString.nullable(),
+  branch: GitRefName.nullable(),
   worktreePath: TrimmedNonEmptyString.nullable(),
   importedNativeThread: z
     .looseObject({
@@ -157,10 +158,10 @@ export const ThreadMetadataUpdatePayload = z.looseObject({
   title: TrimmedNonEmptyString.optional(),
   /** Kick off (true) or abandon (false) an async title regeneration. */
   regenerateTitle: z.boolean().optional(),
-  branch: TrimmedNonEmptyString.nullable().optional(),
+  branch: GitRefName.nullable().optional(),
   worktreePath: TrimmedNonEmptyString.nullable().optional(),
   expectedWorktreePath: TrimmedNonEmptyString.nullable().optional(),
-  expectedBranch: TrimmedNonEmptyString.nullable().optional(),
+  expectedBranch: GitRefName.nullable().optional(),
   /** A message queued in the same commit, so a workspace change cannot settle the thread first. */
   continuation: z.looseObject({ messageId: MessageId, text: z.string() }).optional(),
   /** Reject unless no message or run has landed on this thread. */

@@ -4,7 +4,12 @@
 // ---
 /** Diff review reads, mirroring the contracts' `review.ts`. */
 import { z } from "zod";
-import { IsoDateTime, TrimmedNonEmptyString, forwardCompatibleLiteral } from "./common.ts";
+import {
+  GitRefName,
+  IsoDateTime,
+  TrimmedNonEmptyString,
+  forwardCompatibleLiteral,
+} from "./common.ts";
 
 const sourceKinds = ["working-tree", "branch-range", "commit"] as const;
 export const ReviewDiffPreviewSourceKindInput = z.enum(sourceKinds);
@@ -14,7 +19,7 @@ export type ReviewDiffPreviewSourceKind = z.infer<typeof ReviewDiffPreviewSource
 
 export const ReviewDiffPreviewInput = z.looseObject({
   cwd: TrimmedNonEmptyString,
-  baseRef: TrimmedNonEmptyString.optional(),
+  baseRef: GitRefName.optional(),
   commitSha: TrimmedNonEmptyString.optional(),
   ignoreWhitespace: z.boolean().optional(),
   /** Read only this source kind. */
@@ -34,7 +39,7 @@ export const ReviewDiffPreviewInput = z.looseObject({
 export type ReviewDiffPreviewInput = z.infer<typeof ReviewDiffPreviewInput>;
 export const ReviewBranchCommitsInput = z.looseObject({
   cwd: TrimmedNonEmptyString,
-  baseRef: TrimmedNonEmptyString.optional(),
+  baseRef: GitRefName.optional(),
 });
 export type ReviewBranchCommitsInput = z.infer<typeof ReviewBranchCommitsInput>;
 export const ReviewBranchCommitsResult = z.looseObject({
@@ -60,8 +65,8 @@ export const ReviewDiffPreviewSource = z.looseObject({
   kind: ReviewDiffPreviewSourceKind,
   title: TrimmedNonEmptyString,
   commitSubject: TrimmedNonEmptyString.optional(),
-  baseRef: TrimmedNonEmptyString.nullable(),
-  headRef: TrimmedNonEmptyString.nullable(),
+  baseRef: GitRefName.nullable(),
+  headRef: GitRefName.nullable(),
   diff: z.string(),
   diffHash: TrimmedNonEmptyString,
   truncated: z.boolean(),
@@ -81,8 +86,8 @@ export const ReviewDiffFileContentsInput = z.looseObject({
   cwd: TrimmedNonEmptyString,
   sourceKind: ReviewDiffPreviewSourceKindInput,
   changeType: ReviewDiffChangeType,
-  baseRef: TrimmedNonEmptyString.nullable(),
-  headRef: TrimmedNonEmptyString.nullable(),
+  baseRef: GitRefName.nullable(),
+  headRef: GitRefName.nullable(),
   oldPath: z.string().min(1),
   newPath: z.string().min(1),
 });

@@ -9,6 +9,7 @@
  */
 import { z } from "zod";
 import {
+  GitRefName,
   IsoDateTime,
   NonNegativeInt,
   PositiveInt,
@@ -124,10 +125,10 @@ export const PullRequestDetail = z.looseObject({
   additions: NonNegativeInt,
   deletions: NonNegativeInt,
   changedFiles: NonNegativeInt,
-  headBranch: TrimmedNonEmptyString,
+  headBranch: GitRefName,
   headRepositoryNameWithOwner: TrimmedNonEmptyString.nullable().optional(),
   headSha: TrimmedNonEmptyString.optional(),
-  baseBranch: TrimmedNonEmptyString,
+  baseBranch: GitRefName,
   createdAt: IsoDateTime,
   updatedAt: IsoDateTime,
   observedAt: z.number().optional(),
@@ -167,8 +168,8 @@ export const PullRequestSummary = z.looseObject({
   url: TrimmedNonEmptyString,
   state: PullRequestState,
   isDraft: z.boolean().optional(),
-  headBranch: TrimmedNonEmptyString,
-  baseBranch: TrimmedNonEmptyString,
+  headBranch: GitRefName,
+  baseBranch: GitRefName,
   closedAt: z.string().nullable().optional(),
   mergedAt: z.string().nullable().optional(),
   updatedAt: IsoDateTime,
@@ -209,14 +210,14 @@ export const PullRequestStack = z.looseObject({
   id: TrimmedNonEmptyString,
   number: PositiveInt,
   url: TrimmedNonEmptyString,
-  base: TrimmedNonEmptyString,
+  base: GitRefName,
   layers: z.array(
     z.looseObject({
       number: PositiveInt,
       title: z.string().optional(),
       isDraft: z.boolean().optional(),
       headSha: TrimmedNonEmptyString.optional(),
-      headBranch: TrimmedNonEmptyString,
+      headBranch: GitRefName,
       state: PullRequestState,
     }),
   ),
