@@ -16,6 +16,7 @@ export function httpError(
   method: string,
   path: string,
   body: unknown,
+  retryAfter?: string | null,
 ): T3HttpError {
   const record = asRecord(body);
   const tag = stringField(record, "_tag");
@@ -36,6 +37,7 @@ export function httpError(
     ...(tag === undefined ? {} : { tag }),
     ...(reason === undefined ? {} : { reason }),
     ...(traceId === undefined ? {} : { traceId }),
+    ...(retryAfter === undefined || retryAfter === null ? {} : { retryAfter }),
   };
   const message = `${method} ${path} failed with HTTP ${status}${reason ? ` (${reason})` : ""}.`;
   if (status === 401) return new T3AuthError(message, { ...details, code: "auth_invalid" });

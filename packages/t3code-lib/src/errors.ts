@@ -57,6 +57,11 @@ export interface T3HttpErrorDetails {
   /** `reason` or `error` field of the body, when present. */
   readonly reason?: string;
   readonly traceId?: string;
+  /**
+   * The `Retry-After` header as sent: seconds or an HTTP date. A starting server's 503 and a busy
+   * workflow hook's 429 carry one.
+   */
+  readonly retryAfter?: string;
 }
 
 /** A non-2xx HTTP response that is not one of the more specific classes below. */
@@ -69,6 +74,7 @@ export class T3HttpError extends T3Error {
   readonly tag: string | undefined;
   readonly reason: string | undefined;
   readonly traceId: string | undefined;
+  readonly retryAfter: string | undefined;
 
   constructor(message: string, details: T3HttpErrorDetails, options?: { cause?: unknown }) {
     super(message, options);
@@ -79,6 +85,7 @@ export class T3HttpError extends T3Error {
     this.tag = details.tag;
     this.reason = details.reason;
     this.traceId = details.traceId;
+    this.retryAfter = details.retryAfter;
   }
 }
 

@@ -136,6 +136,24 @@ describe("HttpTransport", () => {
     ).rejects.toBeInstanceOf(T3DecodeError);
   });
 
+  it("keeps a refusal's Retry-After, as a starting server's 503 sends it", async () => {
+    const starting = vi.fn<typeof globalThis.fetch>(async () =>
+      Response.json(
+        { status: "starting", migration: { current: 2, total: 5 } },
+        { status: 503, headers: { "retry-after": "1" } },
+      ),
+    );
+    const error = await makeTransport(starting)
+      .request({ method: "GET", path: "/records", decode: Result })
+      .catch((reason: unknown) => reason);
+    expect(error).toBeInstanceOf(T3HttpError);
+    expect(error).toMatchObject({ status: 503, retryAfter: "1" });
+    const plain = vi.fn<typeof globalThis.fetch>(async () => new Response(null, { status: 500 }));
+    await expect(
+      makeTransport(plain).request({ method: "GET", path: "/records", decode: Result }),
+    ).rejects.toMatchObject({ status: 500, retryAfter: undefined });
+  });
+
   it("sends a required route without a token when the fetch carries the session", async () => {
     const fetch = vi.fn<typeof globalThis.fetch>(async () => Response.json({ value: "ok" }));
     const transport = new HttpTransport({

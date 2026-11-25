@@ -85,7 +85,13 @@ export class HttpTransport {
     const response = await this.#send(request, undefined, false);
     if (response.ok) return response;
     const raw = await readAnswer(request, response, errorPath);
-    throw httpError(response.status, request.method, errorPath, raw);
+    throw httpError(
+      response.status,
+      request.method,
+      errorPath,
+      raw,
+      response.headers.get("retry-after"),
+    );
   }
 
   async #request<T>(
@@ -102,7 +108,13 @@ export class HttpTransport {
     }
     const raw = await readAnswer(request, response, errorPath);
     if (!response.ok && !isReadableRedirect(request, response)) {
-      throw httpError(response.status, request.method, errorPath, raw);
+      throw httpError(
+        response.status,
+        request.method,
+        errorPath,
+        raw,
+        response.headers.get("retry-after"),
+      );
     }
     if (request.decode === "empty") return undefined as T;
 
