@@ -70,11 +70,12 @@ export function validateDispatchOptions(options: DispatchOptions): void {
     options.mode,
     options.title,
     options.existingWorktree,
-    options.baseRef,
-    options.branch,
     options.thread,
   ])
     if (value !== undefined && !value.trim())
+      throw new T3PreconditionError("Selection cannot be blank.");
+  for (const ref of [options.baseRef, options.branch])
+    if (ref !== undefined && !schemas.common.GitRefName.safeParse(ref).success)
       throw new T3PreconditionError("Selection cannot be blank.");
   parseModelOptions(options.modelOption);
 }

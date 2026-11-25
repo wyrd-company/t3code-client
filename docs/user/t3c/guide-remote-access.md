@@ -32,7 +32,7 @@ await client.routes.call("connect.preferences", { body: { publishAgentActivity: 
 ```
 
 `connect.linkProof` accepts loopback origins, and `connect.relayConfig` requires an HTTPS relay.
-Both routes require `relay:configure` on T3 Code 0.1.11. On 0.1.10, both require `relay:write`
+Both routes require `relay:configure` on T3 Code 0.1.11 and later. On 0.1.10, both require `relay:write`
 and the proof is tied to the server's own loopback origin. Link state and reachability require
 `relay:read`. Unlinking and preference updates require `relay:write`.
 

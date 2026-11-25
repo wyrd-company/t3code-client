@@ -110,6 +110,7 @@ it.each([
   { thread: "t", worktree: true, branch: "sample-branch" },
   { thread: "t", worktree: true, startFromOrigin: false },
   { existingWorktree: " " },
+  { worktree: true, baseRef: " \t" },
   { worktree: true, branch: " " },
   { modelOption: ["missing-separator"] },
   { modelOption: ["key=value", "key=other"] },

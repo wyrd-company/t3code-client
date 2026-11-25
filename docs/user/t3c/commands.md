@@ -18,7 +18,7 @@ The [native command surface](https://github.com/wyrd-company/t3code-client/blob/
 commands, positional arguments, options and input relationships. This guide
 explains their use. `t3c` runs on Node >=22.16. Startup checks the Node minimum
 and prints a clear error when it is unmet. Argument parsing uses commander.
-The target server is stock T3 Code 0.1.11 with orchestration protocol 2.
+The target server is stock T3 Code 0.1.12 with orchestration protocol 2.
 
 ## Connection and profiles
 
@@ -72,7 +72,9 @@ no mode. Continuation sends a mode only when `--mode` is supplied.
 `--worktree` launches through `threads.launch` with the new-worktree workspace
 strategy. `--base-ref` supplies its base ref and requires `--worktree`. The
 server prepares the workspace. Without `--base-ref`, the base is the project's
-current checkout (`HEAD`). Root launches use the selected project's root.
+current checkout (`HEAD`). Git ref names passed to `--base-ref` and `--branch`
+keep Unicode whitespace, including a non-breaking space. Root launches use the
+selected project's root.
 `--thread <id>` continues an existing conversation and dispatches a new prompt
 through `threads.startTurn`, retaining the existing thread identity. The
 library resolves delivery against active server state and links the message to
@@ -141,7 +143,7 @@ account details. `--json` returns `{environment, providers}` as the server
 returns them.
 
 ```text
-server	sample-environment	0.1.11	protocol 2
+server	sample-environment	0.1.12	protocol 2
 environment	00000000-0000-4000-8000-000000000000
 platform	linux	x64
 capabilities	64 of 65 enabled	disabled agentActivityPublishing

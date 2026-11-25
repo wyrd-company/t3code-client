@@ -83,6 +83,10 @@ it.each([
     { branch: "sample-branch", baseRef: "sample-base" },
     { type: "worktree", baseRef: "sample-base", branch: "sample-branch" },
   ],
+  [
+    { branch: "\u00a0", baseRef: "\u3000" },
+    { type: "worktree", baseRef: "\u3000", branch: "\u00a0" },
+  ],
 ] as const)("new worktree sends %j as exactly %j", async (extra, workspace) => {
   const f = setup();
   launched(f);
