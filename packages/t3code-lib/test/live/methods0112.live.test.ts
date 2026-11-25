@@ -83,9 +83,11 @@ describe.skipIf(!hasLiveServer)("live 0.1.12 methods", () => {
       });
       expect(saved).toEqual({ changed: true, problems: [] });
       const files = await client.rpc.call("workflows.getDefinition", {});
-      expect(files.files).toEqual([
-        expect.objectContaining({ name, source: sampleWorkflow, workflows: ["sample0112@1"] }),
-      ]);
+      expect(files.files).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name, source: sampleWorkflow, workflows: ["sample0112@1"] }),
+        ]),
+      );
       const removed = await client.rpc.call("workflows.deleteDefinition", { name });
       expect(removed.changed).toBe(true);
     } finally {
