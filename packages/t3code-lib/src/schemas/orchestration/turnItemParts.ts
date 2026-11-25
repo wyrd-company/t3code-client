@@ -91,6 +91,11 @@ export const OrchestrationV2ProviderFailureClass = forwardCompatibleLiteral([
 export type OrchestrationV2ProviderFailureClass = z.infer<
   typeof OrchestrationV2ProviderFailureClass
 >;
+/** Only Google's account sign-in continue page, so a client never opens another address. */
+export const GoogleAccountVerificationUrl = TrimmedNonEmptyString.max(4_096).regex(
+  /^https:\/\/accounts\.google\.com\/(?:v3\/)?signin\/continue\?[^\s\p{Cc}\\#]+$/u,
+);
+
 /** Transport-safe failure information; the server redacts credentials before building it. */
 export const OrchestrationV2ProviderFailure = z.looseObject({
   class: OrchestrationV2ProviderFailureClass,
@@ -98,6 +103,8 @@ export const OrchestrationV2ProviderFailure = z.looseObject({
   code: TrimmedNonEmptyString.max(128).nullable(),
   retryable: z.boolean().nullable(),
   resetAt: IsoDateTime.nullable().optional(),
+  /** A Google account page that clears the failure once the user verifies there. */
+  verificationUrl: GoogleAccountVerificationUrl.optional(),
 });
 export type OrchestrationV2ProviderFailure = z.infer<typeof OrchestrationV2ProviderFailure>;
 
@@ -107,6 +114,15 @@ export const OrchestrationV2ProviderRetry = z.looseObject({
   retryDelayMs: NonNegativeInt.nullable(),
 });
 export type OrchestrationV2ProviderRetry = z.infer<typeof OrchestrationV2ProviderRetry>;
+
+/** One input of a multi-value secret card. `secret: false` shows what the user types, such as an email. */
+export const OrchestrationV2SecretRequestField = z.looseObject({
+  name: TrimmedNonEmptyString,
+  label: TrimmedNonEmptyString,
+  placeholder: z.string().optional(),
+  secret: z.boolean().optional(),
+});
+export type OrchestrationV2SecretRequestField = z.infer<typeof OrchestrationV2SecretRequestField>;
 
 export const OrchestrationV2SecretRequestStatus = forwardCompatibleLiteral([
   "pending",

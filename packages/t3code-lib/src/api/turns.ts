@@ -53,6 +53,11 @@ export interface StartTurnInput {
   readonly titleSeed?: string;
   /** Starts a new provider session without the thread's earlier context. The message never steers. */
   readonly freshContext?: boolean;
+  /**
+   * Asks the run for a result as data matching this JSON Schema; the run's `output` holds the
+   * value the server accepted. The message never steers.
+   */
+  readonly outputSchema?: MessageDispatchCommand["outputSchema"];
   /** Defaults to `auto`. */
   readonly delivery?: TurnDelivery;
   readonly origin?: CreationOrigin;

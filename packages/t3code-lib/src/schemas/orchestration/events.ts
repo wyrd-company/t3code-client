@@ -38,6 +38,7 @@ import {
   OrchestrationV2Run,
   OrchestrationV2RunAttempt,
   OrchestrationV2RunBackgroundWorkCancelled,
+  OrchestrationV2RunOutputSubmitted,
   OrchestrationV2Subagent,
 } from "./runs.ts";
 import { OrchestrationV2AppThread, OrchestrationV2ThreadVisit } from "./thread.ts";
@@ -98,6 +99,7 @@ export const OrchestrationV2DomainEvent = taggedUnionWithUnknown("type", [
   event("run.created", OrchestrationV2Run),
   event("run.updated", OrchestrationV2Run),
   event("run.background-work-cancelled", OrchestrationV2RunBackgroundWorkCancelled),
+  event("run.output-submitted", OrchestrationV2RunOutputSubmitted),
   event("run-attempt.created", OrchestrationV2RunAttempt),
   event("run-attempt.updated", OrchestrationV2RunAttempt),
   event("node.updated", OrchestrationV2ExecutionNode),

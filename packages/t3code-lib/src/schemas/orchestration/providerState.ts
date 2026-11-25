@@ -53,6 +53,10 @@ export const OrchestrationV2ProviderSession = z.looseObject({
     )
     .max(32)
     .default([]),
+  /** The slow step a provider is in while it starts a turn, such as `plugins`. An open string. */
+  startupPhase: TrimmedNonEmptyString.max(64).optional(),
+  /** Set by a session that serves several threads: the one thread whose start the phase describes. */
+  startupPhaseThreadId: ThreadId.optional(),
   createdAt: IsoDateTime,
   updatedAt: IsoDateTime,
   lastError: z.string().nullable(),
@@ -213,8 +217,17 @@ export const OrchestrationV2ProviderTurn = z.looseObject({
   turnTokenUsage: TurnTokenUsage.optional(),
   /** The model the provider reported running this turn's root agent; it can differ from the requested one. */
   model: TrimmedNonEmptyString.optional(),
+  /** True when the provider dropped this turn's request before persisting it to native history. */
+  promptDropped: z.literal(true).optional(),
 });
 export type OrchestrationV2ProviderTurn = z.infer<typeof OrchestrationV2ProviderTurn>;
+
+/** A turn whose request reached the provider's native history. */
+export function isDeliveredProviderTurn(
+  turn: Pick<OrchestrationV2ProviderTurn, "promptDropped">,
+): boolean {
+  return turn.promptDropped !== true;
+}
 
 export const OrchestrationV2RuntimeRequestKind = forwardCompatibleLiteral([
   "command",

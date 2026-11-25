@@ -85,6 +85,7 @@ export async function startThreadTurn(
       ...(input.modelSelection === undefined ? {} : { modelSelection: input.modelSelection }),
       ...(input.titleSeed === undefined ? {} : { titleSeed: input.titleSeed }),
       ...(input.freshContext === undefined ? {} : { freshContext: input.freshContext }),
+      ...(input.outputSchema === undefined ? {} : { outputSchema: input.outputSchema }),
       ...deliveryFields(input.delivery ?? "auto"),
     },
     signal,

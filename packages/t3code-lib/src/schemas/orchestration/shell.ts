@@ -38,7 +38,11 @@ import {
   OrchestrationV2RuntimeRequestKind,
 } from "./providerState.ts";
 import { ThreadLinkedPullRequest, ThreadPullRequestLink } from "./pullRequest.ts";
-import { OrchestrationV2DelegatedFrom, OrchestrationV2LinkOrigin } from "./threadLink.ts";
+import {
+  OrchestrationV2DelegatedFrom,
+  OrchestrationV2LinkOrigin,
+  OrchestrationV2WorkflowOrigin,
+} from "./threadLink.ts";
 import { StoredThreadTags } from "./threadTags.ts";
 import {
   OrchestrationV2AppThreadLineage,
@@ -130,6 +134,7 @@ export const OrchestrationV2ThreadShell = z.looseObject({
   historyOrigin: OrchestrationV2ThreadHistoryOrigin.optional(),
   linkOrigin: OrchestrationV2LinkOrigin.optional(),
   delegatedFrom: OrchestrationV2DelegatedFrom.optional(),
+  workflowRun: OrchestrationV2WorkflowOrigin.optional(),
   opens: OrchestrationV2LenientThreadOpens.optional(),
   latestRunId: RunId.nullable(),
   latestRunRequestedAt: IsoDateTime.nullable().optional(),

@@ -71,6 +71,7 @@ describe("startThreadTurn", () => {
       },
     ]);
     expect(deps.dispatched[0]).not.toHaveProperty("freshContext");
+    expect(deps.dispatched[0]).not.toHaveProperty("outputSchema");
     expect(handle).toMatchObject({
       threadId: ids.threadId,
       messageId: "message-2",
@@ -111,6 +112,7 @@ describe("startThreadTurn", () => {
       modelSelection,
       titleSeed: "Queued work",
       freshContext: true,
+      outputSchema: { type: "object", required: ["summary"] },
       origin: { createdBy: "agent", creationSource: "mcp" },
     });
     expect(deps.dispatched[0]).toMatchObject({
@@ -119,6 +121,7 @@ describe("startThreadTurn", () => {
       modelSelection,
       titleSeed: "Queued work",
       freshContext: true,
+      outputSchema: { type: "object", required: ["summary"] },
       dispatchMode: { type: "queue_after_active" },
     });
     expect(deps.dispatched[0]).not.toHaveProperty("deliveryIntent");

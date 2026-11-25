@@ -30,6 +30,14 @@ export const OrchestrationV2CheckpointScope = z.looseObject({
   ordinalWithinParent: NonNegativeInt,
   advancesAppRunCount: z.boolean(),
   cwd: TrimmedNonEmptyString,
+  /** Repository scopes: the folder's display name. */
+  label: TrimmedNonEmptyString.optional(),
+  /**
+   * Set on a repository scope: one tracked Git folder the thread reaches, a child of the root
+   * scope, holding the tracked path (it stays the same when `cwd` moves). Such a scope uses kind
+   * `manual`.
+   */
+  repositoryPath: TrimmedNonEmptyString.optional(),
   createdAt: IsoDateTime,
 });
 export type OrchestrationV2CheckpointScope = z.infer<typeof OrchestrationV2CheckpointScope>;

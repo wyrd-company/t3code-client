@@ -68,6 +68,15 @@ export function applyThreadEvent(
   return next === projection ? projection : { ...next, updatedAt: event.occurredAt };
 }
 
+/**
+ * Only `run.output-submitted` sets a run's output. A lifecycle write carries the run as it was
+ * when that writer read it, so an update without `output` keeps the one already held.
+ */
+function keepRunOutput(runs: Projection["runs"], next: Projection["runs"][number]) {
+  const output = runs.find((run) => run.id === next.id)?.output;
+  return output === undefined || next.output !== undefined ? next : { ...next, output };
+}
+
 function applyKnownEvent(p: Projection, event: KnownOrchestrationV2DomainEvent): Projection {
   if (isThreadRecordEvent(event)) return { ...p, thread: event.payload };
   switch (event.type) {
@@ -82,7 +91,12 @@ function applyKnownEvent(p: Projection, event: KnownOrchestrationV2DomainEvent):
     }
     case "run.created":
     case "run.updated":
-      return { ...p, runs: upsertById(p.runs, event.payload) };
+      return { ...p, runs: upsertById(p.runs, keepRunOutput(p.runs, event.payload)) };
+    case "run.output-submitted": {
+      const { runId, output } = event.payload;
+      if (!p.runs.some((run) => run.id === runId)) return p;
+      return { ...p, runs: p.runs.map((run) => (run.id === runId ? { ...run, output } : run)) };
+    }
     case "run.background-work-cancelled": {
       const { runId, restartCancelledBackgroundWork } = event.payload;
       if (!p.runs.some((run) => run.id === runId)) return p;

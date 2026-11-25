@@ -31,7 +31,10 @@ import {
   ProviderUserInputAnswers,
   UserInputAttachments,
 } from "../model.ts";
-import { OrchestrationV2ThreadLaunchWorkspaceStrategy } from "../runs.ts";
+import {
+  OrchestrationV2OutputSchema,
+  OrchestrationV2ThreadLaunchWorkspaceStrategy,
+} from "../runs.ts";
 import { OrchestrationV2LinkedSender } from "../threadLink.ts";
 import { OrchestrationV2ProviderFailure } from "../turnItemParts.ts";
 
@@ -64,6 +67,8 @@ export const MessageDispatchCommand = z.looseObject({
   idleCompaction: OrchestrationV2IdleCompaction.optional(),
   /** Start a new provider session without the thread's earlier context. Never steers. */
   freshContext: z.boolean().optional(),
+  /** Asks the run for a result as data matching this JSON Schema. Never steers. */
+  outputSchema: OrchestrationV2OutputSchema.optional(),
   ...stamped,
   messageId: MessageId,
   text: z.string(),
@@ -159,6 +164,8 @@ export const QueuedRunCancelCommand = z.looseObject({
 });
 export const QueuedRunEditCommand = z.looseObject({
   type: z.literal("queued-run.edit"),
+  /** The model the queued run starts on, in place of the one it was queued with. */
+  modelSelection: ModelSelection.optional(),
   context: OrchestrationMessageContext.optional(),
   ...run,
   text: z.string(),

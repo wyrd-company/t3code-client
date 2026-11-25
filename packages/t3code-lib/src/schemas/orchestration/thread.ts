@@ -30,7 +30,11 @@ import {
 import { ThreadLinkedPullRequest, ThreadPullRequestLink } from "./pullRequest.ts";
 import { ThreadGuestShare } from "./guestShare.ts";
 import { StoredThreadTags } from "./threadTags.ts";
-import { OrchestrationV2DelegatedFrom, OrchestrationV2LinkOrigin } from "./threadLink.ts";
+import {
+  OrchestrationV2DelegatedFrom,
+  OrchestrationV2LinkOrigin,
+  OrchestrationV2WorkflowOrigin,
+} from "./threadLink.ts";
 
 export const OrchestrationV2AppThreadLineage = z.looseObject({
   parentThreadId: ThreadId.nullable(),
@@ -38,6 +42,8 @@ export const OrchestrationV2AppThreadLineage = z.looseObject({
   rootThreadId: ThreadId,
   /** A side chat lives inside its parent's view and stays out of thread lists. */
   sideChat: z.boolean().optional(),
+  /** An agent step of a workflow run, which the thread's `workflowRun` names. */
+  workflowStep: z.boolean().optional(),
 });
 export type OrchestrationV2AppThreadLineage = z.infer<typeof OrchestrationV2AppThreadLineage>;
 
@@ -125,6 +131,7 @@ export const OrchestrationV2AppThread = z.looseObject({
   historyOrigin: OrchestrationV2ThreadHistoryOrigin.optional(),
   linkOrigin: OrchestrationV2LinkOrigin.optional(),
   delegatedFrom: OrchestrationV2DelegatedFrom.optional(),
+  workflowRun: OrchestrationV2WorkflowOrigin.optional(),
   lineage: OrchestrationV2AppThreadLineage,
   forkedFrom: OrchestrationV2ThreadForkedFrom.nullable(),
   createdAt: IsoDateTime,
@@ -148,11 +155,17 @@ export const OrchestrationV2AppThread = z.looseObject({
   lastVisitedAt: IsoDateTime.nullable().default(null),
   titleRegeneration: ThreadTitleRegeneration.nullable().optional(),
   lastTitleRegeneration: LastThreadTitleRegeneration.nullable().optional(),
+  /** Set by a rename or a naming launch until a generated title replaces it; absent reads false. */
   titleRenamed: z.boolean().optional(),
   /** Latest accepted rollback. Only its failure is recorded in `rollbackFailure`. */
   rollbackRequestId: CommandId.optional(),
   rollbackFailure: z
     .looseObject({ requestId: CommandId, message: TrimmedNonEmptyString })
+    .nullable()
+    .optional(),
+  /** Repositories a completed rewind left as they were: none had a snapshot to go back to. */
+  rollbackUnrestored: z
+    .looseObject({ requestId: CommandId, repositories: z.array(TrimmedNonEmptyString) })
     .nullable()
     .optional(),
   deletedAt: IsoDateTime.nullable(),
@@ -165,6 +178,18 @@ export const OrchestrationV2ThreadVisit = z.looseObject({
   opens: OrchestrationV2AppThread.shape.opens,
 });
 export type OrchestrationV2ThreadVisit = z.infer<typeof OrchestrationV2ThreadVisit>;
+
+/**
+ * Subagents and side chats live inside their parent's view, and a workflow run's agent steps
+ * inside the run's, never in thread lists.
+ */
+export function isListedThreadLineage(lineage: OrchestrationV2AppThreadLineage): boolean {
+  return (
+    lineage.relationshipToParent !== "subagent" &&
+    lineage.sideChat !== true &&
+    lineage.workflowStep !== true
+  );
+}
 
 /**
  * A subagent the provider spawned on its own. The provider owns its

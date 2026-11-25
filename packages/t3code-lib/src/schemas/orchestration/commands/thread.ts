@@ -50,6 +50,8 @@ export const ThreadCreateCommand = z.looseObject({
   ...stamped,
   projectId: ProjectId,
   title: TrimmedNonEmptyString,
+  /** Keeps `title` as a user's name: no generated title replaces it. */
+  titleRenamed: z.boolean().optional(),
   modelSelection: ModelSelection,
   runtimeMode: RuntimeMode,
   interactionMode: ProviderInteractionMode,

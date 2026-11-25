@@ -51,6 +51,8 @@ export const OrchestrationV2ToolCapabilities = z.looseObject({
   emitsToolOutput: z.boolean(),
   supportsMcpTools: z.boolean(),
   supportsDynamicToolCallbacks: z.boolean(),
+  /** The agent can mark background work it resumes from, so the thread holds as waiting. */
+  supportsBackgroundWait: z.boolean().optional(),
 });
 export const OrchestrationV2ApprovalCapabilities = z.looseObject({
   supportsCommandApproval: z.boolean(),

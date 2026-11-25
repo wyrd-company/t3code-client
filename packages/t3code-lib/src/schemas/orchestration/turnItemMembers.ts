@@ -25,6 +25,7 @@ import {
   forwardCompatibleLiteral,
   taggedUnionWithUnknown,
 } from "../common.ts";
+import { OrchestrationV2FeedbackRequestFields } from "../agentFeedback.ts";
 import { ChatAttachment } from "./attachments.ts";
 import { OrchestrationMessageContext } from "./messageContext.ts";
 import { OrchestrationV2LinkedSender } from "./threadLink.ts";
@@ -47,6 +48,7 @@ import {
   OrchestrationV2FileChangeDetail,
   OrchestrationV2FileSearchResult,
   OrchestrationV2LinkRequestFields,
+  OrchestrationV2SecretRequestField,
   OrchestrationV2ProviderFailure,
   OrchestrationV2ProviderRetry,
   OrchestrationV2SecretRequestStatus,
@@ -96,6 +98,8 @@ export const OrchestrationV2TurnItemMembers = [
     type: z.literal("assistant_message"),
     /** Where the text stands in the turn. Absent from older servers and some providers. */
     phase: forwardCompatibleLiteral(["commentary", "partial_answer", "final_answer"]).optional(),
+    /** The provider sent this mid-turn, apart from the turn's answer. */
+    delivery: forwardCompatibleLiteral(["async"]).optional(),
     messageId: MessageId,
     text: z.string(),
     attachments: z.array(ChatAttachment).optional(),
@@ -206,6 +210,8 @@ export const OrchestrationV2TurnItemMembers = [
     message: z.string(),
     /** Notices without a level predate it and are warnings. */
     level: forwardCompatibleLiteral(["info", "warning", "error"]).optional(),
+    /** An MCP server that a sign-in from the thread would fix (`provider.mcpSignIn.start`). */
+    mcpSignIn: z.looseObject({ server: z.string() }).optional(),
   }),
   z.looseObject({
     ...base,
@@ -265,8 +271,11 @@ export const OrchestrationV2TurnItemMembers = [
     secretStatus: OrchestrationV2SecretRequestStatus,
     /** The agent asked for the secret as a file. */
     delivery: forwardCompatibleLiteral(["file"]).optional(),
+    /** A multi-value card: answer it with `values`, one per field name. */
+    fields: z.array(OrchestrationV2SecretRequestField).optional(),
   }),
   z.looseObject({ ...base, ...OrchestrationV2LinkRequestFields }),
+  z.looseObject({ ...base, ...OrchestrationV2FeedbackRequestFields }),
   z.looseObject({
     ...base,
     type: z.literal("subagent"),

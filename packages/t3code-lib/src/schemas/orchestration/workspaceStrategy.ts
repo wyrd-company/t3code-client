@@ -5,6 +5,7 @@
 /** How a launch prepares a run's workspace, and the same strategy as a run records it. */
 import { z } from "zod";
 import { GitRefName, TrimmedNonEmptyString, taggedUnionWithUnknown } from "../common.ts";
+import { PROJECT_TRACKED_FOLDERS_MAX } from "../projectTrackedFolders.ts";
 
 const workspaceStrategyMembers = [
   z.looseObject({ type: z.literal("root"), branch: GitRefName.optional() }),
@@ -18,6 +19,11 @@ const workspaceStrategyMembers = [
     baseRef: GitRefName,
     branch: GitRefName.optional(),
     startFromOrigin: z.boolean().optional(),
+    /** Tracked Git folders to give the worktree. Default: all, or none above eight. */
+    repositories: z
+      .array(z.looseObject({ path: TrimmedNonEmptyString }))
+      .max(PROJECT_TRACKED_FOLDERS_MAX)
+      .optional(),
   }),
 ] as const;
 /** How a launch prepares a run's workspace; strict because callers send it. */

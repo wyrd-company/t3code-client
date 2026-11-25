@@ -23,15 +23,22 @@ import {
   ThreadId,
   TrimmedNonEmptyString,
   forwardCompatibleLiteral,
-  taggedUnionWithUnknown,
 } from "../common.ts";
-import { ModelSelection, OrchestrationV2Actor, OrchestrationV2ProviderRef } from "./model.ts";
+import {
+  ModelSelection,
+  OrchestrationV2Actor,
+  OrchestrationV2ProviderRef,
+  ProviderInteractionMode,
+  RuntimeMode,
+} from "./model.ts";
+import { OrchestrationV2OutputSchema, OrchestrationV2RunOutput } from "./runOutput.ts";
 import { OrchestrationV2RemoteTaskChild } from "./threadLink.ts";
 import { OrchestrationV2SubagentWorkflow } from "./workflow.ts";
 import { OrchestrationV2WorkspacePreparation } from "./workspaceStrategy.ts";
 
 export * from "./checkpoints.ts";
 export * from "./workspaceStrategy.ts";
+export * from "./runOutput.ts";
 
 export const RUN_TERMINAL_STATUSES = [
   "completed",
@@ -145,6 +152,10 @@ export const OrchestrationV2Run = z.looseObject({
   workspacePreparation: OrchestrationV2WorkspacePreparation.optional(),
   /** Starts a new provider conversation; earlier runs stay visible but never reach the provider. */
   freshContext: z.boolean().optional(),
+  /** The JSON Schema of the result this run was asked to return as data. */
+  outputSchema: OrchestrationV2OutputSchema.optional(),
+  /** The value the run returned against `outputSchema`; `run.output-submitted` sets it. */
+  output: OrchestrationV2RunOutput.optional(),
 });
 export type OrchestrationV2Run = z.infer<typeof OrchestrationV2Run>;
 
@@ -176,6 +187,10 @@ export const OrchestrationV2RunAttempt = z.looseObject({
   ]),
   startedAt: IsoDateTime.nullable(),
   completedAt: IsoDateTime.nullable(),
+  /** The thread's modes when this attempt's turn started. A later change reaches only the next turn. */
+  startedModes: z
+    .looseObject({ runtimeMode: RuntimeMode, interactionMode: ProviderInteractionMode })
+    .optional(),
 });
 export type OrchestrationV2RunAttempt = z.infer<typeof OrchestrationV2RunAttempt>;
 

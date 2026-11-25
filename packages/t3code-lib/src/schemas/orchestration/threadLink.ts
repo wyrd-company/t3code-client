@@ -44,6 +44,19 @@ export const OrchestrationV2LinkedSender = z.looseObject({
 });
 export type OrchestrationV2LinkedSender = z.infer<typeof OrchestrationV2LinkedSender>;
 
+/**
+ * The workflow run a thread is an agent step of, with the step's name. `environmentId` is where
+ * the run lives, which is another environment for a step that runs through a link. Only the
+ * server sets it.
+ */
+export const OrchestrationV2WorkflowOrigin = z.looseObject({
+  environmentId: EnvironmentId,
+  runId: TrimmedNonEmptyString,
+  workflow: TrimmedNonEmptyString,
+  step: TrimmedNonEmptyString,
+});
+export type OrchestrationV2WorkflowOrigin = z.infer<typeof OrchestrationV2WorkflowOrigin>;
+
 /** The thread in a linked environment that does the work of a delegated task. */
 export const OrchestrationV2RemoteTaskChild = z.looseObject({
   environmentId: EnvironmentId,
