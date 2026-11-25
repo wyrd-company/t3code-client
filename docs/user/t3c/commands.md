@@ -269,9 +269,12 @@ pending approvals and questions with their prompt details. It does not answer
 requests. `thread usage <id>` reads context and provider-turn token/cost records
 with their owning ids. Missing usage remains absent or null; it is not zero.
 
-`thread diff <id>` reads through the highest ready checkpoint from a completed
-run. Use `--from-turn N --to-turn N` together for an explicit checkpoint range;
+`thread diff <id>` reads through the latest completed run checkpoint. Use
+`--from-turn N --to-turn N` together for an explicit checkpoint range;
 zero is the thread start. Unavailable checkpoints retain the server error.
+Text output is the thread folder's patch. Use `--json` to read the
+`data.repositories` patches for changes in tracked repositories, including
+projects whose root is outside Git.
 `thread search <query> --limit N` searches across threads (default and maximum
 50). A result at its limit can omit matches. `--thread <id>` instead searches
 inside one thread and returns the native count and first match. It conflicts

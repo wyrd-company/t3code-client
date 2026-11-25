@@ -67,8 +67,6 @@ const STRING_OPTIONS = [
   "mode",
   "interactionMode",
   "existingWorktree",
-  "baseRef",
-  "branch",
 ] as const;
 
 export async function readStdinOrFile(path: string): Promise<string> {

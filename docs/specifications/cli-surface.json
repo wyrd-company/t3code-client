@@ -1021,7 +1021,7 @@
             }
           ],
           "notes": [
-            "Without a range, diff the whole thread from its start through the latest ready checkpoint of a completed run. --from-turn and --to-turn are supplied together as nonnegative integers with from less than or equal to to, and select the server's exact turn-count diff. Text output is the unified diff; JSON data is {threadId, fromTurnCount, toTurnCount, diff}. The server truncates oversized patches with its marker. Unavailable checkpoints are server errors, not empty diffs."
+            "Without a range, diff the whole thread through the latest completed run checkpoint. Tracked repositories can have patches when the thread folder has no Git checkpoint. --from-turn and --to-turn are supplied together as nonnegative integers with from less than or equal to to, and select the server's exact turn-count diff. Text output is the thread folder's unified diff. JSON data includes threadId, fromTurnCount, toTurnCount, diff and any repositories patches. The server truncates oversized patches with its marker. Unavailable checkpoints retain the server error."
           ]
         },
         {

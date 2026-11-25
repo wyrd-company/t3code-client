@@ -172,3 +172,17 @@ it("rejects JSON input that is malformed, unsupported or invalid", async () => {
   }
   expect((await run(["update", interval.id, "--input", "absent.json"])).code).toBe(1);
 });
+
+it("keeps Unicode whitespace in scheduled worktree refs", async () => {
+  const update = vi.spyOn(client.scheduledTasks, "update").mockResolvedValue(interval);
+  const args = ["update", interval.id, "--worktree", "--base-ref", "\u3000", "--branch"];
+  expect((await run([...args, "\u00a0"])).code).toBe(0);
+  expect(update).toHaveBeenCalledWith(
+    interval.id,
+    expect.objectContaining({
+      workspaceStrategy: { type: "worktree", baseRef: "\u3000", branch: "\u00a0" },
+    }),
+  );
+  expect(await run([...args, " "])).toMatchObject({ code: 2, connected: false });
+  expect(update).toHaveBeenCalledTimes(1);
+});

@@ -166,11 +166,21 @@ it("prints usage without inventing missing values", async () => {
 
 it("diffs the full thread by default and an exact paired range", async () => {
   const diff = vi.spyOn(client.threads, "diff");
-  diff.mockResolvedValue({ threadId: id, fromTurnCount: 0, toTurnCount: 2, diff: "sample\n" });
+  const repositories = [
+    { name: "api", repositoryPath: "/sample/api", relativePath: "api", diff: "sample API\n" },
+  ];
+  diff.mockResolvedValue({
+    threadId: id,
+    fromTurnCount: 0,
+    toTurnCount: 2,
+    diff: "sample\n",
+    repositories,
+  });
   const text = await run(["diff", "thread-1"], false);
   expect(text.stdout).toBe("sample\n");
   expect(diff).toHaveBeenLastCalledWith(id, undefined);
-  await run(["diff", "thread-1", "--from-turn", "1", "--to-turn", "2"]);
+  const result = await run(["diff", "thread-1", "--from-turn", "1", "--to-turn", "2"]);
+  expect(result.result.data.repositories).toEqual(repositories);
   expect(diff).toHaveBeenLastCalledWith(id, { fromTurnCount: 1, toTurnCount: 2 });
   await run(["diff", "thread-1", "--from-turn", "0", "--to-turn", "0"]);
   expect(diff).toHaveBeenLastCalledWith(id, { fromTurnCount: 0, toTurnCount: 0 });

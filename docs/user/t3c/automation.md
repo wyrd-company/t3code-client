@@ -108,6 +108,9 @@ on the first run. Without a mode, a bound thread selects `continue` and no threa
 selects `new_thread`. Update keeps the stored mode, but a thread bound to a
 `new_thread` task selects `continue`. `--new-thread` and JSON
 `threadId: null` select `new_thread`. `new_thread` with a thread exits `2`.
+
+Scheduled worktrees keep Unicode whitespace in the Git ref names supplied
+through `--base-ref`, `--branch` or a JSON workspace strategy.
 `schedule show` prints the mode and the thread, or `-` before the first run.
 JSON input accepts `threadMode`. JSON objects use the
 library's `workspaceStrategy` and `modelSelection` types.
