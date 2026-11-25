@@ -96,8 +96,8 @@ array), or Codex&#39;s <code>{ answers: string[] }</code>.</p>
 
 <dl>
 <dt><a href="#latestDiffTurnCount">latestDiffTurnCount()</a></dt>
-<dd><p>The latest completed run with a ready app checkpoint, or 0 if none qualifies.
-With tracked repository scopes, a missing app checkpoint can still have repository patches.</p>
+<dd><p>The turn count of the latest completed run with a ready app checkpoint, or 0 if none qualifies.
+With tracked repository scopes, a completed run with a missing app checkpoint also counts.</p>
 <pre><code class="language-ts">export function latestDiffTurnCount(
   projection: Pick&lt;OrchestrationV2ThreadProjection, &quot;runs&quot; | &quot;checkpoints&quot;&gt; &amp;
     Partial&lt;Pick&lt;OrchestrationV2ThreadProjection, &quot;checkpointScopes&quot;&gt;&gt;,
@@ -334,8 +334,8 @@ array), or Codex's `{ answers: string[] }`.
 
 ## latestDiffTurnCount()
 
-The latest completed run with a ready app checkpoint, or 0 if none qualifies.
-With tracked repository scopes, a missing app checkpoint can still have repository patches.
+The turn count of the latest completed run with a ready app checkpoint, or 0 if none qualifies.
+With tracked repository scopes, a completed run with a missing app checkpoint also counts.
 
 ```ts
 export function latestDiffTurnCount(

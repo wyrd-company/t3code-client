@@ -101,8 +101,8 @@ export type WorkflowHookAccepted = z.infer<typeof WorkflowHookAccepted>;
 
 /**
  * A webhook endpoint's refusal, as it arrives in `T3HttpError.body`. A workflow hook answers 400
- * `invalid_request` with the `problem` its input check found (including that workflows are
- * off), 403 `blocked_by_policy`, 404 `hook_not_found`, 429 `rate_limited` with
+ * `invalid_request` with the `problem` its input check found, 403 `blocked_by_policy`,
+ * 404 `hook_not_found` (including when workflows are off), 429 `rate_limited` with
  * `Retry-After: 60` (`T3HttpError.retryAfter`), and 500 `internal_error`. Every endpoint also
  * answers 405 `method_not_allowed` to `HEAD` and 413 `body_too_large`.
  */

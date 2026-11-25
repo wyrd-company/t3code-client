@@ -40,8 +40,8 @@ export type ThreadContentSearchResult = OrchestrationV2SearchThreadResult;
 export const THREAD_SEARCH_MAX_LIMIT = 50;
 
 /**
- * The latest completed run with a ready app checkpoint, or 0 if none qualifies.
- * With tracked repository scopes, a missing app checkpoint can still have repository patches.
+ * The turn count of the latest completed run with a ready app checkpoint, or 0 if none qualifies.
+ * With tracked repository scopes, a completed run with a missing app checkpoint also counts.
  */
 export function latestDiffTurnCount(
   projection: Pick<OrchestrationV2ThreadProjection, "runs" | "checkpoints"> &
