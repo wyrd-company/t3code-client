@@ -1,7 +1,7 @@
 $schema: https://refinery.systems/ontology/technical-design
 title: T3 Code HTTP and WebSocket protocol
 objective: >-
-  Implement library authentication, requests, responses and event handling against the verified protocol 2 interfaces of stock T3 Code 0.1.11.
+  Implement library authentication, requests, responses and event handling against the verified protocol 2 interfaces of stock T3 Code 0.1.12.
 relationships:
   related-to:
     - library
@@ -11,7 +11,7 @@ relationships:
     - releasing
 proposed-design:
   high-level-overview: >-
-    The library implements stock T3 Code 0.1.11 and orchestration protocol 2.
+    The library implements stock T3 Code 0.1.12 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade
     contracts. The library architecture links the canonical design family.
   wire-facts-verified-against-t-code: |
@@ -81,7 +81,7 @@ proposed-design:
     | `GET /api/guest/render`                               | guest cookie         | query `share`, `item`; the bytes of one HTML render                                        |
     | `GET /api/guest/attachment`                           | guest cookie         | query `share`, `id`; bytes and `content-type`                                              |
     | `GET /api/guest/media`                                | guest cookie         | query `share`, `path`; an image that a reply the guest received shows                      |
-    | `POST`, `PUT`, `PATCH`, `GET /api/hooks/:hookId/:token` | path token         | raw body; 202 `{deliveryId}`; 401, 404, 409, 410, 413, 429 with `{error}`                  |
+    | `POST`, `PUT`, `PATCH`, `GET /api/hooks/:hookId/:token` | path token         | raw body; 202 `{deliveryId}`, or `{runId}` for a workflow hook (`wf-…`); 400, 401, 403, 404, 409, 410, 413, 429 with `{error}` |
     | `GET /.well-known/oauth-protected-resource`           | none                 | `AuthMcpProtectedResourceMetadata`; the same at `/mcp` under this path                     |
     | `GET /.well-known/oauth-authorization-server`         | none                 | `AuthMcpAuthorizationServerMetadata`                                                       |
     | `POST /oauth/mcp/register`                            | none                 | `AuthMcpClientRegistration`; 201 `AuthMcpRegisteredClient`; 400 with `{error}`             |
@@ -89,6 +89,19 @@ proposed-design:
     | `POST /oauth/mcp/approval`                            | session token, browser cookie or none | `AuthMcpAuthorizationRequest` → `AuthMcpApprovalDetails` or `{redirectTo}`; 400 `AuthMcpApprovalError` |
     | `POST /oauth/mcp/decision`                            | session token, browser cookie or none | `{authorization, decision}` → `{redirectTo}`; 400 `AuthMcpApprovalError`                 |
     | `POST /oauth/mcp/token`                               | none                 | form-encoded, code is single use; `AuthMcpTokenResult`; 400 with `{error}`                 |
+    | `POST /oauth/mcp/revoke`                              | none                 | form-encoded `{token?, token_type_hint?}` (RFC 7009); 200 and no body, also for an unknown token |
+
+    While a 0.1.12 server starts, before its routes serve, it answers every request
+    with 503, `retry-after: 1` and the JSON `ServerStartupStatus`
+    (`{status: "starting", migration}`, where `migration` counts database upgrade
+    steps or is null). The body arrives as `T3HttpError.body`. Older servers send the
+    503 with no body.
+
+    The routes a linked environment serves over its link (`/api/peer-link/client-pairing`
+    and `/api/links/thread/stream`, `/history` and `/item`, 0.1.12) take only a peer
+    link's own session and refuse a browser origin, so another T3 Code server calls
+    them, not a client. A client reads a linked environment's threads and asks for a
+    pairing with the `peerLinks.*` RPC methods, and this server calls those routes.
 
     A guest route refuses with `{reason, message}`: 403 for `invalid`, `inactive` and
     `unavailable`, 400 for a bad message, 409 otherwise. The session cookie is
@@ -121,9 +134,12 @@ proposed-design:
     `orchestration:read`. Query `threadId`, `tabId`, `maxWidth`, `maxHeight`, `quality` and
     `interactive`. A binary message is one JPEG frame, and the server sends the next
     after a `{"type":"ack"}`. A text message is JSON: `viewport`, `control`, `probe`,
-    `clipboard`, `pointer`, `fileChooser`, `fileChooserClosed`, `popup` or `download`. The
+    `clipboard`, `pointer`, `fileChooser`, `fileChooserClosed`, `selectMenu`,
+    `selectMenuClosed`, `popup` or `download`. A `selectMenu` (0.1.12) is a page's `<select>`
+    that the viewer draws at its box; the viewer answers with a `selectMenu` input of the
+    option's index. The
     viewer sends `takeControl`, `releaseControl`, `dialog`, `mouse`, `wheel`, `key`, `text`,
-    `resize`, `viewport`, `navigate`, `history`, `reload` and `probe`, and the server drops them
+    `resize`, `viewport`, `navigate`, `history`, `reload`, `probe` and `selectMenu`, and the server drops them
     without `preview:operate`. Close 4404 means that the tab is gone, 4503 has a JSON
     reason with the host setup that the browser needs, and 1012 asks for a new attach.
     The `upgrade` is 503 when the browser fails in another way. Upstream has no contract for these
@@ -236,9 +252,13 @@ proposed-design:
     `?wsTicket=<ticket>` (with `dpop=<proof>` for a bound ticket) or an
     `authorization` header. Optional query
     parameters `clientSurface=cli` and `clientAppVersion` label the connection in
-    the server's client list. `clientCapabilities=settingsSecretReferences` tells
-    the server that secret settings fields may hold a secret provider reference;
-    without it the server shows a reference as a saved, redacted secret. Messages are JSON text, one envelope per frame (the
+    the server's client list. `clientCapabilities` is a comma-separated list. The
+    library sends `settingsSecretReferences,httpUsageLimitSources`.
+    `settingsSecretReferences` tells the server that secret settings fields may hold
+    a secret provider reference; without it the server shows a reference as a saved,
+    redacted secret. `httpUsageLimitSources` (0.1.12) says that usage limit sources
+    may be of kind `http`; without it a 0.1.12 server leaves those sources out of
+    the settings it sends. Messages are JSON text, one envelope per frame (the
     server may also send a JSON array of envelopes). Envelopes:
 
     ```text
@@ -257,8 +277,12 @@ proposed-design:
           | {"_tag":"Die","defect":"Missing key\n  at [\"runId\"]"}
           | {"_tag":"Interrupt","fiberId":797} ]}}
       {"_tag":"Defect","defect":...}             connection-level failure
-      {"_tag":"Pong"}
+      {"_tag":"Pong"}                            an answer, or from 0.1.12 a heartbeat every 20 s
     ```
+
+    From 0.1.12 the server also writes an unsolicited `Pong` every 20 seconds, so a
+    proxy never sees the socket idle. The library counts any `Pong` as liveness and
+    passes none to its handlers.
 
     `headers` is required on `Request`; omitting it makes the server close the
     socket without a reason. A stream ends with an `Exit` (an `Interrupt` cause
