@@ -7,11 +7,13 @@ import { describe, expect, it, vi } from "vite-plus/test";
 
 import {
   T3ConnectionError,
+  T3HttpError,
   T3InterruptedError,
   T3NotFoundError,
   T3PreconditionError,
 } from "../errors.ts";
 import { GuestShareId } from "../schemas/common.ts";
+import { WebhookFailure } from "../schemas/workflow.ts";
 import { HttpTransport } from "../transport/http.ts";
 import { HttpRouteClient } from "./client.ts";
 import { httpRoutes } from "./registry.ts";
@@ -183,6 +185,30 @@ describe("guest and webhook requests", () => {
     await expect(
       task.routes.call("webhooks.webhookGet", { params: { hookId: "hook-1", token: "t" } }),
     ).resolves.toEqual({ deliveryId: "delivery-1" });
+  });
+
+  it("reads a workflow hook's refusals: the problem, the retry delay and the server failure", async () => {
+    const params = { hookId: "wf-sample", token: "sample-token" };
+    const refuse = async (answer: () => Response) =>
+      streamSetup(answer)
+        .routes.call("webhooks.webhookPost", { params, body: new TextEncoder().encode("{}") })
+        .catch((reason: unknown) => reason);
+    const invalid = await refuse(() =>
+      Response.json({ error: "invalid_request", problem: "title is required" }, { status: 400 }),
+    );
+    expect(invalid).toBeInstanceOf(T3HttpError);
+    expect(invalid).toMatchObject({ status: 400, reason: "invalid_request" });
+    expect(WebhookFailure.parse((invalid as T3HttpError).body)).toEqual({
+      error: "invalid_request",
+      problem: "title is required",
+    });
+    const busy = await refuse(() =>
+      Response.json({ error: "rate_limited" }, { status: 429, headers: { "retry-after": "60" } }),
+    );
+    expect(busy).toMatchObject({ status: 429, reason: "rate_limited", retryAfter: "60" });
+    const failed = await refuse(() => Response.json({ error: "internal_error" }, { status: 500 }));
+    expect(failed).toMatchObject({ status: 500, reason: "internal_error" });
+    expect(failed).toHaveProperty("retryAfter", undefined);
   });
 
   it("refuses a header that is not valid, and does not quote its value", async () => {

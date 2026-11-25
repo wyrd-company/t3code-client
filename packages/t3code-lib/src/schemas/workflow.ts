@@ -99,6 +99,29 @@ export type WorkflowHook = z.infer<typeof WorkflowHook>;
 export const WorkflowHookAccepted = z.looseObject({ runId: z.string().min(1) });
 export type WorkflowHookAccepted = z.infer<typeof WorkflowHookAccepted>;
 
+/**
+ * A webhook endpoint's refusal, as it arrives in `T3HttpError.body`. A workflow hook answers 400
+ * `invalid_request` with the `problem` its input check found (including that workflows are
+ * off), 403 `blocked_by_policy`, 404 `hook_not_found`, 429 `rate_limited` with
+ * `Retry-After: 60` (`T3HttpError.retryAfter`), and 500 `internal_error`. Every endpoint also
+ * answers 405 `method_not_allowed` to `HEAD` and 413 `body_too_large`.
+ */
+export const WebhookFailure = z.looseObject({
+  error: forwardCompatibleLiteral([
+    "invalid_request",
+    "blocked_by_policy",
+    "hook_not_found",
+    "rate_limited",
+    "internal_error",
+    "method_not_allowed",
+    "body_too_large",
+    "body_too_large_or_unreadable",
+  ]),
+  /** A workflow hook's 400: what was wrong with the request, in words. */
+  problem: z.string().optional(),
+});
+export type WebhookFailure = z.infer<typeof WebhookFailure>;
+
 /** A workflow this server has registered, at its newest version, and what starts it. */
 export const WorkflowSummary = z.looseObject({
   name: z.string(),
