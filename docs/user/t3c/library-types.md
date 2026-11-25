@@ -91,16 +91,19 @@ message, <code>finished</code> answers <code>finish</code>, and <code>error</cod
 <dd><p>Secret settings fields may hold a secret provider reference in place of a
 string. A client that omits it sees a reference as a saved, redacted secret.</p>
 </dd>
+<dt><a href="#HTTP_USAGE_LIMIT_SOURCES_CAPABILITY">HTTP_USAGE_LIMIT_SOURCES_CAPABILITY</a></dt>
+<dd><p>Usage limit sources may be of kind <code>http</code>, not only <code>cliproxy</code>; without it they are left out.</p>
+</dd>
 <dt><a href="#OrchestrationProjectShell">OrchestrationProjectShell</a></dt>
 <dd><p>Project summary shared by the shell and the application project APIs.</p>
 </dd>
 <dt><a href="#ProjectMutation">ProjectMutation</a></dt>
 <dd><p>What <code>projects.mutate</code> and <code>POST /api/projects/mutate</code> accept.</p>
 </dd>
-<dt><a href="#UsageDay">UsageDay</a></dt>
+<dt><a href="https://wyrd.foo/docs/t3c/library-types-2#UsageDay">UsageDay</a></dt>
 <dd><p>Calendar day as <code>YYYY-MM-DD</code>.</p>
 </dd>
-<dt><a href="#UsageTokenTotals">UsageTokenTotals</a></dt>
+<dt><a href="https://wyrd.foo/docs/t3c/library-types-2#UsageTokenTotals">UsageTokenTotals</a></dt>
 <dd><p>Cached and cache-creation input tokens are disjoint from uncached input
 tokens. <code>reasoningTokens</code> is a subset of <code>outputTokens</code>; never add it on top.</p>
 </dd>
@@ -135,6 +138,11 @@ not whole samples and for options over <code>SPEECH_MAX_OPTIONS_BYTES</code>.</p
   pcm: Uint8Array,
   options: SpeechTranscriptionOptions = DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS,
 ): Uint8Array&lt;ArrayBuffer&gt;;
+</code></pre>
+</dd>
+<dt><a href="https://wyrd.foo/docs/t3c/library-types-2#mcpClientScopes">mcpClientScopes()</a></dt>
+<dd><p>The scopes an MCP client at <code>access</code> holds, as <code>mcpClientScopes</code> in upstream <code>auth.ts</code>.</p>
+<pre><code class="language-ts">export function mcpClientScopes(access: AuthMcpClientAccess): readonly AuthEnvironmentScope[];
 </code></pre>
 </dd>
 <dt><a href="https://wyrd.foo/docs/t3c/library-types-2#applyServerProviderDeltas">applyServerProviderDeltas()</a></dt>
@@ -459,6 +467,13 @@ Secret settings fields may hold a secret provider reference in place of a
 string. A client that omits it sees a reference as a saved, redacted secret.
 
 **Kind**: global constant  
+<a name="HTTP_USAGE_LIMIT_SOURCES_CAPABILITY"></a>
+
+## HTTP\_USAGE\_LIMIT\_SOURCES\_CAPABILITY
+
+Usage limit sources may be of kind `http`, not only `cliproxy`; without it they are left out.
+
+**Kind**: global constant  
 <a name="OrchestrationProjectShell"></a>
 
 ## OrchestrationProjectShell
@@ -471,20 +486,5 @@ Project summary shared by the shell and the application project APIs.
 ## ProjectMutation
 
 What `projects.mutate` and `POST /api/projects/mutate` accept.
-
-**Kind**: global constant  
-<a name="UsageDay"></a>
-
-## UsageDay
-
-Calendar day as `YYYY-MM-DD`.
-
-**Kind**: global constant  
-<a name="UsageTokenTotals"></a>
-
-## UsageTokenTotals
-
-Cached and cache-creation input tokens are disjoint from uncached input
-tokens. `reasoningTokens` is a subset of `outputTokens`; never add it on top.
 
 **Kind**: global constant

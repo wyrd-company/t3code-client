@@ -730,6 +730,9 @@ report <code>scopes</code> filtered to these and the full grant as <code>permiss
 <dd><p>Secret settings fields may hold a secret provider reference in place of a
 string. A client that omits it sees a reference as a saved, redacted secret.</p>
 </dd>
+<dt><a href="#HTTP_USAGE_LIMIT_SOURCES_CAPABILITY">HTTP_USAGE_LIMIT_SOURCES_CAPABILITY</a></dt>
+<dd><p>Usage limit sources may be of kind <code>http</code>, not only <code>cliproxy</code>; without it they are left out.</p>
+</dd>
 <dt><a href="#OrchestrationV2ThreadBoundedSnapshot">OrchestrationV2ThreadBoundedSnapshot</a></dt>
 <dd><p>A bounded cold open: full control-plane arrays with a recent window of timeline rows.</p>
 </dd>
@@ -988,6 +991,11 @@ the active run.</p>
 <dt><a href="#consoleLogger">consoleLogger()</a></dt>
 <dd><p>Create a logger that writes prefixed messages to the Node console.</p>
 <pre><code class="language-ts">export function consoleLogger(prefix = &quot;t3code-client&quot;): Logger;
+</code></pre>
+</dd>
+<dt><a href="#mcpClientScopes">mcpClientScopes()</a></dt>
+<dd><p>The scopes an MCP client at <code>access</code> holds, as <code>mcpClientScopes</code> in upstream <code>auth.ts</code>.</p>
+<pre><code class="language-ts">export function mcpClientScopes(access: AuthMcpClientAccess): readonly AuthEnvironmentScope[];
 </code></pre>
 </dd>
 <dt><a href="#hasScope">hasScope()</a></dt>
@@ -4492,6 +4500,13 @@ Secret settings fields may hold a secret provider reference in place of a
 string. A client that omits it sees a reference as a saved, redacted secret.
 
 **Kind**: global constant  
+<a name="HTTP_USAGE_LIMIT_SOURCES_CAPABILITY"></a>
+
+## HTTP\_USAGE\_LIMIT\_SOURCES\_CAPABILITY
+
+Usage limit sources may be of kind `http`, not only `cliproxy`; without it they are left out.
+
+**Kind**: global constant  
 <a name="OrchestrationV2ThreadBoundedSnapshot"></a>
 
 ## OrchestrationV2ThreadBoundedSnapshot
@@ -5002,6 +5017,17 @@ Create a logger that writes prefixed messages to the Node console.
 
 ```ts
 export function consoleLogger(prefix = "t3code-client"): Logger;
+```
+
+**Kind**: global function  
+<a name="mcpClientScopes"></a>
+
+## mcpClientScopes()
+
+The scopes an MCP client at `access` holds, as `mcpClientScopes` in upstream `auth.ts`.
+
+```ts
+export function mcpClientScopes(access: AuthMcpClientAccess): readonly AuthEnvironmentScope[];
 ```
 
 **Kind**: global function  

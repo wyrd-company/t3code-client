@@ -10,6 +10,21 @@ relationships:
 
 # Shared types and constants (2)
 
+<a name="UsageDay"></a>
+
+## UsageDay
+
+Calendar day as `YYYY-MM-DD`.
+
+**Kind**: global constant  
+<a name="UsageTokenTotals"></a>
+
+## UsageTokenTotals
+
+Cached and cache-creation input tokens are disjoint from uncached input
+tokens. `reasoningTokens` is a subset of `outputTokens`; never add it on top.
+
+**Kind**: global constant  
 <a name="ServerProviderDelta"></a>
 
 ## ServerProviderDelta
@@ -63,6 +78,17 @@ export function encodeSpeechPcmRequest(
   pcm: Uint8Array,
   options: SpeechTranscriptionOptions = DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS,
 ): Uint8Array<ArrayBuffer>;
+```
+
+**Kind**: global function  
+<a name="mcpClientScopes"></a>
+
+## mcpClientScopes()
+
+The scopes an MCP client at `access` holds, as `mcpClientScopes` in upstream `auth.ts`.
+
+```ts
+export function mcpClientScopes(access: AuthMcpClientAccess): readonly AuthEnvironmentScope[];
 ```
 
 **Kind**: global function  
