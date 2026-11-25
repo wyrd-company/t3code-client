@@ -80,7 +80,7 @@ it("lists the static commands of the pinned server, effort commands included", (
 });
 
 it("decodes the fixture rules unchanged", () => {
-  expect(config.keybindings).toHaveLength(88);
+  expect(config.keybindings).toHaveLength(92);
   expect(ResolvedKeybindingsConfig.parse(config.keybindings)).toEqual(config.keybindings);
 });
 

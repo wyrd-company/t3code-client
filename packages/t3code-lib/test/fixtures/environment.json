@@ -1,14 +1,14 @@
 {
-  "environmentId": "3967bcfe-af57-4cc5-8c70-202b76d5fe10",
+  "environmentId": "1f97ea63-ca24-47df-943a-de751552f143",
   "label": "sample-environment",
   "platform": {
     "os": "linux",
     "arch": "x64",
     "machine": "desktop"
   },
-  "serverVersion": "0.1.11",
+  "serverVersion": "0.1.12",
   "orchestrationProtocolVersion": 2,
-  "databaseMigration": 102,
+  "databaseMigration": 117,
   "capabilities": {
     "repositoryIdentity": true,
     "connectionProbe": true,
@@ -74,6 +74,9 @@
     "peerLinks": true,
     "mcpModeLimitHeader": true,
     "linkFence": true,
+    "linkThreadStream": true,
+    "linkClientPairing": true,
+    "linkPairingForLink": true,
     "mcpApprovalCodes": true,
     "peerLinkPairingCodes": true,
     "mcpHostedApproval": true,
@@ -86,6 +89,8 @@
     "shellThreadFamilies": true,
     "shellOlderSettled": true,
     "linkedThreadRefreshes": true,
-    "issueLinkedThreads": true
+    "agentFeedback": true,
+    "issueLinkedThreads": true,
+    "issueTrackerAccounts": true
   }
 }
