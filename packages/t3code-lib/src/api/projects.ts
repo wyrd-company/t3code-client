@@ -35,6 +35,7 @@ import type {
   ProjectSearchContentsResult,
   ProjectSearchEntriesInput,
   ProjectSearchEntriesResult,
+  ProjectAddedFolders,
   ProjectUpdatePayload,
   ProjectWriteFileInput,
   ProjectWriteFileResult,
@@ -50,6 +51,8 @@ export interface ProjectCreateInput {
   readonly createWorkspaceRootIfMissing?: boolean;
   readonly defaultModelSelection?: ModelSelection | null;
   readonly scripts?: ProjectScript[];
+  /** Folders by absolute path besides the home folder. Older servers drop it. */
+  readonly trackedFolders?: ProjectAddedFolders;
 }
 
 export interface ProjectEnsureInput {
@@ -58,7 +61,14 @@ export interface ProjectEnsureInput {
   readonly createWorkspaceRootIfMissing?: boolean;
 }
 
-export type ProjectMetaUpdate = ProjectUpdatePayload;
+/**
+ * `trackedFolders` replaces the whole list. `trackFolders` and `untrackFolders` change the list
+ * as the server has it, so two clients' edits do not undo each other.
+ */
+export type ProjectMetaUpdate = ProjectUpdatePayload & {
+  readonly trackFolders?: ProjectAddedFolders;
+  readonly untrackFolders?: string[];
+};
 
 export interface ProjectFilesApi {
   /** List active project summaries from the shell snapshot. */
@@ -184,6 +194,7 @@ export class ProjectsApi {
           ? {}
           : { defaultModelSelection: input.defaultModelSelection }),
         ...(input.scripts === undefined ? {} : { scripts: input.scripts }),
+        ...(input.trackedFolders === undefined ? {} : { trackedFolders: input.trackedFolders }),
       },
       signal,
     );

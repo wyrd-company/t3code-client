@@ -22,7 +22,12 @@ import {
   forwardCompatibleLiteral,
   taggedUnionWithUnknown,
 } from "../common.ts";
-import { ProjectFaviconPath, ProjectScript, ReceivedProjectIcon } from "../projects.ts";
+import {
+  ProjectFaviconPath,
+  ProjectScript,
+  ProjectTrackedFolders,
+  ReceivedProjectIcon,
+} from "../projects.ts";
 import { RepositoryIdentity, ThreadEnvMode } from "../environment.ts";
 import {
   ModelSelection,
@@ -68,6 +73,8 @@ export const OrchestrationProjectShell = z.looseObject({
   faviconPath: ProjectFaviconPath.nullable().optional(),
   projectIcon: ReceivedProjectIcon.nullable().optional(),
   scripts: z.array(ProjectScript),
+  /** Absent from older servers; that means a single-folder project. */
+  trackedFolders: ProjectTrackedFolders.optional(),
   pinnedAt: IsoDateTime.nullable().optional(),
   archivedAt: IsoDateTime.nullable().optional(),
   createdAt: IsoDateTime,

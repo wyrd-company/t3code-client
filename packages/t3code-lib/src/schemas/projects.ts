@@ -17,9 +17,11 @@ import {
 } from "./common.ts";
 import { RepositoryIdentity, ThreadEnvMode } from "./environment.ts";
 import { ModelSelection } from "./orchestration/model.ts";
+import { ProjectAddedFolders, ProjectTrackedFolders } from "./projectTrackedFolders.ts";
 
 export * from "./projectCreation.ts";
 export * from "./projectsIgnoredFiles.ts";
+export * from "./projectTrackedFolders.ts";
 
 export const PROJECT_SEARCH_ENTRIES_MAX_LIMIT = 200;
 export const ProjectEntryKind = forwardCompatibleLiteral(["file", "directory"]);
@@ -227,6 +229,8 @@ export const Project = z.looseObject({
   defaultThreadEnvMode: ThreadEnvMode.nullable().optional(),
   autoPull: z.boolean().optional(),
   scripts: z.array(ProjectScript),
+  /** Absent from older servers; that means a single-folder project. */
+  trackedFolders: ProjectTrackedFolders.optional(),
   pinnedAt: IsoDateTime.nullable().optional(),
   archivedAt: IsoDateTime.nullable().optional(),
   createdAt: IsoDateTime,
@@ -247,6 +251,8 @@ export const ProjectCreatePayload = z.looseObject({
   createWorkspaceRootIfMissing: z.boolean().optional(),
   defaultModelSelection: ModelSelection.nullable().optional(),
   scripts: z.array(ProjectScript).optional(),
+  /** Folders by absolute path besides the home folder. Older servers drop it. */
+  trackedFolders: ProjectAddedFolders.optional(),
 });
 export type ProjectCreatePayload = z.infer<typeof ProjectCreatePayload>;
 export const ProjectUpdatePayload = z.looseObject({
@@ -258,6 +264,8 @@ export const ProjectUpdatePayload = z.looseObject({
   faviconPath: TrimmedNonEmptyString.nullable().optional(),
   defaultThreadEnvMode: ThreadEnvMode.nullable().optional(),
   scripts: z.array(ProjectScript).optional(),
+  /** Extra folders by absolute path. Replaces the whole list; older servers drop it. */
+  trackedFolders: ProjectAddedFolders.optional(),
   /** Send only to servers that advertise `projectOrganization`; older servers drop it. */
   pinned: z.boolean().optional(),
   /** Keeps threads and files. Send only to servers that advertise `projectOrganization`. */
@@ -278,6 +286,10 @@ export const ProjectMutation = z.discriminatedUnion("type", [
     commandId: CommandId,
     projectId: ProjectId,
     ...ProjectUpdatePayload.shape,
+    /** Added to the list as the server has it, so two clients' edits do not undo each other. */
+    trackFolders: ProjectAddedFolders.optional(),
+    /** Paths removed from the list as the server has it. */
+    untrackFolders: z.array(TrimmedNonEmptyString).optional(),
   }),
   z.looseObject({
     type: z.literal("project.delete"),
