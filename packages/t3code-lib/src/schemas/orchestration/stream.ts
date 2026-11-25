@@ -134,7 +134,24 @@ export const OrchestrationGetTurnDiffInput = TurnCountRange.safeExtend({
   ignoreWhitespace: z.boolean().optional(),
 });
 export type OrchestrationGetTurnDiffInput = z.infer<typeof OrchestrationGetTurnDiffInput>;
-export const ThreadTurnDiff = TurnCountRange.safeExtend({ threadId: ThreadId, diff: z.string() });
+/** One tracked repository's patch in a thread that reaches several. */
+export const ThreadTurnRepositoryDiff = z.looseObject({
+  name: TrimmedNonEmptyString,
+  /** The project's tracked path; matches the checkpoint scope's `repositoryPath`. */
+  repositoryPath: TrimmedNonEmptyString,
+  /** The repository folder from the thread's cwd, `/`-separated; may start with `../`. */
+  relativePath: z.string(),
+  /** Paths are relative to the repository, as Git prints them. */
+  diff: z.string(),
+});
+export type ThreadTurnRepositoryDiff = z.infer<typeof ThreadTurnRepositoryDiff>;
+export const ThreadTurnDiff = TurnCountRange.safeExtend({
+  threadId: ThreadId,
+  /** The thread folder's own patch; empty when that folder is not a Git repository. */
+  diff: z.string(),
+  /** Tracked repositories that changed in the range. Absent when the thread has none. */
+  repositories: z.array(ThreadTurnRepositoryDiff).optional(),
+});
 export type ThreadTurnDiff = z.infer<typeof ThreadTurnDiff>;
 export const OrchestrationGetTurnDiffResult = ThreadTurnDiff;
 export type OrchestrationGetTurnDiffResult = z.infer<typeof OrchestrationGetTurnDiffResult>;

@@ -129,6 +129,15 @@ export const IssueEventKind = forwardCompatibleLiteral([
 ]);
 export type IssueEventKind = z.infer<typeof IssueEventKind>;
 
+/** The issue or change request a `referenced` event came from, so a surface can open it. */
+export const IssueEventReference = z.looseObject({
+  repository: TrimmedNonEmptyString,
+  number: PositiveInt,
+  kind: forwardCompatibleLiteral(["issue", "pull-request"]),
+  url: TrimmedNonEmptyString,
+});
+export type IssueEventReference = z.infer<typeof IssueEventReference>;
+
 export const IssueEvent = z.looseObject({
   id: TrimmedNonEmptyString,
   kind: IssueEventKind,
@@ -136,6 +145,7 @@ export const IssueEvent = z.looseObject({
   createdAt: IsoDateTime,
   /** What the event was about, where it has a subject: a label name, a login, a new title. */
   detail: TrimmedNonEmptyString.nullable(),
+  reference: IssueEventReference.optional(),
 });
 export type IssueEvent = z.infer<typeof IssueEvent>;
 

@@ -167,6 +167,12 @@ export const VcsStatusRemoteResult = z.looseObject(VcsStatusRemoteShape);
 export type VcsStatusRemoteResult = z.infer<typeof VcsStatusRemoteResult>;
 export const VcsStatusResult = z.looseObject({ ...VcsStatusLocalShape, ...VcsStatusRemoteShape });
 export type VcsStatusResult = z.infer<typeof VcsStatusResult>;
+/** `vcs.refreshStatus`: the status, and a digest of the refs after the refresh when readable. */
+export const VcsRefreshStatusResult = z.looseObject({
+  ...VcsStatusResult.shape,
+  refsDigest: TrimmedNonEmptyString.optional(),
+});
+export type VcsRefreshStatusResult = z.infer<typeof VcsRefreshStatusResult>;
 export const VcsStatusStreamEvent = taggedUnionWithUnknown("_tag", [
   z.looseObject({
     _tag: z.literal("snapshot"),

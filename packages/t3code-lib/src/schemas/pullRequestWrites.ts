@@ -114,6 +114,8 @@ export type PullRequestReviewCommentDraft = z.infer<typeof PullRequestReviewComm
 
 export const PullRequestSubmitReviewInput = z.looseObject({
   ...refFields,
+  /** The review is refused when the head commit is no longer this one. */
+  expectedHeadSha: TrimmedNonEmptyString.optional(),
   verdict: z.enum(["comment", "approve", "request-changes"]),
   body: ReviewBody,
   comments: z.array(PullRequestReviewCommentDraft),

@@ -17,15 +17,23 @@ export type ReviewDiffPreviewSourceKindInput = z.infer<typeof ReviewDiffPreviewS
 export const ReviewDiffPreviewSourceKind = forwardCompatibleLiteral(sourceKinds);
 export type ReviewDiffPreviewSourceKind = z.infer<typeof ReviewDiffPreviewSourceKind>;
 
+/** An object id or `HEAD`, never an option-looking ref, since the server passes it to Git. */
+const ReviewMergeBase = z.string().regex(/^(?:[0-9a-f]{40}|[0-9a-f]{64}|HEAD)$/);
+const ReviewDiffChangeType = z.enum(["change", "rename-pure", "rename-changed", "new", "deleted"]);
+
 export const ReviewDiffPreviewInput = z.looseObject({
   cwd: TrimmedNonEmptyString,
   baseRef: GitRefName.optional(),
+  /** A branch-range file read reuses its preview's `mergeBase` instead of resolving it again. */
+  mergeBase: ReviewMergeBase.optional(),
   commitSha: TrimmedNonEmptyString.optional(),
   ignoreWhitespace: z.boolean().optional(),
   /** Read only this source kind. */
   sourceKind: z.enum(["working-tree", "branch-range"]).optional(),
   /** Leave untracked files out; the result is then `incomplete`. */
   trackedOnly: z.boolean().optional(),
+  /** From a `trackedOnly` result, so the complete read adds only the untracked files. */
+  completionToken: z.string().optional(),
   /** Return file stats without patches; `patchesDeferred` marks such a source. */
   metadataOnly: z.boolean().optional(),
   file: z
@@ -33,6 +41,8 @@ export const ReviewDiffPreviewInput = z.looseObject({
       path: z.string().min(1),
       previousPath: z.string().min(1).nullable(),
       sourceKind: ReviewDiffPreviewSourceKindInput,
+      /** The preview's change type; the server still confirms a tracked path. */
+      changeType: ReviewDiffChangeType.optional(),
     })
     .optional(),
 });
@@ -49,7 +59,6 @@ export const ReviewBranchCommitsResult = z.looseObject({
   truncated: z.boolean(),
 });
 export type ReviewBranchCommitsResult = z.infer<typeof ReviewBranchCommitsResult>;
-const ReviewDiffChangeType = z.enum(["change", "rename-pure", "rename-changed", "new", "deleted"]);
 
 export const ReviewDiffFileStat = z.looseObject({
   path: z.string(),
@@ -67,6 +76,8 @@ export const ReviewDiffPreviewSource = z.looseObject({
   commitSubject: TrimmedNonEmptyString.optional(),
   baseRef: GitRefName.nullable(),
   headRef: GitRefName.nullable(),
+  /** Branch-range only; older servers omit it. Send it back as the input's `mergeBase`. */
+  mergeBase: ReviewMergeBase.optional(),
   diff: z.string(),
   diffHash: TrimmedNonEmptyString,
   truncated: z.boolean(),
@@ -80,6 +91,8 @@ export const ReviewDiffPreviewResult = z.looseObject({
   sources: z.array(ReviewDiffPreviewSource),
   /** Set when untracked files were left out (`trackedOnly`). */
   incomplete: z.boolean().optional(),
+  /** Send with the complete read so it adds only the untracked files. */
+  completionToken: z.string().optional(),
 });
 export type ReviewDiffPreviewResult = z.infer<typeof ReviewDiffPreviewResult>;
 export const ReviewDiffFileContentsInput = z.looseObject({

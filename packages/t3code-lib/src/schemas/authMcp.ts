@@ -30,6 +30,8 @@ export const AuthMcpAuthorizationServerMetadata = z.looseObject({
   authorization_endpoint: z.string(),
   token_endpoint: z.string(),
   registration_endpoint: z.string(),
+  /** RFC 7009 revocation. Older environments do not serve one. */
+  revocation_endpoint: z.string().optional(),
   response_types_supported: z.array(CodeResponseType),
   grant_types_supported: z.array(AuthorizationCodeGrantType),
   code_challenge_methods_supported: z.array(forwardCompatibleLiteral(["S256"])),
@@ -128,6 +130,13 @@ export const AuthMcpTokenRequest = z.strictObject({
   resource: z.string().optional(),
 });
 export type AuthMcpTokenRequest = z.infer<typeof AuthMcpTokenRequest>;
+
+/** RFC 7009: the holder of an access token ends its session. Form-encoded. */
+export const AuthMcpRevokeRequest = z.strictObject({
+  token: z.string().optional(),
+  token_type_hint: z.string().optional(),
+});
+export type AuthMcpRevokeRequest = z.infer<typeof AuthMcpRevokeRequest>;
 
 export const AuthMcpTokenResult = z.looseObject({
   access_token: z.string(),

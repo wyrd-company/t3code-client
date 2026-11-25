@@ -4,6 +4,7 @@
 // ---
 import { VoidSuccess, defineMethod } from "../spec.ts";
 import {
+  VcsBranchStatus,
   VcsCreateRefInput,
   VcsCreateRefResult,
   VcsCreateWorktreeInput,
@@ -13,13 +14,12 @@ import {
   VcsListRefsResult,
   VcsPullInput,
   VcsPullResult,
-  VcsRemoveWorktreeInput,
   VcsRefreshStatusInput,
-  VcsBranchStatus,
+  VcsRefreshStatusResult,
+  VcsRemoveWorktreeInput,
   VcsStatusInput,
-  VcsStatusSubscriptionInput,
-  VcsStatusResult,
   VcsStatusStreamEvent,
+  VcsStatusSubscriptionInput,
   VcsSwitchRefInput,
   VcsSwitchRefResult,
 } from "../../schemas/vcs.ts";
@@ -75,7 +75,7 @@ export const vcsMethods = {
   }),
   "vcs.refreshStatus": defineMethod({
     payload: VcsRefreshStatusInput,
-    success: VcsStatusResult,
+    success: VcsRefreshStatusResult,
     stream: false,
     scope: "orchestration:read",
   }),

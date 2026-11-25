@@ -158,6 +158,8 @@ export const AuthSessionState = z.looseObject({
   scopes: z.array(AuthGrantedScope).optional(),
   permissions: z.array(AuthGrantedScope).optional(),
   sessionMethod: ServerAuthSessionMethod.optional(),
+  /** This client's own session, so it can tell what it did from what another client did. */
+  sessionId: AuthSessionId.optional(),
   expiresAt: IsoDateTime.optional(),
 });
 export type AuthSessionState = z.infer<typeof AuthSessionState>;

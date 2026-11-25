@@ -40,6 +40,7 @@ import {
   PullRequestState,
   PullRequestThreadComment,
   PullRequestUpdateMethod,
+  PullRequestVisibility,
 } from "./pullRequestParts.ts";
 import { SourceControlProviderKind } from "./vcs.ts";
 
@@ -77,6 +78,8 @@ export const PullRequestCapabilities = z.looseObject({
     .optional(),
   stacks: z.boolean().optional(),
   stackActions: z.boolean().optional(),
+  /** Stack actions also arm and cancel auto-merge for a layer and the open layers below it. */
+  stackAutoMerge: z.boolean().optional(),
   labels: z.boolean().optional(),
   /** The host searches the repository's users, so that a composer can complete `@login`. */
   mentions: z.boolean().optional(),
@@ -156,6 +159,8 @@ export const PullRequestDetail = z.looseObject({
   /** The latest time the host's merge queue let go of it. Absent without a merge queue. */
   mergeQueueRemoval: PullRequestMergeQueueRemoval.optional(),
   maintainerCanModify: z.boolean().optional(),
+  /** Absent where the host has no private pull requests or names no visibility. */
+  visibility: PullRequestVisibility.optional(),
 });
 export type PullRequestDetail = z.infer<typeof PullRequestDetail>;
 
@@ -228,6 +233,8 @@ export const PullRequestChecks = z.looseObject({
   observedAt: z.number().optional(),
   state: PullRequestState,
   checks: z.array(PullRequestCheck),
+  /** Workflow runs that wait for a maintainer to approve them before they run. */
+  workflowApprovalsRequired: NonNegativeInt.optional(),
 });
 export type PullRequestChecks = z.infer<typeof PullRequestChecks>;
 

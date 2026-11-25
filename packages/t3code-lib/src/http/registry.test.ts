@@ -79,6 +79,7 @@ const expected: Record<string, [string, string, string, string | undefined]> = {
   "mcpOAuth.approval": ["POST", "/oauth/mcp/approval", "optional", undefined],
   "mcpOAuth.decision": ["POST", "/oauth/mcp/decision", "optional", undefined],
   "mcpOAuth.token": ["POST", "/oauth/mcp/token", "none", undefined],
+  "mcpOAuth.revoke": ["POST", "/oauth/mcp/revoke", "none", undefined],
   "orchestration.shellSnapshot": [
     "GET",
     "/api/orchestration/shell",

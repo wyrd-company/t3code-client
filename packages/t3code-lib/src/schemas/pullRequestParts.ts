@@ -143,6 +143,10 @@ export const PullRequestOverviewThread = PullRequestReviewThread.extend({
 export type PullRequestOverviewThread = z.infer<typeof PullRequestOverviewThread>;
 
 /** The host's merge queue letting go of a pull request without merging it. */
+/** Who can read a pull request on a host that can hide one in a public repository. */
+export const PullRequestVisibility = forwardCompatibleLiteral(["public", "private"]);
+export type PullRequestVisibility = z.infer<typeof PullRequestVisibility>;
+
 export const PullRequestMergeQueueRemoval = z.looseObject({
   id: TrimmedNonEmptyString,
   removedAt: IsoDateTime,

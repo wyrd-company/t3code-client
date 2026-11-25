@@ -121,6 +121,11 @@ export const ScheduledTaskUpsertInput = z.looseObject({
    */
   threadId: ThreadId.nullable().optional(),
   /**
+   * True with no `threadId`: the user cleared the thread, so the next run starts one. Without
+   * it, an omitted or null `threadId` keeps the thread a first run may have bound since.
+   */
+  unbindThread: z.boolean().optional(),
+  /**
    * Omit to keep the stored mode, or to derive it from `threadId` for a new
    * task or one bound to a thread for the first time.
    */

@@ -20,6 +20,7 @@ import {
   AuthMcpClientRegistration,
   AuthMcpProtectedResourceMetadata,
   AuthMcpRegisteredClient,
+  AuthMcpRevokeRequest,
   AuthMcpTokenRequest,
   AuthMcpTokenResult,
 } from "../../schemas/authMcp.ts";
@@ -86,5 +87,14 @@ export const mcpOAuthRoutes = {
     form: true,
     input: z.strictObject({ body: AuthMcpTokenRequest }),
     success: AuthMcpTokenResult,
+  }),
+  /** RFC 7009: an unknown or already revoked token gets the same empty 200 as a revoked one. */
+  "mcpOAuth.revoke": defineRoute({
+    method: "POST",
+    path: "/oauth/mcp/revoke",
+    auth: "none",
+    form: true,
+    input: z.strictObject({ body: AuthMcpRevokeRequest }),
+    success: z.undefined(),
   }),
 };

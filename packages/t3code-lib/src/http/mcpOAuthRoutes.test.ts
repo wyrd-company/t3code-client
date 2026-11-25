@@ -125,6 +125,22 @@ it("sends a token request form-encoded, with no session token", async () => {
   expect(String(init?.body)).toBe("grant_type=authorization_code&code=sample-code");
 });
 
+it("revokes a token form-encoded, with no session token, and reads the empty answer", async () => {
+  const { calls, routes } = setup(() => new Response(null, { status: 200 }));
+
+  await expect(
+    routes.call("mcpOAuth.revoke", {
+      body: { token: "sample-access-token", token_type_hint: "access_token" },
+    }),
+  ).resolves.toBeUndefined();
+
+  const init = calls[0]?.init;
+  expect(calls[0]?.url).toContain("/oauth/mcp/revoke");
+  expect(new Headers(init?.headers).get("content-type")).toBe("application/x-www-form-urlencoded");
+  expect(new Headers(init?.headers).has("authorization")).toBe(false);
+  expect(String(init?.body)).toBe("token=sample-access-token&token_type_hint=access_token");
+});
+
 it("sends the session's token with an approval and a decision, and none without a session", async () => {
   const { calls, routes } = setup(() => Response.json({ redirectTo: "http://127.0.0.1:9/cb" }));
   await routes.call("mcpOAuth.approval", { body: query });

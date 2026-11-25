@@ -27,6 +27,7 @@ import {
   PullRequestReviewDecision,
   PullRequestStackMembership,
   PullRequestState,
+  PullRequestVisibility,
 } from "./pullRequestParts.ts";
 import { SourceControlProviderKind } from "./vcs.ts";
 
@@ -57,6 +58,8 @@ export const PullRequestListEntry = z.looseObject({
   labels: z.array(PullRequestLabel),
   reviewDecision: PullRequestReviewDecision.optional(),
   checksState: PullRequestChecksState.optional(),
+  /** Absent where the host has no private pull requests or names no visibility. */
+  visibility: PullRequestVisibility.optional(),
 });
 export type PullRequestListEntry = z.infer<typeof PullRequestListEntry>;
 
