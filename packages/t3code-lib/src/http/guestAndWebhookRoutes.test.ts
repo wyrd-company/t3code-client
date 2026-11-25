@@ -171,6 +171,20 @@ describe("guest and webhook requests", () => {
     expect(NodeUtil.inspect(error)).not.toContain(params.token);
   });
 
+  it("reads a workflow hook's run as well as a task hook's delivery", async () => {
+    const workflow = streamSetup(() => Response.json({ runId: "run-1" }, { status: 202 }));
+    await expect(
+      workflow.routes.call("webhooks.webhookPost", {
+        params: { hookId: "wf-sample", token: "sample-token" },
+        body: new TextEncoder().encode("{}"),
+      }),
+    ).resolves.toEqual({ runId: "run-1" });
+    const task = streamSetup(() => Response.json({ deliveryId: "delivery-1" }, { status: 202 }));
+    await expect(
+      task.routes.call("webhooks.webhookGet", { params: { hookId: "hook-1", token: "t" } }),
+    ).resolves.toEqual({ deliveryId: "delivery-1" });
+  });
+
   it("refuses a header that is not valid, and does not quote its value", async () => {
     const { requests, routes } = streamSetup(() => Response.json({ deliveryId: "sample" }));
     const error = await routes

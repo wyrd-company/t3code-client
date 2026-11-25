@@ -84,6 +84,21 @@ export const WorkflowQuestion = z.looseObject({
 });
 export type WorkflowQuestion = z.infer<typeof WorkflowQuestion>;
 
+/**
+ * Where a workflow takes requests: a webhook endpoint whose `hookId` starts with `wf-`. `path`
+ * holds the hook's secret. Posting to it answers 202 with the run it started (`WorkflowHookAccepted`).
+ */
+export const WorkflowHook = z.looseObject({
+  workflow: z.string(),
+  name: z.string(),
+  path: z.string(),
+});
+export type WorkflowHook = z.infer<typeof WorkflowHook>;
+
+/** A workflow hook's 202: the run the request started. */
+export const WorkflowHookAccepted = z.looseObject({ runId: z.string().min(1) });
+export type WorkflowHookAccepted = z.infer<typeof WorkflowHookAccepted>;
+
 /** A workflow this server has registered, at its newest version, and what starts it. */
 export const WorkflowSummary = z.looseObject({
   name: z.string(),

@@ -12,9 +12,12 @@ import { z } from "zod";
 import { T3PreconditionError } from "../../errors.ts";
 import { TrimmedNonEmptyString } from "../../schemas/common.ts";
 import { ScheduledTaskWebhookAccepted } from "../../schemas/scheduledTask.ts";
+import { WorkflowHookAccepted } from "../../schemas/workflow.ts";
 import { defineRoute } from "../spec.ts";
 
 const PATH = "/api/hooks/:hookId/:token";
+/** A scheduled task's hook names its delivery; a workflow's (`wf-…`, 0.1.12) names its run. */
+const Accepted = z.union([ScheduledTaskWebhookAccepted, WorkflowHookAccepted]);
 const WEBHOOK_PREFIX = "/api/hooks/";
 
 const request = {
@@ -33,7 +36,7 @@ export const webhookRoutes = {
     path: PATH,
     auth: "none",
     input: requestWithBody,
-    success: ScheduledTaskWebhookAccepted,
+    success: Accepted,
     signedPath: true,
   }),
   "webhooks.webhookPut": defineRoute({
@@ -41,7 +44,7 @@ export const webhookRoutes = {
     path: PATH,
     auth: "none",
     input: requestWithBody,
-    success: ScheduledTaskWebhookAccepted,
+    success: Accepted,
     signedPath: true,
   }),
   "webhooks.webhookPatch": defineRoute({
@@ -49,7 +52,7 @@ export const webhookRoutes = {
     path: PATH,
     auth: "none",
     input: requestWithBody,
-    success: ScheduledTaskWebhookAccepted,
+    success: Accepted,
     signedPath: true,
   }),
   "webhooks.webhookGet": defineRoute({
@@ -57,7 +60,7 @@ export const webhookRoutes = {
     path: PATH,
     auth: "none",
     input: z.strictObject(request),
-    success: ScheduledTaskWebhookAccepted,
+    success: Accepted,
     signedPath: true,
   }),
 };
