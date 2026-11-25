@@ -8,7 +8,6 @@ import {
   CheckpointId,
   CheckpointScopeId,
   ContextHandoffId,
-  GitRefName,
   IsoDateTime,
   MessageId,
   NodeId,
@@ -29,8 +28,10 @@ import {
 import { ModelSelection, OrchestrationV2Actor, OrchestrationV2ProviderRef } from "./model.ts";
 import { OrchestrationV2RemoteTaskChild } from "./threadLink.ts";
 import { OrchestrationV2SubagentWorkflow } from "./workflow.ts";
+import { OrchestrationV2WorkspacePreparation } from "./workspaceStrategy.ts";
 
 export * from "./checkpoints.ts";
+export * from "./workspaceStrategy.ts";
 
 export const RUN_TERMINAL_STATUSES = [
   "completed",
@@ -109,39 +110,6 @@ export const OrchestrationV2RunBackgroundWorkCancelled = z.looseObject({
 export type OrchestrationV2RunBackgroundWorkCancelled = z.infer<
   typeof OrchestrationV2RunBackgroundWorkCancelled
 >;
-
-const workspaceStrategyMembers = [
-  z.looseObject({ type: z.literal("root"), branch: GitRefName.optional() }),
-  z.looseObject({
-    type: z.literal("existing_worktree"),
-    worktreePath: TrimmedNonEmptyString,
-    branch: GitRefName.optional(),
-  }),
-  z.looseObject({
-    type: z.literal("worktree"),
-    baseRef: GitRefName,
-    branch: GitRefName.optional(),
-    startFromOrigin: z.boolean().optional(),
-  }),
-] as const;
-/** How a launch prepares a run's workspace; strict because callers send it. */
-export const OrchestrationV2ThreadLaunchWorkspaceStrategy = z.discriminatedUnion(
-  "type",
-  workspaceStrategyMembers,
-);
-export type OrchestrationV2ThreadLaunchWorkspaceStrategy = z.infer<
-  typeof OrchestrationV2ThreadLaunchWorkspaceStrategy
->;
-/** The same strategy as a run records it; a newer kind decodes as unknown. */
-export const OrchestrationV2WorkspacePreparation = taggedUnionWithUnknown(
-  "type",
-  workspaceStrategyMembers,
-);
-export type OrchestrationV2WorkspacePreparation = z.infer<
-  typeof OrchestrationV2WorkspacePreparation
->;
-/** Failure code on the error item a failed workspace preparation leaves. */
-export const ORCHESTRATION_V2_WORKSPACE_PREPARATION_FAILURE_CODE = "workspace_preparation_failed";
 
 export const OrchestrationV2Run = z.looseObject({
   id: RunId,
