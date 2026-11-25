@@ -17,9 +17,12 @@ import { EditorId } from "./editor.ts";
 import { ExecutionEnvironmentDescriptor } from "./environment.ts";
 import { ResolvedKeybindingsConfig } from "./keybindings.ts";
 import { ManagedPolicySummary } from "./managedPolicy.ts";
-import { ServerProviders, ServerProviderUsageLimits } from "./provider.ts";
+import { ServerProviders } from "./provider.ts";
 import { ServerConfigProviderStatusDeltasPayload } from "./providerDelta.ts";
 import { UsageModelFilter } from "./usage.ts";
+import { UsageLimitSourceSnapshots } from "./usageLimitSources.ts";
+
+export * from "./usageLimitSources.ts";
 
 export { EditorId };
 const EnvironmentThemeVariantColors = z.record(
@@ -130,30 +133,6 @@ export const ServerSettings = z.looseObject({
   offeredSourceControlProviders: z.record(z.string(), z.boolean()).optional(),
 });
 export type ServerSettings = z.infer<typeof ServerSettings>;
-export const UsageLimitSourceAccount = z.looseObject({
-  id: TrimmedNonEmptyString,
-  driver: TrimmedNonEmptyString,
-  email: TrimmedNonEmptyString.optional(),
-  plan: TrimmedNonEmptyString.optional(),
-  workspaceId: TrimmedNonEmptyString.optional(),
-  usageLimits: ServerProviderUsageLimits,
-});
-export type UsageLimitSourceAccount = z.infer<typeof UsageLimitSourceAccount>;
-export const UsageLimitSourceSnapshot = z.looseObject({
-  id: TrimmedNonEmptyString,
-  kind: forwardCompatibleLiteral(["cliproxy"]),
-  label: TrimmedNonEmptyString,
-  /** Origin of the hub, which also serves the agents sent through it. */
-  origin: TrimmedNonEmptyString.optional(),
-  /** Origin and base path of the hub, which tell apart hubs served from one origin. */
-  endpoint: TrimmedNonEmptyString.optional(),
-  checkedAt: IsoDateTime,
-  accounts: forwardCompatibleArray(UsageLimitSourceAccount),
-  error: TrimmedNonEmptyString.optional(),
-});
-export type UsageLimitSourceSnapshot = z.infer<typeof UsageLimitSourceSnapshot>;
-export const UsageLimitSourceSnapshots = forwardCompatibleArray(UsageLimitSourceSnapshot);
-export type UsageLimitSourceSnapshots = z.infer<typeof UsageLimitSourceSnapshots>;
 export const ServerDirectEndpointKind = forwardCompatibleLiteral(["lan", "tailnet"]);
 export type ServerDirectEndpointKind = z.infer<typeof ServerDirectEndpointKind>;
 export const ServerDirectEndpoint = z.looseObject({
