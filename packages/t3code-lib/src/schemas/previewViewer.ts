@@ -84,6 +84,8 @@ export const PreviewViewerInput = z.discriminatedUnion("type", [
   z.strictObject({ type: z.literal("reload"), ignoreCache: z.boolean().optional() }),
   /** Asks if the point is editable. The answer is a `probe` message. */
   z.strictObject({ type: z.literal("probe"), ...point }),
+  /** Picks an option of the open `selectMenu` with this `id`, by its index (0.1.12). */
+  z.strictObject({ type: z.literal("selectMenu"), id: z.string(), index: z.number().int() }),
 ]);
 export type PreviewViewerInput = z.infer<typeof PreviewViewerInput>;
 
@@ -115,6 +117,20 @@ export const PreviewViewerMessage = taggedUnionWithUnknown("type", [
     accept: z.string(),
   }),
   z.looseObject({ type: z.literal("fileChooserClosed"), id: z.string() }),
+  /**
+   * A `<select>` the page opened, drawn by the viewer at the given box (0.1.12). Answer with a
+   * `selectMenu` input naming its `id`; `selectMenuClosed` withdraws it.
+   */
+  z.looseObject({
+    type: z.literal("selectMenu"),
+    id: z.string(),
+    options: z.array(z.looseObject({ label: z.string(), disabled: z.boolean() })),
+    selectedIndex: z.number(),
+    ...point,
+    width: z.number(),
+    height: z.number(),
+  }),
+  z.looseObject({ type: z.literal("selectMenuClosed"), id: z.string() }),
   z.looseObject({ type: z.literal("popup"), tabId: z.string() }),
   /** Read the file with `previewStream.download`. */
   z.looseObject({
