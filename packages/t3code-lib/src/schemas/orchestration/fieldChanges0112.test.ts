@@ -108,7 +108,7 @@ describe("orchestration field changes of 0.1.12", () => {
     rejects(OrchestrationV2RunAttempt, { ...attempt, startedModes: { runtimeMode: 1 } });
   });
 
-  it("applies a submitted output, and keeps it through a later run update without one", () => {
+  it("keeps a submitted output through later run updates that omit it or carry an older one", () => {
     let projection = makeProjection({ runs: [makeRun()] });
     projection = applyThreadEvent(
       projection,
@@ -120,6 +120,13 @@ describe("orchestration field changes of 0.1.12", () => {
       parseEvent(rawEvent(3, "run.updated", makeRun({ status: "completed" }))),
     );
     expect(projection.runs[0]).toMatchObject({ status: "completed", output });
+    // A lifecycle writer that read the run before the latest submission carries an older output.
+    const older = { value: { summary: "draft" }, submittedAt: "2019-12-31T00:00:00.000Z" };
+    projection = applyThreadEvent(
+      projection,
+      parseEvent(rawEvent(4, "run.updated", makeRun({ status: "interrupted", output: older }))),
+    );
+    expect(projection.runs[0]).toMatchObject({ status: "interrupted", output });
     const other = applyThreadEvent(
       projection,
       parseEvent(rawEvent(4, "run.output-submitted", { runId: "run-9", output })),

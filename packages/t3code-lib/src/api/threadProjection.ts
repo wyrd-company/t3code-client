@@ -70,11 +70,12 @@ export function applyThreadEvent(
 
 /**
  * Only `run.output-submitted` sets a run's output. A lifecycle write carries the run as it was
- * when that writer read it, so an update without `output` keeps the one already held.
+ * when that writer read it, with no output or an older one, so a held output always wins, as
+ * upstream's `preserveRunRecordedFields` keeps it.
  */
 function keepRunOutput(runs: Projection["runs"], next: Projection["runs"][number]) {
   const output = runs.find((run) => run.id === next.id)?.output;
-  return output === undefined || next.output !== undefined ? next : { ...next, output };
+  return output === undefined ? next : { ...next, output };
 }
 
 function applyKnownEvent(p: Projection, event: KnownOrchestrationV2DomainEvent): Projection {
