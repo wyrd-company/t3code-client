@@ -182,6 +182,26 @@ it("forwards scheduler execution patches without absent fields and rotates befor
   expect(JSON.stringify(failed)).not.toContain("sample-token");
 });
 
+it("preserves per-repository patches in a thread diff", async () => {
+  const { client, upstream } = await fixture();
+  const data = {
+    threadId: threadId("sample-thread"),
+    fromTurnCount: 0,
+    toTurnCount: 1,
+    diff: "",
+    repositories: [
+      { name: "api", repositoryPath: "/sample/api", relativePath: "api", diff: "sample patch" },
+    ],
+  };
+  vi.spyOn(upstream.threads, "diff").mockResolvedValue(data);
+  const result = await client.callTool({
+    name: "thread_diff",
+    arguments: { threadId: data.threadId },
+  });
+  expect(result.structuredContent).toEqual(data);
+  expect(result.content).toEqual([{ type: "text", text: JSON.stringify(data) }]);
+});
+
 it("rejects empty execution changes and invalid diff ranges before acquiring a client", async () => {
   const { client, provider } = await fixture();
   for (const [name, args] of [

@@ -47,6 +47,9 @@ error code and message.
 | `provider_status`               | optional `instanceId`                                            | Provider availability, authentication, installation and usage limits.               |
 | `usage_summary`                 | `sinceDay`, `untilDay`, `timeZone`, optional usage window fields | Historical usage buckets, source diagnostics, pricing and scan metadata.            |
 
+`thread_diff` includes patches for changed tracked repositories in `repositories`.
+The thread folder's own patch is in `diff`.
+
 ## Usage refresh
 
 `usage_summary` accepts two optional boolean inputs. Set `provisional: true` to

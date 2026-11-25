@@ -11,7 +11,8 @@ relationships:
 
 `@wyrd-company/t3code-mcp` supplies stdio tools for scheduler endpoints, webhook
 diagnostics, execution configuration, structured thread inspection, provider
-status, historical usage and Stop/queue recovery. Use it beside the built-in T3 Code MCP server.
+status, historical usage and Stop/queue recovery. Use it beside the built-in
+MCP tools in stock T3 Code 0.1.12 (orchestration protocol 2).
 Stock tools handle ordinary schedule CRUD, run-now, launches, global thread
 search, questions, model discovery and queued-message editing.
 

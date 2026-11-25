@@ -99,7 +99,7 @@ export const threadTools = [
   ),
   defineTool(
     "thread_diff",
-    "Read the full diff through the latest completed ready checkpoint, or an explicit checkpoint turn-count range. Zero means the thread start.",
+    "Read the full diff through the latest completed run checkpoint, or an explicit checkpoint turn-count range. Includes patches for changed tracked repositories. Zero means the thread start.",
     z.strictObject({ threadId, range: range.optional() }),
     ({ threadId, range }, client, signal) => client.threads.diff(threadId, range, signal),
   ),
