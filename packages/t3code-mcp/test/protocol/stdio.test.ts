@@ -13,7 +13,7 @@ import stock from "../fixtures/stockTools.json" with { type: "json" };
 
 it("has no tool-name collisions with the complete pinned stock toolkit inventory", () => {
   expect(stock.reference).toMatch(`t3code v${TARGET_T3_CODE_VERSION},`);
-  expect(stock.tools).toHaveLength(92);
+  expect(stock.tools).toHaveLength(95);
   expect(new Set(stock.tools).size).toBe(stock.tools.length);
   expect(toolNames.filter((name) => stock.tools.includes(name))).toEqual([]);
   expect(new Set(toolNames).size).toBe(toolNames.length);
