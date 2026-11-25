@@ -67,7 +67,7 @@ proposed-design:
       projection(threadId): Promise<OrchestrationV2ThreadProjection>  // RPC, bounded timeline window
       status(threadId, signal?): Promise<ThreadStatus>  // full detail plus shell-derived background work
       usage(threadId, signal?): Promise<ThreadUsage>  // historical provider records, no invented totals
-      diff(threadId, range?, signal?): Promise<ThreadDiff>  // completed ready checkpoint or explicit turn-count range
+      diff(threadId, range?, signal?): Promise<ThreadDiff>  // latest completed run checkpoint or explicit turn-count range
       search({ query, limit?, olderSettledBefore?, projectIds?, environmentLabel?, titlesOnly? }, signal?): Promise<ThreadSearchResult>  // bounded matches plus applied limit
       searchContent(input, signal?): Promise<ThreadContentSearchResult>  // within-thread count and selected match
       historyPage(threadId, cursor, options?: { throughEntryId?; view?: "conversation" | "activity" }): Promise<OrchestrationV2ThreadHistoryPage>

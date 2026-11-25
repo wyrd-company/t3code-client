@@ -40,18 +40,24 @@ export type ThreadContentSearchResult = OrchestrationV2SearchThreadResult;
 export const THREAD_SEARCH_MAX_LIMIT = 50;
 
 /**
- * The highest turn count the server can diff to: the largest app run ordinal of a
- * ready checkpoint whose run completed. 0 when there is none.
+ * The latest completed run with a ready app checkpoint, or 0 if none qualifies.
+ * With tracked repository scopes, a missing app checkpoint can still have repository patches.
  */
 export function latestDiffTurnCount(
-  projection: Pick<OrchestrationV2ThreadProjection, "runs" | "checkpoints">,
+  projection: Pick<OrchestrationV2ThreadProjection, "runs" | "checkpoints"> &
+    Partial<Pick<OrchestrationV2ThreadProjection, "checkpointScopes">>,
 ): number {
   const completed = new Set(
     projection.runs.filter((run) => run.status === "completed").map((run) => run.id),
   );
+  const hasTrackedRepositories = projection.checkpointScopes?.some(
+    (scope) => scope.repositoryPath !== undefined,
+  );
   let latest = 0;
   for (const checkpoint of projection.checkpoints) {
-    if (checkpoint.status !== "ready" || checkpoint.appRunOrdinal === null) continue;
+    const canDiff =
+      checkpoint.status === "ready" || (hasTrackedRepositories && checkpoint.status === "missing");
+    if (!canDiff || checkpoint.appRunOrdinal === null) continue;
     if (checkpoint.runId === null || !completed.has(checkpoint.runId)) continue;
     latest = Math.max(latest, checkpoint.appRunOrdinal);
   }

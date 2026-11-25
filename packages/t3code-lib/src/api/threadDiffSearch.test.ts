@@ -110,6 +110,68 @@ it("sends an explicit range through the turn diff with exact counts", async () =
   ]);
 });
 
+it("requests the full tracked-repository diff when the thread folder has no Git checkpoint", async () => {
+  const checkpointScopes = [
+    {
+      id: "scope-1",
+      threadId: ids.threadId,
+      runId: "run-4",
+      nodeId: ids.nodeId,
+      parentScopeId: null,
+      providerThreadId: null,
+      kind: "root_run",
+      ordinalWithinParent: 0,
+      advancesAppRunCount: true,
+      cwd: "/sample",
+      createdAt: at,
+    },
+    {
+      id: "scope-api",
+      threadId: ids.threadId,
+      runId: "run-4",
+      nodeId: ids.nodeId,
+      parentScopeId: "scope-1",
+      providerThreadId: null,
+      kind: "manual",
+      ordinalWithinParent: 0,
+      advancesAppRunCount: false,
+      cwd: "/sample/api",
+      repositoryPath: "/sample/api",
+      createdAt: at,
+    },
+  ];
+  const nonGitRoot = makeProjection({
+    runs: projection.runs,
+    checkpointScopes,
+    checkpoints: [
+      checkpoint("checkpoint-4", "run-4", 4, "missing"),
+      {
+        ...checkpoint("checkpoint-api", "run-4", 4),
+        scopeId: "scope-api",
+        appRunOrdinal: null,
+      },
+    ],
+  });
+  server.routes.route(`GET /api/orchestration/threads/${ids.threadId}`, () => ({
+    status: 200,
+    body: makeSnapshot(nonGitRoot, 1),
+  }));
+  const diff = {
+    threadId: ids.threadId,
+    fromTurnCount: 0,
+    toTurnCount: 4,
+    diff: "",
+    repositories: [
+      { name: "api", repositoryPath: "/sample/api", relativePath: "api", diff: "sample patch\n" },
+    ],
+  };
+  capture("orchestration.getFullThreadDiff", diff);
+  expect(await threads.diff(ids.threadId)).toEqual(diff);
+  expect(payloads["orchestration.getFullThreadDiff"]).toEqual([
+    { threadId: ids.threadId, toTurnCount: 4 },
+  ]);
+});
+
 it("rejects reversed or negative ranges before sending", async () => {
   capture("orchestration.getTurnDiff", {});
   for (const range of [

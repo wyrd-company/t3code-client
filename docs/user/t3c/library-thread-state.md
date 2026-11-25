@@ -96,10 +96,11 @@ array), or Codex&#39;s <code>{ answers: string[] }</code>.</p>
 
 <dl>
 <dt><a href="#latestDiffTurnCount">latestDiffTurnCount()</a></dt>
-<dd><p>The highest turn count the server can diff to: the largest app run ordinal of a
-ready checkpoint whose run completed. 0 when there is none.</p>
+<dd><p>The latest completed run with a ready app checkpoint, or 0 if none qualifies.
+With tracked repository scopes, a missing app checkpoint can still have repository patches.</p>
 <pre><code class="language-ts">export function latestDiffTurnCount(
-  projection: Pick&lt;OrchestrationV2ThreadProjection, &quot;runs&quot; | &quot;checkpoints&quot;&gt;,
+  projection: Pick&lt;OrchestrationV2ThreadProjection, &quot;runs&quot; | &quot;checkpoints&quot;&gt; &amp;
+    Partial&lt;Pick&lt;OrchestrationV2ThreadProjection, &quot;checkpointScopes&quot;&gt;&gt;,
 ): number;
 </code></pre>
 </dd>
@@ -333,12 +334,13 @@ array), or Codex's `{ answers: string[] }`.
 
 ## latestDiffTurnCount()
 
-The highest turn count the server can diff to: the largest app run ordinal of a
-ready checkpoint whose run completed. 0 when there is none.
+The latest completed run with a ready app checkpoint, or 0 if none qualifies.
+With tracked repository scopes, a missing app checkpoint can still have repository patches.
 
 ```ts
 export function latestDiffTurnCount(
-  projection: Pick<OrchestrationV2ThreadProjection, "runs" | "checkpoints">,
+  projection: Pick<OrchestrationV2ThreadProjection, "runs" | "checkpoints"> &
+    Partial<Pick<OrchestrationV2ThreadProjection, "checkpointScopes">>,
 ): number;
 ```
 
