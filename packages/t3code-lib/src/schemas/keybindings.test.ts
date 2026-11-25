@@ -66,8 +66,8 @@ it("types commands, shortcuts and recursive when nodes", () => {
 });
 
 it("lists the static commands of the pinned server, effort commands included", () => {
-  expect(STATIC_KEYBINDING_COMMANDS).toHaveLength(89);
-  expect(new Set(STATIC_KEYBINDING_COMMANDS).size).toBe(89);
+  expect(STATIC_KEYBINDING_COMMANDS).toHaveLength(91);
+  expect(new Set(STATIC_KEYBINDING_COMMANDS).size).toBe(91);
   expect(STATIC_KEYBINDING_COMMANDS).toEqual(
     expect.arrayContaining([
       "composer.increaseEffort",

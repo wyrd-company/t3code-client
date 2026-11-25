@@ -74,8 +74,9 @@ export const ProviderInstanceMutation = z.discriminatedUnion("operation", [
 ]);
 export type ProviderInstanceMutation = z.infer<typeof ProviderInstanceMutation>;
 
+/** A source to save. Older servers accept only `cliproxy`. */
 export const UsageLimitSourceConfig = z.looseObject({
-  kind: z.literal("cliproxy"),
+  kind: z.enum(["cliproxy", "http"]),
   label: TrimmedNonEmptyString.optional(),
   url: TrimmedNonEmptyString,
   managementKey: SettingsSecretValue.optional(),

@@ -108,8 +108,15 @@ export const ServerObservability = z.looseObject({
   otlpMetricsVariable: TrimmedNonEmptyString.nullable().optional(),
   otlpLogsSource: OtlpEndpointSource.optional(),
   otlpLogsVariable: TrimmedNonEmptyString.nullable().optional(),
+  /** Relay tracing policy for browsers opened from this server. */
+  relayTracingAllowed: z.boolean().optional(),
 });
 export type ServerObservability = z.infer<typeof ServerObservability>;
+/** `on-request`: agents report only when the user asks. `auto`: they also report on their own. */
+export const AgentFeedbackMode = forwardCompatibleLiteral(["off", "on-request", "auto"]);
+export type AgentFeedbackMode = z.infer<typeof AgentFeedbackMode>;
+export const DEFAULT_WORKFLOW_SKIPPED_RUNS_KEPT = 500;
+export const MAX_WORKFLOW_SKIPPED_RUNS_KEPT = 10_000;
 export const ServerSettings = z.looseObject({
   idleCompaction: forwardCompatibleLiteral(["onReturn", "beforeCacheExpires", "off"]).optional(),
   /** Clients hide threads with these tags while `hideTaggedThreads` is on. Non-string entries drop alone. */
@@ -131,8 +138,21 @@ export const ServerSettings = z.looseObject({
   defaultAppearanceSetAt: z.string().max(64).optional(),
   /** Hosts the add and publish project pickers offer, by kind. */
   offeredSourceControlProviders: z.record(z.string(), z.boolean()).optional(),
+  /** When agents report feedback to the T3 team. Absent from older servers; reads as `off` there. */
+  agentFeedback: z.looseObject({ mode: AgentFeedbackMode }).optional(),
+  /** Beta: durable workflows from the T3 home's workflows folder run only while this is on. */
+  workflowsEnabled: z.boolean().optional(),
+  /** Skipped top-level runs kept per workflow; older ones are deleted. */
+  workflowSkippedRunsKept: NonNegativeInt.optional(),
 });
 export type ServerSettings = z.infer<typeof ServerSettings>;
+
+/** The boolean `T3CODE_FEATURE_FLAGS` a server started with. Unset flags are off. */
+export const ServerFeatureFlags = z.looseObject({
+  secretProviders: z.boolean().optional(),
+  tanstackSource: z.boolean().optional(),
+});
+export type ServerFeatureFlags = z.infer<typeof ServerFeatureFlags>;
 export const ServerDirectEndpointKind = forwardCompatibleLiteral(["lan", "tailnet"]);
 export type ServerDirectEndpointKind = z.infer<typeof ServerDirectEndpointKind>;
 export const ServerDirectEndpoint = z.looseObject({
@@ -182,6 +202,7 @@ export const ServerConfig = z.looseObject({
   /** The server answers `orchestration.searchThread`; progressive adds its streaming form. */
   threadFind: z.boolean().optional(),
   threadFindProgressive: z.boolean().optional(),
+  featureFlags: ServerFeatureFlags.optional(),
   /** Settings patches may carry `secretProviders`. Older servers drop the key without an error. */
   secretProviderSettings: z.boolean().optional(),
   /** Secret settings may point at a secret provider. Older servers drop the reference. */

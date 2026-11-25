@@ -38,6 +38,7 @@ import {
   CLIENT_CAPABILITIES_QUERY_PARAM,
   ORCHESTRATION_PROTOCOL_QUERY_PARAM,
   ORCHESTRATION_PROTOCOL_VERSION_TEXT,
+  HTTP_USAGE_LIMIT_SOURCES_CAPABILITY,
   SETTINGS_SECRET_REFERENCES_CAPABILITY,
 } from "./schemas/environment.ts";
 import { DEFAULT_SPEECH_TRANSCRIPTION_OPTIONS } from "./http/speechAudio.ts";
@@ -331,8 +332,12 @@ function socketUrl(options: T3ClientOptions): URL {
   // The server answers 426 to an upgrade that does not name the protocol it speaks.
   url.searchParams.set(ORCHESTRATION_PROTOCOL_QUERY_PARAM, ORCHESTRATION_PROTOCOL_VERSION_TEXT);
   url.searchParams.set("clientSurface", "cli");
-  // The settings schemas accept a secret provider reference in each secret field.
-  url.searchParams.set(CLIENT_CAPABILITIES_QUERY_PARAM, SETTINGS_SECRET_REFERENCES_CAPABILITY);
+  // The settings schemas accept a secret provider reference in each secret field, and usage
+  // limit sources of kind `http`.
+  url.searchParams.set(
+    CLIENT_CAPABILITIES_QUERY_PARAM,
+    [SETTINGS_SECRET_REFERENCES_CAPABILITY, HTTP_USAGE_LIMIT_SOURCES_CAPABILITY].join(","),
+  );
   if (options.clientAppVersion !== undefined) {
     url.searchParams.set("clientAppVersion", options.clientAppVersion);
   }

@@ -89,6 +89,8 @@ export const EnvironmentInternalError = z.looseObject({
     "orchestration_thread_history_failed",
     "internal_error",
   ]),
+  /** A reason safe to show the user, when the failure has one. */
+  detail: z.string().optional(),
   traceId: TrimmedNonEmptyString,
 });
 export type EnvironmentInternalError = z.infer<typeof EnvironmentInternalError>;
@@ -159,3 +161,20 @@ export const EnvironmentPairingCredentialError = z.discriminatedUnion("_tag", [
   EnvironmentInternalError,
 ]);
 export type EnvironmentPairingCredentialError = z.infer<typeof EnvironmentPairingCredentialError>;
+
+/** How far a starting server's database upgrade has got. */
+export const DatabaseMigrationProgress = z.looseObject({
+  current: z.number().int().positive(),
+  total: z.number().int().positive(),
+});
+export type DatabaseMigrationProgress = z.infer<typeof DatabaseMigrationProgress>;
+
+/**
+ * The body of the 503 a server answers every request with while it starts, before its routes
+ * serve (0.1.12; older servers send an empty 503). It arrives as `T3HttpError.body`.
+ */
+export const ServerStartupStatus = z.looseObject({
+  status: z.literal("starting"),
+  migration: DatabaseMigrationProgress.nullable(),
+});
+export type ServerStartupStatus = z.infer<typeof ServerStartupStatus>;

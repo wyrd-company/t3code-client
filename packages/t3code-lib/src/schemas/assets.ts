@@ -45,7 +45,12 @@ export const AssetResource = z.discriminatedUnion("_tag", [
     /** Written relative to the thread's workspace, so only that host's file is meant. */
     hostOnly: z.literal(true).optional(),
   }),
-  z.looseObject({ _tag: z.literal("draft-workspace-file"), cwd: AssetPath, path: AssetPath }),
+  z.looseObject({
+    _tag: z.literal("draft-workspace-file"),
+    cwd: AssetPath,
+    path: AssetPath,
+    disposition: z.literal("attachment").optional(),
+  }),
   z.looseObject({
     _tag: z.literal("attachment"),
     attachmentId: TrimmedNonEmptyString.max(256),

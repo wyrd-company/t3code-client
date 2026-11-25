@@ -20,6 +20,8 @@ export const CLIENT_CAPABILITIES_QUERY_PARAM = "clientCapabilities";
  * string. A client that omits it sees a reference as a saved, redacted secret.
  */
 export const SETTINGS_SECRET_REFERENCES_CAPABILITY = "settingsSecretReferences";
+/** Usage limit sources may be of kind `http`, not only `cliproxy`; without it they are left out. */
+export const HTTP_USAGE_LIMIT_SOURCES_CAPABILITY = "httpUsageLimitSources";
 
 export const ExecutionEnvironmentPlatformOs = z.enum(["darwin", "linux", "windows", "unknown"]);
 export type ExecutionEnvironmentPlatformOs = z.infer<typeof ExecutionEnvironmentPlatformOs>;
@@ -167,6 +169,12 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   mcpModeLimitHeader: z.boolean().optional(),
   /** Work a linked environment starts here stays within its link. A peer needs it to link. */
   linkFence: z.boolean().optional(),
+  /** Serves a thread's stream, history pages and items to a link's session (`peerLinks.subscribeThread` there). */
+  linkThreadStream: z.boolean().optional(),
+  /** A full-access link can ask this server for a one-time pairing credential (`peerLinks.pairClient`). */
+  linkClientPairing: z.boolean().optional(),
+  /** The same pairing also mints a code for a link from another environment (`peerLinks.pairLink`). */
+  linkPairingForLink: z.boolean().optional(),
   /** Server mints pairing codes that approve one agent sign-in at a set level (`AUTO-…`). */
   mcpApprovalCodes: z.boolean().optional(),
   /** Agent sign-ins on the server's T3 Connect address are approved on the hosted app, without a code. */
@@ -195,8 +203,12 @@ export const ExecutionEnvironmentCapabilities = z.looseObject({
   shellOlderSettled: z.boolean().optional(),
   /** Server answers `pullRequests.subscribeLinkedThreadRefreshes`; older servers need polling. */
   linkedThreadRefreshes: z.boolean().optional(),
+  /** Honors the `agentFeedback` setting; older servers drop it. */
+  agentFeedback: z.boolean().optional(),
   issues: z.boolean().optional(),
   issueLinkedThreads: z.boolean().optional(),
+  /** Keeps more than one account per standalone issue tracker; older servers keep one. */
+  issueTrackerAccounts: z.boolean().optional(),
   previewTunnelSetting: z.boolean().optional(),
   peerLinkPairingCodes: z.boolean().optional(),
 });

@@ -52,6 +52,7 @@ import {
 } from "./settingsPatchFields.ts";
 import { SpeechAcceleration, SpeechCustomWords, SpeechModelUnloadTimeout } from "./speech.ts";
 import { TextGeneratorConfig } from "./textGenerator.ts";
+import { MAX_WORKFLOW_SKIPPED_RUNS_KEPT } from "./server.ts";
 
 /** Keys that the server treats as provider management in place of a settings write. */
 const PROVIDER_PATCH_KEYS: ReadonlySet<string> = new Set([
@@ -137,6 +138,12 @@ export const ServerSettingsPatch = z
     hideTaggedThreads: z.boolean(),
     guestSharingEnabled: z.boolean(),
     linkedEnvironmentsEnabled: z.boolean(),
+    /** Beta: run the durable workflows in the T3 home's workflows folder. Older servers drop it. */
+    workflowsEnabled: z.boolean(),
+    /** Skipped top-level runs kept per workflow; older ones are deleted. */
+    workflowSkippedRunsKept: z.number().int().min(0).max(MAX_WORKFLOW_SKIPPED_RUNS_KEPT),
+    /** When agents report feedback to the T3 team. Needs a server that advertises `agentFeedback`. */
+    agentFeedback: z.looseObject({ mode: z.enum(["off", "on-request", "auto"]) }),
     /** Agents predict the next prompt after completed turns. */
     promptSuggestionsEnabled: z.boolean(),
     backgroundActivity: z
@@ -216,6 +223,10 @@ const ACCESS_PATCH_KEYS: ReadonlySet<string> = new Set([
  * changes or secret references, and `access:write` for device approval and the preview tunnel.
  * Removing a secret provider needs `settings:write` too, since it also clears
  * the settings that read from it. A key this build does not know counts for none.
+ *
+ * T3 Code 0.1.12 also asks for `orchestration:operate` when a patch carries project scripts
+ * (`defaultProjectScripts`, a script override, or a project's `defaultProjectScripts`). 0.1.11
+ * does not, so this client leaves that rule to the server rather than refuse what 0.1.11 allows.
  */
 export function requiredScopesForSettingsUpdate(
   input: ServerUpdateSettingsInput,

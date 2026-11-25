@@ -225,6 +225,8 @@ export const SpeechTranscriptionOptions = z.looseObject({
   speechLanguage: SpeechLanguage,
   speechTranslateToEnglish: z.boolean(),
   speechCustomWords: SpeechCustomWords,
+  /** Recognition-only terms, such as the project name; they never rewrite the transcript. */
+  speechHints: z.array(SpeechCustomWord).max(8).optional(),
   speechRemoveFillerWords: z.boolean(),
   speechCorrectionWord: SpeechCorrectionCue.optional(),
   speechSilenceFiltering: z.boolean().default(true),

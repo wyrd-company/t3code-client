@@ -81,7 +81,7 @@ describe("T3Client", () => {
       orchestrationProtocol: "2",
       clientSurface: "cli",
       clientAppVersion: "1.2.3",
-      clientCapabilities: "settingsSecretReferences",
+      clientCapabilities: "settingsSecretReferences,httpUsageLimitSources",
     });
     expect(upgrade?.headers["authorization"]).toBeUndefined();
     expect(server.routes.requests.map((r) => r.path)).toContain("/api/auth/websocket-ticket");

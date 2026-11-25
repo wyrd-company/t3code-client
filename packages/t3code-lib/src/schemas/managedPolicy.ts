@@ -60,6 +60,8 @@ export const ManagedPolicySummaryLimits = z.looseObject({
   telemetry: z.boolean().optional(),
   browserCookieImport: z.boolean().optional(),
   previewTunnel: z.boolean().optional(),
+  /** `false`: no project `worktreeLayout` command runs, approved or not. */
+  worktreeLayoutCommands: z.boolean().optional(),
   providers: ManagedPolicySummaryProviderLimits.optional(),
   updates: ManagedPolicySummaryUpdates.optional(),
 });

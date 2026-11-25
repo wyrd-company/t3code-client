@@ -106,6 +106,11 @@ export const ExternalLauncherUnsupportedTargetError = taggedError(
   "ExternalLauncherUnsupportedTargetError",
   { editor: EditorId },
 );
+/** A reveal named a path where nothing exists. */
+export const ExternalLauncherRevealTargetMissingError = taggedError(
+  "ExternalLauncherRevealTargetMissingError",
+  { editor: EditorId, target: z.string() },
+);
 const launcherSpawnFields = { command: z.string(), args: z.array(z.string()), cause: Defect };
 export const ExternalLauncherBrowserSpawnError = taggedError("ExternalLauncherBrowserSpawnError", {
   ...launcherSpawnFields,
@@ -140,6 +145,7 @@ export const fileRpcErrors = [
   ExternalLauncherUnsupportedEditorError,
   ExternalLauncherCommandNotFoundError,
   ExternalLauncherUnsupportedTargetError,
+  ExternalLauncherRevealTargetMissingError,
   ExternalLauncherBrowserSpawnError,
   ExternalLauncherEditorSpawnError,
 ] as const;

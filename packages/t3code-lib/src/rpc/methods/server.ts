@@ -6,7 +6,7 @@ import { AgentFeedbackAnswerInput } from "../../schemas/agentFeedback.ts";
 import { z } from "zod";
 import { containsSecretReference } from "../../schemas/providerInstance.ts";
 import { defineMethod, VoidSuccess } from "../spec.ts";
-import { ProviderInstanceId, TrimmedNonEmptyString } from "../../schemas/common.ts";
+import { IsoDateTime, ProviderInstanceId, TrimmedNonEmptyString } from "../../schemas/common.ts";
 import {
   DatabaseStorageStatusUpdate,
   ServerConfig,
@@ -52,7 +52,8 @@ import { UsagePricing, UsageSummary, UsageSummaryInput } from "../../schemas/usa
 export const serverMethods = {
   "server.probe": defineMethod({
     payload: z.looseObject({}),
-    success: z.looseObject({}),
+    /** `serverTime` is the host's clock when it answered. Older servers send `{}`. */
+    success: z.looseObject({ serverTime: IsoDateTime.optional() }),
     stream: false,
     scope: "orchestration:read",
   }),
