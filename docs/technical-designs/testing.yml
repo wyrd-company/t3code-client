@@ -36,9 +36,11 @@ proposed-design:
     exercises curl's retry after the registry returns 404. The install guard
     verifies that an existing installation permits only the preflight call.
     `task homebrew:test` installs and tests a temporary formula against local
-    CLI and library archives. Release acceptance separately exercises the
-    publisher against a disposable tap with published npm and GitHub Release
-    bytes. The release verifies the real tap install after publication.
+    CLI and library archives. On Homebrew versions with tap trust, it trusts
+    the generated formula and removes that grant during cleanup. Release
+    acceptance separately exercises the publisher against a disposable tap
+    with published npm and GitHub Release bytes. The release verifies the
+    real tap install after publication.
     The root release-foundation suite runs after dependency installation without
     package build outputs. Native-versus-packaged CLI surface equality is checked
     by `scripts/release/verify-package.sh` after its `pnpm pack` invokes prepack

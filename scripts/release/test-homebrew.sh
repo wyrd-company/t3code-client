@@ -14,10 +14,17 @@ fi
 scratch="$(mktemp -d /tmp/t3c-homebrew-XXXXXX)"
 tap="local/t3c-validation-$$"
 formula="$tap/t3c"
+tapped=false
+trusted=false
 cleanup() {
-  if brew list --formula "$formula" >/dev/null 2>&1; then brew uninstall "$formula"; fi
-  brew untap "$tap" || true
-  rm -rf "$scratch"
+  local status=$?
+  if [[ "$tapped" == true ]]; then
+    if brew list --formula "$formula" >/dev/null 2>&1; then brew uninstall "$formula" || status=1; fi
+    if [[ "$trusted" == true ]]; then brew untrust --formula "$formula" || status=1; fi
+    brew untap "$tap" || status=1
+  fi
+  rm -rf "$scratch" || status=1
+  exit "$status"
 }
 trap cleanup EXIT
 export HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_UPGRADE=1
@@ -27,9 +34,14 @@ brew list --versions node
 library="$(scripts/release/verify-package.sh t3code-lib "$scratch")"
 cli="$(scripts/release/verify-package.sh t3code-cli "$scratch")"
 brew tap-new --no-git "$tap"
+tapped=true
 tap_root="$(brew --repository "$tap")"
 url="$(node -p 'require("node:url").pathToFileURL(process.argv[1]).href' "$cli")"
 python3 scripts/release/render-homebrew.py "$cli" "$url" "$tap_root/Formula/t3c.rb" --local-library "$library"
+if brew command trust >/dev/null 2>&1; then
+  brew trust --formula "$formula"
+  trusted=true
+fi
 brew style "$formula"
 brew audit --strict "$formula"
 brew install --formula --build-from-source "$formula"
