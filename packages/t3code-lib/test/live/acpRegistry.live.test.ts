@@ -73,7 +73,10 @@ describe.skipIf(!hasLiveServer)("ACP registry methods", () => {
       home = dir;
       requestLog = NodePath.join(home, "agent-requests.log");
       NodeFS.writeFileSync(requestLog, "");
-      return { PATH: pathWithoutCodex() };
+      // T3 reads the login shell's PATH and can otherwise find the host's Codex again.
+      const shell = NodePath.join(home, "sample-login-shell");
+      NodeFS.writeFileSync(shell, '#!/bin/sh\nexec /bin/sh -c "$2"\n', { mode: 0o755 });
+      return { PATH: pathWithoutCodex(), SHELL: shell };
     });
     client = peer.client;
     await client.rpc.call("server.updateSettings", {
