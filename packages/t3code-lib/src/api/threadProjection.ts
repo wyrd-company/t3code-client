@@ -76,6 +76,10 @@ function preserveRunFields(runs: Projection["runs"], next: Projection["runs"][nu
     ...(next.delegatedCompletion === undefined && current.delegatedCompletion !== undefined
       ? { delegatedCompletion: current.delegatedCompletion }
       : {}),
+    ...(next.restartCancelledBackgroundWork === undefined &&
+    current.restartCancelledBackgroundWork !== undefined
+      ? { restartCancelledBackgroundWork: current.restartCancelledBackgroundWork }
+      : {}),
     ...(next.explicitQueue === undefined && current.explicitQueue === true
       ? { explicitQueue: current.explicitQueue }
       : {}),

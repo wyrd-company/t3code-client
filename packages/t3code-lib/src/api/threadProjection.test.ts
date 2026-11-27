@@ -137,6 +137,34 @@ describe("applyThreadEvent", () => {
     expect(applyThreadEvent(projection, unknownRun)).toBe(projection);
   });
 
+  it("keeps cancelled background work when a run update omits it", () => {
+    const restartCancelledBackgroundWork = [{ kind: "shell", label: "sample job" }];
+    const created = applyThreadEvent(makeProjection(), ev(events.runCreated(1)));
+    const cancelled = applyThreadEvent(
+      created,
+      parseEvent(
+        rawEvent(2, "run.background-work-cancelled", {
+          runId: ids.runId,
+          restartCancelledBackgroundWork,
+        }),
+      ),
+    );
+    const completed = applyThreadEvent(
+      cancelled,
+      ev(events.runUpdated(3, { status: "completed" })),
+    );
+    expect(completed.runs[0]).toMatchObject({
+      status: "completed",
+      restartCancelledBackgroundWork,
+    });
+
+    const replaced = applyThreadEvent(
+      completed,
+      ev(events.runUpdated(4, { status: "completed", restartCancelledBackgroundWork: [] })),
+    );
+    expect(replaced.runs[0]?.restartCancelledBackgroundWork).toEqual([]);
+  });
+
   it("upserts attempts and nodes", () => {
     const attempt = {
       id: "attempt-1",
