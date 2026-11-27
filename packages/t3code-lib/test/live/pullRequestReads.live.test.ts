@@ -227,7 +227,7 @@ describe.skipIf(!hasLiveServer)("pull request reads with a local forge stub", ()
     ).resolves.toMatchObject({ _tag: "PullRequestOperationError" });
     await expect(
       client.routes.call("pullRequests.diff", { body: elsewhere }),
-    ).rejects.toMatchObject({ status: 502, tag: "PullRequestOperationError" });
+    ).rejects.toMatchObject({ status: 503, tag: "PullRequestOperationError" });
   });
 
   it("refuses when the host refuses the credential, or another account is expected", async () => {
