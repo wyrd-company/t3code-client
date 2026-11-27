@@ -119,8 +119,8 @@ if (status.supported && status.state === "ready") {
 
 `voice.transcribeCloud` sends the recording to the provider in `params`. Set the
 provider's key first with `voice.setCloudKey`, as a literal or a secret
-reference. The route needs `settings:write`. On T3 Code 0.1.12 it also needs
-`providers:manage` for a secret reference. Set `key` to `null` to remove it.
+reference. The route needs `settings:write`. Starting with T3 Code 0.1.12,
+a secret reference also needs `providers:manage`. Set `key` to `null` to remove it.
 A cloud failure is a `T3HttpError` with
 status 422 and tag `CloudSpeechError`; `schemas.speech.CloudSpeechError` decodes
 its `body`. A local failure has reason `invalid_audio`, `speech_unavailable` or
@@ -200,8 +200,8 @@ if (snapshot.supportsConditionalWrites && snapshot.pid !== null) {
 
 Mark a paste sent in chunks with `bracketedPaste` or `plainWrite`, using
 `start`, `continue`, `end` or `abort`. Include the terminal's bracket
-markers in bracketed-paste data. Only a `plainWrite: "abort"` takes an empty
-`data` string.
+markers in bracketed-paste data. Starting with T3 Code 0.1.13, send an empty
+`data` string with `plainWrite: "abort"`. Send a nonempty string for other writes.
 
 Terminal renderers that can skip the continuation of a discarded control
 sequence can set `supportsSnapshotSequenceState` when attaching or observing.
@@ -225,8 +225,9 @@ const detail = await client.rpc.call("issues.detail", {
 });
 ```
 
-An issue or pull request operation that returns its tagged failure over HTTP
-uses status 503. Inspect the tag to distinguish that failure from server
+Starting with T3 Code 0.1.13, tagged issue and pull request operation failures
+returned over HTTP use status 503. T3 Code 0.1.12 uses status 502 for those
+failures. Inspect the tag to distinguish the operation failure from server
 startup and other temporarily unavailable responses.
 
 ## Provider runtime modes
@@ -256,8 +257,8 @@ the whole settings. Ordinary settings need `settings:write`. Provider keys,
 `providerInstanceMutation` and secret references need `providers:manage`.
 Changes to `requireConnectDeviceApproval` or `enablePreviewTunnel` need
 `access:write`. Removing a secret provider also needs `settings:write`.
-On T3 Code 0.1.12, the server also requires `orchestration:operate` for a patch
-that writes project scripts, including `defaultProjectScripts`, a script
+Starting with T3 Code 0.1.12, a patch that writes project scripts also needs
+`orchestration:operate`. This includes `defaultProjectScripts`, a script
 override or a project's `defaultProjectScripts`. Include the scopes for all
 the changes in the patch.
 
@@ -282,7 +283,7 @@ and needs `orchestration:operate`. To save a card with `fields`, pass
 `{ type: "save", values }` with one value per field name. A single-value card
 takes `{ type: "save", secret }`. Send `{ type: "decline" }` to decline.
 To use `{ type: "reference", reference }`,
-the server must advertise `secretRequestReferences`. On T3 Code 0.1.12,
+the server must advertise `secretRequestReferences`. Starting with T3 Code 0.1.12,
 reference answers also need `providers:manage`. The server keeps the saved
 values, and the thread learns only the status.
 

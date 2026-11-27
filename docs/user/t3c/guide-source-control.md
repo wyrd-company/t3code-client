@@ -135,5 +135,7 @@ that a client read.
 A driver can lack a part: GitLab has no routing identity, stacks, paged thread comments,
 label writes or `request-changes` verdict. A failure is a `PullRequestUnavailableError`, whose `reason` says that the tool
 or credential is missing or the host is not supported, or a `PullRequestOperationError`.
-The diff route sends the same two failures as HTTP 503 and 502. `expectedAccountId`,
-with `host`, refuses a read unless the server's credential for the host is that account.
+Starting with T3 Code 0.1.13, the diff route returns HTTP 503 for both errors.
+On 0.1.12, it returns HTTP 502 for `PullRequestOperationError`.
+`expectedAccountId`, with `host`, refuses a read unless the server's credential
+for the host is that account.

@@ -42,10 +42,11 @@ with the key supplied when configuring the relay.
 ## Guests and webhooks
 
 `guest.*` are the routes of a person or program that has a share's link from
-`guestShares.create`. On T3 Code 0.1.12, creating the share requires `access:write`
-and `orchestration:read`. The guest routes send no session token. `guest.redeem` answers with a cookie for
-that share, so give the client a `fetch` that keeps it, as for `auth.browserSession`. The
-credential is the link's fragment. `schemas.orchestrationGuestShare` and
+`guestShares.create`. Starting with T3 Code 0.1.12, creating the share needs
+`access:write` and `orchestration:read`. The guest routes send no session token.
+`guest.redeem` answers with a cookie for that share, so give the client a `fetch`
+that keeps it, as for `auth.browserSession`. The credential is the link's fragment.
+`schemas.orchestrationGuestShare` and
 `schemas.orchestrationGuestStream` hold their shapes.
 
 ```ts

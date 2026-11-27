@@ -132,9 +132,9 @@ export const OrchestrationV2Run = z.looseObject({
   status: OrchestrationV2RunStatus,
   queuePosition: PositiveInt.nullable().optional(),
   queueHeld: z.boolean().optional(),
-  /** The active run this queued run steers into once that run can take a steer. */
   /** The sender explicitly queued a separate turn. */
   explicitQueue: z.literal(true).optional(),
+  /** The active run this queued run steers into once that run can take a steer. */
   steerWhenReadyRunId: RunId.optional(),
   requestedAt: IsoDateTime,
   startedAt: IsoDateTime.nullable(),

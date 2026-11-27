@@ -150,7 +150,7 @@ needs `orchestration:operate`. Read these cards from thread turn items.
 
 ## Scheduled tasks
 
-To clear a scheduled task's thread binding on T3 Code 0.1.12, send
+Starting with T3 Code 0.1.12, you can clear a scheduled task's thread binding. Send
 `unbindThread: true` with no `threadId` to `client.scheduledTasks.upsert`
 along with the task's configuration. The next run starts a thread.
 An omitted or null `threadId` alone can preserve the thread bound by a first

@@ -33,11 +33,10 @@ export interface CreationOrigin {
 
 /**
  * How the message reaches a thread that is already busy. `auto` lets the
- * server steer or queue by the provider's capabilities; `steer` and `restart`
- * target the active run; `queue` waits behind it; `start` insists on a new
- * run now.
+ * server steer or queue by the provider's capabilities. `steer` and `restart`
+ * target the active run. `queue` requests a separate turn and leaves later
+ * automatic input free to steer the active run. `start` begins a new run immediately.
  */
-/** `queue` requests a separate turn, leaving later automatic input free to steer the active run. */
 export type TurnDelivery = "auto" | "steer" | "restart" | "queue" | "start";
 
 export interface StartTurnInput {
