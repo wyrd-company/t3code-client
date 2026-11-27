@@ -21,7 +21,13 @@ import {
   writeStubSsh,
 } from "./deviceStubs.ts";
 import { firstItem, hasLiveServer, refusal, waitFor } from "./liveClient.ts";
-import { startScratchServer, withInherited, withScopes, type PeerServer } from "./peerServer.ts";
+import {
+  loginShellWithoutProfile,
+  startScratchServer,
+  withInherited,
+  withScopes,
+  type PeerServer,
+} from "./peerServer.ts";
 
 const SAMPLE_THREAD = threadId("sample-thread");
 const SAMPLE_HOST = "sample-pool";
@@ -42,7 +48,10 @@ describe.skipIf(!hasLiveServer || process.platform === "darwin")("devices", () =
     server = await startScratchServer("t3code-lib-device-", async (home) => {
       const bin = NodePath.join(home, "bin");
       await writeStubSsh(bin);
-      return { PATH: pathWithoutDeviceTools(process.env["PATH"] ?? "", bin) };
+      return {
+        PATH: pathWithoutDeviceTools(process.env["PATH"] ?? "", bin),
+        SHELL: await loginShellWithoutProfile(home),
+      };
     }).finally(inherited);
     client = server.client;
   }, 120_000);

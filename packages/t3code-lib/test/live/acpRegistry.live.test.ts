@@ -15,7 +15,12 @@ import { T3RpcError, type T3Client } from "../../src/index.ts";
 import { ProjectId, ProviderDriverKind, ProviderInstanceId } from "../../src/schemas/common.ts";
 import type { ServerProvider } from "../../src/schemas/provider.ts";
 import { firstItem, hasLiveServer, refusal, waitFor } from "./liveClient.ts";
-import { startScratchServer, withScopes, type PeerServer } from "./peerServer.ts";
+import {
+  loginShellWithoutProfile,
+  startScratchServer,
+  withScopes,
+  type PeerServer,
+} from "./peerServer.ts";
 
 const stubAgent = new URL("./stubAcpAgent.mjs", import.meta.url).pathname;
 const agent = ProviderInstanceId.parse("sample-agent");
@@ -69,14 +74,11 @@ describe.skipIf(!hasLiveServer)("ACP registry methods", () => {
   };
 
   beforeAll(async () => {
-    peer = await startScratchServer("t3code-lib-acp-registry-", (dir) => {
+    peer = await startScratchServer("t3code-lib-acp-registry-", async (dir) => {
       home = dir;
       requestLog = NodePath.join(home, "agent-requests.log");
       NodeFS.writeFileSync(requestLog, "");
-      // T3 reads the login shell's PATH and can otherwise find the host's Codex again.
-      const shell = NodePath.join(home, "sample-login-shell");
-      NodeFS.writeFileSync(shell, '#!/bin/sh\nexec /bin/sh -c "$2"\n', { mode: 0o755 });
-      return { PATH: pathWithoutCodex(), SHELL: shell };
+      return { PATH: pathWithoutCodex(), SHELL: await loginShellWithoutProfile(home) };
     });
     client = peer.client;
     await client.rpc.call("server.updateSettings", {

@@ -50,6 +50,13 @@ export function pathWith(dir: string): { readonly PATH: string } {
   return { PATH: `${dir}${NodePath.delimiter}${process.env["PATH"] ?? ""}` };
 }
 
+/** Let T3 read the supplied PATH without a login profile taking precedence over test stubs. */
+export async function loginShellWithoutProfile(home: string): Promise<string> {
+  const shell = NodePath.join(home, "sample-login-shell");
+  await NodeFSP.writeFile(shell, '#!/bin/sh\nexec /bin/sh -c "$2"\n', { mode: 0o755 });
+  return shell;
+}
+
 export async function startPeerServer(
   options: {
     readonly environment?: NodeJS.ProcessEnv;
