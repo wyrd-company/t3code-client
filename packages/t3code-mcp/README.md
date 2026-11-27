@@ -5,7 +5,7 @@ relationships:
 
 # @wyrd-company/t3code-mcp
 
-Complementary stdio MCP tools for stock T3 Code 0.1.12, orchestration protocol 2.
+Complementary stdio MCP tools for stock T3 Code 0.1.13, orchestration protocol 2.
 Node >=22.16 is required. The library owns server integration; the official MCP
 SDK owns protocol transport.
 
@@ -71,6 +71,10 @@ and supports idle, queued and background work. `thread_queue_resume` accepts
 `{threadId}`. `thread_queue_start` accepts `{threadId, runId}` for a queued plain
 user message on a stopped thread. Select the run ID from `thread_status`'s
 `queuedRuns` or stock MCP's `queuedRunId`.
+
+On T3 Code 0.1.13, `thread_status` reports `explicitQueue: true` on runs that
+were explicitly queued. `thread_approvals` can include `item.pushHooks` with a
+branch, hook files and configured commands for human review.
 
 Both Resume and selected Start clear the hold on **all** queued runs. Selected
 Start chooses that message first; other messages may follow. These tools return

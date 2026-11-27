@@ -3,7 +3,8 @@
 ![t3c pairs a profile, starts and waits for a thread, and lists projects](https://raw.githubusercontent.com/wyrd-company/t3code-client/main/docs/user/t3c/assets/demo.gif)
 
 `t3c` runs conversations on a stock T3 Code server from your terminal or
-an automation harness. Node >=22.16 is required.
+an automation harness. It targets T3 Code 0.1.13 with orchestration protocol 2.
+Node >=22.16 is required.
 
 ```sh
 npm install -g @wyrd-company/t3code-cli

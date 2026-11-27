@@ -63,7 +63,7 @@ export const threadTools = [
   ),
   defineTool(
     "thread_status",
-    "Read structured active/latest runs, queued runs, held state, pending request counts and server-derived background work.",
+    "Read structured active/latest runs, queued runs, held state, pending request counts and server-derived background work. Queued runs can report explicitQueue: true on T3 Code 0.1.13.",
     threadInput,
     ({ threadId }, client, signal) => client.threads.status(threadId, signal),
   ),
@@ -83,7 +83,7 @@ export const threadTools = [
   ),
   defineTool(
     "thread_approvals",
-    "Read pending approvals and their full prompts for human review. Does not answer approvals or change permissions. Use stock tools for questions.",
+    "Read pending approvals and their full prompts for human review, including item.pushHooks when the server records a push-hook approval. Use stock tools for questions.",
     threadInput,
     async ({ threadId }, client, signal) => ({
       approvals: pendingRequests((await client.threads.detail(threadId, signal)).projection).filter(

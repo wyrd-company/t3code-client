@@ -66,12 +66,22 @@ other messages can follow the selected one. Invalid selections preserve the
 server dispatch error. The optional Stop reason passes unchanged, including
 empty or padded strings.
 
+On T3 Code 0.1.13, `queuedRuns[].explicitQueue: true` means the caller explicitly
+queued that run. Later automatic input can steer the active run while the
+explicitly queued run stays queued.
+
 Use `thread_force_stop` only after Stop did not stop the agent. It ends the turn
 and kills or releases the agent process. `outcome` is `killed`, `released`,
 `releasing` or `shared`; `shared` means the process also works for the threads
 in `sharedWithThreadIds`, so only this thread's turn ended. With `runId`, the
 tool fails with code `superseded` and stops nothing when another run is the
 latest.
+
+## Pending approvals
+
+`thread_approvals` reports pending approval cards for a human to review. On T3
+Code 0.1.13, when a card records a push-hook approval, `item.pushHooks` carries the
+branch, hook files and configured commands.
 
 ## Thread families and worktrees
 

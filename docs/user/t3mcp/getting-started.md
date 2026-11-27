@@ -12,7 +12,7 @@ relationships:
 `@wyrd-company/t3code-mcp` supplies stdio tools for scheduler endpoints, webhook
 diagnostics, execution configuration, structured thread inspection, provider
 status, historical usage and Stop/queue recovery. Use it beside the built-in
-MCP tools in stock T3 Code 0.1.12 (orchestration protocol 2).
+MCP tools in stock T3 Code 0.1.13 (orchestration protocol 2).
 Stock tools handle ordinary schedule CRUD, run-now, launches, global thread
 search, questions, model discovery and queued-message editing.
 
@@ -100,6 +100,9 @@ to the resulting project before saving.
 means the thread start. Within-thread search returns a count and a selected match
 with native navigation positions. Usage results keep source and pricing metadata.
 Missing usage is not zero; session counts overlap across time buckets.
+
+Use [the tools reference](tools.md) to read explicit queue entries and pending
+push-hook approval details.
 
 `thread_stop` holds queued messages and stops active/background work even when
 no run is active. `thread_queue_resume` releases the hold. `thread_queue_start`

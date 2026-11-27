@@ -18,7 +18,7 @@ The [native command surface](https://github.com/wyrd-company/t3code-client/blob/
 commands, positional arguments, options and input relationships. This guide
 explains their use. `t3c` runs on Node >=22.16. Startup checks the Node minimum
 and prints a clear error when it is unmet. Argument parsing uses commander.
-The target server is stock T3 Code 0.1.12 with orchestration protocol 2.
+The target server is stock T3 Code 0.1.13 with orchestration protocol 2.
 
 ## Connection and profiles
 
@@ -143,7 +143,7 @@ account details. `--json` returns `{environment, providers}` as the server
 returns them.
 
 ```text
-server	sample-environment	0.1.12	protocol 2
+server	sample-environment	0.1.13	protocol 2
 environment	00000000-0000-4000-8000-000000000000
 platform	linux	x64
 capabilities	64 of 65 enabled	disabled agentActivityPublishing
@@ -268,6 +268,12 @@ request counts and server-derived background work. `thread requests <id>` reads
 pending approvals and questions with their prompt details. It does not answer
 requests. `thread usage <id>` reads context and provider-turn token/cost records
 with their owning ids. Missing usage remains absent or null; it is not zero.
+
+On T3 Code 0.1.13, `thread status --json` can report `explicitQueue: true` on
+explicitly queued runs. Later automatic input can steer the active run while an
+explicitly queued run stays queued. For a pending push-hook approval,
+`thread requests --json` can include `item.pushHooks` with the branch, hook
+files and configured commands.
 
 `thread diff <id>` reads through the latest completed run checkpoint. Use
 `--from-turn N --to-turn N` together for an explicit checkpoint range;
