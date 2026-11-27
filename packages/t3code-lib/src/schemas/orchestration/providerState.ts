@@ -9,6 +9,7 @@ import {
   IsoDateTime,
   NodeId,
   NonNegativeInt,
+  stringRecord,
   PositiveInt,
   ProviderDriverKind,
   ProviderInstanceId,
@@ -123,6 +124,8 @@ export const OrchestrationV2ProviderThreadNativeMetadata = z.looseObject({
   updatedAt: TrimmedNonEmptyString.nullable().optional(),
   itemIdentityVersion: z.literal(2).optional(),
   forkHeadMessageId: TrimmedNonEmptyString.optional(),
+  /** The digests of app notes already in the Claude session, keyed by note. */
+  claudeDeliveredAppContext: stringRecord(z.string()).optional(),
 });
 export type OrchestrationV2ProviderThreadNativeMetadata = z.infer<
   typeof OrchestrationV2ProviderThreadNativeMetadata

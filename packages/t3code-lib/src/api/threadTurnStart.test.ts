@@ -45,7 +45,7 @@ describe("deliveryFields", () => {
     ["auto", { dispatchMode: { type: "start_immediately" }, deliveryIntent: "auto" }],
     ["steer", { dispatchMode: { type: "start_immediately" }, deliveryIntent: "steer" }],
     ["restart", { dispatchMode: { type: "start_immediately" }, deliveryIntent: "restart" }],
-    ["queue", { dispatchMode: { type: "queue_after_active" } }],
+    ["queue", { dispatchMode: { type: "queue_after_active" }, explicitQueue: true }],
     ["start", { dispatchMode: { type: "start_immediately" } }],
   ] as const)("%s", (delivery, expected) => {
     expect(deliveryFields(delivery)).toEqual(expected);

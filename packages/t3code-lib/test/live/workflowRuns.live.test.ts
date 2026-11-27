@@ -3,7 +3,7 @@
 //   verifies: library-wire
 // ---
 /**
- * A durable workflow's whole life on an owned 0.1.12 server, with no agent: a webhook-triggered
+ * A durable workflow's whole life on the pinned server, with no agent: a webhook-triggered
  * definition, its hook path from `t3 workflow hooks`, a run started through the typed webhook
  * route, the question it asks on `workflows.subscribe`, the answer, and the completed result.
  */
@@ -22,21 +22,22 @@ import { serverBin } from "./globalSetup.ts";
 import { connect, hasLiveServer, waitFor } from "./liveClient.ts";
 
 const home = process.env["T3_LIVE_HOME"];
-const name = "sample-0112-hook.ts";
+const name = "sample-hook.ts";
+const subjectUrl = "https://example.test/work/1";
 /**
  * Asks one question of each request to its hook and returns the answer with the request body.
  * Its hook's key cannot be read from a request whose body is `bad-key`, which the hook refuses.
  */
-const hookWorkflow = `const { workflow, webhook, ask, WebhookRequest } = T3;
+const hookWorkflow = `const { workflow, webhook, ask, subject, WebhookRequest } = T3;
 const key = (request) => {
   if (request.body === "bad-key") throw new Error("no delivery id");
   return undefined;
 };
 workflow(
-  "sample0112hook",
-  { version: 1, payload: WebhookRequest, triggers: [webhook("in", { key })] },
-  (request) =>
-    ask("ship", { title: "Ship the sample?", choices: ["yes", "no"] }).pipe(
+  "samplehook",
+  { version: 1, payload: WebhookRequest, concurrency: 1, triggers: [webhook("in", { key })] },
+  (request) => subject(${JSON.stringify(subjectUrl)}).pipe(
+    Effect.andThen(ask("ship", { title: "Ship the sample?", choices: ["yes", "no"] })),
       Effect.map((answer) => ({
         body: request.body,
         choice: answer._tag === "Some" ? answer.value.choice : null,
@@ -66,7 +67,7 @@ const refusal = (promise: Promise<unknown>) =>
     },
   );
 
-describe.skipIf(!hasLiveServer || !home)("live 0.1.12 workflow run", () => {
+describe.skipIf(!hasLiveServer || !home)("live workflow run", () => {
   const client = connect();
   afterAll(async () => {
     // A definition can be deleted only while the beta is on.
@@ -87,7 +88,7 @@ describe.skipIf(!hasLiveServer || !home)("live 0.1.12 workflow run", () => {
     });
     expect(saved).toEqual({ changed: true, problems: [] });
     const hook = await waitFor(
-      async () => hooks(home ?? "").find((entry) => entry.workflow === "sample0112hook"),
+      async () => hooks(home ?? "").find((entry) => entry.workflow === "samplehook"),
       "the workflow's hook",
       { timeoutMs: 30_000 },
     );
@@ -108,11 +109,13 @@ describe.skipIf(!hasLiveServer || !home)("live 0.1.12 workflow run", () => {
     };
     await next();
 
-    const started = await client.routes.call("webhooks.webhookPost", {
-      params,
-      headers: { "content-type": "text/plain" },
-      body: new TextEncoder().encode("sample-body"),
-    });
+    const start = (body: string) =>
+      client.routes.call("webhooks.webhookPost", {
+        params,
+        headers: { "content-type": "text/plain" },
+        body: new TextEncoder().encode(body),
+      });
+    const started = await start("sample-body");
     expect(started).toEqual({ runId: expect.any(String) });
     const runId = (started as { runId: string }).runId;
     let current = list;
@@ -125,9 +128,32 @@ describe.skipIf(!hasLiveServer || !home)("live 0.1.12 workflow run", () => {
       request: expect.objectContaining({ title: "Ship the sample?", choices: ["yes", "no"] }),
     });
     expect(current.runs.find((run) => run.runId === runId)).toMatchObject({
-      workflow: "sample0112hook",
+      workflow: "samplehook",
       status: "waiting",
     });
+    const subject = { kind: "url", key: subjectUrl, address: { url: subjectUrl }, url: subjectUrl };
+    expect(await client.rpc.call("workflows.about", { subject: subjectUrl })).toMatchObject({
+      runs: [{ runId, subject }],
+      questions: [{ runId, name: "ship" }],
+    });
+    expect(
+      await client.rpc.call("workflows.about", { subject: "https://example.test/work/2" }),
+    ).toEqual({ runs: [], questions: [] });
+
+    const queued = (await start("queued-body")) as { runId: string };
+    try {
+      const queueStep = await waitFor(
+        async () => {
+          const detail = await client.rpc.call("workflows.get", { runId: queued.runId });
+          return detail.steps.find((step) => step.kind === "queue" && step.ahead !== undefined);
+        },
+        "the workflow queue",
+        { timeoutMs: 15_000 },
+      );
+      expect(queueStep).toMatchObject({ kind: "queue", ahead: 0 });
+    } finally {
+      await client.rpc.call("workflows.cancel", { runId: queued.runId });
+    }
 
     await client.rpc.call("workflows.answer", { runId, name: "ship", choice: "yes" });
     while (current.questions.some((entry) => entry.runId === runId)) current = await next();
@@ -137,6 +163,7 @@ describe.skipIf(!hasLiveServer || !home)("live 0.1.12 workflow run", () => {
       return read.run.status === "completed" ? read : undefined;
     }, "the run to complete");
     expect(detail.run.result).toEqual({ body: "sample-body", choice: "yes" });
+    expect(detail.run.subject).toMatchObject(subject);
     expect(detail.steps.find((step) => step.name === "ship")).toMatchObject({
       kind: "ask",
       status: "completed",

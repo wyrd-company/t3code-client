@@ -33,6 +33,7 @@ export const TerminalProviderEnvironmentError = taggedError("TerminalProviderEnv
   cause: Defect,
 });
 export const TerminalNotRunningError = taggedError("TerminalNotRunningError", terminalRef);
+export const TerminalProcessChangedError = taggedError("TerminalProcessChangedError", {});
 export const TerminalWriteError = taggedError("TerminalWriteError", {
   ...terminalRef,
   terminalPid: z.number(),

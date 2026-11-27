@@ -23,6 +23,13 @@ export type IssueInvolvement = z.infer<typeof IssueInvolvement>;
 export const IssueListSort = z.enum(["updated", "created"]);
 export type IssueListSort = z.infer<typeof IssueListSort>;
 
+export const IssueDetailInput = z.looseObject({
+  ...IssueRef.shape,
+  /** Read from the tracker instead of reusing a recent read. */
+  refresh: z.boolean().optional(),
+});
+export type IssueDetailInput = z.infer<typeof IssueDetailInput>;
+
 /** Older comments, one page past a cursor the detail or a previous page handed over. */
 export const IssueCommentsPageInput = z.looseObject({
   ...IssueRef.shape,

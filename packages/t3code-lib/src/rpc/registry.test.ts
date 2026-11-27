@@ -204,3 +204,11 @@ describe("RPC contract registry", () => {
     });
   });
 });
+it("accepts existing issue references and validates the issue detail refresh flag", () => {
+  const issue = { tracker: "github", projectId: "project-1", scope: "sample/repo", key: "1" };
+  const detail = rpcMethods["issues.detail"].payload;
+  expect(detail.parse(issue)).toEqual(issue);
+  expect(detail.parse({ ...issue, refresh: true }).refresh).toBe(true);
+  expect(detail.parse({ ...issue, refresh: false }).refresh).toBe(false);
+  expect(detail.safeParse({ ...issue, refresh: "true" }).success).toBe(false);
+});

@@ -9,6 +9,8 @@ import { defineMethod, VoidSuccess } from "../spec.ts";
 import { IsoDateTime, ProviderInstanceId, TrimmedNonEmptyString } from "../../schemas/common.ts";
 import {
   DatabaseStorageStatusUpdate,
+  ProviderRuntimeModeLimitsInput,
+  ProviderRuntimeModeLimitsResult,
   ServerConfig,
   ServerConfigStreamEvent,
   ServerLifecycleStreamEvent,
@@ -60,6 +62,12 @@ export const serverMethods = {
   "server.getConfig": defineMethod({
     payload: z.looseObject({}),
     success: ServerConfig,
+    stream: false,
+    scope: "orchestration:read",
+  }),
+  "server.getProviderRuntimeModeLimits": defineMethod({
+    payload: ProviderRuntimeModeLimitsInput,
+    success: ProviderRuntimeModeLimitsResult,
     stream: false,
     scope: "orchestration:read",
   }),

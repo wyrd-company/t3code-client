@@ -54,6 +54,7 @@ export const BooleanProviderOptionDescriptor = z.looseObject({
   ...ProviderOptionDescriptorBase,
   type: z.literal("boolean"),
   currentValue: z.boolean().optional(),
+  role: forwardCompatibleLiteral(["mode"]).optional(),
 });
 export type BooleanProviderOptionDescriptor = z.infer<typeof BooleanProviderOptionDescriptor>;
 export const ProviderOptionChoice = z.looseObject({
@@ -69,8 +70,8 @@ export const SelectProviderOptionDescriptor = z.looseObject({
   options: z.array(ProviderOptionChoice),
   currentValue: TrimmedNonEmptyString.optional(),
   promptInjectedValues: z.array(TrimmedNonEmptyString).optional(),
-  /** Marks the reasoning control when its id is the agent's own, such as an ACP `thought_level`. */
-  role: forwardCompatibleLiteral(["reasoning"]).optional(),
+  /** Identifies the agent's reasoning control or its own session mode. */
+  role: forwardCompatibleLiteral(["reasoning", "mode"]).optional(),
 });
 export type SelectProviderOptionDescriptor = z.infer<typeof SelectProviderOptionDescriptor>;
 export const ProviderOptionDescriptor = taggedUnionWithUnknown("type", [
@@ -353,6 +354,8 @@ export const ServerProvider = z.looseObject({
   availability: ServerProviderAvailability.optional(),
   unavailableReason: TrimmedNonEmptyString.optional(),
   models: z.array(ServerProviderModel),
+  /** This probe can omit models that the provider still offers. */
+  modelsIncomplete: z.boolean().optional(),
   subProviders: z.array(ServerProviderSubProvider).optional(),
   modelsRetained: z.boolean().optional(),
   updateRequiredModels: z.array(ServerProviderUpdateRequiredModel).optional(),

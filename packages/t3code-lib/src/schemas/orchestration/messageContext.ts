@@ -127,9 +127,9 @@ export const ReviewCommentContextRecord = z
   .looseObject({
     ...recordBase,
     kind: z.literal("review-comment"),
-    sectionId: TrimmedNonEmptyString.max(255),
+    sectionId: z.string().min(1).max(255),
     sectionTitle: ShortString,
-    filePath: TrimmedNonEmptyString.max(2048),
+    filePath: z.string().min(1).max(2048),
     startIndex: NonNegativeInt,
     endIndex: NonNegativeInt,
     rangeLabel: ShortString,
@@ -143,7 +143,7 @@ export type ReviewCommentContextRecord = z.infer<typeof ReviewCommentContextReco
 export const MentionContextRecord = z.looseObject({
   ...recordBase,
   kind: z.literal("mention"),
-  path: TrimmedNonEmptyString.max(2048),
+  path: z.string().min(1).max(2048),
 });
 export type MentionContextRecord = z.infer<typeof MentionContextRecord>;
 export const SkillContextRecord = z.looseObject({

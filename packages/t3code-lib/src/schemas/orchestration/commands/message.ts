@@ -90,6 +90,7 @@ export const MessageDispatchCommand = z.looseObject({
   usageLimitRecoveryRequestId: CommandId.optional(),
   /** Let the server resolve steer, queue, or start against its serialized thread state. */
   deliveryIntent: MessageDeliveryIntent.optional(),
+  explicitQueue: z.literal(true).optional(),
   delegatedCompletion: z
     .looseObject({ parentRunId: RunId, generation: PositiveInt, taskIds: z.array(NodeId) })
     .optional(),

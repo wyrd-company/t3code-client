@@ -9,6 +9,7 @@ import * as NodePath from "node:path";
 import { WebSocket as WsWebSocket } from "ws";
 import { describe, expect, it } from "vite-plus/test";
 import { T3Client } from "../../src/client.ts";
+import { T3RpcError } from "../../src/errors.ts";
 import type { WebSocketConstructor } from "../../src/internal/websocket.ts";
 import type { TerminalAttachInput } from "../../src/schemas/terminal.ts";
 
@@ -48,6 +49,23 @@ describe.skipIf(!baseUrl || !token)("live terminal resume", () => {
       });
       const reopened = await firstEvent({ ...input, resume: false, restartIfNotRunning: true });
       expect(reopened).toMatchObject({ type: "snapshot", snapshot: { status: "running" } });
+
+      const snapshot = await client.terminal.read({
+        ...input,
+        supportsSnapshotSequenceState: true,
+      });
+      expect(snapshot.supportsConditionalWrites).toBe(true);
+      if (snapshot.pid === null) throw new Error("Expected the running terminal's PID.");
+      await client.terminal.write({
+        ...input,
+        expectedPid: snapshot.pid,
+        data: "",
+        plainWrite: "abort",
+      });
+      const error = await client.terminal
+        .write({ ...input, expectedPid: snapshot.pid + 1, data: "sample" })
+        .catch((failure: unknown) => failure);
+      expect(error instanceof T3RpcError && error.is("TerminalProcessChangedError")).toBe(true);
     } finally {
       try {
         await client.terminal.close({ ...input, deleteHistory: true });

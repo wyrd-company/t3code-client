@@ -92,6 +92,7 @@ export const OrchestrationV2DelegatedCompletionDelivery = z.looseObject({
 });
 export const OrchestrationV2DelegatedCompletionCohort = z.looseObject({
   disposition: forwardCompatibleLiteral(["open", "stopped", "disposed"]),
+  reopenedAfterStop: z.literal(true).optional(),
   nextGeneration: PositiveInt,
   delivery: OrchestrationV2DelegatedCompletionDelivery.nullable(),
 });
@@ -132,6 +133,8 @@ export const OrchestrationV2Run = z.looseObject({
   queuePosition: PositiveInt.nullable().optional(),
   queueHeld: z.boolean().optional(),
   /** The active run this queued run steers into once that run can take a steer. */
+  /** The sender explicitly queued a separate turn. */
+  explicitQueue: z.literal(true).optional(),
   steerWhenReadyRunId: RunId.optional(),
   requestedAt: IsoDateTime,
   startedAt: IsoDateTime.nullable(),

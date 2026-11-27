@@ -457,7 +457,11 @@ export class ThreadsApi {
     await this.dispatch(this.#commands.setModelSelection(threadId, modelSelection), signal);
   }
 
-  /** Dispatches `message.dispatch` and returns a handle that follows the run it starts or joins. */
+  /**
+   * Dispatches `message.dispatch` and returns a handle that follows the run it starts or joins.
+   * `delivery: "queue"` marks an explicit queue entry. The server can steer a later automatic
+   * agent message into the active run while the explicitly queued message still waits.
+   */
   startTurn(input: StartTurnInput): Promise<TurnHandle> {
     return startThreadTurn(
       {

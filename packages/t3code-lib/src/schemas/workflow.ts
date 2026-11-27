@@ -10,6 +10,7 @@ import { z } from "zod";
 import { JsonValue, forwardCompatibleLiteral } from "./common.ts";
 import { IssueRef } from "./issueRecords.ts";
 import { PullRequestRef } from "./pullRequestInputs.ts";
+import { WorkflowDefinitionState } from "./workflowDefinitions.ts";
 
 /** `skipped`: ended by the workflow as not its to do. Lists leave these out unless asked. */
 export const WorkflowRunStatus = forwardCompatibleLiteral([
@@ -22,6 +23,17 @@ export const WorkflowRunStatus = forwardCompatibleLiteral([
   "cancelled",
 ]);
 export type WorkflowRunStatus = z.infer<typeof WorkflowRunStatus>;
+
+/** An issue, pull request, thread or web address the workflow declared as its subject. */
+export const WorkflowRunSubject = z.looseObject({
+  kind: z.string(),
+  key: z.string(),
+  address: JsonValue,
+  /** Empty until something that touched it knew its title. */
+  title: z.string(),
+  url: z.string().nullable(),
+});
+export type WorkflowRunSubject = z.infer<typeof WorkflowRunSubject>;
 
 export const WorkflowRun = z.looseObject({
   runId: z.string(),
@@ -44,6 +56,7 @@ export const WorkflowRun = z.looseObject({
   parentStep: z.string().nullable(),
   /** What the workflow tagged the run with. Absent for a run with no tags. */
   tags: z.array(z.string()).optional(),
+  subject: WorkflowRunSubject.optional(),
   startedAt: z.string(),
   updatedAt: z.string(),
   endedAt: z.string().nullable(),
@@ -52,11 +65,13 @@ export type WorkflowRun = z.infer<typeof WorkflowRun>;
 
 export const WorkflowStep = z.looseObject({
   name: z.string(),
-  /** A sleep's `detail` is when it wakes, as an ISO time. */
-  kind: forwardCompatibleLiteral(["step", "wait", "agent", "ask", "sleep"]),
+  /** A sleep's `detail` is its ISO wake time. A queue step waits for a place in a pool. */
+  kind: forwardCompatibleLiteral(["step", "wait", "agent", "ask", "sleep", "queue"]),
   status: forwardCompatibleLiteral(["running", "completed", "failed"]),
   attempts: z.number(),
   detail: z.string().nullable(),
+  /** For a waiting queue step, how many asked for a place in its pool before it. */
+  ahead: z.number().optional(),
   /** The thread an agent step ran in. */
   threadId: z.string().nullable(),
   /** The linked environment that thread is in; null when it is this one. */
@@ -133,60 +148,6 @@ export const WorkflowSummary = z.looseObject({
 });
 export type WorkflowSummary = z.infer<typeof WorkflowSummary>;
 
-/** Something wrong with the definitions: in `file` when it is one file's, at `line` when it names one. */
-export const WorkflowDefinitionProblem = z.looseObject({
-  message: z.string(),
-  file: z.string().optional(),
-  line: z.number().optional(),
-});
-export type WorkflowDefinitionProblem = z.infer<typeof WorkflowDefinitionProblem>;
-
-/** Which loading of the definitions is running, and what is wrong with the files now. */
-export const WorkflowDefinitionState = z.looseObject({
-  /** Goes up whenever the definitions load or are found wrong, so a client reads them again. */
-  revision: z.number(),
-  /** Why the files on disk are not what runs. The last version that loaded keeps running. */
-  problem: z.string().nullable(),
-});
-export type WorkflowDefinitionState = z.infer<typeof WorkflowDefinitionState>;
-
-export const WorkflowDefinitionFile = z.looseObject({
-  name: z.string(),
-  /** The file as it is on disk, which is not what runs while it has problems. */
-  source: z.string(),
-  /** The workflows its last good version defines, each as `name@version`. */
-  workflows: z.array(z.string()),
-  problems: z.array(WorkflowDefinitionProblem),
-});
-export type WorkflowDefinitionFile = z.infer<typeof WorkflowDefinitionFile>;
-
-/** The files that define this server's workflows. */
-export const WorkflowDefinitionFiles = z.looseObject({
-  /** The folder the files are in. */
-  directory: z.string(),
-  /** The server was pointed at one file: none can be added beside it or taken away. */
-  single: z.boolean(),
-  files: z.array(WorkflowDefinitionFile),
-  /** What is wrong between files, such as one workflow defined in two of them. */
-  problems: z.array(WorkflowDefinitionProblem),
-  ...WorkflowDefinitionState.shape,
-});
-export type WorkflowDefinitionFiles = z.infer<typeof WorkflowDefinitionFiles>;
-
-export const WorkflowDefinitionGetInput = z.looseObject({});
-/** A file by its name in the folder. Saving a name that is not there yet makes the file. */
-export const WorkflowDefinitionSaveInput = z.looseObject({ name: z.string(), source: z.string() });
-export type WorkflowDefinitionSaveInput = z.infer<typeof WorkflowDefinitionSaveInput>;
-export const WorkflowDefinitionDeleteInput = z.looseObject({ name: z.string() });
-export type WorkflowDefinitionDeleteInput = z.infer<typeof WorkflowDefinitionDeleteInput>;
-export const WorkflowDefinitionChangeResult = z.looseObject({
-  /** The file was written or deleted. */
-  changed: z.boolean(),
-  /** Empty when the change is what runs now. With `changed`, why it does not run yet. */
-  problems: z.array(WorkflowDefinitionProblem),
-});
-export type WorkflowDefinitionChangeResult = z.infer<typeof WorkflowDefinitionChangeResult>;
-
 /** The whole list a `workflows.subscribe` frame carries: recent runs, newest first, and open questions. */
 export const WorkflowRunsSnapshot = z.looseObject({
   workflows: z.array(WorkflowSummary),
@@ -237,18 +198,27 @@ export type WorkflowRunsSubscribeInput = z.infer<typeof WorkflowRunsSubscribeInp
 export const WorkflowRunGetInput = z.looseObject({ runId: z.string() });
 export type WorkflowRunGetInput = z.infer<typeof WorkflowRunGetInput>;
 
+/** Find runs by a subject address, with optional tracker or forge identity. */
+export const WorkflowRunsAboutInput = z.looseObject({
+  subject: z.string(),
+  issue: IssueRef.optional(),
+  pullRequest: PullRequestRef.optional(),
+});
+export type WorkflowRunsAboutInput = z.infer<typeof WorkflowRunsAboutInput>;
+
+/** Matching runs, newest first and 500 at most, with their open questions. */
+export const WorkflowRunsAbout = z.looseObject({
+  runs: z.array(WorkflowRun),
+  questions: z.array(WorkflowQuestion),
+});
+export type WorkflowRunsAbout = z.infer<typeof WorkflowRunsAbout>;
+
 /**
- * Something a run touched: an issue, a pull request, or a kind added later. `kind` is open, so a
- * client shows a kind it does not know by its title and `url`. `address` is whatever that kind
- * needs to open it: an `IssueRef` for `issue`, a `PullRequestRef` for `pullRequest`.
+ * Something a run touched. Clients can use the title and URL for an unfamiliar kind,
+ * or decode the address with the schema for a known kind.
  */
 export const WorkflowRunReference = z.looseObject({
-  kind: z.string(),
-  key: z.string(),
-  address: JsonValue,
-  /** Empty until something that touched it knew its title. */
-  title: z.string(),
-  url: z.string().nullable(),
+  ...WorkflowRunSubject.shape,
   /** A word for where it stands, such as `open`, `merged` or `closed`. */
   state: z.string().nullable(),
   /** The steps that touched it, in the order they first did. */
@@ -258,9 +228,16 @@ export const WorkflowRunReference = z.looseObject({
 export type WorkflowRunReference = z.infer<typeof WorkflowRunReference>;
 
 /** The reference kinds runs record today, and the schemas of their `address`. */
-export const WorkflowReferenceKind = { issue: "issue", pullRequest: "pullRequest" } as const;
+export const WorkflowReferenceKind = {
+  issue: "issue",
+  pullRequest: "pullRequest",
+  thread: "thread",
+  url: "url",
+} as const;
 export const WorkflowIssueAddress = IssueRef;
 export const WorkflowPullRequestAddress = PullRequestRef;
+export const WorkflowThreadAddress = z.looseObject({ threadId: z.string() });
+export const WorkflowUrlAddress = z.looseObject({ url: z.string() });
 
 /** One run with its steps, in the order they started, and what it touched. */
 export const WorkflowRunDetail = z.looseObject({
@@ -288,53 +265,10 @@ export const WorkflowRunCancelInput = z.looseObject({
 });
 export type WorkflowRunCancelInput = z.infer<typeof WorkflowRunCancelInput>;
 
-/** What names an open question: one run asks one question of a name at a time. */
-export const workflowQuestionKey = (question: { readonly runId: string; readonly name: string }) =>
-  JSON.stringify([question.runId, question.name]);
+export {
+  applyWorkflowRunsUpdate,
+  isWorkflowRunsChange,
+  workflowQuestionKey,
+} from "./workflowRunUpdates.ts";
 
-/** A frame of what changed, as opposed to a whole list. */
-export function isWorkflowRunsChange(update: WorkflowRunsUpdate): update is WorkflowRunsChange {
-  return update["_tag"] === "changed";
-}
-
-/** The list once `update` is applied, in the order the server lists runs: newest first. */
-export function applyWorkflowRunsUpdate(
-  snapshot: WorkflowRunsSnapshot | undefined,
-  update: WorkflowRunsUpdate,
-): WorkflowRunsSnapshot {
-  if (!isWorkflowRunsChange(update)) return update;
-  const base = snapshot ?? { workflows: [], runs: [], questions: [] };
-  // Stable sorts, so entries of the same moment keep the order they were sent in.
-  const runs = merged(base.runs, update.runs, update.removed, (run) => run.runId).sort(
-    (left, right) =>
-      left.startedAt === right.startedAt ? 0 : left.startedAt < right.startedAt ? 1 : -1,
-  );
-  const questions = merged(
-    base.questions,
-    update.questions,
-    update.closed.map(workflowQuestionKey),
-    workflowQuestionKey,
-  ).sort((left, right) =>
-    left.askedAt === right.askedAt ? 0 : left.askedAt < right.askedAt ? -1 : 1,
-  );
-  return { ...base, runs, questions };
-}
-
-/** `held` with `changed` put in place of their earlier versions and `gone` left out. */
-function merged<A>(
-  held: readonly A[],
-  changed: readonly A[],
-  gone: readonly string[],
-  key: (entry: A) => string,
-): A[] {
-  const fresh = new Map(changed.map((entry) => [key(entry), entry]));
-  const left = new Set(gone);
-  const kept = held.flatMap((entry) => {
-    const id = key(entry);
-    if (left.has(id)) return [];
-    const next = fresh.get(id);
-    fresh.delete(id);
-    return [next ?? entry];
-  });
-  return [...fresh.values(), ...kept];
-}
+export * from "./workflowDefinitions.ts";

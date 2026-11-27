@@ -32,10 +32,10 @@ export function creationFields(origin: CreationOrigin | undefined): {
 /** How a delivery choice is said on the wire: a requested mode plus, for the server-resolved ones, an intent. */
 export function deliveryFields(
   delivery: TurnDelivery,
-): Pick<MessageDispatchCommand, "dispatchMode" | "deliveryIntent"> {
+): Pick<MessageDispatchCommand, "dispatchMode" | "deliveryIntent" | "explicitQueue"> {
   switch (delivery) {
     case "queue":
-      return { dispatchMode: { type: "queue_after_active" } };
+      return { dispatchMode: { type: "queue_after_active" }, explicitQueue: true };
     case "start":
       return { dispatchMode: { type: "start_immediately" } };
     default:

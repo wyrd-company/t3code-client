@@ -68,14 +68,20 @@ export function applyThreadEvent(
   return next === projection ? projection : { ...next, updatedAt: event.occurredAt };
 }
 
-/**
- * Only `run.output-submitted` sets a run's output. A lifecycle write carries the run as it was
- * when that writer read it, with no output or an older one, so a held output always wins, as
- * upstream's `preserveRunRecordedFields` keeps it.
- */
-function keepRunOutput(runs: Projection["runs"], next: Projection["runs"][number]) {
-  const output = runs.find((run) => run.id === next.id)?.output;
-  return output === undefined ? next : { ...next, output };
+function preserveRunFields(runs: Projection["runs"], next: Projection["runs"][number]) {
+  const current = runs.find((run) => run.id === next.id);
+  if (current === undefined) return next;
+  return {
+    ...next,
+    ...(next.delegatedCompletion === undefined && current.delegatedCompletion !== undefined
+      ? { delegatedCompletion: current.delegatedCompletion }
+      : {}),
+    ...(next.explicitQueue === undefined && current.explicitQueue === true
+      ? { explicitQueue: current.explicitQueue }
+      : {}),
+    // A lifecycle write may carry stale output. Only a submission updates it.
+    ...(current.output === undefined ? {} : { output: current.output }),
+  };
 }
 
 function applyKnownEvent(p: Projection, event: KnownOrchestrationV2DomainEvent): Projection {
@@ -92,7 +98,7 @@ function applyKnownEvent(p: Projection, event: KnownOrchestrationV2DomainEvent):
     }
     case "run.created":
     case "run.updated":
-      return { ...p, runs: upsertById(p.runs, keepRunOutput(p.runs, event.payload)) };
+      return { ...p, runs: upsertById(p.runs, preserveRunFields(p.runs, event.payload)) };
     case "run.output-submitted": {
       const { runId, output } = event.payload;
       if (!p.runs.some((run) => run.id === runId)) return p;

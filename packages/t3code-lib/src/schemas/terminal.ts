@@ -48,8 +48,14 @@ export const TerminalOpenInput = z.looseObject({
   stopOnSettle: z.boolean().optional(),
 });
 export type TerminalOpenInput = z.infer<typeof TerminalOpenInput>;
-export const TerminalAttachInput = z.looseObject({
+export const TerminalObserveInput = z.looseObject({
   ...TerminalSessionInput.shape,
+  /** The viewer can skip a discarded control-sequence prefix using the snapshot's parser state. */
+  supportsSnapshotSequenceState: z.boolean().optional(),
+});
+export type TerminalObserveInput = z.infer<typeof TerminalObserveInput>;
+export const TerminalAttachInput = z.looseObject({
+  ...TerminalObserveInput.shape,
   cwd: TrimmedNonEmptyStringSchema.optional(),
   worktreePath: TrimmedNonEmptyStringSchema.nullable().optional(),
   cols: TerminalColsSchema.optional(),
@@ -64,18 +70,30 @@ export const TerminalAttachInput = z.looseObject({
   maxHistoryBytes: z.number().int().min(0).optional(),
 });
 export type TerminalAttachInput = z.infer<typeof TerminalAttachInput>;
-export const TerminalObserveInput = TerminalSessionInput;
-export type TerminalObserveInput = z.infer<typeof TerminalObserveInput>;
 export const TerminalClearInput = TerminalSessionInput;
 export type TerminalClearInput = z.infer<typeof TerminalClearInput>;
-export const TerminalWriteInput = z.looseObject({
-  ...TerminalSessionInput.shape,
-  data: z.string().min(1).max(65_536),
-  /** `data` holds one byte per UTF-16 code unit. Older servers write it as UTF-8 text. */
-  binary: z.boolean().optional(),
-  /** A renderer's answer to a terminal query; the server passes on one viewer's replies. */
-  reply: z.boolean().optional(),
-});
+const TerminalWritePhase = z.enum(["start", "continue", "end", "abort"]);
+export const TERMINAL_BRACKETED_PASTE_START = "\x1b[200~";
+export const TERMINAL_BRACKETED_PASTE_END = "\x1b[201~";
+export const TerminalWriteInput = z
+  .looseObject({
+    ...TerminalSessionInput.shape,
+    data: z.string().max(65_536),
+    /** Phases for a bracketed paste. Include the bracket markers in `data`. */
+    bracketedPaste: TerminalWritePhase.optional(),
+    /** Phases for a plain write. Only an abort carries empty `data`. */
+    plainWrite: TerminalWritePhase.optional(),
+    /** `data` holds one byte per UTF-16 code unit. Older servers write it as UTF-8 text. */
+    binary: z.boolean().optional(),
+    /** A renderer's answer to a terminal query; the server passes on one viewer's replies. */
+    reply: z.boolean().optional(),
+    /** Reject the write if the process that owns the paste has gone. */
+    expectedPid: z.number().int().positive().optional(),
+  })
+  .refine(({ data, plainWrite }) => (plainWrite === "abort") === (data.length === 0), {
+    path: ["data"],
+    message: "Data must be empty for a plain write abort and nonempty otherwise.",
+  });
 export type TerminalWriteInput = z.infer<typeof TerminalWriteInput>;
 export const TerminalResizeInput = z.looseObject({
   ...TerminalSessionInput.shape,
@@ -96,6 +114,8 @@ export const TerminalSessionStatus = forwardCompatibleLiteral([
   "error",
 ]);
 export type TerminalSessionStatus = z.infer<typeof TerminalSessionStatus>;
+// The upper bits may hold a split high surrogate, and 6 is the last parser state.
+const MAX_TERMINAL_SEQUENCE_STATE = (0xdbff << 3) | 6;
 export const TerminalSessionSnapshot = z.looseObject({
   threadId: z.string().min(1),
   terminalId: z.string().min(1),
@@ -104,6 +124,10 @@ export const TerminalSessionSnapshot = z.looseObject({
   status: TerminalSessionStatus,
   pid: z.number().int().gt(0).nullable(),
   history: z.string(),
+  /** The terminal process can be identified with `expectedPid` on writes. */
+  supportsConditionalWrites: z.boolean().optional(),
+  /** Parser state of an unfinished control sequence omitted after the replayable history. */
+  historySequenceState: z.number().int().min(1).max(MAX_TERMINAL_SEQUENCE_STATE).optional(),
   exitCode: z.number().int().nullable(),
   exitSignal: z.number().int().nullable(),
   label: z.string().max(128),
@@ -161,6 +185,7 @@ export type TerminalActivityEvent = z.infer<typeof TerminalActivityEvent>;
 export const TerminalClearedEvent = z.looseObject({
   ...TerminalEventBaseSchema.shape,
   type: z.literal("cleared"),
+  pendingControlSequence: z.string().optional(),
 });
 export type TerminalClearedEvent = z.infer<typeof TerminalClearedEvent>;
 export const TerminalClosedEvent = z.looseObject({

@@ -41,7 +41,12 @@ export class TerminalApi {
     return unwrapStreamItems(this.rpc.stream("terminal.attach", input, options));
   }
 
-  /** Write input to a server terminal. */
+  /**
+   * Write input to a server terminal. A snapshot with `supportsConditionalWrites`
+   * allows `expectedPid` to guard a write against a terminal restart. A mismatch
+   * fails with `TerminalProcessChangedError`. Use `bracketedPaste` or `plainWrite`
+   * to mark the phases of an input sent in chunks.
+   */
   write(
     input: RpcPayload<RpcMethods, "terminal.write">,
     signal?: AbortSignal,

@@ -7,7 +7,11 @@ import { rpcMethods } from "../rpc/registry.ts";
 import { decodeRpcErrorRecord, isRpcErrorOfTag } from "./rpcErrors.ts";
 import {
   WorkflowIssueAddress,
+  WorkflowReferenceKind,
   WorkflowRunsUpdate,
+  WorkflowStep,
+  WorkflowThreadAddress,
+  WorkflowUrlAddress,
   applyWorkflowRunsUpdate,
   isWorkflowRunsChange,
   type WorkflowRun,
@@ -40,6 +44,55 @@ const question = (runId: string, name: string, askedAt: string) => ({
   request: { title: "Ship it?", choices: ["yes", "no"] },
   askedAt,
   thread: null,
+});
+
+describe("workflow subjects and queues in 0.1.13", () => {
+  it("types the subject query and its result", () => {
+    const method = rpcMethods["workflows.about"];
+    const url = "https://example.test/work/1";
+    const issue = { tracker: "github", projectId: "project-1", scope: "sample/repo", key: "1" };
+    expect(method.payload.parse({ subject: url, issue })).toEqual({ subject: url, issue });
+    expect(method.payload.safeParse({ subject: 1 }).success).toBe(false);
+    expect(method.payload.safeParse({ subject: url, issue: {} }).success).toBe(false);
+    const pullRequest = {
+      projectId: "project-1",
+      host: "example.test",
+      repository: "sample/repo",
+      number: 1,
+    };
+    expect(method.payload.parse({ subject: url, pullRequest }).pullRequest).toEqual(pullRequest);
+    const subject = { kind: WorkflowReferenceKind.url, key: url, address: { url }, title: "", url };
+    const runs = [run("run-1", "2030-01-01T00:00:00Z", { subject })];
+    const questions = [question("run-1", "ship", "2030-01-01T00:00:01Z")];
+    expect(method.success.parse({ runs, questions })).toEqual({ runs, questions });
+    expect(
+      method.success.safeParse({
+        runs: [{ ...runs[0], subject: { ...subject, url: 1 } }],
+        questions,
+      }).success,
+    ).toBe(false);
+    expect(WorkflowUrlAddress.parse(subject.address)).toEqual({ url });
+    expect(WorkflowThreadAddress.parse({ threadId: "thread-1" })).toEqual({ threadId: "thread-1" });
+  });
+
+  it("validates the queue position on a workflow step", () => {
+    const step = {
+      name: "@pool:sample",
+      kind: "queue",
+      status: "running",
+      attempts: 1,
+      ahead: 0,
+      detail: "queue sample",
+      threadId: null,
+      environmentId: null,
+      result: null,
+      said: null,
+      startedAt: "2030-01-01T00:00:00Z",
+      endedAt: null,
+    };
+    expect(WorkflowStep.parse(step)).toEqual(step);
+    expect(WorkflowStep.safeParse({ ...step, ahead: "0" }).success).toBe(false);
+  });
 });
 
 describe("workflow runs (0.1.12)", () => {

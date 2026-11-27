@@ -440,6 +440,14 @@ export class ServerApi {
     return this.rpc.call("server.refreshProviders", input, signal);
   }
 
+  /** Read the provider runtime modes that settings make unavailable in a workspace. */
+  getProviderRuntimeModeLimits(
+    input: RpcPayload<RpcMethods, "server.getProviderRuntimeModeLimits">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "server.getProviderRuntimeModeLimits">> {
+    return this.rpc.call("server.getProviderRuntimeModeLimits", input, signal);
+  }
+
   /**
    * Find a `t3` release in the npm registry that the server is configured to use.
    * `spec` is `latest`, `nightly` or an exact version. Resolves to `null` when

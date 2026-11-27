@@ -29,7 +29,7 @@ export class GuestSharesApi {
    * Open a 24 hour guest link. It replaces the thread's earlier link. The `url`
    * holds the guest's credential, so treat it as a secret. A refusal rejects with
    * a `T3RpcError` whose `GuestShareCreateError` record has a `reason`, such as
-   * `disabled` or `connect_unavailable`. Needs `access:write`. On T3 Code 0.1.12,
+   * `disabled` or `connect_unavailable`. Needs `access:write`. Starting with T3 Code 0.1.12,
    * the server also requires `orchestration:read`. The local check requires
    * only `access:write` so it also works with T3 Code 0.1.11.
    */

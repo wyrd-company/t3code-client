@@ -33,6 +33,7 @@ import {
   ModelSelection,
   OrchestrationV2CreationFields,
   ProviderApprovalOption,
+  ProviderApprovalPushHooks,
   ProviderRequestKind,
   UserInputAttachmentAnswerPayload,
 } from "./model.ts";
@@ -179,6 +180,7 @@ export const OrchestrationV2TurnItemMembers = [
     reason: z.string().optional(),
     fullAccessOverride: forwardCompatibleLiteral(["ask_rule", "provider_check"]).optional(),
     appName: z.string().optional(),
+    pushHooks: ProviderApprovalPushHooks.optional(),
     options: z.array(ProviderApprovalOption).optional(),
   }),
   z.looseObject({

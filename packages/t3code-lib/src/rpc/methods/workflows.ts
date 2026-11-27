@@ -14,6 +14,8 @@ import {
   WorkflowRunDetail,
   WorkflowRunGetInput,
   WorkflowRunResumeInput,
+  WorkflowRunsAbout,
+  WorkflowRunsAboutInput,
   WorkflowRunsSubscribeInput,
   WorkflowRunsUpdate,
 } from "../../schemas/workflow.ts";
@@ -38,6 +40,12 @@ export const workflowsMethods = {
   "workflows.get": defineMethod({
     payload: WorkflowRunGetInput,
     success: WorkflowRunDetail,
+    stream: false,
+    scope: "orchestration:read",
+  }),
+  "workflows.about": defineMethod({
+    payload: WorkflowRunsAboutInput,
+    success: WorkflowRunsAbout,
     stream: false,
     scope: "orchestration:read",
   }),

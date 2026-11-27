@@ -92,6 +92,14 @@ export const ProviderApprovalOption = z.looseObject({
 });
 export type ProviderApprovalOption = z.infer<typeof ProviderApprovalOption>;
 
+/** The repository hooks an approval request asks to run before pushing. */
+export const ProviderApprovalPushHooks = z.looseObject({
+  branch: z.string(),
+  files: z.array(z.string()),
+  commands: z.array(z.looseObject({ name: z.string(), command: z.string() })),
+});
+export type ProviderApprovalPushHooks = z.infer<typeof ProviderApprovalPushHooks>;
+
 /**
  * One question's answer: any JSON value, as the contracts allow. The provider
  * adapters act on a single choice (a string), several choices (a string

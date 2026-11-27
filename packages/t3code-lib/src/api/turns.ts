@@ -37,6 +37,7 @@ export interface CreationOrigin {
  * target the active run; `queue` waits behind it; `start` insists on a new
  * run now.
  */
+/** `queue` requests a separate turn, leaving later automatic input free to steer the active run. */
 export type TurnDelivery = "auto" | "steer" | "restart" | "queue" | "start";
 
 export interface StartTurnInput {

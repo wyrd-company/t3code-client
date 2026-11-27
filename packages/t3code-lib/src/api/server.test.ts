@@ -2,6 +2,7 @@ import * as NodeFS from "node:fs";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { T3DecodeError } from "../errors.ts";
+import { ProviderInstanceId } from "../schemas/common.ts";
 import { ServerConfigStreamEvent } from "../schemas/server.ts";
 import { FakeT3Server } from "../../test/support/fakeServer.ts";
 import { RpcClient } from "../rpc/client.ts";
@@ -51,6 +52,21 @@ describe("ServerApi", () => {
     await expect(api.getConfig()).resolves.toMatchObject({ cwd: "/srv/sample" });
     await expect(api.environment()).resolves.toMatchObject({ label: "sample-environment" });
     expect(server.routes.requests[0]?.headers["authorization"]).toBeUndefined();
+  });
+
+  it("reads runtime mode limits with their settings source", async () => {
+    const input = { instanceId: ProviderInstanceId.parse("sample-provider"), cwd: "/srv/sample" };
+    const limits = [
+      { mode: "auto", reason: "project-settings" },
+      { mode: "future-mode", reason: "future-settings", details: "preserved" },
+    ];
+    server.respond("server.getProviderRuntimeModeLimits", {
+      limits: [...limits, { mode: "auto", reason: 1 }],
+    });
+    await expect(api.getProviderRuntimeModeLimits(input)).resolves.toEqual({ limits });
+    await expect(api.getProviderRuntimeModeLimits({ ...input, cwd: " " })).rejects.toMatchObject({
+      code: "precondition",
+    });
   });
 
   it("decodes the Scratch and new-project roots and a usage credential fingerprint", async () => {

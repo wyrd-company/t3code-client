@@ -323,5 +323,11 @@ export const ServerProviderUpdatedPayload = z.looseObject({ providers: ServerPro
 export type ServerProviderUpdatedPayload = z.infer<typeof ServerProviderUpdatedPayload>;
 
 export { ServerProvider, ServerProviders } from "./provider.ts";
+export {
+  ProviderRuntimeModeLimit,
+  ProviderRuntimeModeLimitReason,
+  ProviderRuntimeModeLimitsInput,
+  ProviderRuntimeModeLimitsResult,
+} from "./providerRuntimeModeLimits.ts";
 export * from "./databaseStorage.ts";
 export * from "./serverLifecycle.ts";
