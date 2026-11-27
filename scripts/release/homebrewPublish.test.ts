@@ -13,18 +13,20 @@ import { fake, fixture, tarball, write } from "./testSupport.ts";
 
 const formula = "Formula/t3c.rb";
 const registryPrefix = "https://registry.npmjs.org/@wyrd-company/t3code-cli/-/t3code-cli-";
-const url = `${registryPrefix}0.1.0.tgz`;
 const roots: string[] = [];
 afterEach(() => {
   for (const root of roots.splice(0)) NodeFS.rmSync(root, { recursive: true, force: true });
 });
 
-function prepare(currentVersion = "0.0.9") {
+function prepare(currentVersion = "0.0.9", recordVersion = "0.1.0") {
   const root = fixture();
   roots.push(root);
   const script = NodePath.join(root, "scripts/publish-homebrew-tap.sh");
   NodeFS.copyFileSync(new URL("../publish-homebrew-tap.sh", import.meta.url), script);
-  const archive = tarball(root, "t3code-cli");
+  const url = `${registryPrefix}${recordVersion}.tgz`;
+  const archive = tarball(root, "t3code-cli", {
+    "package.json": JSON.stringify({ name: "@wyrd-company/t3code-cli", version: recordVersion }),
+  });
   const remote = NodePath.join(root, "remote");
   const tap = NodePath.join(root, "tap");
   const git = (args: string[], cwd = tap) =>
@@ -52,17 +54,39 @@ function prepare(currentVersion = "0.0.9") {
     formula: NodeFS.readFileSync(NodePath.join(tap, formula), "utf8"),
   });
   const curl = fake(root, "curl", 'for last; do :; done\ncp "$SOURCE" "$last"');
+  const summaryPath = NodePath.join(root, "summary");
   const options = (env: NodeJS.ProcessEnv) => ({
-    env: { ...process.env, ...curl, SOURCE: archive, PUSH_TAP: "1", ...env },
+    env: {
+      ...process.env,
+      ...curl,
+      SOURCE: archive,
+      PUSH_TAP: "1",
+      GITHUB_STEP_SUMMARY: summaryPath,
+      ...env,
+    },
     encoding: "utf8" as const,
   });
   const run = (env: NodeJS.ProcessEnv = {}, checkout = tap) =>
     NodeChildProcess.spawnSync("bash", [script, archive, url, checkout], options(env));
-  return { root, script, archive, remote, tap, git, configure, remoteHead, snapshot, options, run };
+  return {
+    root,
+    script,
+    archive,
+    url,
+    remote,
+    tap,
+    git,
+    configure,
+    remoteHead,
+    snapshot,
+    options,
+    run,
+    summaryPath,
+  };
 }
 
 it("pushes the verified formula to tap main and replays without a new commit", () => {
-  const { run, snapshot, git, remoteHead } = prepare();
+  const { run, snapshot, git, remoteHead, url, summaryPath } = prepare();
   const before = remoteHead();
   const result = run();
   expect(result.status, result.stderr).toBe(0);
@@ -72,9 +96,11 @@ it("pushes the verified formula to tap main and replays without a new commit", (
   expect(snapshot().head).toBe(after);
   expect(git(["status", "--porcelain"])).toBe("");
   expect(snapshot().formula).toContain(url);
+  expect(NodeFS.readFileSync(summaryPath, "utf8")).toContain(`tap commit ${after}`);
   const retry = run();
   expect(retry.status, retry.stderr).toBe(0);
   expect(retry.stdout).toContain("already up to date");
+  expect(NodeFS.readFileSync(summaryPath, "utf8")).toContain("t3c 0.1.0 is already up to date");
   expect(remoteHead()).toBe(after);
   expect(snapshot().head).toBe(after);
 });
@@ -94,11 +120,12 @@ it("preserves formula bytes HEAD and index when published URL bytes differ", () 
 });
 
 it("preserves a newer formula when retrying an old CLI record", () => {
-  const { run, snapshot, remoteHead } = prepare("0.10.0");
+  const { run, snapshot, remoteHead, summaryPath } = prepare("0.10.0", "0.9.0");
   const before = snapshot();
   const result = run();
   expect(result.status, result.stderr).toBe(0);
   expect(result.stdout).toContain("already tracks newer t3c 0.10.0");
+  expect(NodeFS.readFileSync(summaryPath, "utf8")).toContain("already tracks newer t3c 0.10.0");
   expect(snapshot().head).toBe(before.head);
   expect(snapshot().formula).toBe(before.formula);
   expect(remoteHead()).toBe(before.head);
@@ -127,7 +154,7 @@ it("fails visibly when registry retries are exhausted", () => {
 });
 
 it("waits for the registry when the tarball is initially missing", async () => {
-  const { root, script, archive, tap, remoteHead, options } = prepare();
+  const { root, script, archive, tap, remoteHead, options, url } = prepare();
   const before = remoteHead();
   const curl = NodeChildProcess.execFileSync("sh", ["-c", "command -v curl"], {
     encoding: "utf8",
@@ -147,14 +174,18 @@ it("waits for the registry when the tarball is initially missing", async () => {
       "curl",
       `
       args=()
+      bounded=false
       while (( $# )); do
         case "$1" in
+          --retry) test "$2" = 8; args+=("$1" "$2"); shift ;;
+          --retry-max-time) test "$2" = 420; bounded=true; args+=("$1" "$2"); shift ;;
           --retry-delay) test "$2" = 30; args+=("$1" 1); shift ;;
           "${url}") args+=("http://127.0.0.1:${address.port}/tarball") ;;
           *) args+=("$1") ;;
         esac
         shift
       done
+      test "$bounded" = true
       exec "$CURL" "\${args[@]}"
     `,
     );
@@ -170,7 +201,7 @@ it("waits for the registry when the tarball is initially missing", async () => {
 });
 
 it("reports a rejected tap push and can retry from a fresh checkout", () => {
-  const { root, remote, run, git, configure, snapshot, remoteHead } = prepare();
+  const { root, remote, run, git, configure, snapshot, remoteHead, summaryPath } = prepare();
   const before = remoteHead();
   const hook = "hooks/pre-receive";
   write(remote, hook, "#!/usr/bin/env bash\nexit 1\n");
@@ -179,6 +210,7 @@ it("reports a rejected tap push and can retry from a fresh checkout", () => {
   expect(rejected.status).not.toBe(0);
   expect(rejected.stderr).toContain("remote rejected");
   expect(rejected.stdout).not.toContain("Published the Homebrew formula");
+  expect(NodeFS.existsSync(summaryPath)).toBe(false);
   expect(remoteHead()).toBe(before);
   expect(snapshot().head).not.toBe(before);
 

@@ -152,14 +152,17 @@ proposed-design:
     **Publish Homebrew formula** runs in the CLI record's **Publish** workflow,
     whether a tag push or an explicit package dispatch started it. It waits for
     that record's npm job to succeed. It takes the original package artifact from
-    the same run and checks out `wyrd-company/homebrew-tools` at `main`.
-    `scripts/publish-homebrew-tap.sh` retries the registry download up to five
-    times with 30 seconds between retries and checks the downloaded bytes against
-    the artifact. It renders the formula from the verified download and pushes
-    the commit directly to tap `main` using `FORMULAE_PUBLISH_KEY`.
+    the same run, runs the publisher from the workflow commit and checks out
+    `wyrd-company/homebrew-tools` at `main`.
+    `scripts/publish-homebrew-tap.sh` retries the registry download up to eight
+    times with 30 seconds between retries and a seven-minute retry window. It
+    checks the downloaded bytes against the artifact, renders the formula from
+    the verified download and pushes the commit directly to tap `main` using
+    `FORMULAE_PUBLISH_KEY`.
     The tap tracks the latest `t3code-cli` in one formula. A retry of an older
     record preserves a newer formula. A retry of the current version verifies
-    its checksum and leaves the formula unchanged.
+    its checksum and leaves the formula unchanged. The Publish summary reports
+    the pushed tap commit or the version already tracked by Homebrew.
 
     Documentation publishes to wyrd.foo through the reusable workflow
     `wyrd-company/wyrd.foo/.github/workflows/publish-docs.yml@v2`, called by the
@@ -214,9 +217,10 @@ proposed-design:
       ```
 
       If GitHub no longer retains the package artifact or allows the job rerun,
-      dispatch **Publish** for the same annotated CLI record with
-      `publish-package=true`. **Release** consumes intents, so recovery starts
-      from the existing release record.
+      dispatch **Publish** with `--ref main` and pass the same annotated CLI
+      record as `ref` with `publish-package=true`. This uses main's workflow
+      and the record's package source. **Release** consumes intents, so recovery
+      starts from the existing release record.
     - Publish failed: rerun Publish for the same record. Existing artifacts must
       match; different bytes fail. If no run was created, dispatch package recovery
       explicitly without deleting or replacing the release record:

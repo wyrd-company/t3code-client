@@ -26,6 +26,7 @@ interface Job {
   with?: Record<string, string>;
 }
 interface Workflow {
+  "run-name"?: string;
   on: { workflow_dispatch: { inputs: Record<string, { type?: string; default?: unknown }> } };
   jobs: Record<string, Job>;
 }
@@ -197,7 +198,7 @@ it("runs Homebrew after npm succeeds and uses its verified build artifact", () =
   for (const step of tap.steps) expect(step).not.toHaveProperty("continue-on-error");
   const [sourceCheckout, download, tapCheckout, push] = tap.steps;
   expect(sourceCheckout?.with).toEqual({
-    ref: "${{ needs.plan.outputs.record }}",
+    ref: "${{ github.workflow_sha }}",
     "persist-credentials": false,
   });
   const npmDownload = publish.jobs["npm"]!.steps.find(
@@ -215,4 +216,27 @@ it("runs Homebrew after npm succeeds and uses its verified build artifact", () =
     PUSH_TAP: "1",
   });
   expect(push?.run).toContain("scripts/publish-homebrew-tap.sh");
+});
+
+it("names Publish runs for the record and links them from the Release summary", () => {
+  expect(publish["run-name"]).toBe("Publish ${{ inputs.ref || github.ref_name }}");
+  const root = fixture();
+  roots.push(root);
+  const summary = `${root}/summary`;
+  const step = release.jobs["release"]!.steps.find(
+    (step) => step.name === "Link the publication runs",
+  )!;
+  const result = NodeChildProcess.spawnSync("bash", ["-eo", "pipefail", "-c", step.run!], {
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      GITHUB_SERVER_URL: "https://github.example",
+      GITHUB_REPOSITORY: "example/team",
+      GITHUB_STEP_SUMMARY: summary,
+    },
+  });
+  expect(result.status, result.stderr).toBe(0);
+  expect(NodeFS.readFileSync(summary, "utf8")).toContain(
+    "[Publish runs](https://github.example/example/team/actions/workflows/publish.yml)",
+  );
 });
