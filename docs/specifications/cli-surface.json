@@ -2292,10 +2292,17 @@
               "flags": ["--await-refresh"],
               "kind": "flag",
               "description": "Wait for slow source refreshes instead of cached answers."
+            },
+            {
+              "name": "provisional",
+              "flags": ["--provisional"],
+              "kind": "flag",
+              "description": "Use the last available scan while sources refresh. Results may be stale.",
+              "conflicts-with": ["await-refresh"]
             }
           ],
           "notes": [
-            "Read server.getUsageSummary through server.usageSummary with diagnostics:read. Days are real calendar dates with since-day not after until-day, and the time zone is a valid IANA zone; these are checked before connecting. JSON data is the library UsageSummary with buckets, cost-source provenance, source diagnostics, pricing and scan metadata. Text lines are one line per bucket with day or hour, provider, model, token counts, cost in USD and cost source, then one line per source with its status and pricing status. No grand total is printed: costs from different sources and tokens of different kinds are not added. Current provider limits are a separate command. Hourly resolution requires valid since-time and until-time instants spanning more than zero and at most 24 hours, checked before connecting."
+            "Read server.getUsageSummary through server.usageSummary with diagnostics:read. Days are real calendar dates with since-day not after until-day, and the time zone is a valid IANA zone; these are checked before connecting. The default omits provisional. With --provisional, send provisional: true to allow stale results from the last available scan. This flag conflicts with --await-refresh. JSON data is the library UsageSummary with buckets, cost-source provenance, source diagnostics, pricing and scan metadata. Text lines are one line per bucket with day or hour, provider, model, token counts, cost in USD and cost source, then one line per source with its status and pricing status. No grand total is printed: costs from different sources and tokens of different kinds are not added. Current provider limits are a separate command. Hourly resolution requires valid since-time and until-time instants spanning more than zero and at most 24 hours, checked before connecting."
           ]
         }
       ]

@@ -105,6 +105,7 @@ export function usageInput(options: Record<string, unknown>): UsageSummaryInput 
     ...(sinceTime === undefined ? {} : { sinceTime }),
     ...(untilTime === undefined ? {} : { untilTime }),
     ...(options["awaitRefresh"] === true ? { awaitRefresh: true } : {}),
+    ...(options["provisional"] === true ? { provisional: true } : {}),
   };
 }
 

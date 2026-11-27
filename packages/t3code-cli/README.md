@@ -38,7 +38,8 @@ either result. It includes archived threads. `--json` puts the id or null in
 update accept `--input <file>` or `--input -` for structured JSON; omitted update
 fields keep their stored values. `provider status [instance-id]` reports current
 provider diagnostics. `usage summary --since-day YYYY-MM-DD --until-day YYYY-MM-DD
---time-zone Etc/UTC` reads historical usage. See [schedules, providers and usage](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/automation.md)
+--time-zone Etc/UTC` reads historical usage. Use `--provisional` to allow
+potentially stale results in budget polls. See [schedules, providers and usage](https://github.com/wyrd-company/t3code-client/blob/main/docs/user/t3c/automation.md)
 for execution selections, webhook input and hourly usage options.
 
 Native Stop and queue controls acknowledge requests:

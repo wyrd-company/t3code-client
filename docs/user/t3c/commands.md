@@ -310,5 +310,7 @@ require `orchestration:operate`. Omitted update values stay unchanged.
 `provider status [instanceId]` reads provider availability, authentication and
 limits. `usage summary --since-day YYYY-MM-DD --until-day YYYY-MM-DD --time-zone
 Etc/UTC` reads historical buckets and source diagnostics with `diagnostics:read`.
+Use `--provisional` to allow a potentially stale scan in recurring polls, or
+`--await-refresh` to wait for slow sources. The flags cannot be combined.
 See [schedules, providers and usage](automation.md) for trigger forms, execution
 selections, JSON fields, hourly windows and clearing semantics.

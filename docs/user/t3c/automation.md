@@ -163,6 +163,12 @@ instants spanning more than zero and at most 24 hours. `--await-refresh` waits
 for slow source refreshes instead of cached answers. Usage needs
 `diagnostics:read`.
 
+For recurring budget polls, pass `--provisional` to allow results from the last
+available scan while sources refresh. These totals may be stale. Check each
+source's `refreshing` marker before acting on the result. The CLI rejects
+`--provisional` and `--await-refresh` together before it connects. With neither
+flag, the request uses the server's default usage read.
+
 JSON preserves usage buckets, cost-source provenance, source diagnostics,
 pricing and scan metadata. Text prints each bucket and source separately.
 Reasoning tokens are part of output tokens. Current provider limits and

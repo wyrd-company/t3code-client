@@ -92,7 +92,7 @@ it("passes an exact provider instance and keeps auth, availability and limit att
   expect(await run(["provider", "status", " "])).toMatchObject({ code: 2, connected: false });
 });
 
-it("forwards explicit usage bounds and every RPC option without totaling", async () => {
+it("forwards usage bounds and waits for a refresh on request without totaling", async () => {
   const read = vi.spyOn(client.server, "usageSummary").mockResolvedValue(summary);
   expect((await run(["usage", "summary", ...window])).result).toEqual({
     data: summary,
@@ -127,6 +127,31 @@ it("forwards explicit usage bounds and every RPC option without totaling", async
   );
   expect(text.stdout).toContain("source\tcodex\tpartial\t3 files\t1 sessions\trefreshing");
   expect(text.stdout).not.toContain("total");
+});
+
+it("opts into provisional usage and preserves the server's refresh status", async () => {
+  const read = vi.spyOn(client.server, "usageSummary").mockResolvedValue(summary);
+  expect((await run(["usage", "summary", ...window, "--provisional"])).result).toEqual({
+    data: summary,
+    exitCode: 0,
+  });
+  expect(read).toHaveBeenCalledExactlyOnceWith({
+    sinceDay: "2026-01-01",
+    untilDay: "2026-01-02",
+    timeZone: "Etc/UTC",
+    provisional: true,
+  });
+});
+
+it("rejects provisional usage with a forced refresh before connecting", async () => {
+  const result = await run([
+    "usage",
+    "summary",
+    ...window,
+    "--provisional",
+    "--await-refresh",
+  ]);
+  expect(result).toMatchObject({ code: 2, connected: false });
 });
 
 it("rejects missing, invalid or reversed usage bounds before connecting", async () => {
