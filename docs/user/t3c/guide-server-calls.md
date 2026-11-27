@@ -186,6 +186,69 @@ start one. `subscribeTerminalMetadata` lists every terminal and then follows the
 and `client.terminal.list` returns every terminal; both close their stream after
 the first item.
 
+For input tied to one terminal process, read its snapshot and send
+`expectedPid` when `supportsConditionalWrites` is true. Handle
+`TerminalProcessChangedError` if the process exits or changes before the write.
+
+```ts
+const terminal = { threadId, terminalId: "term-1" };
+const snapshot = await client.terminal.read(terminal);
+if (snapshot.supportsConditionalWrites && snapshot.pid !== null) {
+  await client.terminal.write({ ...terminal, data: "hello", expectedPid: snapshot.pid });
+}
+```
+
+Mark a paste sent in chunks with `bracketedPaste` or `plainWrite`, using
+`start`, `continue`, `end` or `abort`. Include the terminal's bracket
+markers in bracketed-paste data. Only a `plainWrite: "abort"` takes an empty
+`data` string.
+
+Terminal renderers that can skip the continuation of a discarded control
+sequence can set `supportsSnapshotSequenceState` when attaching or observing.
+The snapshot may then return `historySequenceState`. A `cleared` event can
+carry `pendingControlSequence` to carry over an incomplete sequence.
+
+## Issue details
+
+Call `issues.detail` with the same issue reference you use for other issue
+reads. Add `refresh: true` to read directly from the tracker.
+
+```ts
+import { projectId, schemas } from "@wyrd-company/t3code-lib";
+
+const detail = await client.rpc.call("issues.detail", {
+  projectId: projectId("sample-project"),
+  tracker: schemas.issues.IssueTrackerKind.parse("github"),
+  scope: "sample/repository",
+  key: "12",
+  refresh: true,
+});
+```
+
+An issue or pull request operation that returns its tagged failure over HTTP
+uses status 503. Inspect the tag to distinguish that failure from server
+startup and other temporarily unavailable responses.
+
+## Provider runtime modes
+
+For the workspace's runtime-mode restrictions, use
+`client.server.getProviderRuntimeModeLimits` with `orchestration:read`.
+Each limit contains a mode and a reason, such as `project-settings`.
+
+```ts
+import { providerInstanceId } from "@wyrd-company/t3code-lib";
+
+const { limits } = await client.server.getProviderRuntimeModeLimits({
+  instanceId: providerInstanceId("claudeAgent"),
+  cwd: "/workspace/sample",
+});
+```
+
+In provider snapshots, `modelsIncomplete` indicates that a ready probe may
+omit models the provider still offers. A provider's select or boolean option
+with `role: "mode"` controls its own session mode. Select options can also
+carry `role: "reasoning"`.
+
 ## Settings
 
 `server.updateSettings` takes a patch of only the keys to change, and answers with

@@ -64,6 +64,20 @@ refreshProviders(
 ```
 
 **Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)  
+<a name="ServerApi+getProviderRuntimeModeLimits"></a>
+
+### serverApi.getProviderRuntimeModeLimits()
+
+Read the provider runtime modes that settings make unavailable in a workspace.
+
+```ts
+getProviderRuntimeModeLimits(
+    input: RpcPayload<RpcMethods, "server.getProviderRuntimeModeLimits">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "server.getProviderRuntimeModeLimits">>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](https://wyrd.foo/docs/t3c/library-server#ServerApi)  
 <a name="ServerApi+getNpmRelease"></a>
 
 ### serverApi.getNpmRelease()

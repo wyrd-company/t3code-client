@@ -31,7 +31,7 @@ proposed-design:
     establish absence. The lookup does not import, resume or
     launch provider sessions. No upstream reverse-lookup route is used.
   high-level-overview: >-
-    The library implements stock T3 Code 0.1.12 and orchestration protocol 2.
+    The library implements stock T3 Code 0.1.13 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade
     contracts. The library architecture links the canonical design family.
   api-facades: |
@@ -131,7 +131,9 @@ proposed-design:
     how a busy thread takes the message: `auto` (the default), `steer`, and
     `restart` ask for `start_immediately` with that `deliveryIntent`, so the
     server resolves the mode against its own state; `queue` asks for
-    `queue_after_active`; `start` asks for `start_immediately` without an
+    `queue_after_active` and sets `explicitQueue`, so a later automatic agent
+    message can steer the active run while the queue entry waits.
+    `start` asks for `start_immediately` without an
     intent. `freshContext` starts a new provider session without the thread's
     earlier context; the server never steers such a message.
 
@@ -200,6 +202,7 @@ proposed-design:
       getConfig();
       getSettings(); // the settings field of getConfig
       refreshProviders(input?); // reloadSecrets, workspaceSnapshotsOnDemand, usageLimitsCommand, providerCatalogsOnDemand, modelCatalogOnly
+      getProviderRuntimeModeLimits({ instanceId, cwd }); // mode and settings source for each limit
       getNpmRelease(input: { spec }): Promise<ServerNpmRelease | null>;
       prepareTriage(input: { client }): Promise<ServerPrepareTriageResult>; // writes session files on the server
       watchConfig(options?); // usageLimitsCommand, workspaceSnapshotsOnDemand, providerCatalogsOnDemand and more
@@ -619,6 +622,15 @@ proposed-design:
     can recover when `cwd` is supplied, including after a server restart.
     Omission and `false` retain ordinary attach behavior. Unknown IDs without
     `cwd` fail lookup. The stock server owns terminal lifecycle behavior.
+  terminal-replay-and-writes: |
+    `terminal.attach` and `terminal.observe` accept
+    `supportsSnapshotSequenceState` for clients that can skip an omitted
+    control sequence's continuation. Snapshots can return `historySequenceState`,
+    and a `cleared` event can carry `pendingControlSequence`. A snapshot with
+    `supportsConditionalWrites` allows a write to pass `expectedPid`; the
+    server returns `TerminalProcessChangedError` if the process changed.
+    Writes can declare a `bracketedPaste` or `plainWrite` phase. Empty data is
+    valid only for a plain write abort.
   provider-installed-version: |
     Provider records in server configuration reads, provider lists and config
     streams expose `installedVersion` as an optional nullable trimmed nonempty

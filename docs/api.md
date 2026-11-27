@@ -6,6 +6,7 @@ relationships:
 # Library API reference
 
 Generated with `task lib:docs`. Import public symbols from `@wyrd-company/t3code-lib`.
+The library targets stock T3 Code 0.1.13 with orchestration protocol 2.
 See [profiles](profiles.md) for configuration and [design](technical-designs/library.yml) for the library contract.
 TypeScript declarations ship with the package.
 
@@ -2253,6 +2254,8 @@ async setModelSelection(
 ### threadsApi.startTurn()
 
 Dispatches `message.dispatch` and returns a handle that follows the run it starts or joins.
+`delivery: "queue"` marks an explicit queue entry. The server can steer a later automatic
+agent message into the active run while the explicitly queued message still waits.
 
 ```ts
 startTurn(input: StartTurnInput): Promise<TurnHandle>;
@@ -3041,6 +3044,7 @@ A settings endpoint has a null variable. These flags and fields do not change a 
   - [.getConfig()](#ServerApi+getConfig)
   - [.getSettings()](#ServerApi+getSettings)
   - [.refreshProviders()](#ServerApi+refreshProviders)
+  - [.getProviderRuntimeModeLimits()](#ServerApi+getProviderRuntimeModeLimits)
   - [.getNpmRelease()](#ServerApi+getNpmRelease)
   - [.prepareTriage()](#ServerApi+prepareTriage)
   - [.watchConfig()](#ServerApi+watchConfig)
@@ -3103,6 +3107,20 @@ refreshProviders(
     input: RpcPayload<RpcMethods, "server.refreshProviders"> = {},
     signal?: AbortSignal,
   ): Promise<RpcSuccess<RpcMethods, "server.refreshProviders">>;
+```
+
+**Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
+<a name="ServerApi+getProviderRuntimeModeLimits"></a>
+
+### serverApi.getProviderRuntimeModeLimits()
+
+Read the provider runtime modes that settings make unavailable in a workspace.
+
+```ts
+getProviderRuntimeModeLimits(
+    input: RpcPayload<RpcMethods, "server.getProviderRuntimeModeLimits">,
+    signal?: AbortSignal,
+  ): Promise<RpcSuccess<RpcMethods, "server.getProviderRuntimeModeLimits">>;
 ```
 
 **Kind**: instance method of [<code>ServerApi</code>](#ServerApi)  
@@ -3629,7 +3647,10 @@ attach(
 
 ### terminalApi.write()
 
-Write input to a server terminal.
+Write input to a server terminal. A snapshot with `supportsConditionalWrites`
+allows `expectedPid` to guard a write against a terminal restart. A mismatch
+fails with `TerminalProcessChangedError`. Use `bracketedPaste` or `plainWrite`
+to mark the phases of an input sent in chunks.
 
 ```ts
 write(
@@ -3968,7 +3989,7 @@ and existing links pause.
 Open a 24 hour guest link. It replaces the thread's earlier link. The `url`
 holds the guest's credential, so treat it as a secret. A refusal rejects with
 a `T3RpcError` whose `GuestShareCreateError` record has a `reason`, such as
-`disabled` or `connect_unavailable`. Needs `access:write`. On T3 Code 0.1.12,
+`disabled` or `connect_unavailable`. Needs `access:write`. Starting with T3 Code 0.1.12,
 the server also requires `orchestration:read`. The local check requires
 only `access:write` so it also works with T3 Code 0.1.11.
 

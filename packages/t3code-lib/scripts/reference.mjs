@@ -7,6 +7,7 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodePath from "node:path";
 import jsdoc2md from "jsdoc-to-markdown";
 import ts from "typescript-api";
+import { TARGET_T3_CODE_VERSION } from "../src/version.ts";
 
 const root = NodePath.resolve(import.meta.dirname, "..");
 const entry = NodePath.join(root, "src/index.ts");
@@ -87,7 +88,7 @@ for (const [id] of signatures) {
 }
 const reference = await jsdoc2md.render({ data: publicData });
 const types = `\n## Profile and credential types\n\n\`\`\`ts\n${profileTypes.join("\n\n")}\n\`\`\`\n`;
-const header = `---\nrelationships:\n  references: [library, profiles]\n---\n\n# Library API reference\n\nGenerated with \`task lib:docs\`. Import public symbols from \`@wyrd-company/t3code-lib\`.\nSee [profiles](profiles.md) for configuration and [design](technical-designs/library.yml) for the library contract.\nTypeScript declarations ship with the package.\n\n`;
+const header = `---\nrelationships:\n  references: [library, profiles]\n---\n\n# Library API reference\n\nGenerated with \`task lib:docs\`. Import public symbols from \`@wyrd-company/t3code-lib\`.\nThe library targets stock T3 Code ${TARGET_T3_CODE_VERSION} with orchestration protocol 2.\nSee [profiles](profiles.md) for configuration and [design](technical-designs/library.yml) for the library contract.\nTypeScript declarations ship with the package.\n\n`;
 const output = NodeChildProcess.execFileSync(
   "pnpm",
   ["exec", "vp", "fmt", "--stdin-filepath=docs/api.md"],

@@ -49,7 +49,10 @@ credential is the link's fragment. `schemas.orchestrationGuestShare` and
 `schemas.orchestrationGuestStream` hold their shapes.
 
 ```ts
+import { T3Client, schemas } from "@wyrd-company/t3code-lib";
+
 const guest = T3Client.create({ baseUrl, fetch: fetchWithCookieJar });
+const shareId = schemas.common.GuestShareId.parse(rawShareId);
 const query = { share: shareId };
 await guest.routes.call("guest.redeem", { body: { credential, name: "Sample guest" } });
 await guest.routes.call("guest.submit", { query, body: { shareId, text: "Sample proposal." } });

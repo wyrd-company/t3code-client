@@ -11,6 +11,7 @@ relationships:
 # Library API reference
 
 Generated with `task lib:docs`. Import public symbols from `@wyrd-company/t3code-lib`.
+The library targets stock T3 Code 0.1.13 with orchestration protocol 2.
 See [profiles](https://github.com/wyrd-company/t3code-client/blob/main/docs/profiles.md) for configuration and [design](https://github.com/wyrd-company/t3code-client/blob/main/docs/technical-designs/library.yml) for the library contract.
 TypeScript declarations ship with the package.
 

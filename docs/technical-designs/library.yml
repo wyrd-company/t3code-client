@@ -21,7 +21,7 @@ relationships:
     - threadWatch
 proposed-design:
   high-level-overview: >-
-    The library implements stock T3 Code 0.1.12 and orchestration protocol 2.
+    The library implements stock T3 Code 0.1.13 and orchestration protocol 2.
     Related library designs carry the wire, transport, auth, usage and facade
     contracts. The library architecture links the canonical design family.
   overview: |
@@ -105,7 +105,9 @@ proposed-design:
         agentSessions.ts        the scan and import of another agent's sessions on the host
         agentFeedback.ts        reports an agent asks to send to the T3 team: the card fields and the answer
         workspaceFolders.ts     a project's folders, folder scans, task folders and worktreeLayout command approvals
-        workflow.ts             durable workflow runs, steps, questions, definition files; applyWorkflowRunsUpdate
+        workflow.ts             durable workflow runs, subjects, steps, questions and RPC inputs
+        workflowDefinitions.ts  definition files and their validation results (re-exported by workflow.ts)
+        workflowRunUpdates.ts   applyWorkflowRunsUpdate and its helpers (re-exported by workflow.ts)
         providerMcpSignIn.ts    signing an agent's MCP server in from its thread
         projectTrackedFolders.ts the folders a project tracks besides its home folder (re-exported by projects.ts)
         usageLimitSources.ts    usage limit sources and their accounts (re-exported by server.ts)
@@ -154,6 +156,7 @@ proposed-design:
         serverRelease.ts        npm release lookup and triage session start
         peerLink.ts             links to other environments and the answer to a link request
         provider.ts             provider snapshot, models, auth status
+        providerRuntimeModeLimits.ts provider runtime mode limits by folder (re-exported by server.ts)
         vcs.ts                  refs, status, worktree inputs/results
         terminal.ts             open/attach/write/events
       wire/
@@ -186,7 +189,7 @@ proposed-design:
         desktopBootstrap.ts     currentDesktopBootstrapToken
         scopes.ts               scope constants, hasScope, grantedScopes
       api/                      facades composed by T3Client
-        server.ts               getConfig, probe, getNpmRelease, prepareTriage, watchConfig, watchLifecycle, watchDatabaseStorage
+        server.ts               getConfig, probe, getProviderRuntimeModeLimits, getNpmRelease, prepareTriage, watchConfig, watchLifecycle, watchDatabaseStorage
         projects.ts             list, get, snapshot, create, update, delete, ensure, ensureScratch, createNew, createFromThread, files
         threads.ts              list, get, detail, projection, historyPage, transcript, create, ensure, launch, update, archive, delete, startTurn, interrupt, stop, respond*, watch, watchCommandOutput
         commandOutput.ts        watchCommandOutput: one command row's output stream

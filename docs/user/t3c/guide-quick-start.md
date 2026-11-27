@@ -51,7 +51,7 @@ an implementation yourself.
 ## Quick start
 
 ```ts
-import { T3Client, fileCredentialStore } from "@wyrd-company/t3code-lib";
+import { T3Client, fileCredentialStore, providerInstanceId } from "@wyrd-company/t3code-lib";
 
 const client = T3Client.create({
   baseUrl: "http://127.0.0.1:3773",
@@ -68,7 +68,7 @@ const thread = await client.threads.ensure({
   threadId: stableThreadId, // a ThreadId you generate and remember
   projectId: project.id,
   title: "Summarize the changes",
-  modelSelection: { instanceId: "codex", model: "gpt-5.6-luna" },
+  modelSelection: { instanceId: providerInstanceId("codex"), model: "gpt-5.6-luna" },
   runtimeMode: "auto",
 });
 
@@ -106,7 +106,7 @@ one call:
 const launched = await client.threads.launch({
   projectId: project.id,
   title: "Fix the flaky test",
-  modelSelection: { instanceId: "codex", model: "gpt-5.6-luna" },
+  modelSelection: { instanceId: providerInstanceId("codex"), model: "gpt-5.6-luna" },
   workspace: { type: "worktree", baseRef: "main" },
   initialMessage: { text: "Find and fix the flaky test." },
 });

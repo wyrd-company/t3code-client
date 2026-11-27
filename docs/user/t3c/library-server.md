@@ -381,6 +381,7 @@ A settings endpoint has a null variable. These flags and fields do not change a 
   - [.getConfig()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+getConfig)
   - [.getSettings()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+getSettings)
   - [.refreshProviders()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+refreshProviders)
+  - [.getProviderRuntimeModeLimits()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+getProviderRuntimeModeLimits)
   - [.getNpmRelease()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+getNpmRelease)
   - [.prepareTriage()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+prepareTriage)
   - [.watchConfig()](https://wyrd.foo/docs/t3c/library-server-methods#ServerApi+watchConfig)
