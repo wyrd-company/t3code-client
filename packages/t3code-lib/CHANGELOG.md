@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.8.0
+
+### Breaking
+
+- Handle `thread` and `url` in exhaustive maps over `schemas.workflow.WorkflowReferenceKind`, and add `TerminalProcessChangedError` to exhaustive handlers for known RPC errors. Use the exact filesystem paths when comparing decoded mentions or review contexts. Their path fields and review section IDs now preserve leading and trailing whitespace.
+- When `server.updateSettings` moves a normalized destination on T3 Code 0.1.13, supply a new credential in the same patch. Otherwise the server clears a kept redacted value or unchanged secret reference. This affects OpenCode `serverUrl`/`serverPassword`, usage sources `url`/`managementKey`, text generators `baseUrl`/`apiKey` and Simlock `gatewayUrl`/`agentToken`. For Simlock, a change to the normalized path within the same origin can now clear the token.
+- On stock T3 Code 0.1.13, HTTP responses tagged `IssueOperationError`, `IssueTrackerConnectionError` or `PullRequestOperationError` use status 503 instead of 502. Match the error tag and accept both statuses if you support older servers.
+- The public `schemas.terminal.TerminalWriteInput` schema now validates `data` together with the write phase. If you derived a schema with `.pick()`, `.omit()` or `.partial()`, build a separate schema from `.shape` and add the validation it needs, or validate the full write directly. Use `.safeExtend()` when replacing fields in the write schema and keeping its validation. Ordinary terminal writes still take nonempty `data`.
+
+### Features
+
+- Target stock T3 Code 0.1.13 with orchestration protocol 2. Read workspace provider runtime-mode limits with `client.server.getProviderRuntimeModeLimits` and find workflow runs and open questions by subject with `workflows.about`. Workflow reads can include a subject, thread and URL references, and queue steps with an `ahead` count. `issues.detail` takes `schemas.issues.IssueDetailInput`, which still accepts an `IssueRef` and adds optional `refresh: true` to read from the tracker. The reply is still `IssueDetail`. Provider snapshots can report incomplete model lists and identify native mode controls.
+- Terminal attach and observe can request snapshot sequence state for replay. Terminal writes support paste phases and `expectedPid` when a snapshot advertises `supportsConditionalWrites`. A plain write abort takes empty `data`. Explicitly queued turns carry `explicitQueue: true` and can stay queued while later automatic agent input steers the active run. Approval items can include push-hook details.
+
+### Fixes
+
+- Thread projections retain recorded delegated completion, explicit queue state and cancelled background work when a later run update omits those fields. Run and provider-thread records also expose a reopened delegation cohort and Claude app-note delivery digests.
+
 ## 0.7.0
 
 ### Breaking

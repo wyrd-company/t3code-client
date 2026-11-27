@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.7
+
+### Features
+
+- Target stock T3 Code 0.1.13 and use `t3c usage summary --provisional` for budget polls that can use a potentially stale scan. Check the source refresh markers before acting on it. The flag conflicts with `--await-refresh`. Omitting both uses the server default.
+
+### Fixes
+
+- On T3 Code 0.1.13, `t3c thread status --json` can show `explicitQueue: true` on a run, and `t3c thread requests --json` can report `item.pushHooks` on a pending push-hook approval.
+- Install the current `t3c` with `brew install wyrd-company/tools/t3c`. To upgrade an existing Homebrew install, run `brew update` and `brew upgrade wyrd-company/tools/t3c`. The tap tracks the latest CLI version and now updates automatically after each CLI package is published to npm.
+
 ## 0.2.6
 
 ### Features

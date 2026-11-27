@@ -9,8 +9,8 @@ assets:
 products:
   t3c:
     name: t3c
-    version: 0.2.6
-    docs-version: 0.4.7
+    version: 0.2.7
+    docs-version: 0.4.8
     release-unit: t3code-cli
     tagline: Run T3 Code conversations from your terminal and automation.
     blurb: A Node command-line client and TypeScript library for stock T3 Code. Pair
@@ -115,8 +115,8 @@ products:
     favicon: assets/logo.svg
   t3mcp:
     name: t3mcp
-    version: 0.1.7
-    docs-version: 0.1.6
+    version: 0.1.8
+    docs-version: 0.1.7
     release-unit: t3code-mcp
     tagline: Inspect and control T3 Code through complementary MCP tools.
     blurb: A stdio MCP server for direct webhook addresses, delivery diagnostics,
