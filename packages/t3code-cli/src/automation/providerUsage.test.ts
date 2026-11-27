@@ -144,13 +144,7 @@ it("opts into provisional usage and preserves the server's refresh status", asyn
 });
 
 it("rejects provisional usage with a forced refresh before connecting", async () => {
-  const result = await run([
-    "usage",
-    "summary",
-    ...window,
-    "--provisional",
-    "--await-refresh",
-  ]);
+  const result = await run(["usage", "summary", ...window, "--provisional", "--await-refresh"]);
   expect(result).toMatchObject({ code: 2, connected: false });
 });
 

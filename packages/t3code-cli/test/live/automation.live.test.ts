@@ -249,20 +249,23 @@ it("reports exact provider diagnostics and historical usage without starting an 
     "2026-01-01",
     "--time-zone",
     "Etc/UTC",
-    "--await-refresh",
   ];
-  expect((await json(args)).data).toMatchObject({
+  const expectedSummary = {
     sinceDay: "2026-01-01",
     untilDay: "2026-01-01",
     timeZone: "Etc/UTC",
     buckets: expect.any(Array),
     sources: expect.any(Array),
-  });
-  expect((await cli(args)).stdout).toContain("pricing\t");
+  };
+  expect((await json([...args, "--await-refresh"])).data).toMatchObject(expectedSummary);
+  expect((await json([...args, "--provisional"])).data).toMatchObject(expectedSummary);
+  await json([...args, "--provisional", "--await-refresh"], "", 2);
+  expect((await cli([...args, "--await-refresh"])).stdout).toContain("pricing\t");
   expect(
     (
       await json([
         ...args,
+        "--await-refresh",
         "--resolution",
         "hour",
         "--since-time",
