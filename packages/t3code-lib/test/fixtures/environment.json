@@ -1,14 +1,14 @@
 {
-  "environmentId": "1f97ea63-ca24-47df-943a-de751552f143",
+  "environmentId": "e4f96d8c-fa28-4609-8e59-6134b937169f",
   "label": "sample-environment",
   "platform": {
     "os": "linux",
     "arch": "x64",
     "machine": "desktop"
   },
-  "serverVersion": "0.1.12",
+  "serverVersion": "0.1.13",
   "orchestrationProtocolVersion": 2,
-  "databaseMigration": 117,
+  "databaseMigration": 119,
   "capabilities": {
     "repositoryIdentity": true,
     "connectionProbe": true,

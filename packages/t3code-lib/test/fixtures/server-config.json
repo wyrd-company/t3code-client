@@ -1,15 +1,15 @@
 {
   "environment": {
-    "environmentId": "1f97ea63-ca24-47df-943a-de751552f143",
+    "environmentId": "e4f96d8c-fa28-4609-8e59-6134b937169f",
     "label": "sample-environment",
     "platform": {
       "os": "linux",
       "arch": "x64",
       "machine": "desktop"
     },
-    "serverVersion": "0.1.12",
+    "serverVersion": "0.1.13",
     "orchestrationProtocolVersion": 2,
-    "databaseMigration": 117,
+    "databaseMigration": 119,
     "capabilities": {
       "repositoryIdentity": true,
       "connectionProbe": true,
@@ -97,9 +97,15 @@
   },
   "auth": {
     "policy": "loopback-browser",
-    "bootstrapMethods": ["one-time-token"],
-    "sessionMethods": ["browser-session-cookie", "bearer-access-token", "dpop-access-token"],
-    "sessionCookieName": "t3_session_40649_18ced7076ac0",
+    "bootstrapMethods": [
+      "one-time-token"
+    ],
+    "sessionMethods": [
+      "browser-session-cookie",
+      "bearer-access-token",
+      "dpop-access-token"
+    ],
+    "sessionCookieName": "t3_session_40751_0eec6ceb953b",
     "serverUpdateScope": "environment:maintain"
   },
   "cwd": "/srv/sample",
@@ -1793,13 +1799,13 @@
       },
       "enabled": true,
       "installed": true,
-      "version": "0.171.0",
+      "version": "0.172.0",
       "status": "ready",
       "auth": {
         "status": "unknown",
         "endpoint": "https://models.example.test"
       },
-      "checkedAt": "2026-11-25T14:58:40.079Z",
+      "checkedAt": "2026-11-27T04:24:16.155Z",
       "models": [
         {
           "slug": "gpt-6.2-sol",
@@ -2455,21 +2461,21 @@
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-11-25T14:58:40.079Z",
+        "checkedAt": "2026-11-27T04:24:16.155Z",
         "windows": [],
         "unavailable": {
           "reason": "unsupported"
         }
       },
       "versionAdvisory": {
-        "status": "behind_latest",
-        "currentVersion": "0.171.0",
+        "status": "current",
+        "currentVersion": "0.172.0",
         "latestVersion": "0.172.0",
         "updateCommand": "npm install -g --prefix /home/sample/.local --allow-scripts=@openai/codex @openai/codex@latest",
         "canUpdate": true,
         "canInstallVersion": true,
-        "checkedAt": "2026-11-25T14:58:40.466Z",
-        "message": "Install the update now or review provider settings."
+        "checkedAt": "2026-11-27T04:24:16.478Z",
+        "message": null
       },
       "compatibilityAdvisory": {
         "status": "supported",
@@ -2494,7 +2500,7 @@
       },
       "enabled": true,
       "installed": true,
-      "version": "2.1.330",
+      "version": "2.1.332",
       "status": "ready",
       "auth": {
         "status": "authenticated",
@@ -2502,12 +2508,16 @@
         "label": "Sample subscription",
         "endpoint": "https://models.example.test"
       },
-      "checkedAt": "2026-11-25T14:58:40.077Z",
+      "checkedAt": "2026-11-27T04:24:16.153Z",
       "models": [
         {
           "slug": "claude-opus-5-5",
           "name": "Claude Opus 5.5",
-          "aliases": ["opus", "opus-5.5", "claude-opus-5.5"],
+          "aliases": [
+            "opus",
+            "opus-5.5",
+            "claude-opus-5.5"
+          ],
           "isCustom": false,
           "isDefault": true,
           "capabilities": {
@@ -2543,7 +2553,9 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": ["ultrathink"]
+                "promptInjectedValues": [
+                  "ultrathink"
+                ]
               },
               {
                 "id": "ultracode",
@@ -2561,7 +2573,11 @@
         {
           "slug": "claude-sonnet-5-5",
           "name": "Claude Sonnet 5.5",
-          "aliases": ["sonnet", "sonnet-5.5", "claude-sonnet-5.5"],
+          "aliases": [
+            "sonnet",
+            "sonnet-5.5",
+            "claude-sonnet-5.5"
+          ],
           "isCustom": false,
           "capabilities": {
             "optionDescriptors": [
@@ -2596,7 +2612,9 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": ["ultrathink"]
+                "promptInjectedValues": [
+                  "ultrathink"
+                ]
               },
               {
                 "id": "ultracode",
@@ -2609,7 +2627,11 @@
         {
           "slug": "claude-fable-5-2",
           "name": "Claude Fable 5.2",
-          "aliases": ["fable", "fable-5.2", "claude-fable-5.2"],
+          "aliases": [
+            "fable",
+            "fable-5.2",
+            "claude-fable-5.2"
+          ],
           "isCustom": false,
           "capabilities": {
             "optionDescriptors": [
@@ -2644,7 +2666,9 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": ["ultrathink"]
+                "promptInjectedValues": [
+                  "ultrathink"
+                ]
               },
               {
                 "id": "ultracode",
@@ -2662,7 +2686,10 @@
         {
           "slug": "claude-fable-5-1",
           "name": "Claude Fable 5.1",
-          "aliases": ["fable-5.1", "claude-fable-5.1"],
+          "aliases": [
+            "fable-5.1",
+            "claude-fable-5.1"
+          ],
           "isCustom": false,
           "isLegacy": true,
           "capabilities": {
@@ -2698,7 +2725,9 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": ["ultrathink"]
+                "promptInjectedValues": [
+                  "ultrathink"
+                ]
               },
               {
                 "id": "ultracode",
@@ -2746,7 +2775,9 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": ["ultrathink"]
+                "promptInjectedValues": [
+                  "ultrathink"
+                ]
               },
               {
                 "id": "ultracode",
@@ -2759,7 +2790,11 @@
         {
           "slug": "claude-opus-5",
           "name": "Claude Opus 5",
-          "aliases": ["opus-5", "claude-opus-5.0", "claude-opus-5-0"],
+          "aliases": [
+            "opus-5",
+            "claude-opus-5.0",
+            "claude-opus-5-0"
+          ],
           "isCustom": false,
           "isLegacy": true,
           "capabilities": {
@@ -2795,7 +2830,9 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": ["ultrathink"]
+                "promptInjectedValues": [
+                  "ultrathink"
+                ]
               },
               {
                 "id": "ultracode",
@@ -2813,7 +2850,10 @@
         {
           "slug": "claude-opus-4-8",
           "name": "Claude Opus 4.8",
-          "aliases": ["opus-4.8", "claude-opus-4.8"],
+          "aliases": [
+            "opus-4.8",
+            "claude-opus-4.8"
+          ],
           "isCustom": false,
           "isLegacy": true,
           "capabilities": {
@@ -2849,7 +2889,9 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": ["ultrathink"]
+                "promptInjectedValues": [
+                  "ultrathink"
+                ]
               },
               {
                 "id": "ultracode",
@@ -2867,7 +2909,10 @@
         {
           "slug": "claude-opus-4-7",
           "name": "Claude Opus 4.7",
-          "aliases": ["opus-4.7", "claude-opus-4.7"],
+          "aliases": [
+            "opus-4.7",
+            "claude-opus-4.7"
+          ],
           "isCustom": false,
           "isLegacy": true,
           "capabilities": {
@@ -2903,7 +2948,9 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": ["ultrathink"]
+                "promptInjectedValues": [
+                  "ultrathink"
+                ]
               },
               {
                 "id": "fastMode",
@@ -2916,7 +2963,11 @@
         {
           "slug": "claude-opus-4-6",
           "name": "Claude Opus 4.6",
-          "aliases": ["opus-4.6", "claude-opus-4.6", "claude-opus-4-6-20251117"],
+          "aliases": [
+            "opus-4.6",
+            "claude-opus-4.6",
+            "claude-opus-4-6-20251117"
+          ],
           "isCustom": false,
           "isLegacy": true,
           "capabilities": {
@@ -2948,7 +2999,9 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": ["ultrathink"]
+                "promptInjectedValues": [
+                  "ultrathink"
+                ]
               },
               {
                 "id": "fastMode",
@@ -3016,7 +3069,11 @@
         {
           "slug": "claude-sonnet-5",
           "name": "Claude Sonnet 5",
-          "aliases": ["sonnet-5", "claude-sonnet-5.0", "claude-sonnet-5-0"],
+          "aliases": [
+            "sonnet-5",
+            "claude-sonnet-5.0",
+            "claude-sonnet-5-0"
+          ],
           "isCustom": false,
           "isLegacy": true,
           "capabilities": {
@@ -3052,7 +3109,9 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": ["ultrathink"]
+                "promptInjectedValues": [
+                  "ultrathink"
+                ]
               }
             ]
           }
@@ -3060,7 +3119,11 @@
         {
           "slug": "claude-sonnet-4-6",
           "name": "Claude Sonnet 4.6",
-          "aliases": ["sonnet-4.6", "claude-sonnet-4.6", "claude-sonnet-4-6-20251117"],
+          "aliases": [
+            "sonnet-4.6",
+            "claude-sonnet-4.6",
+            "claude-sonnet-4-6-20251117"
+          ],
           "isCustom": false,
           "isLegacy": true,
           "capabilities": {
@@ -3092,7 +3155,9 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": ["ultrathink"]
+                "promptInjectedValues": [
+                  "ultrathink"
+                ]
               },
               {
                 "id": "contextWindow",
@@ -3116,7 +3181,11 @@
         {
           "slug": "claude-haiku-5-5",
           "name": "Claude Haiku 5.5",
-          "aliases": ["haiku", "haiku-5.5", "claude-haiku-5.5"],
+          "aliases": [
+            "haiku",
+            "haiku-5.5",
+            "claude-haiku-5.5"
+          ],
           "isCustom": false,
           "capabilities": {
             "optionDescriptors": [
@@ -3151,7 +3220,9 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": ["ultrathink"]
+                "promptInjectedValues": [
+                  "ultrathink"
+                ]
               },
               {
                 "id": "ultracode",
@@ -3164,7 +3235,11 @@
         {
           "slug": "claude-haiku-4-5",
           "name": "Claude Haiku 4.5",
-          "aliases": ["haiku-4.5", "claude-haiku-4.5", "claude-haiku-4-5-20251001"],
+          "aliases": [
+            "haiku-4.5",
+            "claude-haiku-4.5",
+            "claude-haiku-4-5-20251001"
+          ],
           "isCustom": false,
           "isLegacy": true,
           "capabilities": {
@@ -3179,24 +3254,25 @@
           }
         }
       ],
+      "modelsIncomplete": true,
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-11-25T14:58:38.832Z",
+        "checkedAt": "2026-11-27T04:24:15.166Z",
         "windows": [],
         "unavailable": {
           "reason": "unsupported"
         }
       },
       "versionAdvisory": {
-        "status": "behind_latest",
-        "currentVersion": "2.1.330",
+        "status": "current",
+        "currentVersion": "2.1.332",
         "latestVersion": "2.1.332",
         "updateCommand": "/home/sample/.local/bin/claude update",
         "canUpdate": true,
         "canInstallVersion": false,
-        "checkedAt": "2026-11-25T14:58:40.101Z",
-        "message": "Install the update now or review provider settings."
+        "checkedAt": "2026-11-27T04:24:16.177Z",
+        "message": null
       },
       "compatibilityAdvisory": {
         "status": "supported",
@@ -3227,7 +3303,7 @@
         "status": "unknown",
         "canLogout": true
       },
-      "checkedAt": "2026-11-25T14:58:40.064Z",
+      "checkedAt": "2026-11-27T04:24:16.143Z",
       "message": "Cursor is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -3241,7 +3317,11 @@
         "groupKey": "grok:instance:grok"
       },
       "showInteractionModeToggle": false,
-      "supportedRuntimeModes": ["approval-required", "auto", "full-access"],
+      "supportedRuntimeModes": [
+        "approval-required",
+        "auto",
+        "full-access"
+      ],
       "supportsConversationRollback": false,
       "setup": {
         "canAuthenticate": false,
@@ -3254,7 +3334,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-25T14:58:40.069Z",
+      "checkedAt": "2026-11-27T04:24:16.147Z",
       "message": "Grok is disabled in T3 Code settings.",
       "models": [
         {
@@ -3288,13 +3368,13 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-25T14:58:40.060Z",
+      "checkedAt": "2026-11-27T04:24:16.138Z",
       "message": "OpenCode is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
       "skills": [],
       "usageLimits": {
-        "checkedAt": "2026-11-25T14:58:40.060Z",
+        "checkedAt": "2026-11-27T04:24:16.138Z",
         "windows": [],
         "unavailable": {
           "reason": "unsupported"
@@ -3309,7 +3389,11 @@
         "groupKey": "antigravity:instance:antigravity"
       },
       "showInteractionModeToggle": false,
-      "supportedRuntimeModes": ["approval-required", "auto-accept-edits", "full-access"],
+      "supportedRuntimeModes": [
+        "approval-required",
+        "auto-accept-edits",
+        "full-access"
+      ],
       "supportsConversationRollback": true,
       "supportsTextGeneration": false,
       "setup": {
@@ -3324,7 +3408,7 @@
         "status": "unknown",
         "type": "sample-plan"
       },
-      "checkedAt": "2026-11-25T14:58:38.006Z",
+      "checkedAt": "2026-11-27T04:24:14.502Z",
       "message": "Antigravity is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -3339,7 +3423,10 @@
         "groupKey": "fx:instance:fx"
       },
       "showInteractionModeToggle": false,
-      "supportedRuntimeModes": ["approval-required", "auto"],
+      "supportedRuntimeModes": [
+        "approval-required",
+        "auto"
+      ],
       "supportsTextGeneration": false,
       "setup": {
         "canAuthenticate": false,
@@ -3352,7 +3439,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-25T14:58:40.072Z",
+      "checkedAt": "2026-11-27T04:24:16.150Z",
       "message": "fx is disabled in T3 Code settings.",
       "models": [
         {
@@ -3407,7 +3494,7 @@
         "updateCommand": null,
         "canUpdate": false,
         "canInstallVersion": false,
-        "checkedAt": "2026-11-25T14:58:40.072Z",
+        "checkedAt": "2026-11-27T04:24:16.150Z",
         "message": null
       }
     },
@@ -3419,7 +3506,10 @@
         "groupKey": "kiro:instance:kiro"
       },
       "showInteractionModeToggle": false,
-      "supportedRuntimeModes": ["approval-required", "full-access"],
+      "supportedRuntimeModes": [
+        "approval-required",
+        "full-access"
+      ],
       "setup": {
         "canAuthenticate": false,
         "canInstall": false
@@ -3431,7 +3521,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-25T14:58:40.062Z",
+      "checkedAt": "2026-11-27T04:24:16.141Z",
       "message": "Kiro is disabled in T3 Code settings.",
       "models": [
         {
@@ -3452,7 +3542,7 @@
         "updateCommand": null,
         "canUpdate": false,
         "canInstallVersion": false,
-        "checkedAt": "2026-11-25T14:58:40.062Z",
+        "checkedAt": "2026-11-27T04:24:16.141Z",
         "message": null
       }
     },
@@ -3465,7 +3555,10 @@
       },
       "showInteractionModeToggle": false,
       "reportsContextWindow": true,
-      "supportedRuntimeModes": ["approval-required", "full-access"],
+      "supportedRuntimeModes": [
+        "approval-required",
+        "full-access"
+      ],
       "setup": {
         "canAuthenticate": false,
         "canInstall": false
@@ -3477,7 +3570,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-25T14:58:40.317Z",
+      "checkedAt": "2026-11-27T04:24:16.334Z",
       "message": "Muse Code is disabled in T3 Code settings.",
       "models": [],
       "slashCommands": [],
@@ -3492,7 +3585,11 @@
       },
       "showInteractionModeToggle": false,
       "reportsContextWindow": true,
-      "supportedRuntimeModes": ["approval-required", "auto-accept-edits", "full-access"],
+      "supportedRuntimeModes": [
+        "approval-required",
+        "auto-accept-edits",
+        "full-access"
+      ],
       "setup": {
         "canAuthenticate": false,
         "canInstall": false
@@ -3504,7 +3601,7 @@
       "auth": {
         "status": "unknown"
       },
-      "checkedAt": "2026-11-25T14:58:40.081Z",
+      "checkedAt": "2026-11-27T04:24:16.156Z",
       "message": "Pi is disabled in T3 Code settings.",
       "models": [
         {
@@ -3520,7 +3617,9 @@
       "skills": []
     }
   ],
-  "availableEditors": ["sample"],
+  "availableEditors": [
+    "sample"
+  ],
   "remoteOpenTargets": [],
   "directEndpoints": [],
   "observability": {
@@ -3698,5 +3797,5 @@
   "secretRequestReferences": true,
   "scratchWorkspaceRoot": "/home/sample/.t3/scratch",
   "newProjectsRoot": "/home/sample/.t3/projects",
-  "serverTime": "2026-11-25T14:58:40.581Z"
+  "serverTime": "2026-11-27T04:24:16.578Z"
 }

@@ -6,7 +6,7 @@
       "createdBy": "user",
       "creationSource": "web",
       "id": "11111111-2222-4333-8444-555555555555",
-      "projectId": "ebfa71d1-fcb6-4510-822b-c726242ebd05",
+      "projectId": "7d9e742e-822c-4dcb-9828-580ff532d4cf",
       "title": "Example thread",
       "providerInstanceId": "codex",
       "modelSelection": {
@@ -51,8 +51,8 @@
       "goal": null,
       "itemCount": 0,
       "visibleItemCount": 0,
-      "createdAt": "2026-11-25T14:58:39.480Z",
-      "updatedAt": "2026-11-25T14:58:39.480Z",
+      "createdAt": "2026-11-27T04:24:15.759Z",
+      "updatedAt": "2026-11-27T04:24:15.759Z",
       "archivedAt": null,
       "settledOverride": null,
       "settledAt": null,
@@ -73,7 +73,7 @@
   "archivedThreads": [],
   "projects": [
     {
-      "id": "ebfa71d1-fcb6-4510-822b-c726242ebd05",
+      "id": "7d9e742e-822c-4dcb-9828-580ff532d4cf",
       "title": "Example project",
       "hasCustomTitle": false,
       "workspaceRoot": "/srv/sample",
@@ -87,9 +87,9 @@
       "trackedFolders": [],
       "pinnedAt": null,
       "archivedAt": null,
-      "createdAt": "2026-11-25T14:58:39.443Z",
-      "updatedAt": "2026-11-25T14:58:39.443Z"
+      "createdAt": "2026-11-27T04:24:15.716Z",
+      "updatedAt": "2026-11-27T04:24:15.716Z"
     }
   ],
-  "projectIdentities": "xuPIzgwkbC0oAypzLXaRhIIytVYJqHIRPLoQEYlLO7E"
+  "projectIdentities": "fuLML3E_WMXr5SWx8p8N9xRVwAvG_4JbfQt-m35_Sgk"
 }
