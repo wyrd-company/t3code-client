@@ -7,7 +7,7 @@ import * as NodeFSP from "node:fs/promises";
 import * as NodePath from "node:path";
 import jsdoc2md from "jsdoc-to-markdown";
 import ts from "typescript-api";
-import { TARGET_T3_CODE_VERSION } from "../src/version.ts";
+import { TARGET_T3_CODE_VERSION } from "../dist/version.js";
 
 const root = NodePath.resolve(import.meta.dirname, "..");
 const entry = NodePath.join(root, "src/index.ts");
