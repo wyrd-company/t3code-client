@@ -97,14 +97,8 @@
   },
   "auth": {
     "policy": "loopback-browser",
-    "bootstrapMethods": [
-      "one-time-token"
-    ],
-    "sessionMethods": [
-      "browser-session-cookie",
-      "bearer-access-token",
-      "dpop-access-token"
-    ],
+    "bootstrapMethods": ["one-time-token"],
+    "sessionMethods": ["browser-session-cookie", "bearer-access-token", "dpop-access-token"],
     "sessionCookieName": "t3_session_40751_0eec6ceb953b",
     "serverUpdateScope": "environment:maintain"
   },
@@ -2513,11 +2507,7 @@
         {
           "slug": "claude-opus-5-5",
           "name": "Claude Opus 5.5",
-          "aliases": [
-            "opus",
-            "opus-5.5",
-            "claude-opus-5.5"
-          ],
+          "aliases": ["opus", "opus-5.5", "claude-opus-5.5"],
           "isCustom": false,
           "isDefault": true,
           "capabilities": {
@@ -2553,9 +2543,7 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": [
-                  "ultrathink"
-                ]
+                "promptInjectedValues": ["ultrathink"]
               },
               {
                 "id": "ultracode",
@@ -2573,11 +2561,7 @@
         {
           "slug": "claude-sonnet-5-5",
           "name": "Claude Sonnet 5.5",
-          "aliases": [
-            "sonnet",
-            "sonnet-5.5",
-            "claude-sonnet-5.5"
-          ],
+          "aliases": ["sonnet", "sonnet-5.5", "claude-sonnet-5.5"],
           "isCustom": false,
           "capabilities": {
             "optionDescriptors": [
@@ -2612,9 +2596,7 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": [
-                  "ultrathink"
-                ]
+                "promptInjectedValues": ["ultrathink"]
               },
               {
                 "id": "ultracode",
@@ -2627,11 +2609,7 @@
         {
           "slug": "claude-fable-5-2",
           "name": "Claude Fable 5.2",
-          "aliases": [
-            "fable",
-            "fable-5.2",
-            "claude-fable-5.2"
-          ],
+          "aliases": ["fable", "fable-5.2", "claude-fable-5.2"],
           "isCustom": false,
           "capabilities": {
             "optionDescriptors": [
@@ -2666,9 +2644,7 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": [
-                  "ultrathink"
-                ]
+                "promptInjectedValues": ["ultrathink"]
               },
               {
                 "id": "ultracode",
@@ -2686,10 +2662,7 @@
         {
           "slug": "claude-fable-5-1",
           "name": "Claude Fable 5.1",
-          "aliases": [
-            "fable-5.1",
-            "claude-fable-5.1"
-          ],
+          "aliases": ["fable-5.1", "claude-fable-5.1"],
           "isCustom": false,
           "isLegacy": true,
           "capabilities": {
@@ -2725,9 +2698,7 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": [
-                  "ultrathink"
-                ]
+                "promptInjectedValues": ["ultrathink"]
               },
               {
                 "id": "ultracode",
@@ -2775,9 +2746,7 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": [
-                  "ultrathink"
-                ]
+                "promptInjectedValues": ["ultrathink"]
               },
               {
                 "id": "ultracode",
@@ -2790,11 +2759,7 @@
         {
           "slug": "claude-opus-5",
           "name": "Claude Opus 5",
-          "aliases": [
-            "opus-5",
-            "claude-opus-5.0",
-            "claude-opus-5-0"
-          ],
+          "aliases": ["opus-5", "claude-opus-5.0", "claude-opus-5-0"],
           "isCustom": false,
           "isLegacy": true,
           "capabilities": {
@@ -2830,9 +2795,7 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": [
-                  "ultrathink"
-                ]
+                "promptInjectedValues": ["ultrathink"]
               },
               {
                 "id": "ultracode",
@@ -2850,10 +2813,7 @@
         {
           "slug": "claude-opus-4-8",
           "name": "Claude Opus 4.8",
-          "aliases": [
-            "opus-4.8",
-            "claude-opus-4.8"
-          ],
+          "aliases": ["opus-4.8", "claude-opus-4.8"],
           "isCustom": false,
           "isLegacy": true,
           "capabilities": {
@@ -2889,9 +2849,7 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": [
-                  "ultrathink"
-                ]
+                "promptInjectedValues": ["ultrathink"]
               },
               {
                 "id": "ultracode",
@@ -2909,10 +2867,7 @@
         {
           "slug": "claude-opus-4-7",
           "name": "Claude Opus 4.7",
-          "aliases": [
-            "opus-4.7",
-            "claude-opus-4.7"
-          ],
+          "aliases": ["opus-4.7", "claude-opus-4.7"],
           "isCustom": false,
           "isLegacy": true,
           "capabilities": {
@@ -2948,9 +2903,7 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": [
-                  "ultrathink"
-                ]
+                "promptInjectedValues": ["ultrathink"]
               },
               {
                 "id": "fastMode",
@@ -2963,11 +2916,7 @@
         {
           "slug": "claude-opus-4-6",
           "name": "Claude Opus 4.6",
-          "aliases": [
-            "opus-4.6",
-            "claude-opus-4.6",
-            "claude-opus-4-6-20251117"
-          ],
+          "aliases": ["opus-4.6", "claude-opus-4.6", "claude-opus-4-6-20251117"],
           "isCustom": false,
           "isLegacy": true,
           "capabilities": {
@@ -2999,9 +2948,7 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": [
-                  "ultrathink"
-                ]
+                "promptInjectedValues": ["ultrathink"]
               },
               {
                 "id": "fastMode",
@@ -3069,11 +3016,7 @@
         {
           "slug": "claude-sonnet-5",
           "name": "Claude Sonnet 5",
-          "aliases": [
-            "sonnet-5",
-            "claude-sonnet-5.0",
-            "claude-sonnet-5-0"
-          ],
+          "aliases": ["sonnet-5", "claude-sonnet-5.0", "claude-sonnet-5-0"],
           "isCustom": false,
           "isLegacy": true,
           "capabilities": {
@@ -3109,9 +3052,7 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": [
-                  "ultrathink"
-                ]
+                "promptInjectedValues": ["ultrathink"]
               }
             ]
           }
@@ -3119,11 +3060,7 @@
         {
           "slug": "claude-sonnet-4-6",
           "name": "Claude Sonnet 4.6",
-          "aliases": [
-            "sonnet-4.6",
-            "claude-sonnet-4.6",
-            "claude-sonnet-4-6-20251117"
-          ],
+          "aliases": ["sonnet-4.6", "claude-sonnet-4.6", "claude-sonnet-4-6-20251117"],
           "isCustom": false,
           "isLegacy": true,
           "capabilities": {
@@ -3155,9 +3092,7 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": [
-                  "ultrathink"
-                ]
+                "promptInjectedValues": ["ultrathink"]
               },
               {
                 "id": "contextWindow",
@@ -3181,11 +3116,7 @@
         {
           "slug": "claude-haiku-5-5",
           "name": "Claude Haiku 5.5",
-          "aliases": [
-            "haiku",
-            "haiku-5.5",
-            "claude-haiku-5.5"
-          ],
+          "aliases": ["haiku", "haiku-5.5", "claude-haiku-5.5"],
           "isCustom": false,
           "capabilities": {
             "optionDescriptors": [
@@ -3220,9 +3151,7 @@
                     "label": "Ultrathink"
                   }
                 ],
-                "promptInjectedValues": [
-                  "ultrathink"
-                ]
+                "promptInjectedValues": ["ultrathink"]
               },
               {
                 "id": "ultracode",
@@ -3235,11 +3164,7 @@
         {
           "slug": "claude-haiku-4-5",
           "name": "Claude Haiku 4.5",
-          "aliases": [
-            "haiku-4.5",
-            "claude-haiku-4.5",
-            "claude-haiku-4-5-20251001"
-          ],
+          "aliases": ["haiku-4.5", "claude-haiku-4.5", "claude-haiku-4-5-20251001"],
           "isCustom": false,
           "isLegacy": true,
           "capabilities": {
@@ -3317,11 +3242,7 @@
         "groupKey": "grok:instance:grok"
       },
       "showInteractionModeToggle": false,
-      "supportedRuntimeModes": [
-        "approval-required",
-        "auto",
-        "full-access"
-      ],
+      "supportedRuntimeModes": ["approval-required", "auto", "full-access"],
       "supportsConversationRollback": false,
       "setup": {
         "canAuthenticate": false,
@@ -3389,11 +3310,7 @@
         "groupKey": "antigravity:instance:antigravity"
       },
       "showInteractionModeToggle": false,
-      "supportedRuntimeModes": [
-        "approval-required",
-        "auto-accept-edits",
-        "full-access"
-      ],
+      "supportedRuntimeModes": ["approval-required", "auto-accept-edits", "full-access"],
       "supportsConversationRollback": true,
       "supportsTextGeneration": false,
       "setup": {
@@ -3423,10 +3340,7 @@
         "groupKey": "fx:instance:fx"
       },
       "showInteractionModeToggle": false,
-      "supportedRuntimeModes": [
-        "approval-required",
-        "auto"
-      ],
+      "supportedRuntimeModes": ["approval-required", "auto"],
       "supportsTextGeneration": false,
       "setup": {
         "canAuthenticate": false,
@@ -3506,10 +3420,7 @@
         "groupKey": "kiro:instance:kiro"
       },
       "showInteractionModeToggle": false,
-      "supportedRuntimeModes": [
-        "approval-required",
-        "full-access"
-      ],
+      "supportedRuntimeModes": ["approval-required", "full-access"],
       "setup": {
         "canAuthenticate": false,
         "canInstall": false
@@ -3555,10 +3466,7 @@
       },
       "showInteractionModeToggle": false,
       "reportsContextWindow": true,
-      "supportedRuntimeModes": [
-        "approval-required",
-        "full-access"
-      ],
+      "supportedRuntimeModes": ["approval-required", "full-access"],
       "setup": {
         "canAuthenticate": false,
         "canInstall": false
@@ -3585,11 +3493,7 @@
       },
       "showInteractionModeToggle": false,
       "reportsContextWindow": true,
-      "supportedRuntimeModes": [
-        "approval-required",
-        "auto-accept-edits",
-        "full-access"
-      ],
+      "supportedRuntimeModes": ["approval-required", "auto-accept-edits", "full-access"],
       "setup": {
         "canAuthenticate": false,
         "canInstall": false
@@ -3617,9 +3521,7 @@
       "skills": []
     }
   ],
-  "availableEditors": [
-    "sample"
-  ],
+  "availableEditors": ["sample"],
   "remoteOpenTargets": [],
   "directEndpoints": [],
   "observability": {
