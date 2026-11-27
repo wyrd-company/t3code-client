@@ -101,3 +101,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: scripts/release/dispatch-packages.sh "$RUNNER_TEMP/release-plan.json"
+
+      - name: Link the publication runs
+        run: |
+          printf 'Follow the [Publish runs](%s/%s/actions/workflows/publish.yml) for npm, GitHub Releases, the CLI Homebrew formula, and documentation.\n' \
+            "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" >> "$GITHUB_STEP_SUMMARY"

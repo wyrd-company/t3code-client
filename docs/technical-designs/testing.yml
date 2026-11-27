@@ -29,9 +29,16 @@ proposed-design:
     `task release:test` checks release selection, tag/manifest agreement, package
     contents, private package refusal and shrinkwrap handoff using disposable
     repositories and fake publication commands. It never publishes or pushes tags.
-    Fake-tool Homebrew regressions verify that a mismatched download preserves the
-    formula, HEAD and index, and that an existing installation permits only the
-    preflight call before rejection.
+    Release tests check that the Homebrew job depends on npm publication and
+    selects only CLI records on tag pushes and explicit package dispatches.
+    A disposable tap remote exercises direct pushes to main, repeat runs, older
+    records, mismatched tarball bytes and rejected pushes. A local HTTP server
+    exercises curl's retry after the registry returns 404. The install guard
+    verifies that an existing installation permits only the preflight call.
+    `task homebrew:test` installs and tests a temporary formula against local
+    CLI and library archives. Release acceptance separately exercises the
+    publisher against a disposable tap with published npm and GitHub Release
+    bytes. The release verifies the real tap install after publication.
     The root release-foundation suite runs after dependency installation without
     package build outputs. Native-versus-packaged CLI surface equality is checked
     by `scripts/release/verify-package.sh` after its `pnpm pack` invokes prepack

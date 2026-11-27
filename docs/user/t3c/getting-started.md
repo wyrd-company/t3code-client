@@ -20,12 +20,24 @@ its answer, continues the conversation, and lists the selected project and threa
 answer. Use it in a terminal or a harness that supplies a prompt on stdin.
 Node >=22.16 is required. The target is T3 Code 0.1.12, protocol 2.
 
-Install with npm or Homebrew:
+Install with npm.
 
 ```sh
 npm install -g @wyrd-company/t3code-cli
-# or
+```
+
+The Homebrew tap follows the latest published `t3c` release. Install it with
+Homebrew.
+
+```sh
 brew install wyrd-company/tools/t3c
+```
+
+If you already installed with Homebrew, refresh the tap and upgrade.
+
+```sh
+brew update
+brew upgrade wyrd-company/tools/t3c
 ```
 
 On the server, use upstream `t3 pair` or `t3 auth pairing create` to obtain a

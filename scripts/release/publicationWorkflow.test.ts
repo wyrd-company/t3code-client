@@ -41,39 +41,41 @@ afterEach(() => {
   for (const root of roots.splice(0)) NodeFS.rmSync(root, { recursive: true, force: true });
 });
 
+function runPlan(event: string, record: string, optIn: boolean) {
+  const root = fixture();
+  roots.push(root);
+  const [unit, version] = record.split("@");
+  const env = fake(
+    root,
+    "git",
+    `if [[ "$2" == -t ]]; then echo tag; else
+      printf 'tag-id: release-unit/${unit}/primary\\nversion: ${version}\\n'
+    fi`,
+  );
+  const step = publish.jobs["plan"]!.steps.find((step) => step.id === "plan")!;
+  const result = NodeChildProcess.spawnSync("bash", ["-eo", "pipefail", "-c", step.run!], {
+    cwd: root,
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      ...env,
+      GITHUB_OUTPUT: `${root}/outputs`,
+      GITHUB_REF_NAME: "main",
+      GITHUB_SHA: "HEAD",
+      EVENT_NAME: event,
+      REF_NAME: record,
+      PUBLISH_PACKAGE: String(optIn),
+    },
+  });
+  expect(result.status, result.stderr).toBe(0);
+  return NodeFS.readFileSync(`${root}/outputs`, "utf8");
+}
+
 it.each([false, true])(
   "runs the actual plan step with --ref main and publish-package=%s",
   (optIn) => {
-    const root = fixture();
-    roots.push(root);
     const record = "t3code-lib@0.3.0";
-    const env = fake(
-      root,
-      "git",
-      `
-    if [[ "$2" == -t ]]; then echo tag; else
-      printf 'tag-id: release-unit/t3code-lib/primary\\nversion: 0.3.0\\n'
-    fi
-  `,
-    );
-    const step = publish.jobs["plan"]!.steps.find((step) => step.id === "plan")!;
-    const result = NodeChildProcess.spawnSync("bash", ["-eo", "pipefail", "-c", step.run!], {
-      cwd: root,
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        ...env,
-        GITHUB_OUTPUT: `${root}/outputs`,
-        GITHUB_REF_NAME: "main",
-        GITHUB_SHA: "HEAD",
-        EVENT_NAME: "workflow_dispatch",
-        REF_NAME: record,
-        PUBLISH_PACKAGE: String(optIn),
-        PUBLISH_FEATURE: "false",
-      },
-    });
-    expect(result.status, result.stderr).toBe(0);
-    expect(NodeFS.readFileSync(`${root}/outputs`, "utf8")).toBe(
+    expect(runPlan("workflow_dispatch", record, optIn)).toBe(
       `record=${optIn ? record : ""}\nbuild-package=${optIn}\npublish=true\n`,
     );
   },
@@ -160,4 +162,57 @@ it("dispatches only after the unchanged atomic push with the job token rather th
   );
   expect(job.steps[dispatch]).not.toHaveProperty("continue-on-error");
   expect(job).not.toHaveProperty("continue-on-error");
+});
+
+it.each([
+  ["push", "t3code-cli@0.3.0", false, true],
+  ["workflow_dispatch", "t3code-cli@0.3.0", true, true],
+  ["workflow_dispatch", "t3code-cli@0.3.0", false, false],
+  ["push", "t3code-cli@0.0.0", false, false],
+  ["push", "t3code-lib@0.3.0", false, false],
+  ["workflow_dispatch", "t3code-lib@0.3.0", true, false],
+  ["push", "t3code-mcp@0.3.0", false, false],
+  ["workflow_dispatch", "t3code-mcp@0.3.0", true, false],
+  ["push", "t3c-docs@0.3.0", false, false],
+  ["push", "t3mcp-docs@0.3.0", false, false],
+  ["workflow_dispatch", "t3c-docs@0.3.0", false, false],
+])("selects the tap job for %s %s with publish-package=%s: %s", (event, record, optIn, tap) => {
+  const outputs = runPlan(event, record, optIn);
+  const build = publish.jobs["build"]!;
+  expect(build.if).toBe("needs.plan.outputs.build-package == 'true'");
+  const builtUnit = outputs.includes("build-package=true\n")
+    ? outputs.match(/^record=([^@\n]+)@/m)?.[1]
+    : undefined;
+  const condition = publish.jobs["publish-homebrew-tap"]!.if;
+  const requiredUnit = condition?.match(/^needs\.build\.outputs\.unit == '([^']+)'$/)?.[1];
+  expect(requiredUnit).toBe("t3code-cli");
+  expect(builtUnit === requiredUnit).toBe(tap);
+});
+
+it("runs Homebrew after npm succeeds and uses its verified build artifact", () => {
+  const tap = publish.jobs["publish-homebrew-tap"]!;
+  expect(tap.needs).toEqual(["plan", "build", "npm"]);
+  expect(tap.if).toBe("needs.build.outputs.unit == 't3code-cli'");
+  expect(tap).not.toHaveProperty("continue-on-error");
+  for (const step of tap.steps) expect(step).not.toHaveProperty("continue-on-error");
+  const [sourceCheckout, download, tapCheckout, push] = tap.steps;
+  expect(sourceCheckout?.with).toEqual({
+    ref: "${{ needs.plan.outputs.record }}",
+    "persist-credentials": false,
+  });
+  const npmDownload = publish.jobs["npm"]!.steps.find(
+    (step) => step.name === "Download the package",
+  );
+  expect(download?.with).toEqual(npmDownload?.with);
+  expect(tapCheckout?.with).toEqual({
+    repository: "wyrd-company/homebrew-tools",
+    ref: "main",
+    path: "homebrew-tools",
+    "ssh-key": "${{ secrets.FORMULAE_PUBLISH_KEY }}",
+  });
+  expect(push?.env).toEqual({
+    VERSION: "${{ needs.build.outputs.version }}",
+    PUSH_TAP: "1",
+  });
+  expect(push?.run).toContain("scripts/publish-homebrew-tap.sh");
 });

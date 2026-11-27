@@ -149,6 +149,18 @@ proposed-design:
     an existing npm integrity value and GitHub asset bytes instead of replacing
     them, and does not change which Release is latest.
 
+    **Publish Homebrew formula** runs in the CLI record's **Publish** workflow,
+    whether a tag push or an explicit package dispatch started it. It waits for
+    that record's npm job to succeed. It takes the original package artifact from
+    the same run and checks out `wyrd-company/homebrew-tools` at `main`.
+    `scripts/publish-homebrew-tap.sh` retries the registry download up to five
+    times with 30 seconds between retries and checks the downloaded bytes against
+    the artifact. It renders the formula from the verified download and pushes
+    the commit directly to tap `main` using `FORMULAE_PUBLISH_KEY`.
+    The tap tracks the latest `t3code-cli` in one formula. A retry of an older
+    record preserves a newer formula. A retry of the current version verifies
+    its checksum and leaves the formula unchanged.
+
     Documentation publishes to wyrd.foo through the reusable workflow
     `wyrd-company/wyrd.foo/.github/workflows/publish-docs.yml@v2`, called by the
     `docs` job of **Publish**. A plan job decides whether a run publishes:
@@ -187,6 +199,24 @@ proposed-design:
   recovery-and-verification: |
     - Release failed before its atomic push: fix main and dispatch again with the
       reviewed expected record set. No request tag needs deletion.
+    - Tap update failed after npm publication: open the **Publish** run named
+      for the CLI record. The **Release** summary links to the **Publish** runs.
+      **Publish Homebrew formula** reports download, byte verification and push
+      failures as job failures. Re-run that job from the same **Publish** run to
+      reuse the immutable record and its package artifact. The job checks out
+      current tap main again, including after a rejected non-fast-forward push.
+      In the CLI, set `publish_run_id` to the numeric ID from the run URL:
+
+      ```bash
+      job_id="$(gh run view "$publish_run_id" --json jobs --jq \
+        '.jobs[] | select(.name == "Publish Homebrew formula") | .databaseId')"
+      gh run rerun --job "$job_id"
+      ```
+
+      If GitHub no longer retains the package artifact or allows the job rerun,
+      dispatch **Publish** for the same annotated CLI record with
+      `publish-package=true`. **Release** consumes intents, so recovery starts
+      from the existing release record.
     - Publish failed: rerun Publish for the same record. Existing artifacts must
       match; different bytes fail. If no run was created, dispatch package recovery
       explicitly without deleting or replacing the release record:
@@ -207,6 +237,7 @@ proposed-design:
     | `WYRD_CI_APP_ID`          | Release | GitHub App pushing commits and records |
     | `WYRD_CI_APP_PRIVATE_KEY` | Release | App key                                |
     | `NPM_TOKEN`               | Publish | npm automation token for package units |
+    | `FORMULAE_PUBLISH_KEY`    | Publish | Organization secret containing the writable Homebrew tap deploy key |
     | `WYRD_TOOLS_DOCS_PUBLISHER_APP_ID` | Publish | Organization secret; mints the wyrd.foo publisher token |
     | `WYRD_TOOLS_DOCS_PUBLISHER_PRIVATE_KEY` | Publish | Organization secret; the publisher App key |
 
@@ -230,25 +261,10 @@ proposed-design:
     `DISPLAY` and `WAYLAND_DISPLAY` before VHS. Ordinary live-test overrides remain
     available outside isolated demo/acceptance commands.
 
-    First publication follows these gates:
-
-    1. Bob tests and merges the client epic PR, then the epic retrospective completes.
-    2. During staged finalization establish main baseline records, dispatch Release
-       for both units and publish both npm units. This first publication is
-       pre-approved; notify Bob through Pushover after it runs.
-    3. Download the published CLI npm tarball. Regenerate the tap formula from those
-       exact bytes and the npm tarball URL; verify the URL and SHA256. The tap epic
-       PR receives a focused reviewer check of this regenerated formula delta.
-    4. Return the epic to review for Bob alone to merge the tap epic PR, then clean up.
-
-    The provisional 0.0.0 formula stays on the tap epic branch. It records an actual
-    local pack checksum, not a published release checksum. Never merge it to tap
-    main. Published tarball verification is a deferred finalization gate; local
-    packing does not prove registry availability or provenance. Nothing else waits
-    for the tap merge. `scripts/publish-homebrew-tap.sh` updates an explicit tap
-    checkout, compares the downloaded bytes before writing the formula, and commits
-    the generated formula; pushing is an explicit finalization
-    step. It follows the tap publisher checkout/commit/push convention.
+    CLI finalization verifies the tap's registry URL and SHA256 against the
+    published release and checks that a clean `brew install wyrd-company/tools/t3c`
+    installs that version. The automated tap update sets `PUSH_TAP=1` in the CLI
+    publication job. Local validation uses a disposable tap with local artifacts.
 
     `task homebrew:test` creates a temporary tap, installs local CLI/library archives,
     checks style/audit and runs the formula test, then removes only its formula/tap.

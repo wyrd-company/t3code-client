@@ -24,17 +24,17 @@ const packageUnits = Object.entries(config["release-units"])
   .sort();
 
 describe("workflow agreements", () => {
-  it("uses the same artifact identity and path across the upload and both downloads", () => {
+  it("uses the same artifact identity and path across the upload and all three downloads", () => {
     const names = [
       ...publish().matchAll(
         /uses: actions\/(?:upload|download)-artifact@[^\n]*\n\s+with:\n\s+name: ([^\n]+)/g,
       ),
     ].map((match) => match[1]);
-    expect(names).toHaveLength(3);
+    expect(names).toHaveLength(4);
     expect(new Set(names).size).toBe(1);
     expect(names[0]).toBe("package-${{ needs.plan.outputs.record }}");
     const paths = [...publish().matchAll(/path: (\$\{\{ runner.temp \}\}\/package)/g)];
-    expect(paths).toHaveLength(3);
+    expect(paths).toHaveLength(4);
   });
   it("publishes only the package and docs unit tag families", () => {
     const patterns = [...publish().matchAll(/^      - "([^"]+@\*)"$/gm)]
