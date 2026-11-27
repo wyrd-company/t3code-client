@@ -69,6 +69,13 @@ proposed-design:
     4. The update's pull request lists the tool changes made and each fail with
        its reason.
   verdicts-0-1-13: |
+    The approved [0.1.13 issue bar](https://github.com/wyrd-company/t3code-client/issues/207)
+    permits passing capabilities to be built in the update or raised as issues.
+    For this update, the runtime-mode preflight passes both gates for both tools
+    and is tracked in [the follow-up](https://github.com/wyrd-company/t3code-client/issues/211),
+    as accepted in the [tools review](https://github.com/wyrd-company/t3code-client/pull/212).
+    The standing upstream-update procedure applies to other upgrades.
+
     Basis: stock T3 Code v0.1.12 (ca81b7b97a1c4b91e5ac25768d0f6629f37732fd)
     through v0.1.13 (bc0f04da94f64b5e487c598761a43b4cf06b2ac9).
     Compared [the stock CLI registration](https://github.com/pingdotgg/t3code/blob/v0.1.13/apps/server/src/binCli.ts),

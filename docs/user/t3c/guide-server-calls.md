@@ -290,7 +290,20 @@ values, and the thread learns only the status.
 A credential setting, such as a usage limit source's `managementKey` or an EAS
 host's `accessToken`, takes either the literal or a secret provider reference
 (`schemas.providerInstance.SettingsSecretValue`). The client tells the server it
-reads references, so settings show a reference as written:
+reads references, so settings show a reference as written.
+
+On T3 Code 0.1.13, changing a normalized destination clears a kept credential
+to an empty string. This applies to OpenCode `serverUrl` / `serverPassword`,
+usage limit source `url` / `managementKey`, text generator `baseUrl` / `apiKey`,
+and Simlock `gatewayUrl` / `agentToken`. A redacted value or the same secret
+provider reference counts as kept. Supply a new literal or a different secret
+provider reference in the same patch as the destination change. URL normalization
+ignores equivalent spellings and trailing path slashes; a changed path or query
+can identify a different destination. On 0.1.12, Simlock already clears a kept
+token when the gateway origin changes; 0.1.13 also considers the full normalized
+URL, including its path.
+
+For example, save a usage limit source with a secret provider reference:
 
 ```ts
 await client.rpc.call("server.updateSettings", {
